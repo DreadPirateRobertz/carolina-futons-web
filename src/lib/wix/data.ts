@@ -27,3 +27,32 @@ export async function getCollectionItemById<T extends WixDataItem = WixDataItem>
     .find();
   return (result.items[0] as T | undefined) ?? null;
 }
+
+export async function getCollectionItemBySlug<
+  T extends WixDataItem = WixDataItem,
+>(collectionId: string, slug: string): Promise<T | null> {
+  const client = getWixClient();
+  const result = await client.items
+    .query(collectionId)
+    .eq("slug", slug)
+    .limit(1)
+    .find();
+  return (result.items[0] as T | undefined) ?? null;
+}
+
+export async function queryCollectionWhere<
+  T extends WixDataItem = WixDataItem,
+>(
+  collectionId: string,
+  field: string,
+  value: string | number | boolean,
+  limit = 50,
+): Promise<T[]> {
+  const client = getWixClient();
+  const result = await client.items
+    .query(collectionId)
+    .eq(field, value)
+    .limit(limit)
+    .find();
+  return result.items as T[];
+}

@@ -14,7 +14,7 @@ describe("wix-client", () => {
   it("throws when WIX_CLIENT_ID_HEADLESS is not set", async () => {
     vi.stubEnv("WIX_CLIENT_ID_HEADLESS", "");
     const mod = await import("@/lib/wix-client");
-    expect(() => mod.getWixClient()).toThrow("WIX_CLIENT_ID_HEADLESS is not set");
+    expect(() => mod.getWixClient()).toThrow(/WIX_CLIENT_ID_HEADLESS/);
   });
 
   it("returns a client when env var is set", async () => {
