@@ -2,34 +2,61 @@
 
 import { useState } from "react";
 
+import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { VariantPicker } from "@/components/product/VariantPicker";
 import {
+  findMatchingVariant,
   getSelectedImageUrl,
+  getSelectedPrice,
   initialSelection,
+  isSelectionComplete,
+  isVariantInStock,
   type ChoiceSelection,
   type ProductOptionInput,
   type VariantInput,
 } from "@/lib/product/variant-selection";
 
 export type PdpInteractiveProps = {
+  productId: string;
+  productSlug: string;
   productName: string;
   productOptions: ReadonlyArray<ProductOptionInput>;
   variants: ReadonlyArray<VariantInput>;
   fallbackImageUrl: string | undefined;
   fallbackPrice: string;
+  fallbackPriceCents: number;
 };
 
 export function PdpInteractive({
+  productId,
+  productSlug,
   productName,
   productOptions,
   variants,
   fallbackImageUrl,
   fallbackPrice,
+  fallbackPriceCents,
 }: PdpInteractiveProps) {
   const [selection, setSelection] = useState<ChoiceSelection>(() =>
     initialSelection(productOptions, variants),
   );
   const imageUrl = getSelectedImageUrl(variants, selection, fallbackImageUrl);
+  const selectedPrice = getSelectedPrice(variants, selection, fallbackPrice);
+  const selectedVariant = findMatchingVariant(variants, selection);
+  const selectionComplete =
+    productOptions.length === 0 || isSelectionComplete(productOptions, selection);
+  const inStock = selectedVariant
+    ? isVariantInStock(selectedVariant)
+    : variants.length === 0;
+  const variantLabel = Object.entries(selection)
+    .map(([k, v]) => `${k}: ${v}`)
+    .join(", ");
+
+  const disabledReason = !selectionComplete
+    ? "Select options to continue"
+    : !inStock
+      ? "Out of stock"
+      : undefined;
 
   return (
     <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
@@ -56,12 +83,19 @@ export function PdpInteractive({
           fallbackPrice={fallbackPrice}
           onSelectionChange={(next) => setSelection(next)}
         />
-        <div
-          data-slot="add-to-cart-placeholder"
-          className="rounded-md border border-dashed border-cf-divider p-4 text-sm text-cf-espresso/60"
-        >
-          Add to cart arrives in the next commerce slice (cf-3qt.2.2).
-        </div>
+        <AddToCartButton
+          productId={productId}
+          productName={productName}
+          variantId={selectedVariant?._id ?? undefined}
+          variantLabel={variantLabel || undefined}
+          options={selection}
+          imageUrl={imageUrl}
+          productUrl={`/products/${productSlug}`}
+          unitPriceCents={fallbackPriceCents}
+          formattedUnitPrice={selectedPrice}
+          disabled={!selectionComplete || !inStock}
+          disabledReason={disabledReason}
+        />
       </div>
     </div>
   );
