@@ -4,9 +4,9 @@ import { ShoppingBag } from "lucide-react";
 
 import { useCart } from "@/components/cart/CartProvider";
 
-// Header cart icon, promoted from a Link to a client button so clicking opens
-// the drawer (cf-3qt.2.3) instead of navigating. The `/cart` route is still
-// reachable via direct URL for now — it'll become the Phase 3 full-page cart.
+// Header cart icon. Clicking opens the drawer instead of navigating; the
+// count badge is decorative (aria-hidden) and the accessible name carries the
+// count so screen readers don't double-announce it.
 
 export function CartTrigger() {
   const { itemCount, openCart } = useCart();

@@ -1,5 +1,6 @@
 "use client";
 
+import type { MouseEvent } from "react";
 import { Dialog } from "@base-ui/react/dialog";
 import Link from "next/link";
 import { Minus, Plus, ShoppingBag, X } from "lucide-react";
@@ -8,15 +9,10 @@ import { useCart } from "@/components/cart/CartProvider";
 import { formatCents } from "@/lib/cart/cart-state";
 import { cn } from "@/lib/utils";
 
-// Right-hand slide-in cart drawer (cf-3qt.2.3). Uses base-ui `Dialog` with
-// `modal` so focus is trapped, scroll is locked, and outside pointer events
-// are blocked while the drawer is open. `Dialog.Close` lives inside the popup
-// so touch screen readers can escape per base-ui's accessibility guidance.
-//
-// Intentionally scoped to LOCAL state. Wiring to the Wix `currentCart` API is
-// cf-3qt.2.2's responsibility (morgott); this component consumes whatever
-// lines the CartProvider holds so it works end-to-end with either local or
-// server-backed state.
+// Right-hand slide-in cart drawer. `Dialog.Root` is explicitly `modal` so
+// focus is trapped, the body is scroll-locked, and outside pointer events are
+// blocked while open. `Dialog.Close` lives inside the popup so touch screen
+// readers can escape per base-ui's accessibility guidance.
 
 export function CartDrawer() {
   const {
@@ -30,7 +26,7 @@ export function CartDrawer() {
   } = useCart();
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={setOpen}>
+    <Dialog.Root open={isOpen} onOpenChange={setOpen} modal={true}>
       <Dialog.Portal>
         <Dialog.Backdrop
           className={cn(
@@ -105,7 +101,10 @@ export function CartDrawer() {
                           {line.productUrl ? (
                             <Link
                               href={line.productUrl}
-                              onClick={() => setOpen(false)}
+                              onClick={(e) => {
+                                if (isModifiedClick(e)) return;
+                                setOpen(false);
+                              }}
                               className="block truncate font-medium text-cf-espresso hover:text-cf-cta focus-visible:outline-none focus-visible:text-cf-cta"
                             >
                               {line.productName}
@@ -164,7 +163,10 @@ export function CartDrawer() {
                 </p>
                 <Link
                   href="/checkout"
-                  onClick={() => setOpen(false)}
+                  onClick={(e) => {
+                    if (isModifiedClick(e)) return;
+                    setOpen(false);
+                  }}
                   data-testid="cart-checkout-cta"
                   className={cn(
                     "mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-md bg-cf-cta px-4 text-sm font-semibold text-white transition-colors",
@@ -180,6 +182,13 @@ export function CartDrawer() {
       </Dialog.Portal>
     </Dialog.Root>
   );
+}
+
+// Let the browser keep its default behavior for ⌘/ctrl/shift/middle clicks
+// (new tab, new window, download). We only want to auto-close the drawer on a
+// plain click that will actually navigate this tab.
+function isModifiedClick(e: MouseEvent<HTMLAnchorElement>): boolean {
+  return e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
 }
 
 function EmptyCart({ onClose }: { onClose: () => void }) {
@@ -202,7 +211,10 @@ function EmptyCart({ onClose }: { onClose: () => void }) {
       </div>
       <Link
         href="/shop"
-        onClick={onClose}
+        onClick={(e) => {
+          if (isModifiedClick(e)) return;
+          onClose();
+        }}
         className={cn(
           "mt-2 inline-flex min-h-11 items-center justify-center rounded-md bg-cf-cta px-5 text-sm font-semibold text-white transition-colors",
           "hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2",
@@ -242,7 +254,6 @@ function QuantityStepper({
       </button>
       <span
         className="min-w-8 text-center text-sm font-medium tabular-nums text-cf-espresso"
-        aria-live="polite"
         data-testid="cart-qty-value"
       >
         {quantity}

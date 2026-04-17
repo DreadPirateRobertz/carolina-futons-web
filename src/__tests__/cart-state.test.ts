@@ -38,6 +38,57 @@ describe("cartReducer (cf-3qt.2.3)", () => {
     expect(next.lines[0].quantity).toBe(5);
   });
 
+  it("keeps descriptive fields fresh on merge (server round-trip wins)", () => {
+    // Quantities still accumulate, but name/price/etc. update to the latest
+    // server-provided values so the drawer can't show stale copy.
+    const one: CartState = {
+      lines: [
+        line({
+          quantity: 1,
+          productName: "Old Name",
+          unitPriceCents: 79900,
+          formattedUnitPrice: "$799.00",
+        }),
+      ],
+    };
+    const next = cartReducer(one, {
+      type: "add",
+      line: line({
+        quantity: 2,
+        productName: "New Name",
+        unitPriceCents: 89900,
+        formattedUnitPrice: "$899.00",
+      }),
+    });
+    expect(next.lines[0].quantity).toBe(3);
+    expect(next.lines[0].productName).toBe("New Name");
+    expect(next.lines[0].unitPriceCents).toBe(89900);
+    expect(next.lines[0].formattedUnitPrice).toBe("$899.00");
+  });
+
+  it("ignores an add with NaN or non-positive quantity", () => {
+    const state: CartState = { lines: [line({ id: "p-1", quantity: 1 })] };
+    expect(cartReducer(state, { type: "add", line: line({ id: "p-2", quantity: Number.NaN }) })).toBe(state);
+    expect(cartReducer(state, { type: "add", line: line({ id: "p-2", quantity: 0 }) })).toBe(state);
+    expect(cartReducer(state, { type: "add", line: line({ id: "p-2", quantity: -1 }) })).toBe(state);
+  });
+
+  it("ignores an add with NaN or negative unitPriceCents", () => {
+    const state: CartState = { lines: [] };
+    expect(
+      cartReducer(state, {
+        type: "add",
+        line: line({ id: "p-bad", unitPriceCents: Number.NaN }),
+      }),
+    ).toBe(state);
+    expect(
+      cartReducer(state, {
+        type: "add",
+        line: line({ id: "p-bad", unitPriceCents: -1 }),
+      }),
+    ).toBe(state);
+  });
+
   it("keeps other lines untouched when adding a duplicate", () => {
     const two: CartState = {
       lines: [line({ id: "p-1" }), line({ id: "p-2", productId: "p-2" })],
@@ -85,14 +136,37 @@ describe("cartReducer (cf-3qt.2.3)", () => {
     expect(next.lines).toHaveLength(0);
   });
 
-  it("removes a line when quantity is negative (never persists bad state)", () => {
+  it("ignores a negative setQuantity so a broken stepper can't wipe a line", () => {
+    // Zero explicitly removes; negatives signal a bug upstream, and keeping
+    // the existing line is safer than silently deleting it.
     const state: CartState = { lines: [line({ id: "p-1", quantity: 2 })] };
     const next = cartReducer(state, {
       type: "setQuantity",
       id: "p-1",
       quantity: -5,
     });
-    expect(next.lines).toHaveLength(0);
+    expect(next).toBe(state);
+  });
+
+  it("ignores a setQuantity with NaN so a broken stepper can't wipe a line", () => {
+    const state: CartState = { lines: [line({ id: "p-1", quantity: 2 })] };
+    expect(
+      cartReducer(state, {
+        type: "setQuantity",
+        id: "p-1",
+        quantity: Number.NaN,
+      }),
+    ).toBe(state);
+  });
+
+  it("setQuantity for a missing id leaves state untouched", () => {
+    const state: CartState = { lines: [line({ id: "p-1", quantity: 1 })] };
+    const next = cartReducer(state, {
+      type: "setQuantity",
+      id: "missing",
+      quantity: 5,
+    });
+    expect(next.lines).toEqual(state.lines);
   });
 
   it("clears all lines", () => {
