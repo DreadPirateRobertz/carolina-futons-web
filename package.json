@@ -11,7 +11,9 @@
   "dependencies": {
     "@base-ui/react": "^1.4.0",
     "@wix/data": "^1.0.441",
+    "@wix/ecom": "^1.0.2015",
     "@wix/members": "^1.0.438",
+    "@wix/redirects": "^1.0.112",
     "@wix/sdk": "^1.21.5",
     "@wix/stores": "^1.0.750",
     "class-variance-authority": "^0.7.1",
