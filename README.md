@@ -76,14 +76,19 @@ The `/api/revalidate` route returns `500` with `WIX_WEBHOOK_SECRET is not config
 src/
   app/
     api/
-      revalidate/
-        route.ts      # Wix CMS webhook -> revalidateTag (HMAC verified)
+      revalidate/     # Wix CMS webhook -> revalidateTag (HMAC verified)
+      contact/        # 501 stub — blaidd (cf-3qt.4)
+      newsletter/     # 501 stub — blaidd (cf-3qt.5)
+      delivery-zone/  # 501 stub — godfrey (cf-3qt.2 PDP delivery estimator)
     smoke/page.tsx    # SDK integration smoke test
-    layout.tsx        # Root layout
+    layout.tsx        # Root layout with Header/Footer
     page.tsx          # Homepage (placeholder)
-  components/ui/      # shadcn/ui components
+  components/
+    site/             # Site chrome (Header/Footer placeholders — godfrey fills in cf-3qt.1)
+    ui/               # shadcn/ui components
   lib/
     wix-client.ts     # Wix SDK client factory
+    wix/              # Thin typed wrappers (products, data, members)
     utils.ts          # Tailwind merge utilities
 e2e/                  # Playwright e2e tests
 .github/workflows/    # CI pipeline
