@@ -9,10 +9,10 @@ const FOOTER_COLUMNS = [
   {
     heading: "Shop",
     links: [
-      { label: "Futons", href: "/futons" },
-      { label: "Murphy Beds", href: "/murphy-beds" },
-      { label: "Mattresses", href: "/mattresses" },
-      { label: "Frames", href: "/frames" },
+      { label: "Futons", href: "/shop/futon-frames" },
+      { label: "Murphy Beds", href: "/shop/murphy-cabinet-beds" },
+      { label: "Mattresses", href: "/shop/mattresses" },
+      { label: "Platform Beds", href: "/shop/platform-beds" },
     ],
   },
   {
