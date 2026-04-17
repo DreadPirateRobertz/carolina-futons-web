@@ -23,4 +23,35 @@ export async function getProductBySlug(slug: string) {
   return result.items[0] ?? null;
 }
 
+export async function listProductsByCollectionId(
+  collectionId: string,
+  limit = 48,
+) {
+  const client = getWixClient();
+  const result = await client.products
+    .queryProducts()
+    .hasSome("collectionIds", [collectionId])
+    .limit(limit)
+    .find();
+  return result.items;
+}
+
+export async function getCollectionBySlug(slug: string) {
+  const client = getWixClient();
+  const result = await client.collections.getCollectionBySlug(slug);
+  return result.collection ?? null;
+}
+
+export async function listCollections(limit = 25) {
+  const client = getWixClient();
+  const result = await client.collections
+    .queryCollections()
+    .limit(limit)
+    .find();
+  return result.items;
+}
+
 export type WixProduct = Awaited<ReturnType<typeof listProducts>>[number];
+export type WixCollection = Awaited<
+  ReturnType<typeof listCollections>
+>[number];

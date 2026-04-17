@@ -1,7 +1,9 @@
 import { createClient, OAuthStrategy } from "@wix/sdk";
-import { products } from "@wix/stores";
+import { products, collections } from "@wix/stores";
 import { items } from "@wix/data";
 import { members } from "@wix/members";
+import { currentCart, checkout } from "@wix/ecom";
+import { redirects } from "@wix/redirects";
 
 export function getWixClient() {
   const clientId = process.env.WIX_CLIENT_ID_HEADLESS;
@@ -13,7 +15,15 @@ export function getWixClient() {
   }
 
   return createClient({
-    modules: { products, items, members },
+    modules: {
+      products,
+      collections,
+      items,
+      members,
+      currentCart,
+      checkout,
+      redirects,
+    },
     auth: OAuthStrategy({ clientId }),
   });
 }
