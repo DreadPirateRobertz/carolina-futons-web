@@ -1,12 +1,10 @@
-// Local (client-side) cart state for cf-3qt.2.3. Pure reducer + helpers so that
-// cf-3qt.2.2 AddToCart and cf-3qt.2.4 Checkout can reuse the same types once
-// morgott wires server actions through `@/lib/wix/cart`. Kept framework-free so
-// it's trivially testable without a React renderer.
+// Local (client-side) cart state for cf-3qt.2.3. Pure reducer + helpers, kept
+// framework-free so it's trivially testable without a React renderer.
 //
 // `unitPriceCents` is the canonical price for subtotal math — floats lose
 // pennies at scale. `formattedUnitPrice` is what the server gave us for display
 // (e.g. "$799.00" or "$1,099"); we keep it alongside instead of reformatting
-// client-side so we don't drift from Wix's currency/locale.
+// client-side so we don't drift from the server's currency/locale.
 
 export type CartLineItem = {
   id: string;
@@ -36,14 +34,23 @@ export const EMPTY_CART: CartState = { lines: [] };
 export function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case "add": {
+      // Guard against NaN/negative propagating into the subtotal — cheaper to
+      // stop a bad line here than to ship a "$NaN" footer once server parsing
+      // lands (cf-3qt.2.2).
+      if (!isFinitePositive(action.line.quantity)) return state;
+      if (!isFiniteNonNeg(action.line.unitPriceCents)) return state;
       const existing = state.lines.findIndex((l) => l.id === action.line.id);
       if (existing === -1) {
         return { lines: [...state.lines, action.line] };
       }
       const next = state.lines.slice();
       const prev = next[existing];
+      // On merge the latest line's descriptive fields win (product name, image,
+      // variant label, price) so a server round-trip can refresh stale client
+      // data, but quantities accumulate instead of replacing.
       next[existing] = {
         ...prev,
+        ...action.line,
         quantity: prev.quantity + action.line.quantity,
       };
       return { lines: next };
@@ -51,6 +58,7 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
     case "remove":
       return { lines: state.lines.filter((l) => l.id !== action.id) };
     case "setQuantity": {
+      if (!isFiniteNonNeg(action.quantity)) return state;
       if (action.quantity <= 0) {
         return { lines: state.lines.filter((l) => l.id !== action.id) };
       }
@@ -68,6 +76,13 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
       return state;
     }
   }
+}
+
+function isFinitePositive(n: number): boolean {
+  return Number.isFinite(n) && n > 0;
+}
+function isFiniteNonNeg(n: number): boolean {
+  return Number.isFinite(n) && n >= 0;
 }
 
 export function cartItemCount(state: CartState): number {
