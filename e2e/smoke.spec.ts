@@ -4,7 +4,10 @@ test.describe("/smoke", () => {
   test("renders heading and status line", async ({ page }) => {
     await page.goto("/smoke");
     await expect(page.locator("h1")).toContainText("/smoke");
-    await expect(page.locator("main")).toContainText("Status:");
+    // The /smoke page renders its own <main> nested inside the layout's <main id="main">,
+    // so locator("main") returns 2 elements and trips Playwright strict mode. Scope to the
+    // layout's canonical app-main; both contain "Status:" since one wraps the other.
+    await expect(page.locator("main").first()).toContainText("Status:");
   });
 
   test("lists the 4 smoke check cards", async ({ page }) => {
