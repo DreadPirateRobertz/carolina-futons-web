@@ -1,4 +1,5 @@
 import { getWixClient } from "@/lib/wix-client";
+import { optionalEnv } from "@/lib/env";
 
 interface SmokeResult {
   ok: boolean;
@@ -68,7 +69,7 @@ export default async function SmokePage() {
     }),
 
     runCheck("Velo HTTP function: /_functions/health (CORS)", async () => {
-      const base = process.env.WIX_VELO_SITE_URL ?? "https://www.carolinafutons.com";
+      const base = optionalEnv("WIX_VELO_SITE_URL");
       const url = `${base}/_functions/health`;
       const res = await fetch(url, { cache: "no-store" });
       const corsHeader = res.headers.get("access-control-allow-origin");
