@@ -21,6 +21,22 @@ describe("Footer (cf-3qt.1 Phase 1)", () => {
     });
   });
 
+  it("renders footer Shop links with correct /shop/<slug> hrefs", () => {
+    render(<Footer />);
+    const expected = [
+      ["Futons", "/shop/futon-frames"],
+      ["Murphy Beds", "/shop/murphy-cabinet-beds"],
+      ["Mattresses", "/shop/mattresses"],
+      ["Platform Beds", "/shop/platform-beds"],
+    ] as const;
+    expected.forEach(([label, href]) => {
+      expect(screen.getByRole("link", { name: label })).toHaveAttribute(
+        "href",
+        href,
+      );
+    });
+  });
+
   it("exposes legal/accessibility links in the bottom row", () => {
     render(<Footer />);
     expect(screen.getByRole("link", { name: /privacy/i })).toHaveAttribute(
