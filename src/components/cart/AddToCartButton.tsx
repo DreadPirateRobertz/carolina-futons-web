@@ -1,11 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useCartStore } from "@/lib/cart/store";
+
+import { useCart } from "@/components/cart/CartProvider";
+import { makeLineId, type CartLineItem } from "@/lib/cart/cart-state";
+import { addItemAction } from "@/app/actions/cart";
 
 export type AddToCartButtonProps = {
   productId: string;
+  productName: string;
+  unitPriceCents: number;
+  formattedUnitPrice: string;
   variantId?: string;
+  variantLabel?: string;
+  imageUrl?: string;
+  productUrl?: string;
   options?: Record<string, string>;
   quantity?: number;
   disabled?: boolean;
@@ -13,40 +22,63 @@ export type AddToCartButtonProps = {
   className?: string;
 };
 
-// Consumes godfrey's variant picker output (cf-3qt.2.1):
-//   variantId = selectedVariant._id
-//   options   = ChoiceSelection (option name → choice value)
-// The store handles optimistic apply + rollback; we only surface loading state
-// and the post-mutation error so the user sees a recoverable message.
+// Client-cart-first per cf-3qt.2.3 contract: call useCart().addLine() for
+// instant UI, then fire the server action to keep Wix currentCart in sync so
+// cf-3qt.2.4 checkout (which creates the redirect from currentCart) sees the
+// same lines. On server failure we roll the optimistic line back out via
+// removeLine() and surface a recoverable error.
 export function AddToCartButton({
   productId,
+  productName,
+  unitPriceCents,
+  formattedUnitPrice,
   variantId,
+  variantLabel,
+  imageUrl,
+  productUrl,
   options,
   quantity = 1,
   disabled,
   disabledReason,
   className,
 }: AddToCartButtonProps) {
-  const addItem = useCartStore((s) => s.addItem);
-  const storeError = useCartStore((s) => s.error);
-  const clearError = useCartStore((s) => s.clearError);
+  const { addLine, removeLine, openCart } = useCart();
   const [pending, setPending] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const isDisabled = disabled || pending || !productId || quantity < 1;
   const label = pending ? "Adding…" : "Add to cart";
 
   async function handleClick() {
     if (isDisabled) return;
-    setLocalError(null);
-    clearError();
+    setError(null);
+    const line: CartLineItem = {
+      id: makeLineId(productId, variantId),
+      productId,
+      productName,
+      variantId,
+      variantLabel,
+      imageUrl,
+      productUrl,
+      quantity,
+      unitPriceCents,
+      formattedUnitPrice,
+    };
+    addLine(line);
+    openCart();
     setPending(true);
-    const ok = await addItem({ productId, quantity, variantId, options });
+    const result = await addItemAction({
+      productId,
+      quantity,
+      variantId,
+      options,
+    });
     setPending(false);
-    if (!ok) setLocalError(storeError ?? "Could not add to cart");
+    if (!result.ok) {
+      removeLine(line.id);
+      setError(result.error ?? "Could not add to cart");
+    }
   }
-
-  const error = localError ?? null;
 
   return (
     <div className={className}>

@@ -32,6 +32,7 @@ export default async function PdpPage(props: {
 
   const mainUrl = product.media?.mainMedia?.image?.url;
   const fallbackPrice = product.priceData?.formatted?.price ?? "";
+  const fallbackPriceCents = toCents(product.priceData?.price);
   const descriptionText = stripHtml(product.description ?? "");
   const productOptions = (product.productOptions ?? []) as ProductOptionInput[];
   const variants = (product.variants ?? []) as VariantInput[];
@@ -48,11 +49,14 @@ export default async function PdpPage(props: {
 
       <div className="mt-6">
         <PdpInteractive
+          productId={product._id ?? ""}
+          productSlug={slug}
           productName={product.name ?? ""}
           productOptions={productOptions}
           variants={variants}
           fallbackImageUrl={mainUrl}
           fallbackPrice={fallbackPrice}
+          fallbackPriceCents={fallbackPriceCents}
         />
       </div>
 
@@ -68,6 +72,11 @@ export default async function PdpPage(props: {
       ) : null}
     </main>
   );
+}
+
+function toCents(price: number | null | undefined): number {
+  if (typeof price !== "number" || !Number.isFinite(price)) return 0;
+  return Math.round(price * 100);
 }
 
 // Wix Stores `product.description` is HTML. Phase 2 placeholder: strip tags and

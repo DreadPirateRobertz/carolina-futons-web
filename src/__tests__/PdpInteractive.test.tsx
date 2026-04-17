@@ -1,5 +1,17 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
+
+vi.mock("@/components/cart/CartProvider", () => ({
+  useCart: () => ({
+    addLine: vi.fn(),
+    removeLine: vi.fn(),
+    openCart: vi.fn(),
+  }),
+}));
+
+vi.mock("@/app/actions/cart", () => ({
+  addItemAction: vi.fn().mockResolvedValue({ ok: true, cart: null }),
+}));
 
 import { PdpInteractive } from "@/components/product/PdpInteractive";
 import type {
@@ -34,10 +46,17 @@ const variants: VariantInput[] = [
   },
 ];
 
-describe("PdpInteractive (cf-3qt.2.1 integration)", () => {
+const baseProps = {
+  productId: "prod-1",
+  productSlug: "carolina-classic",
+  fallbackPriceCents: 79900,
+};
+
+describe("PdpInteractive (cf-3qt.2.1 + 2.2 integration)", () => {
   it("renders product name, picker, and the fallback image", () => {
     render(
       <PdpInteractive
+        {...baseProps}
         productName="Carolina Classic Futon"
         productOptions={productOptions}
         variants={variants}
@@ -58,6 +77,7 @@ describe("PdpInteractive (cf-3qt.2.1 integration)", () => {
   it("swaps the main image when the selected variant changes", () => {
     render(
       <PdpInteractive
+        {...baseProps}
         productName="Carolina Classic Futon"
         productOptions={productOptions}
         variants={variants}
@@ -72,9 +92,10 @@ describe("PdpInteractive (cf-3qt.2.1 integration)", () => {
     );
   });
 
-  it("renders the AddToCart placeholder that cf-3qt.2.2 will replace", () => {
+  it("renders the AddToCart button", () => {
     render(
       <PdpInteractive
+        {...baseProps}
         productName="x"
         productOptions={[]}
         variants={[]}
@@ -83,13 +104,14 @@ describe("PdpInteractive (cf-3qt.2.1 integration)", () => {
       />,
     );
     expect(
-      screen.getByText(/add to cart arrives in the next commerce slice/i),
+      screen.getByRole("button", { name: /add to cart/i }),
     ).toBeInTheDocument();
   });
 
   it("renders the sand placeholder when no image is available", () => {
     const { container } = render(
       <PdpInteractive
+        {...baseProps}
         productName="x"
         productOptions={[]}
         variants={[]}
