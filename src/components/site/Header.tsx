@@ -4,8 +4,9 @@
 // CMS wiring + mega-nav content land in Phase 3 (rennala).
 // Keep this server-rendered — no state, no effects.
 import Link from "next/link";
-import { Search, ShoppingBag, User } from "lucide-react";
+import { Search, User } from "lucide-react";
 import { AnnouncementBar } from "@/components/site/AnnouncementBar";
+import { CartTrigger } from "@/components/cart/CartTrigger";
 
 const PRIMARY_NAV = [
   { label: "Futons", href: "/futons" },
@@ -74,13 +75,7 @@ export function Header() {
             >
               <User className="size-5" aria-hidden="true" />
             </Link>
-            <Link
-              href="/cart"
-              aria-label="Cart"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-md text-cf-charcoal transition-colors hover:bg-cf-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <ShoppingBag className="size-5" aria-hidden="true" />
-            </Link>
+            <CartTrigger />
           </div>
         </div>
       </div>
