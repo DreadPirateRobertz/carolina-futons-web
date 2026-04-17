@@ -153,6 +153,52 @@ describe("CartDrawer (cf-3qt.2.3)", () => {
     const dialog = screen.getByRole("dialog", { name: /your cart/i });
     expect(dialog).toBeInTheDocument();
   });
+
+  it("renders a modal backdrop so outside pointer events are blocked", () => {
+    // The backdrop only renders when Dialog is `modal`. Flip to
+    // `modal={false}` and the backdrop stops rendering, breaking the
+    // focus-trap + scroll-lock contract silently. The `cart-backdrop`
+    // testid on the backdrop is the cheapest DOM-level tripwire.
+    renderWith([lineA]);
+    fireEvent.click(screen.getByTestId("cart-trigger"));
+    expect(screen.getByTestId("cart-backdrop")).toBeInTheDocument();
+  });
+
+  it("does not close the drawer when a product link is opened in a new tab", () => {
+    // ⌘-click / ctrl-click / middle-click should keep the current tab's drawer
+    // open — otherwise users lose their place the moment they try to compare.
+    renderWith([lineA]);
+    fireEvent.click(screen.getByTestId("cart-trigger"));
+    const productLink = screen.getByRole("link", {
+      name: /carolina classic futon/i,
+    });
+    fireEvent.click(productLink, { metaKey: true });
+    expect(screen.getByTestId("cart-drawer")).toBeInTheDocument();
+  });
+
+  it("does not close the drawer on modifier-click of the checkout CTA", () => {
+    renderWith([lineA]);
+    fireEvent.click(screen.getByTestId("cart-trigger"));
+    fireEvent.click(screen.getByTestId("cart-checkout-cta"), { ctrlKey: true });
+    expect(screen.getByTestId("cart-drawer")).toBeInTheDocument();
+  });
+
+  it("does not close the drawer on modifier-click of the empty-state Start Shopping link", () => {
+    renderWith();
+    fireEvent.click(screen.getByTestId("cart-trigger"));
+    fireEvent.click(
+      screen.getByRole("link", { name: /start shopping/i }),
+      { metaKey: true },
+    );
+    expect(screen.getByTestId("cart-drawer")).toBeInTheDocument();
+  });
+
+  it("closes on a plain click of the checkout CTA (non-modified path still wired)", () => {
+    renderWith([lineA]);
+    fireEvent.click(screen.getByTestId("cart-trigger"));
+    fireEvent.click(screen.getByTestId("cart-checkout-cta"));
+    expect(screen.queryByTestId("cart-drawer")).toBeNull();
+  });
 });
 
 describe("CartTrigger (cf-3qt.2.3)", () => {

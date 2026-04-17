@@ -35,10 +35,18 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case "add": {
       // Guard against NaN/negative propagating into the subtotal — cheaper to
-      // stop a bad line here than to ship a "$NaN" footer once server parsing
-      // lands (cf-3qt.2.2).
-      if (!isFinitePositive(action.line.quantity)) return state;
-      if (!isFiniteNonNeg(action.line.unitPriceCents)) return state;
+      // stop a bad line here than to ship a "$NaN" footer. Warn in dev so a
+      // broken server-sync payload doesn't present as "Add to Cart does
+      // nothing"; the TODO for proper telemetry lives in the warnBadInput
+      // comment below.
+      if (!isFinitePositive(action.line.quantity)) {
+        warnBadInput("add.quantity", action.line.quantity);
+        return state;
+      }
+      if (!isFiniteNonNeg(action.line.unitPriceCents)) {
+        warnBadInput("add.unitPriceCents", action.line.unitPriceCents);
+        return state;
+      }
       const existing = state.lines.findIndex((l) => l.id === action.line.id);
       if (existing === -1) {
         return { lines: [...state.lines, action.line] };
@@ -55,10 +63,22 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
       };
       return { lines: next };
     }
-    case "remove":
+    case "remove": {
+      if (!state.lines.some((l) => l.id === action.id)) {
+        warnBadInput("remove.id", action.id);
+        return state;
+      }
       return { lines: state.lines.filter((l) => l.id !== action.id) };
+    }
     case "setQuantity": {
-      if (!isFiniteNonNeg(action.quantity)) return state;
+      if (!isFiniteNonNeg(action.quantity)) {
+        warnBadInput("setQuantity.quantity", action.quantity);
+        return state;
+      }
+      if (!state.lines.some((l) => l.id === action.id)) {
+        warnBadInput("setQuantity.id", action.id);
+        return state;
+      }
       if (action.quantity <= 0) {
         return { lines: state.lines.filter((l) => l.id !== action.id) };
       }
@@ -83,6 +103,28 @@ function isFinitePositive(n: number): boolean {
 }
 function isFiniteNonNeg(n: number): boolean {
   return Number.isFinite(n) && n >= 0;
+}
+
+// Tagged set of reducer drop-sites. Adding a new guard? Extend this union so
+// the call site is type-checked instead of being a free-form string.
+type BadInputField =
+  | "add.quantity"
+  | "add.unitPriceCents"
+  | "remove.id"
+  | "setQuantity.quantity"
+  | "setQuantity.id";
+
+// Dev-only breadcrumb when we drop an action. In production the reducer still
+// silently returns prior state — cart is a hot path and we don't want to spam
+// an error tracker. In dev the warning makes "Add to Cart does nothing"
+// debuggable without attaching a debugger to the reducer. TODO: attach a real
+// telemetry sink once the analytics layer lands.
+function warnBadInput(field: BadInputField, value: unknown): void {
+  if (process.env.NODE_ENV !== "production") {
+    console.warn(
+      `[cart-state] ignored action with invalid ${field}: ${String(value)}`,
+    );
+  }
 }
 
 export function cartItemCount(state: CartState): number {
