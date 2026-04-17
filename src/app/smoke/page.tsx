@@ -65,6 +65,18 @@ export default async function SmokePage() {
         firstItem: result.items[0] ?? "(none)",
       };
     }),
+
+    runCheck("Velo HTTP function: /_functions/health (CORS)", async () => {
+      const base = process.env.WIX_VELO_SITE_URL ?? "https://www.carolinafutons.com";
+      const url = `${base}/_functions/health`;
+      const res = await fetch(url, { cache: "no-store" });
+      const corsHeader = res.headers.get("access-control-allow-origin");
+      return {
+        url,
+        status: res.status,
+        corsAllowOrigin: corsHeader ?? "(none)",
+      };
+    }),
   ]);
 
   const allOk = checks.every((c) => c.ok);

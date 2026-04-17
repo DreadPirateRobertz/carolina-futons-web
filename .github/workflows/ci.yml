@@ -34,5 +34,6 @@ jobs:
       - name: E2E tests
         run: npx playwright test
         env:
-          NEXT_PUBLIC_WIX_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_WIX_CLIENT_ID }}
+          WIX_CLIENT_ID_HEADLESS: ${{ secrets.WIX_CLIENT_ID_HEADLESS }}
           WIX_BACKEND_KEY: ${{ secrets.WIX_BACKEND_KEY }}
+          WIX_VELO_SITE_URL: ${{ secrets.WIX_VELO_SITE_URL }}

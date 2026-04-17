@@ -23,7 +23,7 @@ npm install
 
 # 3. Configure environment
 cp .env.example .env.local
-# Fill in WIX_CLIENT_ID and WIX_BACKEND_KEY from Vercel/team secrets
+# Fill in WIX_CLIENT_ID_HEADLESS + WIX_BACKEND_KEY from Vercel/team secrets
 
 # 4. Run dev server
 npm run dev
@@ -53,8 +53,9 @@ npm run lint
 
 | Variable | Scope | Description |
 |----------|-------|-------------|
-| `NEXT_PUBLIC_WIX_CLIENT_ID` | Client + Server | Wix Headless OAuth client ID (visitor token) |
+| `WIX_CLIENT_ID_HEADLESS` | Server only | Wix Headless OAuth client ID (visitor token) |
 | `WIX_BACKEND_KEY` | Server only | Wix backend API key for elevated operations |
+| `WIX_VELO_SITE_URL` | Server only | Base URL of live Velo site for HTTP function calls (default `https://www.carolinafutons.com`) |
 
 ## Project Structure
 
