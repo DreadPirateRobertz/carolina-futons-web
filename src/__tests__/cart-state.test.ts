@@ -88,6 +88,47 @@ describe("cartReducer (cf-3qt.2.3)", () => {
     );
   });
 
+  it("warns when remove targets an id that isn't present", () => {
+    const warn = vi.spyOn(console, "warn");
+    const state: CartState = { lines: [line({ id: "p-1" })] };
+    expect(cartReducer(state, { type: "remove", id: "missing" })).toBe(state);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("invalid remove.id"),
+    );
+  });
+
+  it("warns when setQuantity targets an id that isn't present", () => {
+    const warn = vi.spyOn(console, "warn");
+    const state: CartState = { lines: [line({ id: "p-1", quantity: 1 })] };
+    expect(
+      cartReducer(state, {
+        type: "setQuantity",
+        id: "missing",
+        quantity: 5,
+      }),
+    ).toBe(state);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("invalid setQuantity.id"),
+    );
+  });
+
+  it("stays silent in production — warn is dev-only", () => {
+    // Tripwire: if someone loosens the `NODE_ENV !== "production"` check,
+    // production logs start leaking on every cart-state drop. `vi.stubEnv`
+    // + the file-scope `restoreAllMocks` afterEach cleans itself up.
+    const warn = vi.spyOn(console, "warn");
+    vi.stubEnv("NODE_ENV", "production");
+    try {
+      cartReducer(EMPTY_CART, {
+        type: "add",
+        line: line({ quantity: Number.NaN }),
+      });
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("ignores an add with NaN or non-positive quantity", () => {
     const state: CartState = { lines: [line({ id: "p-1", quantity: 1 })] };
     expect(cartReducer(state, { type: "add", line: line({ id: "p-2", quantity: Number.NaN }) })).toBe(state);

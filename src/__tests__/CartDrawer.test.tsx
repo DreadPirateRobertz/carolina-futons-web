@@ -155,23 +155,13 @@ describe("CartDrawer (cf-3qt.2.3)", () => {
   });
 
   it("renders a modal backdrop so outside pointer events are blocked", () => {
-    // The backdrop only renders when Dialog is `modal`. If someone flips
-    // `modal={false}` the focus-trap + scroll-lock contract breaks silently;
-    // the rendered backdrop is the cheapest DOM-level tripwire for that.
+    // The backdrop only renders when Dialog is `modal`. Flip to
+    // `modal={false}` and the backdrop stops rendering, breaking the
+    // focus-trap + scroll-lock contract silently. The `cart-backdrop`
+    // testid on the backdrop is the cheapest DOM-level tripwire.
     renderWith([lineA]);
     fireEvent.click(screen.getByTestId("cart-trigger"));
-    const popup = screen.getByTestId("cart-drawer");
-    const backdrop = popup.parentElement?.querySelector(
-      '[data-base-ui-focus-guard], [role="presentation"]',
-    );
-    // base-ui's Dialog.Backdrop is a non-role div rendered in the same portal.
-    // Fall back to the portal sibling search if the role approach changes.
-    const anyBackdrop =
-      backdrop ??
-      document.querySelector(
-        'div[style*="position: fixed"][class*="bg-cf-espresso"]',
-      );
-    expect(anyBackdrop).not.toBeNull();
+    expect(screen.getByTestId("cart-backdrop")).toBeInTheDocument();
   });
 
   it("does not close the drawer when a product link is opened in a new tab", () => {

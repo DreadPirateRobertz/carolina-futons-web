@@ -29,6 +29,7 @@ export function CartDrawer() {
     <Dialog.Root open={isOpen} onOpenChange={setOpen} modal={true}>
       <Dialog.Portal>
         <Dialog.Backdrop
+          data-testid="cart-backdrop"
           className={cn(
             "fixed inset-0 z-50 bg-cf-espresso/40 backdrop-blur-sm",
             "data-[starting-style]:opacity-0 data-[ending-style]:opacity-0",
