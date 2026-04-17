@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   cartItemCount,
@@ -10,6 +10,17 @@ import {
   type CartLineItem,
   type CartState,
 } from "@/lib/cart/cart-state";
+
+// The reducer emits a dev-only console.warn when it drops a bad action. We
+// silence it at the file level so guard-assert tests stay quiet, but we
+// assert the warn fires inside the guard block so observability can't regress
+// silently.
+beforeEach(() => {
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 const line = (overrides: Partial<CartLineItem> = {}): CartLineItem => ({
   id: "p-1",
@@ -64,6 +75,17 @@ describe("cartReducer (cf-3qt.2.3)", () => {
     expect(next.lines[0].productName).toBe("New Name");
     expect(next.lines[0].unitPriceCents).toBe(89900);
     expect(next.lines[0].formattedUnitPrice).toBe("$899.00");
+  });
+
+  it("emits a dev-only console.warn when dropping a bad action", () => {
+    const warn = vi.spyOn(console, "warn");
+    cartReducer(EMPTY_CART, {
+      type: "add",
+      line: line({ quantity: Number.NaN }),
+    });
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("invalid add.quantity"),
+    );
   });
 
   it("ignores an add with NaN or non-positive quantity", () => {

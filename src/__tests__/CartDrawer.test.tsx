@@ -153,6 +153,62 @@ describe("CartDrawer (cf-3qt.2.3)", () => {
     const dialog = screen.getByRole("dialog", { name: /your cart/i });
     expect(dialog).toBeInTheDocument();
   });
+
+  it("renders a modal backdrop so outside pointer events are blocked", () => {
+    // The backdrop only renders when Dialog is `modal`. If someone flips
+    // `modal={false}` the focus-trap + scroll-lock contract breaks silently;
+    // the rendered backdrop is the cheapest DOM-level tripwire for that.
+    renderWith([lineA]);
+    fireEvent.click(screen.getByTestId("cart-trigger"));
+    const popup = screen.getByTestId("cart-drawer");
+    const backdrop = popup.parentElement?.querySelector(
+      '[data-base-ui-focus-guard], [role="presentation"]',
+    );
+    // base-ui's Dialog.Backdrop is a non-role div rendered in the same portal.
+    // Fall back to the portal sibling search if the role approach changes.
+    const anyBackdrop =
+      backdrop ??
+      document.querySelector(
+        'div[style*="position: fixed"][class*="bg-cf-espresso"]',
+      );
+    expect(anyBackdrop).not.toBeNull();
+  });
+
+  it("does not close the drawer when a product link is opened in a new tab", () => {
+    // ⌘-click / ctrl-click / middle-click should keep the current tab's drawer
+    // open — otherwise users lose their place the moment they try to compare.
+    renderWith([lineA]);
+    fireEvent.click(screen.getByTestId("cart-trigger"));
+    const productLink = screen.getByRole("link", {
+      name: /carolina classic futon/i,
+    });
+    fireEvent.click(productLink, { metaKey: true });
+    expect(screen.getByTestId("cart-drawer")).toBeInTheDocument();
+  });
+
+  it("does not close the drawer on modifier-click of the checkout CTA", () => {
+    renderWith([lineA]);
+    fireEvent.click(screen.getByTestId("cart-trigger"));
+    fireEvent.click(screen.getByTestId("cart-checkout-cta"), { ctrlKey: true });
+    expect(screen.getByTestId("cart-drawer")).toBeInTheDocument();
+  });
+
+  it("does not close the drawer on modifier-click of the empty-state Start Shopping link", () => {
+    renderWith();
+    fireEvent.click(screen.getByTestId("cart-trigger"));
+    fireEvent.click(
+      screen.getByRole("link", { name: /start shopping/i }),
+      { metaKey: true },
+    );
+    expect(screen.getByTestId("cart-drawer")).toBeInTheDocument();
+  });
+
+  it("closes on a plain click of the checkout CTA (non-modified path still wired)", () => {
+    renderWith([lineA]);
+    fireEvent.click(screen.getByTestId("cart-trigger"));
+    fireEvent.click(screen.getByTestId("cart-checkout-cta"));
+    expect(screen.queryByTestId("cart-drawer")).toBeNull();
+  });
 });
 
 describe("CartTrigger (cf-3qt.2.3)", () => {

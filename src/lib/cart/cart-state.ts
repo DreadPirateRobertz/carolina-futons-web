@@ -35,10 +35,17 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case "add": {
       // Guard against NaN/negative propagating into the subtotal — cheaper to
-      // stop a bad line here than to ship a "$NaN" footer once server parsing
-      // lands (cf-3qt.2.2).
-      if (!isFinitePositive(action.line.quantity)) return state;
-      if (!isFiniteNonNeg(action.line.unitPriceCents)) return state;
+      // stop a bad line here than to ship a "$NaN" footer. Warn in dev so a
+      // broken server-sync payload doesn't just present as "Add to Cart does
+      // nothing" — proper telemetry hook is cf-3qt.3.x.
+      if (!isFinitePositive(action.line.quantity)) {
+        warnBadInput("add.quantity", action.line.quantity);
+        return state;
+      }
+      if (!isFiniteNonNeg(action.line.unitPriceCents)) {
+        warnBadInput("add.unitPriceCents", action.line.unitPriceCents);
+        return state;
+      }
       const existing = state.lines.findIndex((l) => l.id === action.line.id);
       if (existing === -1) {
         return { lines: [...state.lines, action.line] };
@@ -58,7 +65,10 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
     case "remove":
       return { lines: state.lines.filter((l) => l.id !== action.id) };
     case "setQuantity": {
-      if (!isFiniteNonNeg(action.quantity)) return state;
+      if (!isFiniteNonNeg(action.quantity)) {
+        warnBadInput("setQuantity.quantity", action.quantity);
+        return state;
+      }
       if (action.quantity <= 0) {
         return { lines: state.lines.filter((l) => l.id !== action.id) };
       }
@@ -83,6 +93,18 @@ function isFinitePositive(n: number): boolean {
 }
 function isFiniteNonNeg(n: number): boolean {
   return Number.isFinite(n) && n >= 0;
+}
+
+// Dev-only breadcrumb when we drop an action. In production the reducer still
+// silently returns prior state — cart is a hot path and we don't want to
+// spam an error tracker. In dev the warning makes "Add to Cart does nothing"
+// debuggable without attaching a debugger to the reducer.
+function warnBadInput(field: string, value: unknown): void {
+  if (process.env.NODE_ENV !== "production") {
+    console.warn(
+      `[cart-state] ignored action with invalid ${field}: ${String(value)}`,
+    );
+  }
 }
 
 export function cartItemCount(state: CartState): number {
