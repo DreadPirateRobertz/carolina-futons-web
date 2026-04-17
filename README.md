@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Carolina Futons — Headless Frontend
 
-## Getting Started
+Next.js headless frontend for Carolina Futons, powered by the Wix Headless SDK.
 
-First, run the development server:
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS 4 + shadcn/ui
+- **CMS/Backend**: Wix Headless SDK (`@wix/sdk`, `@wix/stores`, `@wix/data`, `@wix/members`)
+- **Testing**: Vitest (unit) + Playwright (e2e)
+- **Hosting**: Vercel
+
+## Local Development
 
 ```bash
+# 1. Clone
+git clone git@github.com:DreadPirateRobertz/carolina-futons-web.git
+cd carolina-futons-web
+
+# 2. Install
+npm install
+
+# 3. Configure environment
+cp .env.example .env.local
+# Fill in WIX_CLIENT_ID and WIX_BACKEND_KEY from Vercel/team secrets
+
+# 4. Run dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Open http://localhost:3000
+
+# 5. Smoke test route
+# Visit http://localhost:3000/smoke to verify Wix SDK connectivity
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Testing
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Unit tests
+npx vitest run
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# E2E tests (requires dev server or builds first)
+npx playwright test
 
-## Learn More
+# Typecheck
+npx tsc --noEmit
 
-To learn more about Next.js, take a look at the following resources:
+# Lint
+npm run lint
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Environment Variables
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Variable | Scope | Description |
+|----------|-------|-------------|
+| `NEXT_PUBLIC_WIX_CLIENT_ID` | Client + Server | Wix Headless OAuth client ID (visitor token) |
+| `WIX_BACKEND_KEY` | Server only | Wix backend API key for elevated operations |
 
-## Deploy on Vercel
+## Project Structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+  app/
+    smoke/page.tsx    # SDK integration smoke test
+    layout.tsx        # Root layout
+    page.tsx          # Homepage (placeholder)
+  components/ui/      # shadcn/ui components
+  lib/
+    wix-client.ts     # Wix SDK client factory
+    utils.ts          # Tailwind merge utilities
+e2e/                  # Playwright e2e tests
+.github/workflows/    # CI pipeline
+```
