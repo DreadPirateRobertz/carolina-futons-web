@@ -29,10 +29,9 @@ async function runCheck(
 export const dynamic = "force-dynamic";
 
 export default async function SmokePage() {
-  const client = getWixClient();
-
   const checks = await Promise.all([
     runCheck("Product query (limit 1)", async () => {
+      const client = getWixClient();
       const result = await client.products
         .queryProducts()
         .limit(1)
@@ -45,6 +44,7 @@ export default async function SmokePage() {
     }),
 
     runCheck("CMS: WelcomeVisitors (limit 1)", async () => {
+      const client = getWixClient();
       const result = await client.items
         .query("WelcomeVisitors")
         .limit(1)
@@ -56,6 +56,7 @@ export default async function SmokePage() {
     }),
 
     runCheck("CMS: Promotions (limit 1)", async () => {
+      const client = getWixClient();
       const result = await client.items
         .query("Promotions")
         .limit(1)
