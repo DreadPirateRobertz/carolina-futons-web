@@ -23,8 +23,17 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
     renderHeader();
     const nav = screen.getByRole("navigation", { name: /primary/i });
     expect(nav).toBeInTheDocument();
-    ["Futons", "Murphy Beds", "Mattresses", "Frames", "Sale"].forEach((label) => {
-      expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
+    const expected = [
+      ["Futons", "/shop/futon-frames"],
+      ["Murphy Beds", "/shop/murphy-cabinet-beds"],
+      ["Platform Beds", "/shop/platform-beds"],
+      ["Mattresses", "/shop/mattresses"],
+      ["Sale", "/shop/mattresses-sale"],
+    ] as const;
+    expected.forEach(([label, href]) => {
+      const link = screen.getByRole("link", { name: label });
+      expect(link).toBeInTheDocument();
+      expect(link).toHaveAttribute("href", href);
     });
   });
 

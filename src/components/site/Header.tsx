@@ -9,11 +9,11 @@ import { AnnouncementBar } from "@/components/site/AnnouncementBar";
 import { CartTrigger } from "@/components/cart/CartTrigger";
 
 const PRIMARY_NAV = [
-  { label: "Futons", href: "/futons" },
-  { label: "Murphy Beds", href: "/murphy-beds" },
-  { label: "Mattresses", href: "/mattresses" },
-  { label: "Frames", href: "/frames" },
-  { label: "Sale", href: "/sale" },
+  { label: "Futons", href: "/shop/futon-frames" },
+  { label: "Murphy Beds", href: "/shop/murphy-cabinet-beds" },
+  { label: "Platform Beds", href: "/shop/platform-beds" },
+  { label: "Mattresses", href: "/shop/mattresses" },
+  { label: "Sale", href: "/shop/mattresses-sale" },
 ] as const;
 
 const SUB_NAV = [
