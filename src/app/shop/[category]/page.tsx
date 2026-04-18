@@ -11,7 +11,7 @@ import { getCollectionPlp, type PlpSort } from "@/lib/wix/plp";
 import { SHOP_CATEGORIES, findCategory } from "@/lib/shop/categories";
 import { ProductCard } from "@/components/product/ProductCard";
 import { PLPControls } from "@/components/plp/PLPControls";
-import { PLPPagination } from "@/components/plp/PLPPagination";
+import { PLPPagination, buildPageUrl } from "@/components/plp/PLPPagination";
 
 export const dynamic = "force-dynamic";
 
@@ -132,6 +132,15 @@ export default async function PlpPage(props: {
 
   const basePath = `/shop/${categorySlug}`;
 
+  // cf-3qt.6.B.1: page=N beyond the last filled page returns items=[] while
+  // page.total > 0 — this is NOT "no matches", the user is over-paginated.
+  // Offer a back-to-page-1 link that preserves sort + filter params.
+  const overPaginated =
+    pageNum > 1 && page.total > 0 && page.items.length === 0;
+  const backToPageOneHref = overPaginated
+    ? buildPageUrl(basePath, searchParams, 1)
+    : undefined;
+
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-10">
       <nav className="text-sm text-zinc-500">
@@ -172,6 +181,13 @@ export default async function PlpPage(props: {
             contact us
           </Link>{" "}
           if the problem persists.
+        </p>
+      ) : overPaginated ? (
+        <p className="mt-10 rounded-md bg-zinc-50 p-6 text-zinc-700">
+          No more products on page {pageNum}.{" "}
+          <Link href={backToPageOneHref!} className="underline">
+            Back to page 1
+          </Link>
         </p>
       ) : page.items.length === 0 ? (
         <p className="mt-10 rounded-md bg-zinc-50 p-6 text-zinc-700">
