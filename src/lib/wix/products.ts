@@ -3,17 +3,46 @@
 // instead of pulling the full Wix client construct into page/route files.
 //
 // Each reader catches SDK failures and returns null/[] so a transient Wix
-// outage renders as an empty PLP / 404 PDP instead of a raw 500. Real errors
-// still hit server logs for debugging.
+// outage renders as an empty PLP / 404 PDP instead of a raw 500. Unexpected
+// errors (programmer bugs, etc.) are still caught to keep the page up, but
+// are flagged as "unexpected" in Sentry so they don't hide inside Wix-outage
+// noise.
+import * as Sentry from "@sentry/nextjs";
 import { getWixClient } from "@/lib/wix-client";
 
+type WixErrorShape = {
+  code?: string;
+  message?: string;
+  details?: { applicationError?: { code?: string; description?: string } };
+  response?: { status?: number };
+};
+
+function isWixSdkError(err: unknown): err is WixErrorShape {
+  if (typeof err !== "object" || err === null) return false;
+  const e = err as Record<string, unknown>;
+  if (typeof e.code === "string") return true;
+  const details = e.details as { applicationError?: unknown } | undefined;
+  if (details?.applicationError && typeof details.applicationError === "object")
+    return true;
+  const response = e.response as { status?: unknown } | undefined;
+  if (typeof response?.status === "number") return true;
+  return false;
+}
+
 function logWixFailure(op: string, err: unknown) {
-  const code =
-    typeof err === "object" && err !== null && "code" in err
-      ? (err as { code?: unknown }).code
-      : undefined;
+  const wix = isWixSdkError(err) ? err : null;
+  const code = wix?.code ?? wix?.details?.applicationError?.code;
+  const httpStatus = wix?.response?.status;
   const message = err instanceof Error ? err.message : String(err);
-  console.error(`[wix] ${op} failed`, { code, message });
+  const kind = wix ? "wix-sdk" : "unexpected";
+
+  console.error(`[wix] ${op} failed`, { kind, code, httpStatus, message });
+
+  Sentry.captureException(err, {
+    level: wix ? "warning" : "error",
+    tags: { source: "wix", op, kind },
+    extra: { code, httpStatus, message },
+  });
 }
 
 export async function listProducts(limit = 24) {
