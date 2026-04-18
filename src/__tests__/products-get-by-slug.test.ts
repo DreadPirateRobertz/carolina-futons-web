@@ -27,7 +27,7 @@ const FULL_PRODUCT = {
   ],
 };
 
-function makeClient(overrides: { getProduct?: () => Promise<unknown> } = {}) {
+function makeClient(overrides: { getProduct?: (_id: string) => Promise<unknown> } = {}) {
   return {
     products: {
       queryProducts: () => ({
