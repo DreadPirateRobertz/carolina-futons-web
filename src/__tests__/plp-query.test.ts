@@ -188,7 +188,10 @@ describe("listPlpProducts — pagination", () => {
     expect(chain.hasSome).toHaveBeenCalledWith("collectionIds", ["col-abc"]);
   });
 
-  it("returns empty page on SDK failure (does not throw)", async () => {
+  it("on SDK failure returns error-tagged empty page AND reports to Sentry", async () => {
+    // Plain Error (no Wix shape) → "unexpected" tag. This is the observable
+    // distinguisher between "Wix outage" (UI shows try-again) and "catalog
+    // empty" (UI shows empty-state copy).
     const client = {
       products: {
         queryProducts: () => ({
@@ -208,6 +211,48 @@ describe("listPlpProducts — pagination", () => {
     expect(page.total).toBe(0);
     expect(page.hasNext).toBe(false);
     expect(page.hasPrev).toBe(false);
+    // Visible error signal — caller MUST branch on this before rendering
+    // the "No products" empty-state copy.
+    expect(page.error).toBe("unexpected");
+    // Sentry must have received the exception + flushed (serverless).
+    expect(sentryMock.captureException).toHaveBeenCalledTimes(1);
+    expect(sentryMock.flush).toHaveBeenCalled();
+  });
+
+  it("tags error as 'wix_sdk' when the thrown error matches Wix SDK shape", async () => {
+    // Wix SDK throws errors with either { code } or { details.applicationError }
+    // or { response.status }. Any one should trigger the wix_sdk tag.
+    const wixLikeError = Object.assign(new Error("Unauthorized"), {
+      code: "UNAUTHENTICATED",
+      response: { status: 401 },
+    });
+    const client = {
+      products: {
+        queryProducts: () => ({
+          hasSome: () => ({
+            limit: () => ({ find: async () => { throw wixLikeError; } }),
+          }),
+        }),
+      },
+    };
+    vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => client }));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { listPlpProducts } = await import("@/lib/wix/plp");
+    const page = await listPlpProducts("col-1");
+
+    expect(page.error).toBe("wix_sdk");
+    expect(sentryMock.captureException).toHaveBeenCalledWith(wixLikeError, expect.any(Object));
+  });
+
+  it("success path does NOT set error field", async () => {
+    const { client } = mockWixClient([p("a", "A", { basePrice: 100 })]);
+    vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => client }));
+
+    const { listPlpProducts } = await import("@/lib/wix/plp");
+    const page = await listPlpProducts("col-1");
+
+    expect(page.error).toBeUndefined();
   });
 });
 
@@ -423,11 +468,12 @@ describe("queryAllProductsByCollection — multi-page pagination", () => {
     vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => client }));
 
     const { queryAllProductsByCollection } = await import("@/lib/wix/plp");
-    const all = await queryAllProductsByCollection("col");
+    const scan = await queryAllProductsByCollection("col");
 
-    expect(all).toHaveLength(250);
-    expect(all[0]?._id).toBe("id-0");
-    expect(all[249]?._id).toBe("id-249");
+    expect(scan.error).toBeUndefined();
+    expect(scan.items).toHaveLength(250);
+    expect(scan.items[0]?._id).toBe("id-0");
+    expect(scan.items[249]?._id).toBe("id-249");
   });
 
   it("stops at scanLimit when catalog exceeds it", async () => {
@@ -438,8 +484,92 @@ describe("queryAllProductsByCollection — multi-page pagination", () => {
     vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => client }));
 
     const { queryAllProductsByCollection } = await import("@/lib/wix/plp");
-    const all = await queryAllProductsByCollection("col", { scanLimit: 200 });
+    const scan = await queryAllProductsByCollection("col", { scanLimit: 200 });
 
-    expect(all).toHaveLength(200);
+    expect(scan.items).toHaveLength(200);
+    expect(scan.error).toBeUndefined();
+  });
+});
+
+describe("applySort — exhaustive + unknown-sort throw", () => {
+  it("throws rather than silently returning input on unknown sort", async () => {
+    const { __TEST__ } = await import("@/lib/wix/plp");
+    const items = [p("a", "A"), p("b", "B")] as unknown as Parameters<typeof __TEST__.applySort>[0];
+    // Runtime cast simulates a URL param that bypassed parseSearchParams's
+    // allowlist — the reader must fail loudly rather than render default-sort
+    // results under a nonsense URL like ?sort=foo.
+    expect(() =>
+      __TEST__.applySort(items, "not-a-real-sort" as unknown as Parameters<typeof __TEST__.applySort>[1]),
+    ).toThrow(/Unknown PlpSort/);
+  });
+
+  it("all declared sort values still work (guard against accidental case removal)", async () => {
+    const { __TEST__ } = await import("@/lib/wix/plp");
+    const items = [
+      p("a", "Alpha", { basePrice: 300, lastUpdated: "2026-03-01T00:00:00Z" }),
+      p("b", "Bravo", { basePrice: 100, lastUpdated: "2026-01-01T00:00:00Z" }),
+    ] as unknown as Parameters<typeof __TEST__.applySort>[0];
+    for (const sort of ["featured", "price-asc", "price-desc", "name-asc", "name-desc", "newest"] as const) {
+      expect(() => __TEST__.applySort(items, sort)).not.toThrow();
+    }
+  });
+});
+
+describe("applyFilters — input validation", () => {
+  const items = [p("a", "A", { basePrice: 100 })] as unknown as Parameters<
+    (typeof import("@/lib/wix/plp"))["__TEST__"]["applyFilters"]
+  >[0];
+
+  it("throws on NaN priceMin (caller leaked Number('abc'))", async () => {
+    const { __TEST__ } = await import("@/lib/wix/plp");
+    expect(() => __TEST__.applyFilters(items, { priceMin: Number.NaN })).toThrow(/finite/);
+  });
+
+  it("throws on negative priceMin", async () => {
+    const { __TEST__ } = await import("@/lib/wix/plp");
+    expect(() => __TEST__.applyFilters(items, { priceMin: -1 })).toThrow(/non-negative/);
+  });
+
+  it("throws on priceMin > priceMax (inverted range)", async () => {
+    const { __TEST__ } = await import("@/lib/wix/plp");
+    expect(() => __TEST__.applyFilters(items, { priceMin: 500, priceMax: 100 })).toThrow(/<=/);
+  });
+
+  it("throws on non-boolean inStockOnly", async () => {
+    const { __TEST__ } = await import("@/lib/wix/plp");
+    expect(() =>
+      __TEST__.applyFilters(items, { inStockOnly: "true" as unknown as boolean }),
+    ).toThrow(/boolean/);
+  });
+
+  it("accepts valid filters without throwing", async () => {
+    const { __TEST__ } = await import("@/lib/wix/plp");
+    expect(() => __TEST__.applyFilters(items, { priceMin: 0, priceMax: 1000, inStockOnly: true })).not.toThrow();
+  });
+});
+
+describe("getCollectionPlp — error propagation", () => {
+  it("surfaces scan error on both page and top-level result", async () => {
+    const client = {
+      products: {
+        queryProducts: () => ({
+          hasSome: () => ({
+            limit: () => ({ find: async () => { throw new Error("wix down"); } }),
+          }),
+        }),
+      },
+    };
+    vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => client }));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { getCollectionPlp } = await import("@/lib/wix/plp");
+    const result = await getCollectionPlp("col-1");
+
+    expect(result.error).toBe("unexpected");
+    expect(result.page.error).toBe("unexpected");
+    expect(result.page.items).toEqual([]);
+    // Facets are still structurally sound (empty counts) — callers can use
+    // page.error to choose between "Wix outage" UI and empty-state UI.
+    expect(result.facets.total).toBe(0);
   });
 });

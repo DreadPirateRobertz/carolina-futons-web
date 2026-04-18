@@ -38,6 +38,12 @@ export type PlpFilters = {
   inStockOnly?: boolean;
 };
 
+// "wix_sdk" = a request reached Wix and Wix rejected it (shape match on code/applicationError/response.status).
+// "unexpected" = anything else (network error, client misconfig, programming bug in the chain).
+// Kept as two values only so the UI can render one copy ("we're having trouble")
+// without branching; callers that want to distinguish can do so from the tag alone.
+export type PlpReaderError = "wix_sdk" | "unexpected";
+
 export type PlpPage<T> = {
   items: T[];
   total: number;
@@ -45,6 +51,19 @@ export type PlpPage<T> = {
   pageSize: number;
   hasNext: boolean;
   hasPrev: boolean;
+  // Present iff the upstream collection scan failed. Callers MUST check this
+  // before rendering the standard empty-state: an errored page with items=[] is
+  // NOT the same as a genuinely empty collection (cf-3qt.6.B silent-failure
+  // review — "No products found" on a Wix outage is a bounce trap).
+  error?: PlpReaderError;
+};
+
+// Return shape for the low-level collection scan. Callers must read `items`
+// and also check `error`: when `error` is set, `items` is always `[]` and the
+// caller must surface an error UI rather than the empty-collection copy.
+export type PlpScanResult = {
+  items: WixProduct[];
+  error?: PlpReaderError;
 };
 
 export type PriceBucketSpec = {
@@ -151,14 +170,18 @@ function effectivePrice(product: PricedProduct): number {
 
 /**
  * Fetches all products in a collection up to `scanLimit`, walking SDK pages
- * via `.next()` when needed. Returns [] on any SDK failure (Sentry-logged).
+ * via `.next()` when needed.
+ *
+ * On failure returns `{ items: [], error }` — callers MUST check `error` to
+ * distinguish "scan failed" from "collection genuinely empty" (silent-failure
+ * review cf-3qt.6.B). The caller is responsible for surfacing a distinct UI.
  */
 export async function queryAllProductsByCollection(
   collectionId: string,
   opts: { scanLimit?: number } = {},
-): Promise<WixProduct[]> {
+): Promise<PlpScanResult> {
   const scanLimit = opts.scanLimit ?? DEFAULT_SCAN_LIMIT;
-  if (scanLimit <= 0) return [];
+  if (scanLimit <= 0) return { items: [] };
   try {
     const client = getWixClient();
     const pageSize = Math.min(SDK_MAX_PAGE, scanLimit);
@@ -175,23 +198,51 @@ export async function queryAllProductsByCollection(
         collected.push(item);
       }
     }
-    return collected.slice(0, scanLimit);
+    return { items: collected.slice(0, scanLimit) };
   } catch (err) {
     await logPlpFailure(
       `queryAllProductsByCollection(${collectionId})`,
       err,
     );
-    return [];
+    return {
+      items: [],
+      error: isWixSdkError(err) ? "wix_sdk" : "unexpected",
+    };
   }
 }
 
 // ── Sort + filter pipeline ──────────────────────────────────────────────────
+
+// Throws on invalid filter inputs rather than silently dropping them — a
+// NaN/negative/inverted price range reaching this function means the caller
+// (URL parser, form handler) didn't sanitize, and silently rendering "0 products"
+// hides that bug. Programmer contract: sanitize at the boundary.
+function validateFilters(filters: PlpFilters): void {
+  const { priceMin, priceMax, inStockOnly } = filters;
+  if (priceMin !== undefined) {
+    if (typeof priceMin !== "number" || !Number.isFinite(priceMin) || priceMin < 0) {
+      throw new Error(`PlpFilters.priceMin must be a finite non-negative number, got: ${priceMin}`);
+    }
+  }
+  if (priceMax !== undefined) {
+    if (typeof priceMax !== "number" || !Number.isFinite(priceMax) || priceMax < 0) {
+      throw new Error(`PlpFilters.priceMax must be a finite non-negative number, got: ${priceMax}`);
+    }
+  }
+  if (priceMin !== undefined && priceMax !== undefined && priceMin > priceMax) {
+    throw new Error(`PlpFilters.priceMin (${priceMin}) must be <= priceMax (${priceMax})`);
+  }
+  if (inStockOnly !== undefined && typeof inStockOnly !== "boolean") {
+    throw new Error(`PlpFilters.inStockOnly must be boolean if provided, got: ${typeof inStockOnly}`);
+  }
+}
 
 function applyFilters(
   items: WixProduct[],
   filters: PlpFilters | undefined,
 ): WixProduct[] {
   if (!filters) return items;
+  validateFilters(filters);
   const { priceMin, priceMax, inStockOnly } = filters;
   return items.filter((item) => {
     if (inStockOnly && item.stock?.inStock === false) return false;
@@ -204,39 +255,47 @@ function applyFilters(
   });
 }
 
+// Exhaustive over PlpSort — the `never` check forces a compile error if a new
+// variant is added without a case, and the runtime throw catches callers who
+// cast past the type (e.g., a URL param that bypasses parseSearchParams).
+// Silent fallthrough would render default-sorted "No products" on unknown URLs.
 function applySort(items: WixProduct[], sort: PlpSort): WixProduct[] {
-  if (sort === "featured") return items;
   const sorted = [...items];
   switch (sort) {
+    case "featured":
+      return items;
     case "price-asc":
       sorted.sort((a, b) => effectivePrice(a) - effectivePrice(b));
-      break;
+      return sorted;
     case "price-desc":
       sorted.sort((a, b) => effectivePrice(b) - effectivePrice(a));
-      break;
+      return sorted;
     case "name-asc":
       sorted.sort((a, b) =>
         (a.name ?? "").localeCompare(b.name ?? "", undefined, {
           sensitivity: "base",
         }),
       );
-      break;
+      return sorted;
     case "name-desc":
       sorted.sort((a, b) =>
         (b.name ?? "").localeCompare(a.name ?? "", undefined, {
           sensitivity: "base",
         }),
       );
-      break;
+      return sorted;
     case "newest":
       sorted.sort((a, b) => {
         const at = a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0;
         const bt = b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0;
         return bt - at;
       });
-      break;
+      return sorted;
+    default: {
+      const exhaustive: never = sort;
+      throw new Error(`Unknown PlpSort: ${String(exhaustive)}`);
+    }
   }
-  return sorted;
 }
 
 // ── Public: paginated PLP reader ────────────────────────────────────────────
@@ -248,10 +307,10 @@ export async function listPlpProducts(
   const page = Math.max(1, opts.page ?? 1);
   const pageSize = Math.max(1, opts.pageSize ?? 24);
   const sort: PlpSort = opts.sort ?? "featured";
-  const all = await queryAllProductsByCollection(collectionId, {
+  const scan = await queryAllProductsByCollection(collectionId, {
     scanLimit: opts.scanLimit,
   });
-  const filtered = applyFilters(all, opts.filters);
+  const filtered = applyFilters(scan.items, opts.filters);
   const sorted = applySort(filtered, sort);
   const total = sorted.length;
   const start = (page - 1) * pageSize;
@@ -263,6 +322,7 @@ export async function listPlpProducts(
     pageSize,
     hasNext: start + slice.length < total,
     hasPrev: start > 0,
+    ...(scan.error ? { error: scan.error } : {}),
   };
 }
 
@@ -305,12 +365,12 @@ export function computeFacets(
 export async function getCollectionPlp(
   collectionId: string,
   opts: ListPlpOptions & { priceBuckets?: PriceBucketSpec[] } = {},
-): Promise<{ page: PlpPage<WixProduct>; facets: FacetCounts }> {
-  const all = await queryAllProductsByCollection(collectionId, {
+): Promise<{ page: PlpPage<WixProduct>; facets: FacetCounts; error?: PlpReaderError }> {
+  const scan = await queryAllProductsByCollection(collectionId, {
     scanLimit: opts.scanLimit,
   });
-  const facets = computeFacets(all, { priceBuckets: opts.priceBuckets });
-  const filtered = applyFilters(all, opts.filters);
+  const facets = computeFacets(scan.items, { priceBuckets: opts.priceBuckets });
+  const filtered = applyFilters(scan.items, opts.filters);
   const sorted = applySort(filtered, opts.sort ?? "featured");
   const pageNum = Math.max(1, opts.page ?? 1);
   const pageSize = Math.max(1, opts.pageSize ?? 24);
@@ -324,8 +384,10 @@ export async function getCollectionPlp(
       pageSize,
       hasNext: start + slice.length < sorted.length,
       hasPrev: start > 0,
+      ...(scan.error ? { error: scan.error } : {}),
     },
     facets,
+    ...(scan.error ? { error: scan.error } : {}),
   };
 }
 
