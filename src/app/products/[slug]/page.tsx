@@ -9,6 +9,7 @@ import { PdpCrossSell } from "@/components/product/PdpCrossSell";
 import { PdpRecentlyViewed } from "@/components/product/PdpRecentlyViewed";
 import { PdpShareButtons } from "@/components/product/PdpShareButtons";
 import { getProductBySlug } from "@/lib/wix/products";
+import { logWixFailure } from "@/lib/wix/errors";
 import { formatPlpPrice } from "@/lib/product/plp-price";
 import { getCrossSellProducts } from "@/lib/product/cross-sell";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -28,21 +29,37 @@ export const dynamic = "force-dynamic"; // Phase 2: per-request until facets + c
 export async function generateMetadata(props: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const { slug } = await props.params;
-  const product = await getProductBySlug(slug);
-  if (!product) return { title: "Product — Carolina Futons" };
-  const description = stripHtml(product.description ?? "").slice(0, 160);
-  const mainImageUrl = product.media?.mainMedia?.image?.url;
-  const ogImage = mainImageUrl ? { url: mainImageUrl } : DEFAULT_OG_IMAGE;
-  return {
-    title: `${product.name} — Carolina Futons`,
-    description,
-    openGraph: {
+  try {
+    const { slug } = await props.params;
+    const product = await getProductBySlug(slug);
+    if (!product) return { title: "Product — Carolina Futons" };
+    // OG description max 160 chars — crawlers truncate beyond that anyway.
+    const description = stripHtml(product.description ?? "").slice(0, 160);
+    const mainImageUrl = product.media?.mainMedia?.image?.url;
+    // Wix occasionally returns wix:image:// or other non-HTTPS URIs for products
+    // whose media upload is still processing — those are invalid as OG images and
+    // social crawlers silently discard them. Fall back to the default hero image.
+    const isUsableUrl = (url: string) => url.startsWith("https://");
+    if (mainImageUrl && !isUsableUrl(mainImageUrl)) {
+      console.error(`[PDP] non-HTTPS product image URL for slug "${slug}":`, mainImageUrl);
+    }
+    const ogImage =
+      mainImageUrl && isUsableUrl(mainImageUrl)
+        ? { url: mainImageUrl, alt: product.name ?? undefined }
+        : DEFAULT_OG_IMAGE;
+    return {
       title: `${product.name} — Carolina Futons`,
       description,
-      images: [ogImage],
-    },
-  };
+      openGraph: {
+        title: `${product.name} — Carolina Futons`,
+        description,
+        images: [ogImage],
+      },
+    };
+  } catch (err) {
+    await logWixFailure("pdp-generateMetadata", "params or product fetch", err);
+    return { title: "Product — Carolina Futons" };
+  }
 }
 
 export default async function PdpPage(props: {

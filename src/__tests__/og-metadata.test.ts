@@ -55,6 +55,8 @@ const mockFindCategory = vi.mocked(findCategory);
 const mockGetProductBySlug = vi.mocked(getProductBySlug);
 
 // Helper: extract URL strings from a Next.js OGImage[] field.
+// Handles both string-shorthand and object form; ignores URL-object variant
+// (not produced by this codebase).
 function ogImageUrls(images: unknown): string[] {
   if (!Array.isArray(images)) return [];
   return images.map((img) => (typeof img === "string" ? img : (img as { url: string }).url));
@@ -63,14 +65,14 @@ function ogImageUrls(images: unknown): string[] {
 // ── DEFAULT_OG_IMAGE constant ──────────────────────────────────────────────
 
 describe("DEFAULT_OG_IMAGE", () => {
-  it("points to the first HERO_SLIDES Wix CDN URL", () => {
-    expect(DEFAULT_OG_IMAGE.url).toContain("static.wixstatic.com");
-    expect(DEFAULT_OG_IMAGE.url).toContain("e04e89_72d82110638045c39e0f6274363c15f8");
+  it("is a Wix CDN HTTPS URL", () => {
+    expect(DEFAULT_OG_IMAGE.url).toMatch(/^https:\/\/static\.wixstatic\.com\//);
   });
 
-  it("has 1920×1080 dimensions", () => {
+  it("has 1920×1080 dimensions matching the CDN transform params in the URL", () => {
     expect(DEFAULT_OG_IMAGE.width).toBe(1920);
     expect(DEFAULT_OG_IMAGE.height).toBe(1080);
+    expect(DEFAULT_OG_IMAGE.url).toContain("w_1920,h_1080");
   });
 
   it("has descriptive alt text", () => {
@@ -101,17 +103,21 @@ describe("Root layout metadata", () => {
     const urls = ogImageUrls(layoutMetadata.openGraph?.images);
     expect(urls).toContain(DEFAULT_OG_IMAGE.url);
   });
+
+  it("has metadataBase set to an https URL", () => {
+    expect(layoutMetadata.metadataBase?.protocol).toBe("https:");
+  });
 });
 
 // ── Shop PLP metadata ──────────────────────────────────────────────────────
 
 describe("Shop PLP metadata", () => {
-  it("has openGraph.title", () => {
-    expect(shopMetadata.openGraph?.title).toBeTruthy();
+  it("has openGraph.title = 'Shop — Carolina Futons'", () => {
+    expect(shopMetadata.openGraph?.title).toBe("Shop — Carolina Futons");
   });
 
-  it("has openGraph.description", () => {
-    expect(shopMetadata.openGraph?.description).toBeTruthy();
+  it("has openGraph.description matching the page description", () => {
+    expect(shopMetadata.openGraph?.description).toBe(shopMetadata.description);
   });
 
   it("has openGraph.images with at least one entry", () => {
@@ -131,10 +137,6 @@ describe("Shop category generateMetadata", () => {
     image: "https://static.wixstatic.com/media/category-futon-frames.jpg",
   };
 
-  beforeEach(() => {
-    mockFindCategory.mockReturnValue(category as Parameters<typeof mockFindCategory>[0] extends string ? ReturnType<typeof mockFindCategory> : never);
-  });
-
   it("returns OG title containing category name", async () => {
     mockFindCategory.mockReturnValue(category as never);
     const meta = await categoryGenerateMeta({ params: Promise.resolve({ category: "futon-frames" }) });
@@ -153,16 +155,24 @@ describe("Shop category generateMetadata", () => {
     expect(ogImageUrls(meta.openGraph?.images)).toContain(category.image);
   });
 
+  it("includes width+height on the category OG image object", async () => {
+    mockFindCategory.mockReturnValue(category as never);
+    const meta = await categoryGenerateMeta({ params: Promise.resolve({ category: "futon-frames" }) });
+    const img = (meta.openGraph?.images as { url: string; width?: number; height?: number }[])?.[0];
+    expect(img?.width).toBe(600);
+    expect(img?.height).toBe(400);
+  });
+
   it("falls back to DEFAULT_OG_IMAGE when category has no image", async () => {
     mockFindCategory.mockReturnValue({ ...category, image: undefined } as never);
     const meta = await categoryGenerateMeta({ params: Promise.resolve({ category: "futon-frames" }) });
     expect(ogImageUrls(meta.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
   });
 
-  it("returns a title when category is not found", async () => {
+  it("returns fallback title 'Shop — Carolina Futons' when category is not found", async () => {
     mockFindCategory.mockReturnValue(undefined);
     const meta = await categoryGenerateMeta({ params: Promise.resolve({ category: "unknown" }) });
-    expect(typeof meta.title === "string" || meta.title != null).toBe(true);
+    expect(meta.title).toBe("Shop — Carolina Futons");
   });
 });
 
@@ -195,6 +205,13 @@ describe("PDP generateMetadata", () => {
     expect(meta.openGraph?.description).not.toContain("<p>");
   });
 
+  it("truncates OG description to 160 chars", async () => {
+    const longDesc = "A".repeat(200);
+    mockGetProductBySlug.mockResolvedValue({ ...product, description: longDesc } as never);
+    const meta = await pdpGenerateMeta({ params: Promise.resolve({ slug: "monterey-futon" }) });
+    expect((meta.openGraph?.description ?? "").length).toBeLessThanOrEqual(160);
+  });
+
   it("returns OG image from product.media.mainMedia.image.url", async () => {
     const meta = await pdpGenerateMeta({ params: Promise.resolve({ slug: "monterey-futon" }) });
     expect(ogImageUrls(meta.openGraph?.images)).toContain(
@@ -208,9 +225,27 @@ describe("PDP generateMetadata", () => {
     expect(ogImageUrls(meta.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
   });
 
-  it("returns a title when product is not found", async () => {
+  it("falls back to DEFAULT_OG_IMAGE when mainMedia is null", async () => {
+    mockGetProductBySlug.mockResolvedValue({ ...product, media: { mainMedia: null } } as never);
+    const meta = await pdpGenerateMeta({ params: Promise.resolve({ slug: "monterey-futon" }) });
+    expect(ogImageUrls(meta.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+
+  it("falls back to DEFAULT_OG_IMAGE for non-HTTPS image URL", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockGetProductBySlug.mockResolvedValue({
+      ...product,
+      media: { mainMedia: { image: { url: "wix:image://v1/abc.jpg" } } },
+    } as never);
+    const meta = await pdpGenerateMeta({ params: Promise.resolve({ slug: "monterey-futon" }) });
+    expect(ogImageUrls(meta.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining("non-HTTPS"), expect.any(String));
+    errSpy.mockRestore();
+  });
+
+  it("returns fallback title 'Product — Carolina Futons' when product is not found", async () => {
     mockGetProductBySlug.mockResolvedValue(null);
     const meta = await pdpGenerateMeta({ params: Promise.resolve({ slug: "not-a-product" }) });
-    expect(typeof meta.title === "string" || meta.title != null).toBe(true);
+    expect(meta.title).toBe("Product — Carolina Futons");
   });
 });

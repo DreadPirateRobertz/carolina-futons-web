@@ -36,9 +36,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  // metadataBase resolves relative URLs in metadata (canonical, alternates).
+  // Absolute CDN URLs in og:image are unaffected but this prevents Next.js
+  // warnings in dev and ensures any future relative paths resolve correctly.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://carolinafutons.com"),
   title: "Carolina Futons — American-made futons, Murphy beds, and mattresses",
   description:
     "Family-owned Hendersonville, NC retailer of American-made futons, Murphy cabinet beds, and platform beds since 1991.",
+  // Pre-launch: keep noindex until canonical domain + redirects are wired up.
   robots: { index: false, follow: false },
   openGraph: {
     siteName: "Carolina Futons",
