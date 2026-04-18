@@ -26,12 +26,17 @@ export async function listProducts(limit = 24) {
 export async function getProductBySlug(slug: string) {
   try {
     const client = getWixClient();
+    // queryProducts omits productOptions from the response payload; re-fetch
+    // via getProduct so the PDP variant picker receives the option definitions.
     const result = await client.products
       .queryProducts()
       .eq("slug", slug)
       .limit(1)
       .find();
-    return result.items[0] ?? null;
+    const stub = result.items[0] ?? null;
+    if (!stub?._id) return stub;
+    const full = await client.products.getProduct(stub._id);
+    return full.product ?? null;
   } catch (err) {
     await logWixFailure("wix", `getProductBySlug(${slug})`, err);
     return null;
