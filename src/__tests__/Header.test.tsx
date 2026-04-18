@@ -21,8 +21,10 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
 
   it("renders the primary nav with shop destinations", () => {
     renderHeader();
-    const nav = screen.getByRole("navigation", { name: /primary/i });
-    expect(nav).toBeInTheDocument();
+    // Two "Primary" navs exist: desktop (hidden md:flex) + mobile drawer
+    const navs = screen.getAllByRole("navigation", { name: /primary/i });
+    expect(navs.length).toBeGreaterThanOrEqual(1);
+    const nav = navs[0];
     const expected = [
       ["Futons", "/shop/futon-frames"],
       ["Murphy Beds", "/shop/murphy-cabinet-beds"],
@@ -31,9 +33,10 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
       ["Sale", "/shop/mattresses-sale"],
     ] as const;
     expected.forEach(([label, href]) => {
-      const link = screen.getByRole("link", { name: label });
-      expect(link).toBeInTheDocument();
-      expect(link).toHaveAttribute("href", href);
+      // Use getAllByRole because links exist in both desktop nav and mobile drawer
+      const links = screen.getAllByRole("link", { name: label });
+      expect(links.length).toBeGreaterThanOrEqual(1);
+      expect(links[0]).toHaveAttribute("href", href);
     });
   });
 
