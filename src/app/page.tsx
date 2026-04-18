@@ -10,6 +10,7 @@ import { TestimonialsStrip } from "@/components/site/TestimonialsStrip";
 import { TrustBar } from "@/components/site/TrustBar";
 import { CategoryCardImage } from "@/components/site/CategoryCardImage";
 import { HeroParallax } from "@/components/site/HeroParallax";
+import { EmailCapturePopup } from "@/components/site/EmailCapturePopup";
 
 // Per-card onset delay for the Shop-by-category cascade. 80ms is at the
 // just-noticeable-difference threshold for sequential visual onset (enough
@@ -39,6 +40,7 @@ export default async function HomePage() {
   const featured = await listFeaturedProducts();
   return (
     <>
+      <EmailCapturePopup />
       <section className="bg-cf-cream">
         <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 md:items-center md:py-24 lg:px-8">
           <div>
