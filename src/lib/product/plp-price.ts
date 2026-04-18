@@ -45,7 +45,13 @@ export function formatPlpPrice(product: PlpPricedProduct): string {
     return `${formatCurrency(min, currency)} – ${formatCurrency(max, currency)}`;
   }
 
-  if (basePrice === null || basePrice === 0) return "";
+  // Suppress the $0.00 placeholder emitted for manageVariants products with no
+  // usable priceRange — the catalog is mid-migration and a "$0.00" tile misleads
+  // shoppers. A null/undefined basePrice means the product lacks numeric pricing
+  // entirely (test fixtures, partial Wix payloads); in that case honor whatever
+  // formatted string exists rather than blanking the tile.
+  if (basePrice === 0) return "";
+  if (basePrice === null) return baseFormatted;
   return baseFormatted || formatCurrency(basePrice, currency);
 }
 

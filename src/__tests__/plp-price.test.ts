@@ -140,6 +140,17 @@ describe("formatPlpPrice", () => {
     ).toBe("");
   });
 
+  it("honors formatted string when numeric price is absent (partial catalog payload)", () => {
+    // Partial Wix payload / test fixture: formatted is populated but numeric
+    // price is absent. Distinct from manageVariants price===0 — here we don't
+    // know it's a $0 placeholder, so trust the formatted string.
+    expect(
+      formatPlpPrice({
+        priceData: { formatted: { price: "$199" } },
+      }),
+    ).toBe("$199");
+  });
+
   it("falls back to formatCurrency when price is set but formatted is null", () => {
     // Wix should always populate formatted, but if it doesn't, don't silently
     // drop a real price — format it from the numeric value.
