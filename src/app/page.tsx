@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SHOP_CATEGORIES } from "@/lib/shop/categories";
 import { HeroReveal } from "@/components/motion/HeroReveal";
+import { HeroWordStagger } from "@/components/motion/HeroWordStagger";
 import { HeroCarousel, type HeroSlide } from "@/components/site/HeroCarousel";
 import { FeaturedProducts } from "@/components/site/FeaturedProducts";
 import { listFeaturedProducts } from "@/lib/shop/featured";
@@ -43,11 +44,9 @@ export default async function HomePage() {
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-cf-cta">
               Family owned since 1991
             </p>
-            <HeroReveal>
-              <h1 className="mt-4 font-heading text-4xl font-bold uppercase leading-[1.05] tracking-tight text-cf-navy sm:text-5xl md:text-6xl">
-                Quality futons &amp; furniture for your home
-              </h1>
-            </HeroReveal>
+            <h1 className="mt-4 font-heading text-4xl font-bold uppercase leading-[1.05] tracking-tight text-cf-navy sm:text-5xl md:text-6xl">
+              <HeroWordStagger text="Quality futons & furniture for your home" />
+            </h1>
             <HeroReveal delay={0.15}>
               <p className="mt-5 max-w-xl text-lg text-cf-charcoal/80">
                 Hendersonville, NC. Hardwood frames built by hand, mattresses
