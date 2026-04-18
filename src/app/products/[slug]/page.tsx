@@ -8,6 +8,7 @@ import { PdpCrossSell } from "@/components/product/PdpCrossSell";
 import { getProductBySlug } from "@/lib/wix/products";
 import { formatPlpPrice } from "@/lib/product/plp-price";
 import { getCrossSellProducts } from "@/lib/product/cross-sell";
+import type { StockBadgeInput } from "@/lib/product/stock-badge-state";
 import type {
   ProductOptionInput,
   VariantInput,
@@ -43,6 +44,7 @@ export default async function PdpPage(props: {
   const productOptions = (product.productOptions ?? []) as ProductOptionInput[];
   const variants = (product.variants ?? []) as VariantInput[];
   const galleryImages = buildGallery(product);
+  const stock = (product.stock ?? null) as StockBadgeInput | null;
   const crossSell = await getCrossSellProducts(product);
 
   return (
@@ -66,6 +68,7 @@ export default async function PdpPage(props: {
           fallbackPrice={fallbackPrice}
           fallbackPriceCents={fallbackPriceCents}
           galleryImages={galleryImages}
+          stock={stock}
         />
       </div>
 
