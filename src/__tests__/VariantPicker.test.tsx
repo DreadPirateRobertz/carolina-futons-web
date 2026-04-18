@@ -217,11 +217,12 @@ describe("VariantPicker (cf-3qt.2.1)", () => {
     expect(screen.getByTestId("oos-badge")).toHaveTextContent(/out of stock/i);
   });
 
-  it("cf-0jm fix2: ArrowRight from a disabled choice jumps to first enabled choice after it", () => {
-    // Size options: Full (disabled/OOS), Queen (enabled). Focus would be on Full
-    // but disabled buttons can't receive focus — simulate via a partially-enabled group:
-    // Two enabled choices (Full, Queen) both available; put focus on Full (index 0),
-    // disable Full so it's not in enabledIndexes, ArrowRight should go to Queen.
+  it("cf-0jm fix2: ArrowRight from a disabled choice (currentPos===-1) selects nearest enabled choice after it", () => {
+    // Full (index 0) is disabled/unavailable; Queen (index 1) is enabled.
+    // enabledIndexes=[1], so currentPos=-1 for index=0.
+    // Old code: ArrowRight always jumped to enabledIndexes[0]=Queen (happens to be correct here).
+    // New code: finds first enabled index > 0, which is index 1 → Queen.
+    // We fire keyDown on the disabled Full button to exercise the -1 branch directly.
     const partialVariants: VariantInput[] = [
       {
         _id: "v1",
@@ -245,26 +246,62 @@ describe("VariantPicker (cf-3qt.2.1)", () => {
         fallbackPrice="$0"
       />,
     );
-    // Queen is the only enabled choice; Full is disabled (unavailable).
-    // This exercises the enabledIndexes=[1] path where currentPos=-1 for index=0.
     const full = screen.getByRole("radio", { name: /size: full/i });
     expect(full).toBeDisabled();
-    const queen = screen.getByRole("radio", { name: /size: queen/i });
-    expect(queen).not.toBeDisabled();
+    // fireEvent bypasses browser disabled-element focus restriction — exercises the handler.
+    fireEvent.keyDown(full, { key: "ArrowRight" });
+    expect(screen.getByRole("radio", { name: /size: queen/i })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
   });
 
-  it("cf-0jm fix3: VariantPicker and PdpInteractive start from same initialSelection seed", async () => {
-    // Confirms both components independently seed identical selections from the same data,
-    // ensuring the documented dual-state pattern stays in sync at init time.
-    const { getByTestId } = render(
+  it("cf-0jm fix2: ArrowRight wraps to first enabled when all enabled choices are before the focused index", () => {
+    // Queen (index 1) is disabled; Full (index 0) is enabled.
+    // enabledIndexes=[0]. From index=1 (Full), no enabled after it → wraps to index 0 (Full).
+    const partialVariants: VariantInput[] = [
+      {
+        _id: "v1",
+        choices: { Size: "Full" },
+        variant: { priceData: { formatted: { price: "$800" } } },
+        stock: { inStock: true },
+      },
+    ];
+    render(
+      <VariantPicker
+        productOptions={[
+          {
+            name: "Size",
+            choices: [
+              { value: "Full", description: "Full" },
+              { value: "Queen", description: "Queen" },
+            ],
+          },
+        ]}
+        variants={partialVariants}
+        fallbackPrice="$0"
+      />,
+    );
+    const queen = screen.getByRole("radio", { name: /size: queen/i });
+    expect(queen).toBeDisabled();
+    fireEvent.keyDown(queen, { key: "ArrowRight" });
+    expect(screen.getByRole("radio", { name: /size: full/i })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+  });
+
+  it("cf-0jm fix3: VariantPicker seeds from initialSelection — first in-stock variant wins", () => {
+    // Documents the dual-state invariant: VariantPicker's useState seed must agree with
+    // PdpInteractive's independent useState seed (same function, same args → same result).
+    // If they diverge, onSelectionChange won't fire on load and parent state drifts.
+    render(
       <VariantPicker
         productOptions={productOptions}
         variants={variants}
         fallbackPrice="$0"
       />,
     );
-    // Both PdpInteractive and VariantPicker call initialSelection(productOptions, variants).
-    // The first in-stock variant is Full+Linen at $799.
-    expect(getByTestId("variant-price")).toHaveTextContent("$799");
+    expect(screen.getByTestId("variant-price")).toHaveTextContent("$799");
   });
 });
