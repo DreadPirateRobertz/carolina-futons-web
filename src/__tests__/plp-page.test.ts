@@ -642,3 +642,86 @@ describe("logOverPaginatedRender helper", () => {
     expect(opts.extra?.lastPage).toBe(1);
   });
 });
+
+// ── PlpPage: product card stagger reveal (cf-plp-card-stagger) ─────────────
+
+describe("PlpPage — product card stagger (cf-plp-card-stagger)", () => {
+  beforeEach(() => {
+    vi.mocked(findCategory).mockReturnValue({
+      slug: "futon-frames",
+      name: "Futon Frames",
+      description: "Our frames.",
+      collectionSlug: "futon-frames",
+    });
+    vi.mocked(getCollectionBySlug).mockResolvedValue({
+      _id: "futons-col-id",
+    } as never);
+    vi.mocked(listProductsOnSale).mockResolvedValue([]);
+    vi.mocked(getCollectionPlp).mockResolvedValue({
+      page: {
+        items: [
+          {
+            _id: "p1",
+            name: "Oak Loft Futon",
+            slug: "oak-loft",
+            priceData: { formatted: { price: "$499" } },
+          },
+          {
+            _id: "p2",
+            name: "Maple Daybed",
+            slug: "maple-daybed",
+            priceData: { formatted: { price: "$699" } },
+          },
+          {
+            _id: "p3",
+            name: "Cherry Platform",
+            slug: "cherry-platform",
+            priceData: { formatted: { price: "$899" } },
+          },
+        ],
+        total: 3,
+        page: 1,
+        pageSize: 24,
+        hasNext: false,
+        hasPrev: false,
+      },
+      facets: { total: 3, inStock: 3, outOfStock: 0, priceBuckets: [] },
+    } as never);
+  });
+
+  it("renders one product card per item in the page result", async () => {
+    const tree = (await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({}),
+    })) as ReactElement;
+    const html = renderToStaticMarkup(tree);
+
+    // Every product.name appears in the rendered HTML exactly once within
+    // the grid (ProductCard renders it as the h2 label).
+    expect(html).toContain("Oak Loft Futon");
+    expect(html).toContain("Maple Daybed");
+    expect(html).toContain("Cherry Platform");
+    // And the PDP link is built from the slug
+    expect(html).toMatch(/href="\/products\/oak-loft"/);
+    expect(html).toMatch(/href="\/products\/maple-daybed"/);
+    expect(html).toMatch(/href="\/products\/cherry-platform"/);
+  });
+
+  it("wraps each ProductCard in a HeroReveal <li data-slot='hero-reveal'> for index-based stagger", async () => {
+    const tree = (await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({}),
+    })) as ReactElement;
+    const html = renderToStaticMarkup(tree);
+
+    // One hero-reveal wrapper per product card — 3 products in the fixture.
+    const revealMatches = html.match(/data-slot="hero-reveal"/g) ?? [];
+    expect(revealMatches.length).toBe(3);
+
+    // Wrappers are <li> so the <ul> list semantics stay valid, and each
+    // wrapper contains exactly one product-card.
+    expect(html).toMatch(/<li[^>]*data-slot="hero-reveal"/);
+    const cardMatches = html.match(/data-slot="product-card"/g) ?? [];
+    expect(cardMatches.length).toBe(3);
+  });
+});

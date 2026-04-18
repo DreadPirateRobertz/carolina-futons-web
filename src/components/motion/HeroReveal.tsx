@@ -34,7 +34,9 @@ export function HeroReveal({
 }: {
   children: ReactNode;
   delay?: number;
-  as?: "div" | "span";
+  // "li" supports PLP card stagger — HeroReveal has to sit directly inside a
+  // <ul> there, and a div-in-ul is invalid HTML / breaks list semantics.
+  as?: "div" | "span" | "li";
 }) {
   const reduce = useReducedMotion() ?? false;
 
@@ -48,6 +50,13 @@ export function HeroReveal({
         >
           {children}
         </m.span>
+      );
+    }
+    if (as === "li") {
+      return (
+        <m.li data-slot="hero-reveal" data-reduced-motion="1">
+          {children}
+        </m.li>
       );
     }
     return (
@@ -68,6 +77,13 @@ export function HeroReveal({
       <m.span data-slot="hero-reveal" className="inline-block" {...motionProps}>
         {children}
       </m.span>
+    );
+  }
+  if (as === "li") {
+    return (
+      <m.li data-slot="hero-reveal" {...motionProps}>
+        {children}
+      </m.li>
     );
   }
   return (
