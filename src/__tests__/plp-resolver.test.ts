@@ -22,7 +22,11 @@ type Product = {
 };
 
 function mockWixClientWithProducts(items: Product[]) {
-  const findFn = vi.fn(async () => ({ items }));
+  // Single-page fixture — F1 pagination (PR #50) added while/page.next() so the
+  // mock needs hasNext()+next() to drive the real loop. Tests that need
+  // multi-page traversal should build a dedicated mock.
+  const page = { items, hasNext: () => false, next: async () => page };
+  const findFn = vi.fn(async () => page);
   const limitFn = vi.fn(() => ({ find: findFn }));
   const hasSomeFn = vi.fn(() => ({ limit: limitFn }));
   const queryProductsFn = vi.fn(() => ({ hasSome: hasSomeFn, limit: limitFn }));
@@ -89,24 +93,14 @@ describe("listProductsOnSale (PLP resolver integration)", () => {
     ]);
   });
 
-  it("honors the limit argument when forwarded to the Wix SDK", async () => {
-    const { client, spies } = mockWixClientWithProducts(MIXED_MATTRESSES);
-    vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => client }));
-
-    const { listProductsOnSale } = await import("@/lib/wix/products");
-    await listProductsOnSale("col-mattresses", 12);
-
-    expect(spies.limitFn).toHaveBeenCalledWith(12);
-  });
-
-  it("defaults limit to 48 when caller omits it (parity with listProductsByCollectionId)", async () => {
+  it("uses the fixed SALE_PAGE_SIZE (100) for the initial page — F1 pagination invariant", async () => {
     const { client, spies } = mockWixClientWithProducts(MIXED_MATTRESSES);
     vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => client }));
 
     const { listProductsOnSale } = await import("@/lib/wix/products");
     await listProductsOnSale("col-mattresses");
 
-    expect(spies.limitFn).toHaveBeenCalledWith(48);
+    expect(spies.limitFn).toHaveBeenCalledWith(100);
   });
 
   it("returns empty when the collection has no products on sale", async () => {
