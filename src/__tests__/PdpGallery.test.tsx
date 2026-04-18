@@ -1,7 +1,43 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
 import { PdpGallery } from "@/components/product/PdpGallery";
+
+type FakeViewTransition = {
+  finished: Promise<undefined>;
+  skipTransition: ReturnType<typeof vi.fn>;
+};
+
+function installViewTransitionStub(
+  impl?: (cb: () => void) => FakeViewTransition,
+) {
+  const skips: Array<FakeViewTransition["skipTransition"]> = [];
+  const defaultImpl = (cb: () => void): FakeViewTransition => {
+    cb();
+    const skip = vi.fn();
+    skips.push(skip);
+    return {
+      finished: new Promise<undefined>(() => {}),
+      skipTransition: skip,
+    };
+  };
+  const startVT = vi.fn(impl ?? defaultImpl);
+  Object.defineProperty(document, "startViewTransition", {
+    value: startVT,
+    configurable: true,
+    writable: true,
+  });
+  return { startVT, skips };
+}
+
+function uninstallViewTransitionStub() {
+  // Reset to undefined so other suites see an unsupported environment.
+  Object.defineProperty(document, "startViewTransition", {
+    value: undefined,
+    configurable: true,
+    writable: true,
+  });
+}
 
 const motionMocks = vi.hoisted(() => ({
   useReducedMotion: vi.fn<() => boolean | null>(() => false),
@@ -162,5 +198,68 @@ describe("PdpGallery — prefers-reduced-motion", () => {
       [0, 0.5, 1],
       [1, 1.05, 1],
     );
+  });
+});
+
+// cf-3qt.7.O.1: View Transitions API for thumb→main image swap.
+// Browser-native morph in Chromium 111+/Safari 18+; framer crossfade falls
+// back for older browsers; reduced-motion = instant swap with no transition.
+describe("PdpGallery — View Transitions API", () => {
+  beforeEach(() => {
+    motionMocks.useReducedMotion.mockReset();
+    motionMocks.useReducedMotion.mockReturnValue(false);
+  });
+
+  afterEach(() => {
+    uninstallViewTransitionStub();
+  });
+
+  it("calls document.startViewTransition when the API is supported", () => {
+    const { startVT } = installViewTransitionStub();
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const thumbs = screen.getAllByRole("tab");
+    fireEvent.click(thumbs[1]);
+    expect(startVT).toHaveBeenCalledTimes(1);
+    // The new image is committed inside the transition callback.
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    expect(main.src).toBe("https://img/b.jpg");
+  });
+
+  it("falls back to direct state update when the API is unavailable", () => {
+    // Don't install — startViewTransition stays undefined for this test.
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const thumbs = screen.getAllByRole("tab");
+    fireEvent.click(thumbs[1]);
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    expect(main.src).toBe("https://img/b.jpg");
+    expect(thumbs[1].getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("skips the View Transitions path when prefers-reduced-motion is set", () => {
+    const { startVT } = installViewTransitionStub();
+    motionMocks.useReducedMotion.mockReturnValue(true);
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const thumbs = screen.getAllByRole("tab");
+    fireEvent.click(thumbs[1]);
+    // WCAG 2.3.3: reduced-motion users get an instant swap, no animation —
+    // the API is gated behind both feature support AND the reduce flag.
+    expect(startVT).not.toHaveBeenCalled();
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    expect(main.src).toBe("https://img/b.jpg");
+  });
+
+  it("cancels the in-flight transition with skipTransition on rapid click", () => {
+    const { startVT, skips } = installViewTransitionStub();
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const thumbs = screen.getAllByRole("tab");
+    fireEvent.click(thumbs[1]);
+    fireEvent.click(thumbs[2]);
+    // Two transitions started; the first one was skipped when the second
+    // click landed (prevents queue/lag on rapid clicks).
+    expect(startVT).toHaveBeenCalledTimes(2);
+    expect(skips[0]).toHaveBeenCalledTimes(1);
+    expect(skips[1]).not.toHaveBeenCalled();
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    expect(main.src).toBe("https://img/c.jpg");
   });
 });
