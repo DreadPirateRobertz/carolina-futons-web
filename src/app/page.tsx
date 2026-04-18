@@ -104,7 +104,7 @@ export default function HomePage() {
 }
 
 const HERO_STATS = [
-  { label: "Years in business", value: "35+" },
+  { label: "Family-owned since", value: "1991" },
   { label: "Frames built in", value: "North Carolina" },
   { label: "Ships in", value: "1–2 weeks" },
   { label: "Showroom", value: "Hendersonville, NC" },
