@@ -94,4 +94,16 @@ describe("PdpGallery", () => {
     expect(thumbs[0].getAttribute("aria-label")).toMatch(/1 of 3/);
     expect(thumbs[2].getAttribute("aria-label")).toMatch(/3 of 3/);
   });
+
+  // Phase 7 motion companion — wraps the main image in a scroll-driven zoom.
+  // The wrapper div has overflow-hidden so the zoom doesn't bleed outside
+  // the gallery footprint; the testid stays on the inner img so existing
+  // assertions still pass.
+  it("wraps the main image in an overflow-hidden zoom container", () => {
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const main = screen.getByTestId("pdp-main-image");
+    const zoomContainer = main.parentElement;
+    expect(zoomContainer).not.toBeNull();
+    expect(zoomContainer!.className).toMatch(/overflow-hidden/);
+  });
 });

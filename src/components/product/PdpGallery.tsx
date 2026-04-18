@@ -1,11 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { m, useReducedMotion, useScroll, useTransform } from "framer-motion";
 
 // cf-3qt.6.F.1: multi-image gallery for the PDP. The active main image is
 // also controllable from the parent via `activeUrl` (used by the variant
 // picker — selecting a variant with its own mainMedia wins over the thumb
 // selection so the swatch and main stay consistent).
+//
+// Phase 7 motion companion: the main image gets a subtle scroll-driven
+// zoom (1.00 → 1.05 over its viewport pass) — feels like the photo is
+// breathing as you scroll the PDP. Honors prefers-reduced-motion (returns
+// a static scale of 1).
 
 export type GalleryImage = {
   url: string;
@@ -52,13 +58,7 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
 
   return (
     <div data-slot="pdp-gallery" className="space-y-3">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={active.url}
-        alt={active.alt ?? productName}
-        data-testid="pdp-main-image"
-        className="aspect-square w-full rounded-lg object-cover"
-      />
+      <ZoomMainImage src={active.url} alt={active.alt ?? productName} />
       {images.length > 1 ? (
         <div
           role="tablist"
@@ -96,6 +96,34 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
           })}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+// Subcomponent so the useScroll hook is only created when the gallery has at
+// least one image — the empty-state early return above would otherwise hand
+// useScroll an unhydrated ref and trigger a hydration error in tests.
+function ZoomMainImage({ src, alt }: { src: string; alt: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"],
+  });
+  // Map scroll progress through the gallery to a tiny scale curve.
+  // Range [start end → end start] = element entering bottom of viewport
+  // through leaving the top. Reduced-motion users get a flat scale of 1.
+  const scale = useTransform(scrollYProgress, [0, 0.5, 1], [1, 1.05, 1]);
+
+  return (
+    <div ref={containerRef} className="overflow-hidden rounded-lg">
+      <m.img
+        src={src}
+        alt={alt}
+        data-testid="pdp-main-image"
+        style={reduce ? undefined : { scale }}
+        className="aspect-square w-full object-cover"
+      />
     </div>
   );
 }
