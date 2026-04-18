@@ -38,6 +38,7 @@ export async function getProductBySlug(slug: string) {
     if (!stub) return null;
     if (!stub._id) {
       await logWixFailure(
+        "wix",
         `getProductBySlug(${slug})`,
         new Error(`queryProducts returned stub with no _id — malformed catalog entry`),
       );
@@ -46,6 +47,7 @@ export async function getProductBySlug(slug: string) {
     const full = await client.products.getProduct(stub._id);
     if (!full.product) {
       await logWixFailure(
+        "wix",
         `getProductBySlug(${slug})`,
         new Error(`getProduct(${stub._id}) returned empty envelope`),
       );
