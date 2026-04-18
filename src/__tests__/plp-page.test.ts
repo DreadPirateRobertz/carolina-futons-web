@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // Module-level stubs for server-side dependencies pulled in transitively
 vi.mock("@sentry/nextjs", () => ({
   captureException: vi.fn(),
+  captureMessage: vi.fn(),
   flush: vi.fn().mockResolvedValue(true),
 }));
 vi.mock("@/lib/wix-client", () => ({ getWixClient: vi.fn() }));
@@ -21,6 +22,9 @@ vi.mock("@/lib/wix/plp", () => ({
 vi.mock("@/lib/shop/categories", () => ({
   SHOP_CATEGORIES: [],
   findCategory: vi.fn(),
+}));
+vi.mock("@/lib/shop/plp-observability", () => ({
+  logOverPaginatedRender: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({
   notFound: vi.fn(),
@@ -319,14 +323,17 @@ describe("PlpPage — over-paginated (page beyond last filled page)", () => {
     const html = renderToStaticMarkup(tree);
 
     expect(html).toMatch(/No more products on page 5/);
-    expect(html).toMatch(/sort=price-asc/);
-    expect(html).toMatch(/priceMin=200/);
-    expect(html).toMatch(/inStock=1/);
+    // Region-scope: extract only the over-paginated <p> block so we don't
+    // accidentally assert against PLPControls sort links elsewhere on the page.
+    // The back-to-page-1 <p> always starts with "No more products on page".
+    const overPaginatedBlock =
+      html.match(/<p[^>]*>\s*No more products[\s\S]*?<\/p>/)?.[0] ?? "";
+    expect(overPaginatedBlock).not.toBe("");
+    expect(overPaginatedBlock).toMatch(/sort=price-asc/);
+    expect(overPaginatedBlock).toMatch(/priceMin=200/);
+    expect(overPaginatedBlock).toMatch(/inStock=1/);
     // Back-to-page-1 link MUST NOT carry a page param
-    const hrefs = html.match(/href="([^"]+)"/g) ?? [];
-    const backHref = hrefs.find((h) => h.includes("sort=price-asc"));
-    expect(backHref).toBeDefined();
-    expect(backHref).not.toMatch(/page=/);
+    expect(overPaginatedBlock).not.toMatch(/page=/);
   });
 
   it("does NOT trigger over-paginated branch on page 1 with empty collection", async () => {
@@ -447,5 +454,191 @@ describe("PlpPage — mattresses-sale empty result surfaces per-category copy", 
       "No mattresses are on sale right now. Check back soon.",
     );
     expect(html).not.toMatch(/No products found in this collection/);
+  });
+});
+
+// ── PlpPage: observability — logOverPaginatedRender emission (cf-3qt.6.B.3) ─
+
+import { logOverPaginatedRender } from "@/lib/shop/plp-observability";
+
+describe("PlpPage — logOverPaginatedRender emission", () => {
+  beforeEach(() => {
+    vi.mocked(logOverPaginatedRender).mockClear();
+    vi.mocked(findCategory).mockReturnValue({
+      slug: "futon-frames",
+      name: "Futon Frames",
+      description: "Our frames.",
+      collectionSlug: "futon-frames",
+    });
+    vi.mocked(getCollectionBySlug).mockResolvedValue({
+      _id: "futons-col-id",
+    } as never);
+    vi.mocked(listProductsOnSale).mockResolvedValue([]);
+  });
+
+  it("fires on over-paginated render with full context", async () => {
+    vi.mocked(getCollectionPlp).mockResolvedValue({
+      page: {
+        items: [],
+        total: 6,
+        page: 2,
+        pageSize: 24,
+        hasNext: false,
+        hasPrev: true,
+      },
+      facets: { total: 6, inStock: 6, outOfStock: 0, priceBuckets: [] },
+    });
+
+    await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({ page: "2" }),
+    });
+
+    expect(logOverPaginatedRender).toHaveBeenCalledTimes(1);
+    expect(logOverPaginatedRender).toHaveBeenCalledWith({
+      categorySlug: "futon-frames",
+      pageNum: 2,
+      pageTotal: 6,
+      pageSize: 24,
+    });
+  });
+
+  it("does NOT fire on page 1 empty collection", async () => {
+    vi.mocked(getCollectionPlp).mockResolvedValue(EMPTY_PLP);
+
+    await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({}),
+    });
+
+    expect(logOverPaginatedRender).not.toHaveBeenCalled();
+  });
+
+  it("does NOT fire when filters eliminated everything (page.total=0)", async () => {
+    vi.mocked(getCollectionPlp).mockResolvedValue({
+      page: {
+        items: [],
+        total: 0,
+        page: 2,
+        pageSize: 24,
+        hasNext: false,
+        hasPrev: false,
+      },
+      facets: { total: 10, inStock: 5, outOfStock: 5, priceBuckets: [] },
+    });
+
+    await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({ page: "2", priceMin: "99999" }),
+    });
+
+    expect(logOverPaginatedRender).not.toHaveBeenCalled();
+  });
+
+  it("does NOT fire on reader outage — outage guard (melania ruling on PR #54)", async () => {
+    // Product decision: when the reader errors, overPaginated may still be
+    // true structurally, but the log is suppressed so outage-induced
+    // "over-pagination" doesn't pollute the metric. Outage events ship
+    // their own telemetry via logWixFailure in the reader layer.
+    vi.mocked(getCollectionPlp).mockResolvedValue({
+      page: {
+        items: [],
+        total: 6,
+        page: 2,
+        pageSize: 24,
+        hasNext: false,
+        hasPrev: true,
+        error: "wix_sdk",
+      },
+      facets: { total: 6, inStock: 6, outOfStock: 0, priceBuckets: [] },
+      error: "wix_sdk",
+    } as never);
+
+    await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({ page: "2" }),
+    });
+
+    expect(logOverPaginatedRender).not.toHaveBeenCalled();
+  });
+});
+
+// ── plp-observability: logOverPaginatedRender helper unit tests ────────────
+
+describe("logOverPaginatedRender helper", () => {
+  // The file-top mock replaces the helper with vi.fn() for PlpPage emission
+  // tests. These tests need the real impl, so they bypass the mock via
+  // vi.importActual. getRealHelperAndSpy wraps that dance so each case
+  // stays under 10 lines.
+  async function getRealHelperAndSpy() {
+    const actual = await vi.importActual<
+      typeof import("@/lib/shop/plp-observability")
+    >("@/lib/shop/plp-observability");
+    const sentry = await import("@sentry/nextjs");
+    const captureSpy = vi.mocked(sentry.captureMessage);
+    captureSpy.mockClear();
+    return { logOverPaginatedRender: actual.logOverPaginatedRender, captureSpy };
+  }
+
+  it("computes lastPage from pageTotal / pageSize (ceiling)", async () => {
+    const { logOverPaginatedRender, captureSpy } = await getRealHelperAndSpy();
+    logOverPaginatedRender({
+      categorySlug: "futon-frames",
+      pageNum: 5,
+      pageTotal: 6,
+      pageSize: 24,
+    });
+
+    expect(captureSpy).toHaveBeenCalledTimes(1);
+    const [msg, rawOpts] = captureSpy.mock.calls[0]!;
+    // Sentry.captureMessage's second arg is SeverityLevel | CaptureContext;
+    // our helper always passes an object, so narrow for the assertions.
+    const opts = rawOpts as {
+      level?: string;
+      tags?: Record<string, unknown>;
+      extra?: Record<string, unknown>;
+    };
+    expect(msg).toBe("plp-page over-paginated render");
+    expect(opts.level).toBe("info");
+    expect(opts.tags).toMatchObject({
+      source: "plp-page",
+      op: "over-paginated",
+      categorySlug: "futon-frames",
+    });
+    expect(opts.extra).toMatchObject({
+      categorySlug: "futon-frames",
+      pageNum: 5,
+      pageTotal: 6,
+      pageSize: 24,
+      lastPage: 1, // ceil(6/24) = 1
+    });
+  });
+
+  it("lastPage is ceiled (pageTotal=25, pageSize=24 → lastPage=2)", async () => {
+    const { logOverPaginatedRender, captureSpy } = await getRealHelperAndSpy();
+    logOverPaginatedRender({
+      categorySlug: "sofa-beds",
+      pageNum: 10,
+      pageTotal: 25,
+      pageSize: 24,
+    });
+
+    const [, rawOpts] = captureSpy.mock.calls[0]!;
+    const opts = rawOpts as { extra?: { lastPage: number } };
+    expect(opts.extra?.lastPage).toBe(2);
+  });
+
+  it("lastPage floors to 1 when pageTotal=0 (no divide-by-zero, no 0-page)", async () => {
+    const { logOverPaginatedRender, captureSpy } = await getRealHelperAndSpy();
+    logOverPaginatedRender({
+      categorySlug: "empty",
+      pageNum: 2,
+      pageTotal: 0,
+      pageSize: 24,
+    });
+
+    const [, rawOpts] = captureSpy.mock.calls[0]!;
+    const opts = rawOpts as { extra?: { lastPage: number } };
+    expect(opts.extra?.lastPage).toBe(1);
   });
 });

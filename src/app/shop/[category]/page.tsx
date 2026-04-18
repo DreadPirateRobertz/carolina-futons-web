@@ -14,6 +14,7 @@ import {
   toReaderError,
   type ReaderError,
 } from "@/lib/wix/errors";
+import { logOverPaginatedRender } from "@/lib/shop/plp-observability";
 import { ProductCard } from "@/components/product/ProductCard";
 import { PLPControls } from "@/components/plp/PLPControls";
 import { PLPPagination, buildPageUrl } from "@/components/plp/PLPPagination";
@@ -145,23 +146,27 @@ export default async function PlpPage(props: {
 
   const basePath = `/shop/${categorySlug}`;
 
-  // cf-3qt.6.B.1: page=N beyond the last filled page returns items=[] while
-  // page.total > 0 — this is NOT "no matches", the user is over-paginated.
-  // Offer a back-to-page-1 link that preserves sort + filter params.
+  // page=N beyond the last filled page returns items=[] while page.total > 0
+  // — this is NOT "no matches", the user is over-paginated. Offer a back-to-
+  // page-1 link that preserves sort + filter params, and emit a structured
+  // event so a spike is diagnosable (stale external link vs pagination bug vs
+  // reader count drift).
+  // (refs: cf-3qt.6.B.1 / cf-63w / PR #46)
   const overPaginated =
     pageNum > 1 && page.total > 0 && page.items.length === 0;
   const backToPageOneHref = buildPageUrl(basePath, searchParams, 1);
+  // Suppress the log when the reader errored — outage-induced "over-pagination"
+  // would pollute the metric we're trying to keep clean (stale-link vs
+  // pagination-bug vs count-drift). Outage events ship their own telemetry.
+  if (overPaginated && !readerFailed) {
+    logOverPaginatedRender({
+      categorySlug,
+      pageNum,
+      pageTotal: page.total,
+      pageSize: page.pageSize,
+    });
+  }
 
-  // Empty-state ladder precedence (order matters — see plp-page.test.ts):
-  //   1. readerFailed      — outage banner must pre-empt every other empty state
-  //                          (PR #35 silent-failure review — items=[] on outage
-  //                          must NOT fall through to "No products found")
-  //   2. overPaginated     — page>1 with page.total>0 but items=[] is NOT
-  //                          "no matches" (cf-3qt.6.B.1 / cf-63w)
-  //   3. page.items.empty  — genuine empty-collection / filter-eliminated /
-  //                          mattresses-sale empty-sale copy
-  //   4. grid              — render products
-  // Re-ordering this ladder breaks the branch-precedence tests.
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-10">
       <nav className="text-sm text-zinc-500">
@@ -191,6 +196,20 @@ export default async function PlpPage(props: {
         </Suspense>
       </div>
 
+      {/*
+        Empty-state ladder — order matters:
+          1. readerFailed      outage banner must pre-empt every other empty
+                               state (items=[] on a reader error is NOT an
+                               empty collection — bounce-trap otherwise)
+          2. overPaginated     page>1 with page.total>0 but items=[] is NOT
+                               "no matches" — offer back-to-page-1
+          3. page.items.empty  genuine empty-collection / filter-eliminated /
+                               mattresses-sale empty-sale copy
+          4. grid              render products
+        Re-ordering breaks branch-precedence assertions in
+        src/__tests__/plp-page.test.ts.
+        (refs: PR #35 silent-failure / cf-3qt.6.B.1 over-paginated)
+      */}
       {readerFailed ? (
         <p
           role="alert"
