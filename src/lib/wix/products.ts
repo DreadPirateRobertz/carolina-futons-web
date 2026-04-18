@@ -9,6 +9,7 @@
 // noise.
 import * as Sentry from "@sentry/nextjs";
 import { getWixClient } from "@/lib/wix-client";
+import { isProductOnSale } from "@/lib/product/on-sale";
 
 type WixErrorShape = {
   code?: string;
@@ -93,6 +94,11 @@ export async function listProductsByCollectionId(
     await logWixFailure(`listProductsByCollectionId(${collectionId})`, err);
     return [];
   }
+}
+
+export async function listProductsOnSale(collectionId: string, limit = 48) {
+  const products = await listProductsByCollectionId(collectionId, limit);
+  return products.filter(isProductOnSale);
 }
 
 export async function getCollectionBySlug(slug: string) {
