@@ -1,5 +1,11 @@
+import Image from "next/image";
 import Link from "next/link";
 import { SHOP_CATEGORIES } from "@/lib/shop/categories";
+
+const HERO_IMAGE_SRC =
+  "https://static.wixstatic.com/media/e04e89_cf15142c61714ecfad7852522e0a98e4~mv2.jpg/v1/fit/w_2000,h_2000,q_90/file.jpg";
+const HERO_IMAGE_ALT =
+  "Monterey mission-style hardwood futon frame in a sunlit living room";
 
 export default function HomePage() {
   return (
@@ -10,8 +16,8 @@ export default function HomePage() {
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-cf-cta">
               Family owned since 1991
             </p>
-            <h1 className="mt-4 font-heading text-4xl font-semibold leading-tight tracking-tight text-cf-navy sm:text-5xl">
-              American-made futons, Murphy beds, and mattresses.
+            <h1 className="mt-4 font-heading text-4xl font-bold uppercase leading-[1.05] tracking-tight text-cf-navy sm:text-5xl md:text-6xl">
+              Quality futons &amp; furniture for your home
             </h1>
             <p className="mt-5 max-w-xl text-lg text-cf-charcoal/80">
               Hendersonville, NC. Hardwood frames built by hand, mattresses we
@@ -32,19 +38,15 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-          <div className="rounded-lg border border-cf-divider bg-white p-8 shadow-sm">
-            <dl className="grid grid-cols-2 gap-6">
-              {HERO_STATS.map((stat) => (
-                <div key={stat.label}>
-                  <dt className="text-xs font-medium uppercase tracking-wider text-cf-charcoal/60">
-                    {stat.label}
-                  </dt>
-                  <dd className="mt-1 font-heading text-2xl font-semibold text-cf-navy">
-                    {stat.value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
+          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-cf-divider bg-white shadow-sm">
+            <Image
+              src={HERO_IMAGE_SRC}
+              alt={HERO_IMAGE_ALT}
+              fill
+              priority
+              sizes="(min-width: 768px) 50vw, 100vw"
+              className="object-cover"
+            />
           </div>
         </div>
       </section>
@@ -102,13 +104,6 @@ export default function HomePage() {
     </>
   );
 }
-
-const HERO_STATS = [
-  { label: "Family-owned since", value: "1991" },
-  { label: "Frames built in", value: "North Carolina" },
-  { label: "Ships in", value: "1–2 weeks" },
-  { label: "Showroom", value: "Hendersonville, NC" },
-];
 
 const VALUE_PROPS = [
   {
