@@ -1,6 +1,6 @@
-// PLP observability. One event-kind for now — over-paginated render — but
-// kept in its own module so the next PLP diagnostic event (e.g. filter-match
-// collapse, facet-drift) can land alongside without growing page.tsx.
+// PLP observability. Currently exposes one event-kind — over-paginated
+// render — in its own module so future PLP diagnostic events (filter-match
+// collapse, facet-drift, etc.) can land alongside without growing page.tsx.
 //
 // Level is "info" on purpose: over-pagination is a user navigation state, not
 // a fault. A spike is interesting (stale external links, Googlebot crawling

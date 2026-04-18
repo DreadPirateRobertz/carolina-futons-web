@@ -155,7 +155,10 @@ export default async function PlpPage(props: {
   const overPaginated =
     pageNum > 1 && page.total > 0 && page.items.length === 0;
   const backToPageOneHref = buildPageUrl(basePath, searchParams, 1);
-  if (overPaginated) {
+  // Suppress the log when the reader errored — outage-induced "over-pagination"
+  // would pollute the metric we're trying to keep clean (stale-link vs
+  // pagination-bug vs count-drift). Outage events ship their own telemetry.
+  if (overPaginated && !readerFailed) {
     logOverPaginatedRender({
       categorySlug,
       pageNum,

@@ -112,10 +112,8 @@ describe("buildPageUrl", () => {
       expect(url).toContain("priceMin=100");
       expect(url).not.toMatch(/sort=/);
     });
-
-    it("empty searchParams → basePath only", () => {
-      expect(buildPageUrl(base, {}, 1)).toBe(base);
-    });
+    // (empty searchParams + targetPage=1 → basePath is already covered by
+    // the first two tests in "page parameter handling"; not duplicated here.)
   });
 
   describe("URL encoding", () => {

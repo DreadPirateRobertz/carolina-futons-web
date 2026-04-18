@@ -535,7 +535,11 @@ describe("PlpPage — logOverPaginatedRender emission", () => {
     expect(logOverPaginatedRender).not.toHaveBeenCalled();
   });
 
-  it("does NOT fire on reader outage (outage branch takes precedence)", async () => {
+  it("does NOT fire on reader outage — outage guard (melania ruling on PR #54)", async () => {
+    // Product decision: when the reader errors, overPaginated may still be
+    // true structurally, but the log is suppressed so outage-induced
+    // "over-pagination" doesn't pollute the metric. Outage events ship
+    // their own telemetry via logWixFailure in the reader layer.
     vi.mocked(getCollectionPlp).mockResolvedValue({
       page: {
         items: [],
@@ -555,31 +559,30 @@ describe("PlpPage — logOverPaginatedRender emission", () => {
       searchParams: Promise.resolve({ page: "2" }),
     });
 
-    // Current behavior: overPaginated is computed independent of readerFailed,
-    // so logOverPaginatedRender fires even when the render branch is outage.
-    // This is a product decision — reader-errored + page>1 IS an over-pagination
-    // signal (stale links pointing at pages that may not exist) and worth
-    // logging. Pins the behavior so a future refactor doesn't silently drop it.
-    expect(logOverPaginatedRender).toHaveBeenCalledTimes(1);
+    expect(logOverPaginatedRender).not.toHaveBeenCalled();
   });
 });
 
 // ── plp-observability: logOverPaginatedRender helper unit tests ────────────
 
 describe("logOverPaginatedRender helper", () => {
-  // The mock at file top replaces the helper with vi.fn() for the PlpPage
-  // emission tests above. For its own unit tests we need the real impl, so
-  // we import it dynamically from a non-mocked path.
-  it("computes lastPage from pageTotal / pageSize (ceiling)", async () => {
-    // Use vi.importActual to bypass the top-level mock for this one test.
+  // The file-top mock replaces the helper with vi.fn() for PlpPage emission
+  // tests. These tests need the real impl, so they bypass the mock via
+  // vi.importActual. getRealHelperAndSpy wraps that dance so each case
+  // stays under 10 lines.
+  async function getRealHelperAndSpy() {
     const actual = await vi.importActual<
       typeof import("@/lib/shop/plp-observability")
     >("@/lib/shop/plp-observability");
     const sentry = await import("@sentry/nextjs");
     const captureSpy = vi.mocked(sentry.captureMessage);
     captureSpy.mockClear();
+    return { logOverPaginatedRender: actual.logOverPaginatedRender, captureSpy };
+  }
 
-    actual.logOverPaginatedRender({
+  it("computes lastPage from pageTotal / pageSize (ceiling)", async () => {
+    const { logOverPaginatedRender, captureSpy } = await getRealHelperAndSpy();
+    logOverPaginatedRender({
       categorySlug: "futon-frames",
       pageNum: 5,
       pageTotal: 6,
@@ -612,14 +615,8 @@ describe("logOverPaginatedRender helper", () => {
   });
 
   it("lastPage is ceiled (pageTotal=25, pageSize=24 → lastPage=2)", async () => {
-    const actual = await vi.importActual<
-      typeof import("@/lib/shop/plp-observability")
-    >("@/lib/shop/plp-observability");
-    const sentry = await import("@sentry/nextjs");
-    const captureSpy = vi.mocked(sentry.captureMessage);
-    captureSpy.mockClear();
-
-    actual.logOverPaginatedRender({
+    const { logOverPaginatedRender, captureSpy } = await getRealHelperAndSpy();
+    logOverPaginatedRender({
       categorySlug: "sofa-beds",
       pageNum: 10,
       pageTotal: 25,
@@ -632,14 +629,8 @@ describe("logOverPaginatedRender helper", () => {
   });
 
   it("lastPage floors to 1 when pageTotal=0 (no divide-by-zero, no 0-page)", async () => {
-    const actual = await vi.importActual<
-      typeof import("@/lib/shop/plp-observability")
-    >("@/lib/shop/plp-observability");
-    const sentry = await import("@sentry/nextjs");
-    const captureSpy = vi.mocked(sentry.captureMessage);
-    captureSpy.mockClear();
-
-    actual.logOverPaginatedRender({
+    const { logOverPaginatedRender, captureSpy } = await getRealHelperAndSpy();
+    logOverPaginatedRender({
       categorySlug: "empty",
       pageNum: 2,
       pageTotal: 0,
