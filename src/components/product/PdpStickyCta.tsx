@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { m, useReducedMotion } from "framer-motion";
 import type { ReactNode } from "react";
 
@@ -44,11 +44,14 @@ export function PdpStickyCta({
   const pointerStartY = useRef<number | null>(null);
   const reduced = useReducedMotion();
 
-  // Dismiss is per-appearance, not permanent — if the user scrolls the
-  // primary CTA back into view and out again, the sheet can show again.
-  useEffect(() => {
-    if (visible) setDismissed(false);
-  }, [visible]);
+  // Dismiss is per-appearance, not permanent — when visible flips off (primary
+  // CTA scrolls back into view), clear the dismiss flag so the next
+  // appearance shows again. Using a render-phase setState keyed on `visible`
+  // rather than useEffect keeps this in the store-previous-prop-in-ref
+  // pattern React endorses and avoids the cascading-rerender lint bite.
+  if (!visible && dismissed) {
+    setDismissed(false);
+  }
 
   if (!visible || dismissed) return null;
 
