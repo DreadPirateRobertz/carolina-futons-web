@@ -1,61 +1,115 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 
-import { Footer } from "@/components/site/Footer";
+import { Footer, FOOTER_SOCIALS } from "@/components/site/Footer";
+import { BUSINESS } from "@/lib/business/contact-info";
 
-describe("Footer (cf-3qt.1 Phase 1)", () => {
+// Phase 3 rebrand: Footer now carries the brand identity (logo + tagline)
+// + real contact data from the BUSINESS constant + social presence. The
+// Phase 1 108px `h-cf-footer` chrome spec is intentionally retired here —
+// the rebrand is content-driven and wraps to content height. Marketing
+// owns the tagline + social URLs; the test suite pins exact strings so a
+// silent drift surfaces as a failure.
+
+describe("Footer — Phase 3 rebrand", () => {
   it("renders copyright with current year", () => {
     render(<Footer />);
     const year = new Date().getFullYear();
     expect(
-      screen.getByText(new RegExp(`© ${year} Carolina Futons`))
+      screen.getByText(new RegExp(`© ${year} Carolina Futons`)),
     ).toBeInTheDocument();
   });
 
-  it("renders Shop / Help / About column navigations", () => {
+  it("renders the CF logo from /brand/", () => {
     render(<Footer />);
-    ["Shop", "Help", "About"].forEach((heading) => {
+    const logo = screen.getByAltText(/carolina futons/i);
+    expect(logo).toBeInTheDocument();
+    const src = logo.getAttribute("src") ?? "";
+    // next/image rewrites /public assets through /_next/image. Both raw
+    // and rewritten srcs should reference the brand square asset.
+    expect(decodeURIComponent(src)).toContain("cf-logo-square");
+  });
+
+  it("renders the brand tagline", () => {
+    render(<Footer />);
+    expect(
+      screen.getByText(/quality futons since 1991/i),
+    ).toBeInTheDocument();
+  });
+
+  it("renders BUSINESS.phone as a tel: link", () => {
+    render(<Footer />);
+    const phone = screen.getByRole("link", { name: BUSINESS.phone });
+    expect(phone).toHaveAttribute("href", BUSINESS.phoneHref);
+  });
+
+  it("renders BUSINESS.email as a mailto: link", () => {
+    render(<Footer />);
+    const email = screen.getByRole("link", { name: BUSINESS.email });
+    expect(email).toHaveAttribute("href", BUSINESS.emailHref);
+  });
+
+  it("renders the street address and hours block", () => {
+    render(<Footer />);
+    expect(
+      screen.getByText(
+        new RegExp(`${BUSINESS.street}.*${BUSINESS.city}.*${BUSINESS.state}`, "i"),
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("renders Shop / Info navigation columns", () => {
+    render(<Footer />);
+    ["Shop", "Info"].forEach((heading) => {
       expect(
-        screen.getByRole("navigation", { name: heading })
+        screen.getByRole("navigation", { name: heading }),
       ).toBeInTheDocument();
     });
   });
 
   it("renders footer Shop links with correct /shop/<slug> hrefs", () => {
     render(<Footer />);
+    const shopNav = screen.getByRole("navigation", { name: "Shop" });
     const expected = [
       ["Futons", "/shop/futon-frames"],
       ["Murphy Beds", "/shop/murphy-cabinet-beds"],
       ["Mattresses", "/shop/mattresses"],
       ["Platform Beds", "/shop/platform-beds"],
     ] as const;
-    expected.forEach(([label, href]) => {
-      expect(screen.getByRole("link", { name: label })).toHaveAttribute(
+    for (const [label, href] of expected) {
+      expect(within(shopNav).getByRole("link", { name: label })).toHaveAttribute(
         "href",
         href,
       );
-    });
+    }
   });
 
   it("exposes legal/accessibility links in the bottom row", () => {
     render(<Footer />);
     expect(screen.getByRole("link", { name: /privacy/i })).toHaveAttribute(
       "href",
-      "/privacy"
+      "/privacy",
     );
     expect(screen.getByRole("link", { name: /terms/i })).toHaveAttribute(
       "href",
-      "/terms"
+      "/terms",
     );
     expect(
-      screen.getByRole("link", { name: /accessibility/i })
+      screen.getByRole("link", { name: /accessibility/i }),
     ).toHaveAttribute("href", "/accessibility");
   });
 
-  it("applies h-cf-footer token so the 108px chrome spec is honored", () => {
-    const { container } = render(<Footer />);
-    const footer = container.querySelector('footer[data-slot="site-footer"]');
-    expect(footer).not.toBeNull();
-    expect(footer?.className).toContain("h-cf-footer");
+  it("renders all four social links (Facebook, Instagram, TikTok, Pinterest)", () => {
+    render(<Footer />);
+    const expectedNames = ["Facebook", "Instagram", "TikTok", "Pinterest"];
+    expect(FOOTER_SOCIALS.map((s) => s.name)).toEqual(expectedNames);
+    for (const social of FOOTER_SOCIALS) {
+      const link = screen.getByRole("link", {
+        name: new RegExp(`${social.name}`, "i"),
+      });
+      expect(link).toHaveAttribute("href", social.href);
+      expect(link.getAttribute("rel") ?? "").toContain("noopener");
+      expect(link.getAttribute("target")).toBe("_blank");
+    }
   });
 });
