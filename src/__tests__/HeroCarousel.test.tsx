@@ -441,9 +441,10 @@ describe("HeroCarousel — reduced motion", () => {
   });
 });
 
-// WCAG 2.2.2 (Pause, Stop, Hide) — an always-visible pause/play control is
-// required for auto-advancing content so keyboard and SR users can stop motion
-// without relying on hover or focus. cf-p7-hero-carousel-pause.
+// WCAG 2.2.2 (Pause, Stop, Hide) — always-visible pause/play control for
+// auto-advancing content so keyboard and SR users can stop motion without
+// relying on hover or focus. Rendered only when autoplay can be active
+// (multi-slide, no reduced-motion OS preference). cf-p7-hero-carousel-pause.
 describe("HeroCarousel — pause/play button", () => {
   beforeEach(() => {
     mockMatchMedia(false);
@@ -466,5 +467,46 @@ describe("HeroCarousel — pause/play button", () => {
       "data-autoplay",
       "false",
     );
+  });
+
+  it("pause button label switches to Play slideshow after clicking pause", () => {
+    renderCarousel();
+    fireEvent.click(screen.getByRole("button", { name: /pause slideshow/i }));
+    expect(
+      screen.getByRole("button", { name: /play slideshow/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("clicking play button after pause resumes autoplay", () => {
+    renderCarousel();
+    fireEvent.click(screen.getByRole("button", { name: /pause slideshow/i }));
+    fireEvent.click(screen.getByRole("button", { name: /play slideshow/i }));
+    expect(screen.getByTestId("hero-carousel")).toHaveAttribute(
+      "data-autoplay",
+      "true",
+    );
+  });
+
+  it("slide does NOT advance while manually paused", () => {
+    const { container } = renderCarousel();
+    fireEvent.click(screen.getByRole("button", { name: /pause slideshow/i }));
+    act(() => vi.advanceTimersByTime(5000));
+    const slides = container.querySelectorAll("[aria-roledescription='slide']");
+    expect(slides[0].className).toContain("opacity-100");
+  });
+
+  it("pause button is absent when only one slide is provided", () => {
+    renderCarousel(ONE_SLIDE);
+    expect(
+      screen.queryByRole("button", { name: /pause slideshow/i }),
+    ).toBeNull();
+  });
+
+  it("pause button is absent when prefers-reduced-motion is set", () => {
+    mockMatchMedia(true);
+    renderCarousel();
+    expect(
+      screen.queryByRole("button", { name: /pause slideshow/i }),
+    ).toBeNull();
   });
 });
