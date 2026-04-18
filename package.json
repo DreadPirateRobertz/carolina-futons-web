@@ -11,7 +11,7 @@
   "dependencies": {
     "@base-ui/react": "^1.4.0",
     "@sentry/nextjs": "^10.49.0",
-    "@wix/data": "^1.0.441",
+    "@wix/data": "^1.0.442",
     "@wix/ecom": "^1.0.2015",
     "@wix/members": "^1.0.438",
     "@wix/redirects": "^1.0.112",
