@@ -7,6 +7,7 @@ import { CartProvider } from "@/components/cart/CartProvider";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { LenisProvider } from "@/components/motion/LenisProvider";
 import { MotionProvider } from "@/components/motion/MotionProvider";
+import { PageTransition } from "@/components/motion/PageTransition";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -56,7 +57,7 @@ export default function RootLayout({
           <CartProvider>
             <Header />
             <main id="main" className="flex-1">
-              {children}
+              <PageTransition>{children}</PageTransition>
             </main>
             <Footer />
             <CartDrawer />
