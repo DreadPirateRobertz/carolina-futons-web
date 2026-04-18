@@ -2,22 +2,27 @@
 
 // Recently-viewed strip on the PDP (cf-3qt.7.N.1).
 //
-// Behavior:
-//   * On mount: push the current product into the ring buffer, then read the
-//     buffer back and render everything EXCEPT the current product. Pushing
-//     first means a re-visit promotes the product to most-recent so it
-//     surfaces when the user navigates to a sibling PDP.
-//   * SSR renders null — useEffect only fires on the client, so the initial
-//     HTML never contains stale localStorage data and there's no hydration
-//     mismatch. First paint of the strip therefore happens after hydration.
-//   * Empty list → return null (no "Nothing viewed yet" placeholder rot).
-//   * Horizontal scroll row, cf-sand divider, cf-card tiles. `motion-safe:`
-//     gates scroll-smooth so prefers-reduced-motion users get an instant snap.
+// Why useSyncExternalStore instead of useEffect + setState?
+//   react-hooks/set-state-in-effect flags synchronous setState inside an
+//   effect as a cascading-rerender hazard. localStorage is genuinely an
+//   external data source, so the React-endorsed pattern here is
+//   useSyncExternalStore: it returns a stable server snapshot (empty array)
+//   that matches SSR, then switches to the live snapshot after hydration —
+//   no useEffect re-render pass, no setState-in-effect lint violation.
+//
+// The useEffect below only performs the write-current-product side effect.
+// It never calls setState; the notify() call invalidates the module-scoped
+// snapshot cache so useSyncExternalStore can deliver the fresh buffer.
+//
+// Empty list → return null. No "Nothing viewed yet" placeholder rot.
+// motion-safe:scroll-smooth gates the smooth-scroll behavior on
+// prefers-reduced-motion — CSS honors the MQ, zero JS needed.
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
 
 import {
+  RECENTLY_VIEWED_STORAGE_KEY,
   pushRecentlyViewed,
   readRecentlyViewed,
   writeRecentlyViewed,
@@ -34,6 +39,45 @@ export type PdpRecentlyViewedProps = {
 
 const HEADING_ID = "pdp-recently-viewed-heading";
 
+// Shared empty reference. useSyncExternalStore requires getSnapshot to
+// return the same object across calls when nothing has changed — returning
+// a fresh [] each time would tear the subscription and infinite-loop.
+const EMPTY_SNAPSHOT: ReadonlyArray<RecentlyViewedItem> = [];
+
+const listeners = new Set<() => void>();
+let cachedRaw: string | null | undefined;
+let cachedItems: ReadonlyArray<RecentlyViewedItem> = EMPTY_SNAPSHOT;
+
+function subscribe(cb: () => void): () => void {
+  listeners.add(cb);
+  return () => {
+    listeners.delete(cb);
+  };
+}
+
+function notify(): void {
+  cachedRaw = undefined;
+  for (const cb of listeners) cb();
+}
+
+function getSnapshot(): ReadonlyArray<RecentlyViewedItem> {
+  if (typeof window === "undefined") return EMPTY_SNAPSHOT;
+  let raw: string | null;
+  try {
+    raw = window.localStorage.getItem(RECENTLY_VIEWED_STORAGE_KEY);
+  } catch {
+    return EMPTY_SNAPSHOT;
+  }
+  if (raw === cachedRaw) return cachedItems;
+  cachedRaw = raw;
+  cachedItems = readRecentlyViewed(window.localStorage);
+  return cachedItems;
+}
+
+function getServerSnapshot(): ReadonlyArray<RecentlyViewedItem> {
+  return EMPTY_SNAPSHOT;
+}
+
 export function PdpRecentlyViewed(props: PdpRecentlyViewedProps) {
   const {
     currentProductId,
@@ -43,11 +87,11 @@ export function PdpRecentlyViewed(props: PdpRecentlyViewedProps) {
     currentProductPriceText,
   } = props;
 
-  const [items, setItems] = useState<RecentlyViewedItem[]>([]);
+  const stored = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
     const storage = safeLocalStorage();
+    if (!storage) return;
     const existing = readRecentlyViewed(storage);
     const self: RecentlyViewedItem = {
       id: currentProductId,
@@ -59,7 +103,7 @@ export function PdpRecentlyViewed(props: PdpRecentlyViewedProps) {
     };
     const updated = pushRecentlyViewed(existing, self);
     writeRecentlyViewed(storage, updated);
-    setItems(updated.filter((item) => item.id !== currentProductId));
+    notify();
   }, [
     currentProductId,
     currentProductSlug,
@@ -68,6 +112,7 @@ export function PdpRecentlyViewed(props: PdpRecentlyViewedProps) {
     currentProductPriceText,
   ]);
 
+  const items = stored.filter((item) => item.id !== currentProductId);
   if (items.length === 0) return null;
 
   return (
