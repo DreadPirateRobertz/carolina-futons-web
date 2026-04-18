@@ -42,6 +42,14 @@ describe("getStockBadgeState", () => {
   it("returns 'out_of_stock' when tracked and inStock is null (conservative)", () => {
     expect(getStockBadgeState({ trackInventory: true, inStock: null })).toBe("out_of_stock");
   });
+
+  it("returns 'out_of_stock' when tracked, inStock=true, but quantity=0 (stale flag)", () => {
+    expect(getStockBadgeState({ trackInventory: true, inStock: true, quantity: 0 })).toBe("out_of_stock");
+  });
+
+  it("returns 'out_of_stock' when tracked, inStock=true, but quantity < 0 (oversell)", () => {
+    expect(getStockBadgeState({ trackInventory: true, inStock: true, quantity: -1 })).toBe("out_of_stock");
+  });
 });
 
 // ── PdpStockBadge render tests ──────────────────────────────────────────────
@@ -120,5 +128,21 @@ describe("PdpStockBadge", () => {
     render(<PdpStockBadge stock={{ trackInventory: true, inStock: true, quantity: 6 }} />);
     const chip = screen.getByRole("status");
     expect(chip.getAttribute("data-stock-state")).toBe("in_stock");
+    expect(chip.getAttribute("aria-label")).toBe("In stock");
+  });
+
+  it("renders 'Out of stock' when inStock=true but quantity=0 (stale flag)", () => {
+    render(<PdpStockBadge stock={{ trackInventory: true, inStock: true, quantity: 0 }} />);
+    const chip = screen.getByRole("status");
+    expect(chip.getAttribute("data-stock-state")).toBe("out_of_stock");
+    expect(chip.getAttribute("aria-label")).toBe("Out of stock");
+  });
+
+  it("renders 'Out of stock' when inStock=null (canary: warn + OOS chip)", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(<PdpStockBadge stock={{ trackInventory: true, inStock: null }} />);
+    const chip = screen.getByRole("status");
+    expect(chip.getAttribute("data-stock-state")).toBe("out_of_stock");
+    expect(warn).toHaveBeenCalledTimes(1);
   });
 });

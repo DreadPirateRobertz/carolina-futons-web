@@ -20,6 +20,8 @@ export function PdpStockBadge({ stock }: PdpStockBadgeProps) {
   if (!state) return null;
 
   if (state === "low_stock") {
+    // getStockBadgeState only returns "low_stock" when quantity is a positive
+    // number — the ?? 0 fallback is unreachable, kept for TS narrowing only.
     const qty = stock?.quantity ?? 0;
     return (
       <span
