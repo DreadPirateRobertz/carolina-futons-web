@@ -7,6 +7,7 @@ import {
   type WixProduct,
 } from "@/lib/wix/products";
 import { SHOP_CATEGORIES, findCategory } from "@/lib/shop/categories";
+import { formatPlpPrice } from "@/lib/product/plp-price";
 
 export const dynamic = "force-dynamic"; // Phase 2: per-request until facets + caching tags wired
 
@@ -93,7 +94,7 @@ function ProductCard({ product }: { product: WixProduct }) {
         <div className="p-4">
           <h2 className="text-base font-medium">{product.name}</h2>
           <p className="mt-1 text-sm text-zinc-600">
-            {product.priceData?.formatted?.price ?? ""}
+            {formatPlpPrice(product)}
           </p>
         </div>
       </Link>
