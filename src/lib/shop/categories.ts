@@ -30,7 +30,7 @@ export type ShopCategory = {
   // state for derived categories where that copy misleads (e.g. "no active
   // sale" is a normal state, not a data gap).
   emptyStateCopy?: string;
-  // Wix CDN image URL for the category card on the home page.
+  // Wix CDN image URL for the category card thumbnail.
   image?: string;
 };
 
