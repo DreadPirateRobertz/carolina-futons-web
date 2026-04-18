@@ -321,3 +321,72 @@ describe("PdpGallery — View Transitions API", () => {
     warnSpy.mockRestore();
   });
 });
+
+describe("PdpGallery — onError / broken image fallback", () => {
+  beforeEach(() => uninstallViewTransitionStub());
+
+  it("main image falls back to FALLBACK data URI on load error", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    fireEvent.error(main);
+    expect(main.src).toMatch(/^data:image\/png/);
+    warnSpy.mockRestore();
+  });
+
+  it("main image onError logs console.warn with the original broken src", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    fireEvent.error(main);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[PdpGallery]"),
+      "https://img/a.jpg",
+    );
+    warnSpy.mockRestore();
+  });
+
+  it("second error on same image logs console.error (fallback also failed)", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    fireEvent.error(main);
+    fireEvent.error(main); // fallback also errored
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[PdpGallery] fallback"),
+      "https://img/a.jpg",
+    );
+    warnSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
+  it("thumbnail image falls back on load error", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { container } = render(
+      <PdpGallery images={multiImages} productName="Kingston Futon" />,
+    );
+    const thumbImgs = container.querySelectorAll(
+      "[role='tab'] img",
+    ) as NodeListOf<HTMLImageElement>;
+    fireEvent.error(thumbImgs[1]);
+    expect(thumbImgs[1].src).toMatch(/^data:image\/png/);
+    warnSpy.mockRestore();
+  });
+
+  it("thumbnail onError logs warn with the correct broken src and context", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { container } = render(
+      <PdpGallery images={multiImages} productName="Kingston Futon" />,
+    );
+    const thumbImgs = container.querySelectorAll(
+      "[role='tab'] img",
+    ) as NodeListOf<HTMLImageElement>;
+    fireEvent.error(thumbImgs[0]);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("thumb 0"),
+      "https://img/a.jpg",
+    );
+    warnSpy.mockRestore();
+  });
+});
