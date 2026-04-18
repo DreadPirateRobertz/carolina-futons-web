@@ -10,9 +10,9 @@
 //   - No price data at all                       → ""
 //   - Fixed-price product (priceRange absent)    → priceData.formatted.price
 //   - Variant range with min === max             → the single price
-//   - Variant range with base price $0           → "From $min"
+//   - Variant range with base price $0 or absent → "From $min"
 //   - Variant range with a set base price        → "$min – $max"
-//   - Base price $0, no usable range             → "" (cf-3qt.6.C: catalog not yet
+//   - Base price $0 or absent, no usable range   → "" (cf-3qt.6.C: catalog not yet
 //       populated — Mesa mattresses pending Wix Studio→Headless variant migration)
 
 export type PlpPricedProduct = {
