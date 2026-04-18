@@ -37,3 +37,5 @@ jobs:
           WIX_CLIENT_ID_HEADLESS: ${{ secrets.WIX_CLIENT_ID_HEADLESS }}
           WIX_BACKEND_KEY: ${{ secrets.WIX_BACKEND_KEY }}
           WIX_VELO_SITE_URL: ${{ secrets.WIX_VELO_SITE_URL }}
+          WIX_WEBHOOK_SECRET: ${{ secrets.WIX_WEBHOOK_SECRET }}
+          SESSION_COOKIE_SECRET: ${{ secrets.SESSION_COOKIE_SECRET }}
