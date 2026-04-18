@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { HeroReveal } from "@/components/motion/HeroReveal";
-import { DesignARoomContactForm } from "./ContactForm";
 
 export const metadata: Metadata = {
   title: "Design a Room — Carolina Futons",
@@ -13,20 +12,21 @@ export const metadata: Metadata = {
 const SHOWROOM_ADDRESS = "824 Locust St, Hendersonville, NC 28792";
 const SHOWROOM_PHONE_DISPLAY = "(828) 252-9449";
 const SHOWROOM_PHONE_HREF = "tel:+18282529449";
+const SHOWROOM_EMAIL = "carolinafutons@gmail.com";
 const SHOWROOM_HOURS = "Wed–Sat, 10am–5pm";
 
 const STEPS = [
   {
     title: "Tell us about the space",
-    body: "Send a rough floor plan, a couple of photos, and how the room has to work day-to-day. A spare room that sleeps guests twice a year has very different priorities than a primary sitting room.",
+    body: "Bring a rough floor plan, a couple of photos, and how the room has to work day-to-day. A spare room that sleeps guests twice a year has very different priorities than a primary sitting room.",
   },
   {
     title: "Pick a frame and fabric",
-    body: "We mail real fabric swatches and walk you through frame options — solid hardwood, metal, or a low platform — that fit the size and the traffic pattern. Our frames carry a 15-year warranty.",
+    body: "We walk you through real fabric swatches and frame options — solid hardwood, metal, or a low platform — that fit the size and the traffic pattern. Our frames carry a 15-year warranty.",
   },
   {
     title: "See it before you buy",
-    body: "We mock the layout in a simple plan view so you can confirm clearances, doorways, and how the mattress folds out before anything ships from our Hendersonville showroom.",
+    body: "We mock the layout in a simple plan view so you can confirm clearances, doorways, and how the mattress folds out before anything leaves the Hendersonville showroom.",
   },
 ];
 
@@ -43,10 +43,10 @@ export default function DesignARoomPage() {
               Design a room around a futon
             </h1>
             <p className="text-lg leading-relaxed text-cf-muted">
-              Family-owned in Hendersonville since 1991. Bring us a sketch or a
-              photo and we&rsquo;ll help you plan a room that sleeps guests,
-              holds up to daily use, and still looks like a room — not a
-              folded-out mattress.
+              Family-owned in Hendersonville since 1991. Stop by the showroom
+              or give us a call — we&rsquo;ll help you plan a room that sleeps
+              guests, holds up to daily use, and still looks like a room, not
+              a folded-out mattress.
             </p>
           </header>
         </HeroReveal>
@@ -81,63 +81,90 @@ export default function DesignARoomPage() {
           <section className="space-y-6 rounded-lg border border-cf-ink/10 bg-cf-cta/5 p-6 sm:p-8">
             <div className="space-y-2">
               <h2 className="font-playfair text-2xl font-semibold tracking-tight">
-                Start a consultation
+                Three ways to start
               </h2>
-              <p className="leading-relaxed">
-                Tell us about the space and a sales associate will get back
-                within one business day. Prefer email or phone? Reach us at{" "}
-                <a
-                  href="mailto:hello@carolinafutons.com"
-                  className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
-                >
-                  hello@carolinafutons.com
-                </a>{" "}
-                or{" "}
+              <p className="leading-relaxed text-cf-muted">
+                The design consultation is hands-on. Pick whichever path fits
+                your week.
+              </p>
+            </div>
+            <ul className="grid gap-4 sm:grid-cols-3">
+              <li className="flex flex-col gap-2 rounded-md border border-cf-ink/10 bg-white p-4">
+                <h3 className="font-playfair text-base font-semibold tracking-tight">
+                  Call the showroom
+                </h3>
                 <a
                   href={SHOWROOM_PHONE_HREF}
                   className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
                 >
                   {SHOWROOM_PHONE_DISPLAY}
                 </a>
-                .
-              </p>
-            </div>
-            <DesignARoomContactForm />
+                <p className="text-sm leading-relaxed text-cf-muted">
+                  Fastest way to get on a sales associate&rsquo;s calendar.
+                </p>
+              </li>
+              <li className="flex flex-col gap-2 rounded-md border border-cf-ink/10 bg-white p-4">
+                <h3 className="font-playfair text-base font-semibold tracking-tight">
+                  Email a sketch
+                </h3>
+                <a
+                  href={`mailto:${SHOWROOM_EMAIL}`}
+                  className="break-all text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
+                >
+                  {SHOWROOM_EMAIL}
+                </a>
+                <p className="text-sm leading-relaxed text-cf-muted">
+                  Send photos, dimensions, and what the room needs to do.
+                </p>
+              </li>
+              <li className="flex flex-col gap-2 rounded-md border border-cf-ink/10 bg-white p-4">
+                <h3 className="font-playfair text-base font-semibold tracking-tight">
+                  Visit in person
+                </h3>
+                <address className="not-italic text-sm leading-relaxed">
+                  {SHOWROOM_ADDRESS}
+                  <br />
+                  {SHOWROOM_HOURS}
+                </address>
+              </li>
+            </ul>
           </section>
         </HeroReveal>
 
         <HeroReveal delay={0.24}>
           <section className="space-y-3 border-t border-cf-ink/10 pt-10">
             <h2 className="font-playfair text-2xl font-semibold tracking-tight">
-              Visit the showroom
+              Want to browse first?
             </h2>
-            <address className="not-italic leading-relaxed">
-              {SHOWROOM_ADDRESS}
-              <br />
-              {SHOWROOM_HOURS}
-              <br />
-              <a
-                href={SHOWROOM_PHONE_HREF}
-                className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
-              >
-                {SHOWROOM_PHONE_DISPLAY}
-              </a>
-            </address>
             <p className="leading-relaxed">
-              Browsing frames first? Start with our{" "}
+              Start with the{" "}
               <Link
                 href="/shop"
                 className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
               >
                 full catalog
-              </Link>{" "}
-              or read the{" "}
+              </Link>
+              {" "}or read the{" "}
               <Link
                 href="/guides"
                 className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
               >
                 buying guides
               </Link>
+              . When you&rsquo;re ready, call{" "}
+              <a
+                href={SHOWROOM_PHONE_HREF}
+                className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
+              >
+                {SHOWROOM_PHONE_DISPLAY}
+              </a>{" "}
+              or email{" "}
+              <a
+                href={`mailto:${SHOWROOM_EMAIL}`}
+                className="break-all text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
+              >
+                {SHOWROOM_EMAIL}
+              </a>
               .
             </p>
           </section>
