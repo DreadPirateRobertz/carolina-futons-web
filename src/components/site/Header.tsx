@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Search, User } from "lucide-react";
 import { AnnouncementBar } from "@/components/site/AnnouncementBar";
 import { CartTrigger } from "@/components/cart/CartTrigger";
+import { HeaderMobileMenu } from "@/components/site/HeaderMobileMenu";
 
 const PRIMARY_NAV = [
   { label: "Futons", href: "/shop/futon-frames" },
@@ -61,6 +62,7 @@ export function Header() {
           </nav>
 
           <div className="ml-auto flex items-center gap-1">
+            <HeaderMobileMenu />
             <button
               type="button"
               aria-label="Search"
