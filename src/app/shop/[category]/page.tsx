@@ -19,6 +19,8 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { HeroReveal } from "@/components/motion/HeroReveal";
 import { PLPControls } from "@/components/plp/PLPControls";
 import { PLPPagination, buildPageUrl } from "@/components/plp/PLPPagination";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildBreadcrumbSchema, resolveSiteUrl } from "@/lib/seo/json-ld";
 
 export const dynamic = "force-dynamic";
 
@@ -168,8 +170,16 @@ export default async function PlpPage(props: {
     });
   }
 
+  const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+  const breadcrumbSchema = buildBreadcrumbSchema([
+    { name: "Home", url: `${siteUrl}/` },
+    { name: "Shop", url: `${siteUrl}/shop` },
+    { name: category.name, url: `${siteUrl}${basePath}` },
+  ]);
+
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-10">
+      <JsonLd id="jsonld-breadcrumb" schema={breadcrumbSchema} />
       <nav className="text-sm text-zinc-500">
         <Link href="/shop" className="hover:underline">
           Shop

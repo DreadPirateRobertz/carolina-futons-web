@@ -9,6 +9,12 @@ import { PdpRecentlyViewed } from "@/components/product/PdpRecentlyViewed";
 import { getProductBySlug } from "@/lib/wix/products";
 import { formatPlpPrice } from "@/lib/product/plp-price";
 import { getCrossSellProducts } from "@/lib/product/cross-sell";
+import { JsonLd } from "@/components/seo/JsonLd";
+import {
+  buildBreadcrumbSchema,
+  buildProductSchema,
+  resolveSiteUrl,
+} from "@/lib/seo/json-ld";
 import type { StockBadgeInput } from "@/lib/product/stock-badge-state";
 import type {
   ProductOptionInput,
@@ -48,8 +54,26 @@ export default async function PdpPage(props: {
   const stock = (product.stock ?? null) as StockBadgeInput | null;
   const crossSell = await getCrossSellProducts(product);
 
+  const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+  const canonicalUrl = `${siteUrl}/products/${slug}`;
+  const productSchema = buildProductSchema({
+    name: product.name ?? "",
+    description: descriptionText,
+    imageUrl: mainUrl ?? undefined,
+    priceUSD: product.priceData?.price ?? 0,
+    inStock: stock?.inStock !== false,
+    canonicalUrl,
+  });
+  const breadcrumbSchema = buildBreadcrumbSchema([
+    { name: "Home", url: `${siteUrl}/` },
+    { name: "Shop", url: `${siteUrl}/shop` },
+    { name: product.name ?? "", url: canonicalUrl },
+  ]);
+
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-10">
+      <JsonLd id="jsonld-product" schema={productSchema} />
+      <JsonLd id="jsonld-breadcrumb" schema={breadcrumbSchema} />
       <nav aria-label="Breadcrumb" className="text-sm text-cf-espresso/60">
         <Link href="/shop" className="hover:underline">
           Shop

@@ -8,6 +8,11 @@ import { CartDrawer } from "@/components/cart/CartDrawer";
 import { LenisProvider } from "@/components/motion/LenisProvider";
 import { MotionProvider } from "@/components/motion/MotionProvider";
 import { PageTransition } from "@/components/motion/PageTransition";
+import { JsonLd } from "@/components/seo/JsonLd";
+import {
+  buildOrganizationSchema,
+  resolveSiteUrl,
+} from "@/lib/seo/json-ld";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -40,12 +45,17 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
   return (
     <html
       lang="en"
       className={`${playfair.variable} ${sourceSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
+        <JsonLd
+          id="jsonld-org"
+          schema={buildOrganizationSchema(siteUrl)}
+        />
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
