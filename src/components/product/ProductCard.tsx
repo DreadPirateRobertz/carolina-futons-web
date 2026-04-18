@@ -5,6 +5,7 @@ import { m, useReducedMotion } from "framer-motion";
 
 import { formatPlpPrice } from "@/lib/product/plp-price";
 import { getPlpCardImages } from "@/lib/product/plp-card-images";
+import { getReviewStats } from "@/lib/product/review-stats";
 import type { WixProduct } from "@/lib/wix/products";
 
 function hasDiscount(product: WixProduct): boolean {
@@ -50,6 +51,8 @@ export function ProductCard({ product }: { product: WixProduct }) {
   const hoverVariant = prefersReducedMotion
     ? { opacity: REDUCED_OPACITY, y: 0 }
     : { opacity: 1, y: MOTION_Y_PX };
+
+  const reviewStats = getReviewStats(product.slug);
 
   return (
     <m.div
@@ -106,6 +109,16 @@ export function ProductCard({ product }: { product: WixProduct }) {
               {formatPlpPrice(product)}
             </p>
           )}
+          {reviewStats ? (
+            <p
+              data-testid="review-badge"
+              className="mt-1 text-xs text-cf-charcoal/60"
+            >
+              <span aria-hidden="true">★</span>{" "}
+              {reviewStats.rating.toFixed(1)} ({reviewStats.count}{" "}
+              {reviewStats.count === 1 ? "review" : "reviews"})
+            </p>
+          ) : null}
         </div>
         {/* cf-cta accent strip: scales from 0 → full width on hover/focus,
             reveal-on-intent. Under reduced-motion we render nothing so the

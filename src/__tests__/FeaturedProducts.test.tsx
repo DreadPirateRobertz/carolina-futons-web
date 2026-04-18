@@ -98,3 +98,28 @@ describe("FeaturedProducts — 6-product ceiling", () => {
     expect(within(region).getAllByRole("listitem")).toHaveLength(6);
   });
 });
+
+// cf-review-count-badges: subtle star + count under each card's price.
+// Assertions are shape-based (one badge per card, each has a star glyph
+// and a count-with-"reviews") so the handpicked rating/count values can
+// be tweaked without breaking these tests.
+describe("FeaturedProducts — review count badges", () => {
+  it("renders a review badge on every product card", () => {
+    render(<FeaturedProducts products={fourProducts() as never} />);
+    const region = screen.getByRole("region", { name: /featured/i });
+    const badges = within(region).getAllByTestId("review-badge");
+    expect(badges).toHaveLength(4);
+  });
+
+  it("each badge contains a star glyph and a reviews count", () => {
+    render(<FeaturedProducts products={fourProducts() as never} />);
+    const region = screen.getByRole("region", { name: /featured/i });
+    const badges = within(region).getAllByTestId("review-badge");
+    for (const badge of badges) {
+      const text = badge.textContent ?? "";
+      expect(text).toMatch(/★/);
+      expect(text).toMatch(/\d+(\.\d+)?/); // rating number
+      expect(text).toMatch(/\d+\s*reviews?/i); // "(24 reviews)"
+    }
+  });
+});
