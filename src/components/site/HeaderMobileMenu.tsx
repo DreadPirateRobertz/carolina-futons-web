@@ -16,8 +16,10 @@ const SUB_NAV = [
   { label: "Design a Room", href: "/design-a-room" },
   { label: "Guides", href: "/guides" },
   { label: "Reviews", href: "/reviews" },
+  { label: "Blog", href: "/blog" },
   { label: "About", href: "/about" },
   { label: "Visit Us", href: "/visit" },
+  { label: "Contact", href: "/contact" },
 ] as const;
 
 // All focusable elements we cycle through inside the drawer.
