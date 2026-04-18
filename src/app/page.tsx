@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { SHOP_CATEGORIES } from "@/lib/shop/categories";
 import { HeroReveal } from "@/components/motion/HeroReveal";
@@ -93,17 +94,30 @@ export default async function HomePage() {
               <HeroReveal delay={i * CARD_STAGGER_SECONDS}>
                 <Link
                   href={`/shop/${category.slug}`}
-                  className="group flex h-full flex-col justify-between rounded-lg border border-cf-divider bg-white p-6 transition-colors hover:border-cf-navy"
+                  className="group flex h-full flex-col justify-between overflow-hidden rounded-lg border border-cf-divider bg-white transition-colors hover:border-cf-navy"
                 >
                   <div>
-                    <h3 className="font-heading text-lg font-semibold text-cf-navy">
-                      {category.name}
-                    </h3>
-                    <p className="mt-2 text-sm text-cf-charcoal/80">
-                      {category.description}
-                    </p>
+                    {category.image ? (
+                      <div className="relative aspect-[4/3] w-full overflow-hidden bg-cf-sand/40">
+                        <Image
+                          src={category.image}
+                          alt=""
+                          fill
+                          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                        />
+                      </div>
+                    ) : null}
+                    <div className="p-6">
+                      <h3 className="font-heading text-lg font-semibold text-cf-navy">
+                        {category.name}
+                      </h3>
+                      <p className="mt-2 text-sm text-cf-charcoal/80">
+                        {category.description}
+                      </p>
+                    </div>
                   </div>
-                  <span className="mt-6 text-sm font-medium text-cf-cta group-hover:underline">
+                  <span className="px-6 pb-6 text-sm font-medium text-cf-cta group-hover:underline">
                     Browse {category.name.toLowerCase()} →
                   </span>
                 </Link>

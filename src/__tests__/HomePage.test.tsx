@@ -79,6 +79,23 @@ describe("HomePage", () => {
     expect(viewAll?.textContent).toMatch(/view all/i);
   });
 
+  it("renders a thumbnail img per category with the configured image URL", async () => {
+    await renderHome();
+    for (const category of SHOP_CATEGORIES) {
+      if (!category.image) continue;
+      const h3 = screen.getByRole("heading", { level: 3, name: category.name });
+      const card = h3.closest("a");
+      expect(card).toBeTruthy();
+      const img = card!.querySelector("img");
+      expect(img).toBeTruthy();
+      // next/image rewrites src through /_next/image with the original encoded
+      // in the `url` query param. Assert the source URL is referenced rather
+      // than matching the rewritten src verbatim.
+      const src = img!.getAttribute("src") ?? "";
+      expect(decodeURIComponent(src)).toContain(category.image);
+    }
+  });
+
   it("renders the three value-prop headings", async () => {
     await renderHome();
     expect(screen.getByText(/hardwood, not plywood/i)).toBeTruthy();
