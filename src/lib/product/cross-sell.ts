@@ -7,43 +7,11 @@
 // is "wix_sdk" | "unexpected". Callers MUST branch on error before rendering
 // the silent empty-state (an SDK outage must not render as "nothing to show").
 
-import * as Sentry from "@sentry/nextjs";
 import { getWixClient } from "@/lib/wix-client";
+import { logWixFailure, toReaderError, type ReaderError } from "@/lib/wix/errors";
 import type { WixProduct } from "@/lib/wix/products";
 
-type WixErrorShape = {
-  code?: string;
-  details?: { applicationError?: { code?: string } };
-  response?: { status?: number };
-};
-
-function isWixSdkError(err: unknown): err is WixErrorShape {
-  if (typeof err !== "object" || err === null) return false;
-  const e = err as Record<string, unknown>;
-  if (typeof e.code === "string") return true;
-  const details = e.details as { applicationError?: unknown } | undefined;
-  if (details?.applicationError && typeof details.applicationError === "object") return true;
-  const response = e.response as { status?: unknown } | undefined;
-  if (typeof response?.status === "number") return true;
-  return false;
-}
-
-async function logCrossSellFailure(op: string, err: unknown) {
-  const wix = isWixSdkError(err) ? err : null;
-  const code = wix?.code ?? wix?.details?.applicationError?.code;
-  const httpStatus = wix?.response?.status;
-  const message = err instanceof Error ? err.message : String(err);
-  const kind = wix ? "wix-sdk" : "unexpected";
-  console.error(`[cross-sell] ${op} failed`, { kind, code, httpStatus, message });
-  Sentry.captureException(err, {
-    level: wix ? "warning" : "error",
-    tags: { source: "cross-sell", op, kind },
-    extra: { code, httpStatus, message },
-  });
-  await Sentry.flush(2000);
-}
-
-export type CrossSellError = "wix_sdk" | "unexpected";
+export type CrossSellError = ReaderError;
 
 export type CrossSellResult = {
   items: WixProduct[];
@@ -93,13 +61,11 @@ export async function getCrossSellProducts(
     const result = await query.limit(limit).find();
     return { items: result.items };
   } catch (err) {
-    await logCrossSellFailure(
+    await logWixFailure(
+      "cross-sell",
       `getCrossSellProducts(collections=${collectionIds.join(",")})`,
       err,
     );
-    return {
-      items: [],
-      error: isWixSdkError(err) ? "wix_sdk" : "unexpected",
-    };
+    return { items: [], error: toReaderError(err) };
   }
 }
