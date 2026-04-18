@@ -10,13 +10,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { getWixClient } from "@/lib/wix-client";
 import { isProductOnSale } from "@/lib/product/on-sale";
-import { logWixFailure as logWixFailureShared } from "@/lib/wix/errors";
-
-// Thin re-tag so existing call sites keep their one-arg signature; passes
-// `source: "wix"` to preserve the console prefix + Sentry tag used before
-// the shared helper was extracted.
-const logWixFailure = (op: string, err: unknown) =>
-  logWixFailureShared("wix", op, err);
+import { logWixFailure } from "@/lib/wix/errors";
 
 export async function listProducts(limit = 24) {
   try {
@@ -24,7 +18,7 @@ export async function listProducts(limit = 24) {
     const result = await client.products.queryProducts().limit(limit).find();
     return result.items;
   } catch (err) {
-    await logWixFailure("listProducts", err);
+    await logWixFailure("wix", "listProducts", err);
     return [];
   }
 }
@@ -39,7 +33,7 @@ export async function getProductBySlug(slug: string) {
       .find();
     return result.items[0] ?? null;
   } catch (err) {
-    await logWixFailure(`getProductBySlug(${slug})`, err);
+    await logWixFailure("wix", `getProductBySlug(${slug})`, err);
     return null;
   }
 }
@@ -57,7 +51,7 @@ export async function listProductsByCollectionId(
       .find();
     return result.items;
   } catch (err) {
-    await logWixFailure(`listProductsByCollectionId(${collectionId})`, err);
+    await logWixFailure("wix", `listProductsByCollectionId(${collectionId})`, err);
     return [];
   }
 }
@@ -82,7 +76,7 @@ export async function listProductsOnSale(collectionId: string) {
       try {
         page = await page.next();
       } catch (midErr) {
-        await logWixFailure(`listProductsOnSale(mid-loop, after ${all.length} items)`, midErr);
+        await logWixFailure("wix", `listProductsOnSale(mid-loop, after ${all.length} items)`, midErr);
         return all.filter(isProductOnSale);
       }
       all.push(...page.items);
@@ -99,7 +93,7 @@ export async function listProductsOnSale(collectionId: string) {
     }
     return all.filter(isProductOnSale);
   } catch (err) {
-    await logWixFailure("listProductsOnSale", err);
+    await logWixFailure("wix", "listProductsOnSale", err);
     return [];
   }
 }
@@ -110,7 +104,7 @@ export async function getCollectionBySlug(slug: string) {
     const result = await client.collections.getCollectionBySlug(slug);
     return result.collection ?? null;
   } catch (err) {
-    await logWixFailure(`getCollectionBySlug(${slug})`, err);
+    await logWixFailure("wix", `getCollectionBySlug(${slug})`, err);
     return null;
   }
 }
@@ -124,7 +118,7 @@ export async function listCollections(limit = 25) {
       .find();
     return result.items;
   } catch (err) {
-    await logWixFailure("listCollections", err);
+    await logWixFailure("wix", "listCollections", err);
     return [];
   }
 }
