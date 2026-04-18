@@ -1,5 +1,10 @@
+"use client";
+
 import Link from "next/link";
+import { m, useReducedMotion } from "framer-motion";
+
 import { formatPlpPrice } from "@/lib/product/plp-price";
+import { getPlpCardImages } from "@/lib/product/plp-card-images";
 import type { WixProduct } from "@/lib/wix/products";
 
 function hasDiscount(product: WixProduct): boolean {
@@ -18,24 +23,65 @@ function hasRange(product: WixProduct): boolean {
   return typeof min === "number" && typeof max === "number" && max > 0;
 }
 
+// Phase 7 hover/focus motion budget (pointer or keyboard triggers the same
+// branch for a11y parity):
+//   - scale 1 → 1.015, y 0 → -2px, 200ms ease-out (matches route-transition)
+//   - secondary image cross-fades in at 100% opacity when product has ≥2 images
+//   - cf-cta accent strip scales from 0 → 100% width at the card bottom
+// Reduced-motion: opacity tint only (no transform), vestibular-safe. Keyboard
+// and pointer both drive the SAME whileHover/whileFocus variant so focus-visible
+// ring users get the same affordance.
+const MOTION_DURATION_SEC = 0.2;
+const MOTION_SCALE = 1.015;
+const MOTION_Y_PX = -2;
+const REDUCED_OPACITY = 0.92;
+
 export function ProductCard({ product }: { product: WixProduct }) {
+  const prefersReducedMotion = useReducedMotion() ?? false;
   const href = product.slug ? `/products/${product.slug}` : "#";
-  const mainUrl = product.media?.mainMedia?.image?.url;
+  const { primary, secondary } = getPlpCardImages(product);
   const showStrikethrough = hasDiscount(product) && !hasRange(product);
+  const hasSecondary = secondary !== null;
+
+  const hoverVariant = prefersReducedMotion
+    ? { opacity: REDUCED_OPACITY, scale: 1, y: 0 }
+    : { opacity: 1, scale: MOTION_SCALE, y: MOTION_Y_PX };
 
   return (
-    <li className="rounded-lg border border-zinc-200 hover:border-zinc-400">
-      <Link href={href} className="block">
-        {mainUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={mainUrl}
-            alt={product.name ?? ""}
-            className="aspect-square w-full rounded-t-lg object-cover"
-          />
-        ) : (
-          <div className="aspect-square w-full rounded-t-lg bg-zinc-100" />
-        )}
+    <m.li
+      data-slot="product-card"
+      data-has-secondary={hasSecondary ? "true" : "false"}
+      data-reduced-motion={prefersReducedMotion ? "true" : "false"}
+      className="relative overflow-hidden rounded-lg border border-zinc-200 hover:border-zinc-400 focus-within:border-zinc-400"
+      initial={{ opacity: 1, scale: 1, y: 0 }}
+      whileHover={hoverVariant}
+      whileFocus={hoverVariant}
+      transition={{ duration: MOTION_DURATION_SEC, ease: "easeOut" }}
+    >
+      <Link href={href} className="group block focus:outline-none">
+        <div className="relative aspect-square w-full overflow-hidden rounded-t-lg bg-zinc-100">
+          {primary ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={primary}
+                alt={product.name ?? ""}
+                data-slot="product-card-primary-image"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              {hasSecondary && !prefersReducedMotion ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={secondary ?? undefined}
+                  alt=""
+                  aria-hidden="true"
+                  data-slot="product-card-secondary-image"
+                  className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100"
+                />
+              ) : null}
+            </>
+          ) : null}
+        </div>
         <div className="p-4">
           <h2 className="text-base font-medium">{product.name}</h2>
           {showStrikethrough ? (
@@ -53,7 +99,17 @@ export function ProductCard({ product }: { product: WixProduct }) {
             </p>
           )}
         </div>
+        {/* cf-cta accent strip: scales from 0 → full width on hover/focus,
+            reveal-on-intent. Under reduced-motion we render nothing so the
+            card surface is fully static for vestibular-sensitive users. */}
+        {!prefersReducedMotion ? (
+          <span
+            data-slot="product-card-accent"
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-cf-cta transition-transform duration-200 ease-out group-hover:scale-x-100 group-focus-within:scale-x-100"
+          />
+        ) : null}
       </Link>
-    </li>
+    </m.li>
   );
 }
