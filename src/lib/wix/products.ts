@@ -3,8 +3,9 @@
 // instead of pulling the full Wix client construct into page/route files.
 //
 // Each reader catches SDK failures and returns null/[] so a transient Wix
-// outage renders as an empty PLP / 404 PDP instead of a raw 500. Real errors
-// still hit server logs for debugging.
+// outage renders as an empty state or 404 at the route layer instead of a raw
+// 500. Real errors still hit server logs and are forwarded to Sentry via
+// captureException for alerting.
 import * as Sentry from "@sentry/nextjs";
 import { getWixClient } from "@/lib/wix-client";
 
@@ -15,7 +16,11 @@ function logWixFailure(op: string, err: unknown) {
       : undefined;
   const message = err instanceof Error ? err.message : String(err);
   console.error(`[wix] ${op} failed`, { code, message });
-  Sentry.captureException(err, { extra: { op, code } });
+  try {
+    Sentry.captureException(err, { extra: { op, code } });
+  } catch (sentryErr) {
+    console.error("[wix] Sentry.captureException failed", sentryErr);
+  }
 }
 
 export async function listProducts(limit = 24) {

@@ -88,7 +88,9 @@ describe("logWixFailure Sentry wiring", () => {
     const result = await getCollectionBySlug("futon-frames");
 
     expect(result).toBeNull();
-    expect(captureException).toHaveBeenCalledOnce();
+    expect(captureException).toHaveBeenCalledWith(err, {
+      extra: { op: "getCollectionBySlug(futon-frames)", code: undefined },
+    });
   });
 
   it("calls captureException when listProductsByCollectionId throws", async () => {
@@ -100,7 +102,9 @@ describe("logWixFailure Sentry wiring", () => {
     const result = await listProductsByCollectionId("col-123");
 
     expect(result).toEqual([]);
-    expect(captureException).toHaveBeenCalledOnce();
+    expect(captureException).toHaveBeenCalledWith(err, {
+      extra: { op: "listProductsByCollectionId(col-123)", code: undefined },
+    });
   });
 
   it("calls captureException when listCollections throws", async () => {
@@ -113,6 +117,23 @@ describe("logWixFailure Sentry wiring", () => {
 
     expect(result).toEqual([]);
     expect(captureException).toHaveBeenCalledOnce();
+  });
+
+  it("remains graceful when captureException itself throws", async () => {
+    captureException.mockImplementationOnce(() => {
+      throw new Error("Sentry transport failed");
+    });
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const err = new Error("Wix SDK error");
+    mockClient.products.queryProducts.mockReturnValue({
+      limit: () => ({ find: () => Promise.reject(err) }),
+    });
+
+    const result = await listProducts();
+
+    expect(result).toEqual([]);
+    expect(consoleSpy).toHaveBeenCalledTimes(2);
+    consoleSpy.mockRestore();
   });
 
   it("still logs to console.error alongside captureException", async () => {
