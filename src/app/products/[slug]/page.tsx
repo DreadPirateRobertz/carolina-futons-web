@@ -4,8 +4,10 @@ import { notFound } from "next/navigation";
 
 import { PdpInteractive } from "@/components/product/PdpInteractive";
 import type { GalleryImage } from "@/components/product/PdpGallery";
+import { PdpCrossSell } from "@/components/product/PdpCrossSell";
 import { getProductBySlug } from "@/lib/wix/products";
 import { formatPlpPrice } from "@/lib/product/plp-price";
+import { getCrossSellProducts } from "@/lib/product/cross-sell";
 import type {
   ProductOptionInput,
   VariantInput,
@@ -41,6 +43,7 @@ export default async function PdpPage(props: {
   const productOptions = (product.productOptions ?? []) as ProductOptionInput[];
   const variants = (product.variants ?? []) as VariantInput[];
   const galleryImages = buildGallery(product);
+  const crossSell = await getCrossSellProducts(product);
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-10">
@@ -76,6 +79,8 @@ export default async function PdpPage(props: {
           </p>
         </section>
       ) : null}
+
+      <PdpCrossSell products={crossSell.items} error={crossSell.error} />
     </main>
   );
 }
