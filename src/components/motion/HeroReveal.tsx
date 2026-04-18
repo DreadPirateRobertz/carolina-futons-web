@@ -10,6 +10,13 @@ import type { ReactNode } from "react";
 // `delay` lets the caller stagger the headline and subtitle so the
 // subhead lands a hair after the h1 — gives the title room to read first.
 //
+// `as` picks the wrapper element. Default "div" is correct for block-level
+// reveals (category cards, subtitle paragraphs). Pass "span" for inline
+// reveals inside phrasing content — e.g. per-word hero headline stagger,
+// where a div inside an h1 would break word flow. When as="span" we also
+// set inline-block so the y-transform has somewhere to apply (transforms
+// no-op on pure inline boxes).
+//
 // Uses `m` (not `motion`) so the LazyMotion features in MotionProvider stay
 // effective — `motion` would force-load the full feature set and blow the
 // bundle budget.
@@ -17,30 +24,54 @@ import type { ReactNode } from "react";
 // WCAG 2.3.3 safety (cf-3qt.7.M.FIX.2 per-component gate): we can't rely on
 // the app-wide MotionConfig reducedMotion="user" alone here — framer's
 // auto-honor applies to the variants API, not to the literal `initial` /
-// `whileInView` objects used below. So we read useReducedMotion() and
-// drop the motion props entirely on reduce, which is byte-for-byte static
-// rather than a zeroed-transform render with the subscription overhead.
+// `whileInView` objects used below. So we read useReducedMotion() and drop
+// the motion props entirely on reduce, which is byte-for-byte static rather
+// than a zeroed-transform render with the subscription overhead.
 export function HeroReveal({
   children,
   delay = 0,
+  as = "div",
 }: {
   children: ReactNode;
   delay?: number;
+  as?: "div" | "span";
 }) {
   const reduce = useReducedMotion() ?? false;
 
   if (reduce) {
-    return <m.div data-slot="hero-reveal" data-reduced-motion="1">{children}</m.div>;
+    if (as === "span") {
+      return (
+        <m.span
+          data-slot="hero-reveal"
+          data-reduced-motion="1"
+          className="inline-block"
+        >
+          {children}
+        </m.span>
+      );
+    }
+    return (
+      <m.div data-slot="hero-reveal" data-reduced-motion="1">
+        {children}
+      </m.div>
+    );
   }
 
+  const motionProps = {
+    initial: { opacity: 0, y: 20 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, amount: 0.4 },
+    transition: { duration: 0.6, delay, ease: "easeOut" as const },
+  };
+  if (as === "span") {
+    return (
+      <m.span data-slot="hero-reveal" className="inline-block" {...motionProps}>
+        {children}
+      </m.span>
+    );
+  }
   return (
-    <m.div
-      data-slot="hero-reveal"
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.4 }}
-      transition={{ duration: 0.6, delay, ease: "easeOut" }}
-    >
+    <m.div data-slot="hero-reveal" {...motionProps}>
       {children}
     </m.div>
   );
