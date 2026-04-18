@@ -123,4 +123,14 @@ describe("parseSearchParams", () => {
   it("handles array-valued page param by using first value", () => {
     expect(parseSearchParams({ page: ["5", "6"] }).pageNum).toBe(5);
   });
+
+  it("treats non-numeric priceMin/priceMax as undefined (no NaN leakage)", () => {
+    const result = parseSearchParams({ priceMin: "abc", priceMax: "foo" });
+    expect(result.priceMin).toBeUndefined();
+    expect(result.priceMax).toBeUndefined();
+  });
+
+  it("accepts priceMin=0 as a valid lower bound", () => {
+    expect(parseSearchParams({ priceMin: "0" }).priceMin).toBe(0);
+  });
 });

@@ -53,8 +53,12 @@ export function parseSearchParams(
   const sort: PlpSort = VALID_SORTS.has(rawSort as PlpSort)
     ? (rawSort as PlpSort)
     : "featured";
-  const priceMin = raw("priceMin") ? Number(raw("priceMin")) : undefined;
-  const priceMax = raw("priceMax") ? Number(raw("priceMax")) : undefined;
+  const parsePrice = (v: string | undefined) => {
+    const n = v !== undefined ? Number(v) : NaN;
+    return Number.isFinite(n) ? n : undefined;
+  };
+  const priceMin = parsePrice(raw("priceMin"));
+  const priceMax = parsePrice(raw("priceMax"));
   const inStockOnly = raw("inStock") === "1";
 
   return { pageNum, sort, priceMin, priceMax, inStockOnly };

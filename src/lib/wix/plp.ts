@@ -15,8 +15,7 @@
 //     collection, not just the current page — one full-catalog scan feeds
 //     both the paginated slice and the facet counts.
 // Trade-off: we cap the scan at `scanLimit` (default 500) to keep the payload
-// bounded. PLPs currently have < 200 products each, so 500 leaves headroom
-// without risking a pathological scan.
+// bounded. Revisit if any collection grows beyond that threshold.
 
 import * as Sentry from "@sentry/nextjs";
 import { getWixClient } from "@/lib/wix-client";
@@ -89,7 +88,8 @@ export type ListPlpOptions = {
   filters?: PlpFilters;
   scanLimit?: number;
   // When set, skips the Wix collection scan and uses this array as the full
-  // product set. Used by mattresses-sale to inject the pre-filtered on-sale list.
+  // product set. Note: the caller is responsible for the completeness of this
+  // list — listProductsOnSale returns one SDK page (~48 items), not a full scan.
   prefetchedProducts?: WixProduct[];
 };
 
