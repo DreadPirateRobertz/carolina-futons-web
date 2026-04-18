@@ -3,6 +3,15 @@ import Link from "next/link";
 import { SHOP_CATEGORIES } from "@/lib/shop/categories";
 import { HeroReveal } from "@/components/motion/HeroReveal";
 
+// Per-card onset delay for the Shop-by-category cascade. 80ms is at the
+// just-noticeable-difference threshold for sequential visual onset (enough
+// to read as intentional ordering, not so much that the grid feels sluggish).
+// Five categories × 80ms = 400ms total cascade — inside the 500ms vestibular
+// tolerance budget for non-essential motion. If this grows past 6–7 cards,
+// reduce to ~50ms or switch to parent-level staggerChildren with a capped
+// maxStagger.
+const CARD_STAGGER_SECONDS = 0.08;
+
 const HERO_IMAGE_SRC =
   "https://static.wixstatic.com/media/e04e89_cf15142c61714ecfad7852522e0a98e4~mv2.jpg/v1/fit/w_2000,h_2000,q_90/file.jpg";
 const HERO_IMAGE_ALT =
@@ -57,36 +66,43 @@ export default function HomePage() {
       </section>
 
       <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="flex items-end justify-between gap-6">
-          <h2 className="font-heading text-2xl font-semibold text-cf-navy sm:text-3xl">
-            Shop by category
-          </h2>
-          <Link
-            href="/shop"
-            className="text-sm font-medium text-cf-cta hover:underline"
-          >
-            View all →
-          </Link>
-        </div>
+        <HeroReveal>
+          <div className="flex items-end justify-between gap-6">
+            <h2 className="font-heading text-2xl font-semibold text-cf-navy sm:text-3xl">
+              Shop by category
+            </h2>
+            <Link
+              href="/shop"
+              className="text-sm font-medium text-cf-cta hover:underline"
+            >
+              View all →
+            </Link>
+          </div>
+        </HeroReveal>
         <ul className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {SHOP_CATEGORIES.map((category) => (
+          {SHOP_CATEGORIES.map((category, i) => (
             <li key={category.slug}>
-              <Link
-                href={`/shop/${category.slug}`}
-                className="group flex h-full flex-col justify-between rounded-lg border border-cf-divider bg-white p-6 transition-colors hover:border-cf-navy"
-              >
-                <div>
-                  <h3 className="font-heading text-lg font-semibold text-cf-navy">
-                    {category.name}
-                  </h3>
-                  <p className="mt-2 text-sm text-cf-charcoal/80">
-                    {category.description}
-                  </p>
-                </div>
-                <span className="mt-6 text-sm font-medium text-cf-cta group-hover:underline">
-                  Browse {category.name.toLowerCase()} →
-                </span>
-              </Link>
+              {/* whileInView fires once (no replay on scroll-back); reduced-motion
+                  users land on the final state via HeroReveal's internal guard.
+                  See CARD_STAGGER_SECONDS comment above for the why behind 80ms. */}
+              <HeroReveal delay={i * CARD_STAGGER_SECONDS}>
+                <Link
+                  href={`/shop/${category.slug}`}
+                  className="group flex h-full flex-col justify-between rounded-lg border border-cf-divider bg-white p-6 transition-colors hover:border-cf-navy"
+                >
+                  <div>
+                    <h3 className="font-heading text-lg font-semibold text-cf-navy">
+                      {category.name}
+                    </h3>
+                    <p className="mt-2 text-sm text-cf-charcoal/80">
+                      {category.description}
+                    </p>
+                  </div>
+                  <span className="mt-6 text-sm font-medium text-cf-cta group-hover:underline">
+                    Browse {category.name.toLowerCase()} →
+                  </span>
+                </Link>
+              </HeroReveal>
             </li>
           ))}
         </ul>
