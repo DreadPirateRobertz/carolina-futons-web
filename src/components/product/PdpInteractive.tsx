@@ -155,7 +155,7 @@ export function PdpInteractive({
         productName={productName}
         formattedPrice={selectedPrice}
       >
-        <AddToCartButton {...addToCartProps} />
+        {(quantity) => <AddToCartButton {...addToCartProps} quantity={quantity} />}
       </PdpStickyCta>
     </div>
   );
