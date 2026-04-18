@@ -30,6 +30,8 @@ function useReducedMotion(): boolean {
 }
 
 const DWELL_MS = 5000;
+const PAUSE_ICON_PATH = "M5 3h2v10H5V3zm4 0h2v10H9V3z";
+const PLAY_ICON_PATH = "M3 2.5l10 5.5-10 5.5V2.5z";
 
 type Props = {
   slides: ReadonlyArray<HeroSlide>;
@@ -50,9 +52,25 @@ function HeroCarouselInner({ slides }: { slides: ReadonlyArray<HeroSlide> }) {
   const [active, setActive] = useState(0);
   const [hoverPaused, setHoverPaused] = useState(false);
   const [focusPaused, setFocusPaused] = useState(false);
+  // manualPaused is sticky: only a second button click clears it, unlike
+  // hoverPaused/focusPaused which auto-clear on mouseleave/blur.
+  const [manualPaused, setManualPaused] = useState(false);
   const reducedMotion = useReducedMotion();
 
-  const paused = hoverPaused || focusPaused;
+  // If the OS flips to reduced-motion mid-session, the pause button disappears
+  // — the user cannot clear a sticky manualPaused themselves. Without clearing
+  // it here, autoplay would remain silently blocked when reducedMotion later
+  // flips back off. Adjusting state during render with a prev-value guard is
+  // the React-blessed alternative to a useEffect + setState pair (which trips
+  // react-hooks/set-state-in-effect). See:
+  // react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevReducedMotion, setPrevReducedMotion] = useState(reducedMotion);
+  if (reducedMotion !== prevReducedMotion) {
+    setPrevReducedMotion(reducedMotion);
+    if (reducedMotion) setManualPaused(false);
+  }
+
+  const paused = hoverPaused || focusPaused || manualPaused;
   const autoplay = !reducedMotion && !paused && slides.length > 1;
 
   // Advance the slide every DWELL_MS ms while autoplay is active.
@@ -94,6 +112,16 @@ function HeroCarouselInner({ slides }: { slides: ReadonlyArray<HeroSlide> }) {
     if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
       setFocusPaused(false);
     }
+  }
+
+  function toggleManualPause() {
+    if (manualPaused) {
+      // Explicit "Play" click: clear focus-pause so autoplay actually resumes.
+      // Without this, the button retaining focus would keep focusPaused=true
+      // and autoplay would not restart until focus left the region.
+      setFocusPaused(false);
+    }
+    setManualPaused((prev) => !prev);
   }
 
   return (
@@ -139,6 +167,22 @@ function HeroCarouselInner({ slides }: { slides: ReadonlyArray<HeroSlide> }) {
           />
         </div>
       ))}
+
+      {/* WCAG 2.2.2: pause/play control — visible when autoplay is active
+          (multi-slide carousel, no reduced-motion OS preference). */}
+      {slides.length > 1 && !reducedMotion && (
+        <button
+          type="button"
+          aria-label={manualPaused ? "Play slideshow" : "Pause slideshow"}
+          aria-pressed={manualPaused}
+          onClick={toggleManualPause}
+          className="absolute bottom-3 right-3 flex h-7 w-7 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-colors hover:bg-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+        >
+          <svg aria-hidden="true" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3">
+            <path d={manualPaused ? PLAY_ICON_PATH : PAUSE_ICON_PATH} />
+          </svg>
+        </button>
+      )}
 
       {/* Dot indicators */}
       <div
