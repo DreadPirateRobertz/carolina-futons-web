@@ -390,3 +390,62 @@ describe("PlpPage — over-paginated (page beyond last filled page)", () => {
     expect(html).not.toMatch(/Back to page 1/);
   });
 });
+
+// ── PlpPage: F2 resolver wiring (non-filter bypass + sale empty-state) ─────
+
+describe("PlpPage — non-filter categories skip listProductsOnSale (F2 wiring)", () => {
+  beforeEach(() => {
+    vi.mocked(listProductsOnSale).mockClear();
+    vi.mocked(findCategory).mockReturnValue({
+      slug: "futon-frames",
+      name: "Futon Frames",
+      description: "Our frames.",
+      collectionSlug: "futon-frames",
+    });
+    vi.mocked(getCollectionBySlug).mockResolvedValue({
+      _id: "futons-col-id",
+    } as never);
+    vi.mocked(listProductsOnSale).mockResolvedValue([]);
+    vi.mocked(getCollectionPlp).mockResolvedValue(EMPTY_PLP);
+  });
+
+  it("does not invoke the on-sale filter for a regular collection category", async () => {
+    await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({}),
+    });
+    expect(listProductsOnSale).not.toHaveBeenCalled();
+  });
+});
+
+describe("PlpPage — mattresses-sale empty result surfaces per-category copy", () => {
+  beforeEach(() => {
+    vi.mocked(findCategory).mockReturnValue({
+      slug: "mattresses-sale",
+      name: "Mattresses on Sale",
+      description: "Current promotions.",
+      collectionSlug: "mattresses-sale",
+      sourceSlug: "mattresses",
+      filter: "on-sale",
+      emptyStateCopy: "No mattresses are on sale right now. Check back soon.",
+    });
+    vi.mocked(getCollectionBySlug).mockImplementation(async (slug: string) =>
+      slug === "mattresses" ? ({ _id: "mattresses-col-id" } as never) : null,
+    );
+    vi.mocked(listProductsOnSale).mockResolvedValue([]);
+    vi.mocked(getCollectionPlp).mockResolvedValue(EMPTY_PLP);
+  });
+
+  it("renders the category's emptyStateCopy when no mattresses are discounted", async () => {
+    const tree = (await PlpPage({
+      params: Promise.resolve({ category: "mattresses-sale" }),
+      searchParams: Promise.resolve({}),
+    })) as ReactElement;
+    const html = renderToStaticMarkup(tree);
+
+    expect(html).toContain(
+      "No mattresses are on sale right now. Check back soon.",
+    );
+    expect(html).not.toMatch(/No products found in this collection/);
+  });
+});
