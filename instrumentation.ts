@@ -1,3 +1,5 @@
+import type { InstrumentationOnRequestError } from "next/dist/server/instrumentation/types";
+
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     await import("./sentry.server.config");
@@ -7,10 +9,10 @@ export async function register() {
   }
 }
 
-export const onRequestError = async (
-  err: unknown,
-  request: { path: string; method: string },
-  context: { routerKind: string; routePath: string },
+export const onRequestError: InstrumentationOnRequestError = async (
+  err,
+  request,
+  context,
 ) => {
   const { captureRequestError } = await import("@sentry/nextjs");
   captureRequestError(err, request, context);
