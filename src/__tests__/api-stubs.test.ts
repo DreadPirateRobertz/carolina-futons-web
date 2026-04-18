@@ -11,11 +11,6 @@ const stubRoutes: Array<{
   load: () => Promise<Record<string, unknown>>;
 }> = [
   {
-    path: "/api/contact",
-    methods: ["POST"],
-    load: () => import("@/app/api/contact/route"),
-  },
-  {
     path: "/api/newsletter",
     methods: ["POST"],
     load: () => import("@/app/api/newsletter/route"),
