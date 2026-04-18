@@ -9,6 +9,7 @@ import {
   useTransform,
   type MotionStyle,
 } from "framer-motion";
+import { PdpImageLightbox } from "./PdpImageLightbox";
 
 // cf-3qt.6.F.1 + cf-3qt.7.O.1: multi-image gallery for the PDP.
 //
@@ -87,6 +88,7 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
   // Tracks URLs that failed to load. State (not DOM mutation) so React renders
   // FALLBACK_PRODUCT_IMG via the src prop and reconciliation never reverts it.
   const [brokenSrcs, setBrokenSrcs] = useState<ReadonlySet<string>>(new Set());
+  const [zoomOpen, setZoomOpen] = useState(false);
 
   const reduce = useReducedMotion();
   const supportsVT = useSupportsViewTransition();
@@ -189,13 +191,27 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
 
   return (
     <div data-slot="pdp-gallery" className="space-y-3">
-      <ZoomMainImage
+      <button
+        type="button"
+        onClick={() => setZoomOpen(true)}
+        aria-label={`View ${productName} full size`}
+        data-testid="pdp-main-image-zoom-trigger"
+        className="block w-full cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-espresso focus-visible:ring-offset-2"
+      >
+        <ZoomMainImage
+          src={resolvedSrc(active.url)}
+          alt={active.alt ?? productName}
+          crossfadeKey={index}
+          carryVTName={vtSourceIndex === null}
+          useFramerCrossfade={useFramerCrossfade}
+          onImgError={() => markBroken(active.url, "main")}
+        />
+      </button>
+      <PdpImageLightbox
+        open={zoomOpen}
+        onClose={() => setZoomOpen(false)}
         src={resolvedSrc(active.url)}
         alt={active.alt ?? productName}
-        crossfadeKey={index}
-        carryVTName={vtSourceIndex === null}
-        useFramerCrossfade={useFramerCrossfade}
-        onImgError={() => markBroken(active.url, "main")}
       />
       {images.length > 1 ? (
         <div

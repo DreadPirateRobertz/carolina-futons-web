@@ -390,3 +390,32 @@ describe("PdpGallery — onError / broken image fallback", () => {
     warnSpy.mockRestore();
   });
 });
+
+// cf-nmwy: wiring the PdpImageLightbox into the gallery. Three cases pinned
+// down by the dispatch: main image renders, clicking it opens the overlay,
+// ESC on the open overlay closes it.
+describe("PdpGallery — image zoom lightbox (cf-nmwy)", () => {
+  it("renders the main image (zoom entry-point source of truth)", () => {
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    expect(main.src).toBe("https://img/a.jpg");
+  });
+
+  it("clicking the main image opens the full-screen lightbox dialog", () => {
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    const trigger = screen.getByTestId("pdp-main-image-zoom-trigger");
+    fireEvent.click(trigger);
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toBeInTheDocument();
+    expect(dialog.getAttribute("aria-modal")).toBe("true");
+  });
+
+  it("ESC closes an open lightbox", () => {
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    fireEvent.click(screen.getByTestId("pdp-main-image-zoom-trigger"));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
