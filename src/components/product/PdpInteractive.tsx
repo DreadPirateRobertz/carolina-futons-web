@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
+import { PdpGallery, type GalleryImage } from "@/components/product/PdpGallery";
 import { VariantPicker } from "@/components/product/VariantPicker";
 import {
   findMatchingVariant,
@@ -25,6 +26,7 @@ export type PdpInteractiveProps = {
   fallbackImageUrl: string | undefined;
   fallbackPrice: string;
   fallbackPriceCents: number;
+  galleryImages?: ReadonlyArray<GalleryImage>;
 };
 
 export function PdpInteractive({
@@ -36,6 +38,7 @@ export function PdpInteractive({
   fallbackImageUrl,
   fallbackPrice,
   fallbackPriceCents,
+  galleryImages,
 }: PdpInteractiveProps) {
   // Intentional duplication: VariantPicker also seeds from initialSelection() and holds its own
   // selection state for price/stock display. The two stay in sync via onSelectionChange. If
@@ -65,7 +68,13 @@ export function PdpInteractive({
   return (
     <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
       <div data-slot="pdp-media">
-        {imageUrl ? (
+        {galleryImages && galleryImages.length > 0 ? (
+          <PdpGallery
+            images={galleryImages}
+            productName={productName}
+            activeUrl={imageUrl}
+          />
+        ) : imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={imageUrl}

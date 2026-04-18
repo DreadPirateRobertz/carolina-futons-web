@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PdpInteractive } from "@/components/product/PdpInteractive";
+import type { GalleryImage } from "@/components/product/PdpGallery";
 import { getProductBySlug } from "@/lib/wix/products";
 import { formatPlpPrice } from "@/lib/product/plp-price";
 import type {
@@ -39,6 +40,7 @@ export default async function PdpPage(props: {
   const descriptionText = stripHtml(product.description ?? "");
   const productOptions = (product.productOptions ?? []) as ProductOptionInput[];
   const variants = (product.variants ?? []) as VariantInput[];
+  const galleryImages = buildGallery(product);
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-10">
@@ -60,6 +62,7 @@ export default async function PdpPage(props: {
           fallbackImageUrl={mainUrl}
           fallbackPrice={fallbackPrice}
           fallbackPriceCents={fallbackPriceCents}
+          galleryImages={galleryImages}
         />
       </div>
 
@@ -80,6 +83,40 @@ export default async function PdpPage(props: {
 function toCents(price: number | null | undefined): number {
   if (typeof price !== "number" || !Number.isFinite(price)) return 0;
   return Math.round(price * 100);
+}
+
+type WixMediaProduct = {
+  name?: string | null;
+  media?: {
+    mainMedia?: { image?: { url?: string | null } | null; title?: string | null } | null;
+    items?: ReadonlyArray<{
+      image?: { url?: string | null } | null;
+      title?: string | null;
+      mediaType?: string | null;
+    }> | null;
+  } | null;
+};
+
+// cf-3qt.6.F.1: build the ordered gallery list from Wix product.media.
+// mainMedia leads, then media.items[] for image-type entries. Duplicates
+// (mainMedia url appearing again in items) are filtered so the thumb strip
+// doesn't show the same image twice.
+function buildGallery(product: WixMediaProduct): GalleryImage[] {
+  const seen = new Set<string>();
+  const images: GalleryImage[] = [];
+  const mainUrl = product.media?.mainMedia?.image?.url;
+  if (mainUrl) {
+    images.push({ url: mainUrl, alt: product.media?.mainMedia?.title ?? undefined });
+    seen.add(mainUrl);
+  }
+  for (const item of product.media?.items ?? []) {
+    if (item?.mediaType && item.mediaType !== "image") continue;
+    const url = item?.image?.url;
+    if (!url || seen.has(url)) continue;
+    images.push({ url, alt: item.title ?? undefined });
+    seen.add(url);
+  }
+  return images;
 }
 
 // Wix Stores `product.description` is HTML. Phase 2 placeholder: strip tags and
