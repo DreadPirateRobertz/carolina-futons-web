@@ -10,32 +10,34 @@ const sentryMock = vi.hoisted(() => ({
 
 vi.mock("@sentry/nextjs", () => sentryMock);
 
-function brokenClient() {
+type ThrownShape = unknown;
+
+function clientThatThrows(thrown: ThrownShape) {
   return {
     products: {
       queryProducts: () => ({
         eq: () => ({
           limit: () => ({
             find: async () => {
-              throw new Error("Wix SDK boom");
+              throw thrown;
             },
           }),
         }),
         limit: () => ({
           find: async () => {
-            throw new Error("Wix SDK boom");
+            throw thrown;
           },
         }),
       }),
     },
     collections: {
       getCollectionBySlug: async () => {
-        throw new Error("Wix SDK boom");
+        throw thrown;
       },
       queryCollections: () => ({
         limit: () => ({
           find: async () => {
-            throw new Error("Wix SDK boom");
+            throw thrown;
           },
         }),
       }),
@@ -43,14 +45,20 @@ function brokenClient() {
   };
 }
 
-describe("logWixFailure forwards to Sentry", () => {
+describe("logWixFailure", () => {
   beforeEach(() => {
     sentryMock.captureException.mockClear();
   });
 
-  it("captureException tagged with source=wix and the op", async () => {
+  it("tags known Wix SDK errors as kind=wix-sdk, level=warning", async () => {
+    const wixError = {
+      message: "OAuth token refresh failed",
+      code: "AUTH_ERROR",
+      details: { applicationError: { code: "AUTH_ERROR" } },
+      response: { status: 401 },
+    };
     vi.doMock("@/lib/wix-client", () => ({
-      getWixClient: () => brokenClient(),
+      getWixClient: () => clientThatThrows(wixError),
     }));
     vi.spyOn(console, "error").mockImplementation(() => {});
 
@@ -64,10 +72,50 @@ describe("logWixFailure forwards to Sentry", () => {
 
     const calls = sentryMock.captureException.mock.calls;
     expect(calls).toHaveLength(3);
+    for (const [, ctx] of calls) {
+      const c = ctx as { tags?: Record<string, string>; level?: string };
+      expect(c.tags).toMatchObject({ source: "wix", kind: "wix-sdk" });
+      expect(c.level).toBe("warning");
+    }
+    const ops = calls.map(
+      ([, ctx]) => (ctx as { tags: Record<string, string> }).tags.op,
+    );
+    expect(ops).toEqual([
+      "listProducts",
+      "getProductBySlug(x)",
+      "listCollections",
+    ]);
+  });
 
-    const tags = calls.map(([, ctx]) => (ctx as { tags?: Record<string, string> }).tags);
-    expect(tags[0]).toMatchObject({ source: "wix", op: "listProducts" });
-    expect(tags[1]).toMatchObject({ source: "wix", op: "getProductBySlug(x)" });
-    expect(tags[2]).toMatchObject({ source: "wix", op: "listCollections" });
+  it("tags unexpected errors as kind=unexpected, level=error", async () => {
+    vi.doMock("@/lib/wix-client", () => ({
+      getWixClient: () => clientThatThrows(new TypeError("null is not a function")),
+    }));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { listProducts } = await import("@/lib/wix/products");
+    const result = await listProducts();
+
+    expect(result).toEqual([]);
+    expect(sentryMock.captureException).toHaveBeenCalledTimes(1);
+    const call = sentryMock.captureException.mock.calls[0];
+    const c = call[1] as { tags: Record<string, string>; level: string };
+    expect(c.tags).toMatchObject({ source: "wix", kind: "unexpected" });
+    expect(c.level).toBe("error");
+  });
+
+  it("still returns empty shapes (no 500s) on either kind", async () => {
+    vi.doMock("@/lib/wix-client", () => ({
+      getWixClient: () => clientThatThrows(new TypeError("boom")),
+    }));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { listProducts, getProductBySlug, getCollectionBySlug } = await import(
+      "@/lib/wix/products"
+    );
+
+    expect(await listProducts()).toEqual([]);
+    expect(await getProductBySlug("x")).toBeNull();
+    expect(await getCollectionBySlug("y")).toBeNull();
   });
 });
