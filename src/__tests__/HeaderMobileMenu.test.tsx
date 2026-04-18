@@ -166,8 +166,10 @@ describe("HeaderMobileMenu", () => {
       ["Design a Room", "/design-a-room"],
       ["Guides", "/guides"],
       ["Reviews", "/reviews"],
+      ["Blog", "/blog"],
       ["About", "/about"],
       ["Visit Us", "/visit"],
+      ["Contact", "/contact"],
     ] as const;
     expected.forEach(([label, href]) => {
       expect(screen.getByRole("link", { name: label })).toHaveAttribute(
@@ -175,6 +177,25 @@ describe("HeaderMobileMenu", () => {
         href,
       );
     });
+  });
+
+  it("surfaces Phase-2 content routes (/about, /blog, /contact) in the drawer", () => {
+    renderMenu();
+    // Compliance net: the mobile drawer must expose the three Phase-2
+    // content pages so mobile traffic can reach them without relying on
+    // the footer (which is below the fold on long pages).
+    expect(screen.getByRole("link", { name: "About" })).toHaveAttribute(
+      "href",
+      "/about",
+    );
+    expect(screen.getByRole("link", { name: "Blog" })).toHaveAttribute(
+      "href",
+      "/blog",
+    );
+    expect(screen.getByRole("link", { name: "Contact" })).toHaveAttribute(
+      "href",
+      "/contact",
+    );
   });
 
   // ── Accessibility ──────────────────────────────────────────────────────────
