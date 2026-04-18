@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { AddToCartButton } from "@/components/cart/AddToCartButton";
+import {
+  AddToCartButton,
+  type AddToCartButtonProps,
+} from "@/components/cart/AddToCartButton";
 import { PdpGallery, type GalleryImage } from "@/components/product/PdpGallery";
 import { PdpStickyCta } from "@/components/product/PdpStickyCta";
 import { VariantPicker } from "@/components/product/VariantPicker";
@@ -49,8 +52,13 @@ export function PdpInteractive({
     initialSelection(productOptions, variants),
   );
   const primaryCtaRef = useRef<HTMLDivElement>(null);
-  // Seed `true` so we don't flash the sticky bar on first paint before the
-  // observer fires.
+  // Seed `true` (primary visible) for two reasons: (1) avoids a first-paint
+  // flash of the sticky bar before the observer's first callback fires on the
+  // client; (2) keeps the sticky bar absent during SSR and any environment
+  // without IntersectionObserver (old browsers, jsdom without the polyfill) —
+  // since the effect below bails, `primaryInView` stays `true` and the bar
+  // stays hidden. An accidental seed of `false` here would render a hard-coded
+  // sticky bar for every SSR + no-IO user, which is worse than no bar at all.
   const [primaryInView, setPrimaryInView] = useState(true);
 
   useEffect(() => {
@@ -83,7 +91,10 @@ export function PdpInteractive({
       ? "Out of stock"
       : undefined;
 
-  const addToCartProps = {
+  // Shared by the primary CTA and the sticky bar so both invoke the same
+  // cart action with identical props. Typed against AddToCartButton's own
+  // prop type to catch drift if the button contract changes.
+  const addToCartProps: AddToCartButtonProps = {
     productId,
     productName,
     variantId: selectedVariant?._id ?? undefined,
