@@ -9,7 +9,11 @@ type Props = {
 
 export function HeroParallax({ children }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const reducedMotion = useReducedMotion();
+  // ?? false: useReducedMotion returns null on SSR; treat null as non-reduced
+  // so the server render matches the non-reduced-motion client default, avoiding
+  // a hydration mismatch. MotionProvider's MotionConfig reducedMotion="user"
+  // also suppresses motion globally for reduced-motion users.
+  const reducedMotion = useReducedMotion() ?? false;
 
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -18,8 +22,10 @@ export function HeroParallax({ children }: Props) {
   });
 
   // Translate up by 50px over the full scroll range — slower than the
-  // scroll speed creates the parallax depth effect. 50px ceiling keeps
-  // vestibular impact well inside WCAG 2.3.3 tolerance.
+  // scroll speed creates the parallax depth effect. The useReducedMotion
+  // guard below is what satisfies WCAG 2.3.3 (AAA, Animation from
+  // Interactions); the 50px limit is a design choice, not a compliance
+  // threshold.
   const y = useTransform(scrollYProgress, [0, 1], [0, -50]);
 
   return (

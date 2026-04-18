@@ -6,8 +6,8 @@ import { render, screen } from "@testing-library/react";
 const motionMocks = vi.hoisted(() => ({
   useReducedMotion: vi.fn(() => false),
   useScroll: vi.fn(() => ({ scrollYProgress: { get: () => 0 } })),
-  useTransform: vi.fn((_mv: unknown, _input: unknown, _output: number[]) => ({
-    get: () => _output[0],
+  useTransform: vi.fn((_mv: unknown, _input: unknown, output: number[]) => ({
+    get: () => output[0],
   })),
 }));
 
@@ -41,13 +41,13 @@ describe("HeroParallax", () => {
   it("renders children without crashing", () => {
     render(
       <HeroParallax>
-        <div role="region" aria-label="Hero image carousel">carousel content</div>
+        <span data-testid="child">content</span>
       </HeroParallax>,
     );
-    expect(screen.getByRole("region", { name: /hero image carousel/i })).toBeTruthy();
+    expect(screen.getByTestId("child")).toBeInTheDocument();
   });
 
-  it("preserves the aria-label of the wrapped carousel", () => {
+  it("preserves the aria-label of the wrapped carousel region", () => {
     render(
       <HeroParallax>
         <div role="region" aria-label="Hero image carousel">slides</div>
@@ -58,24 +58,43 @@ describe("HeroParallax", () => {
     ).toBeInTheDocument();
   });
 
-  it("wires useScroll to track the container ref", () => {
+  it("wires useScroll to container ref with correct viewport offset", () => {
     render(<HeroParallax><div>content</div></HeroParallax>);
     expect(motionMocks.useScroll).toHaveBeenCalledWith(
-      expect.objectContaining({ target: expect.objectContaining({ current: expect.anything() }) }),
+      expect.objectContaining({
+        target: expect.objectContaining({ current: expect.anything() }),
+        offset: ["start start", "end start"],
+      }),
     );
   });
 
-  it("passes y transform to motion div when reduced-motion is off", () => {
-    motionMocks.useReducedMotion.mockReturnValue(false);
+  it("calls useTransform with [0,1] → [0,-50] range", () => {
     render(<HeroParallax><div>content</div></HeroParallax>);
-    const div = screen.getByTestId("motion-div");
-    expect(div.getAttribute("data-has-style")).toBe("true");
+    expect(motionMocks.useTransform).toHaveBeenCalledWith(
+      expect.anything(),
+      [0, 1],
+      [0, -50],
+    );
   });
 
-  it("omits y transform when prefers-reduced-motion is set", () => {
+  it("passes style with y key to motion div when reduced-motion is off", () => {
+    motionMocks.useReducedMotion.mockReturnValue(false);
+    const { container } = render(<HeroParallax><div>content</div></HeroParallax>);
+    const div = container.querySelector("[data-testid='motion-div']");
+    expect(div?.getAttribute("data-has-style")).toBe("true");
+  });
+
+  it("omits style entirely when prefers-reduced-motion is set", () => {
     motionMocks.useReducedMotion.mockReturnValue(true);
-    render(<HeroParallax><div>content</div></HeroParallax>);
-    const div = screen.getByTestId("motion-div");
-    expect(div.getAttribute("data-has-style")).toBe("false");
+    const { container } = render(<HeroParallax><div>content</div></HeroParallax>);
+    const div = container.querySelector("[data-testid='motion-div']");
+    expect(div?.getAttribute("data-has-style")).toBe("false");
+  });
+
+  it("treats SSR null from useReducedMotion as non-reduced (no style omission)", () => {
+    motionMocks.useReducedMotion.mockReturnValue(null as unknown as boolean);
+    const { container } = render(<HeroParallax><div>content</div></HeroParallax>);
+    const div = container.querySelector("[data-testid='motion-div']");
+    expect(div?.getAttribute("data-has-style")).toBe("true");
   });
 });
