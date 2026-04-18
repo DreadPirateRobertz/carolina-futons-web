@@ -131,4 +131,22 @@ describe("formatPlpPrice", () => {
       }),
     ).toBe("");
   });
+
+  it("returns empty string when price is null with no usable range", () => {
+    expect(
+      formatPlpPrice({
+        priceData: { price: null, currency: "USD", formatted: { price: null } },
+      }),
+    ).toBe("");
+  });
+
+  it("falls back to formatCurrency when price is set but formatted is null", () => {
+    // Wix should always populate formatted, but if it doesn't, don't silently
+    // drop a real price — format it from the numeric value.
+    expect(
+      formatPlpPrice({
+        priceData: { price: 499, currency: "USD", formatted: null },
+      }),
+    ).toBe("$499");
+  });
 });

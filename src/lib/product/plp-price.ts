@@ -45,8 +45,8 @@ export function formatPlpPrice(product: PlpPricedProduct): string {
     return `${formatCurrency(min, currency)} – ${formatCurrency(max, currency)}`;
   }
 
-  if (!basePrice) return "";
-  return baseFormatted;
+  if (basePrice === null || basePrice === 0) return "";
+  return baseFormatted || formatCurrency(basePrice, currency);
 }
 
 function formatCurrency(amount: number, currency: string): string {
