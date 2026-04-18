@@ -18,11 +18,12 @@ import { getWixClient } from "@/lib/wix-client";
 // (ReferenceError, null-deref TypeError without "fetch failed", etc.) are
 // programming mistakes — they should surface, not be silently swallowed.
 // Note: plain objects like { code: 404 } won't pass because instanceof Error
-// is required. `response` is typed loosely because SDKError carries a plain
-// status-object there, not a Fetch API Response.
+// is required. `response` is typed as unknown because the two Wix error shapes
+// differ: FetchErrorResponse carries a Fetch API Response object, while SDKError
+// carries a plain { data, status } object. We only test key presence, not shape.
 type WixApiError = Error & {
   code?: string | number;
-  response?: Record<string, unknown>;
+  response?: unknown;
 };
 
 function isWixApiError(err: unknown): err is WixApiError {
