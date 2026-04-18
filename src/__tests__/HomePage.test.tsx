@@ -11,6 +11,9 @@ vi.mock("@/components/motion/HeroReveal", () => ({
 vi.mock("@/components/site/HeroCarousel", () => ({
   HeroCarousel: () => null,
 }));
+vi.mock("@/components/site/HeroParallax", () => ({
+  HeroParallax: ({ children }: { children: ReactNode }) => <>{children}</>,
+}));
 // FeaturedProducts renders ProductCard which uses framer-motion m.* components.
 // Those require a Framer context that isn't present in the cfw-tdd jsdom env
 // (two-React-instance problem via node_modules symlink). Stub at the component
