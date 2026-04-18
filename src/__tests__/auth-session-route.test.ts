@@ -9,8 +9,8 @@ vi.mock("next/headers", () => ({
     set: (name: string, value: string) => {
       cookieStore.set(name, { value });
     },
-    delete: (name: string) => {
-      cookieStore.delete(name);
+    delete: (arg: string | { name: string; path?: string }) => {
+      cookieStore.delete(typeof arg === "string" ? arg : arg.name);
     },
   }),
 }));

@@ -14,6 +14,12 @@ export const dynamic = "force-dynamic";
 const OAUTH_DATA_COOKIE = "wix-oauth-data";
 const OAUTH_DATA_TTL_SECONDS = 600;
 
+// Pass explicit path to delete so it matches the path we set — otherwise the
+// delete silently no-ops if SESSION_COOKIE_OPTIONS.path ever diverges from
+// Next's default "/" (blaidd #12 review).
+const deleteSessionCookie = (jar: Awaited<ReturnType<typeof cookies>>, name: string) =>
+  jar.delete({ name, path: SESSION_COOKIE_OPTIONS.path });
+
 function callbackUrl(req: NextRequest): string {
   const url = new URL(req.url);
   return `${url.protocol}//${url.host}/api/auth/session`;
@@ -55,14 +61,14 @@ export async function GET(req: NextRequest) {
   try {
     oauthData = JSON.parse(oauthJar.value) as OauthData;
   } catch {
-    jar.delete(OAUTH_DATA_COOKIE);
+    deleteSessionCookie(jar, OAUTH_DATA_COOKIE);
     return NextResponse.redirect(new URL("/?auth_error=bad_state", req.url));
   }
 
   const client = getWixClientWithTokens();
   const parsed = client.auth.parseFromUrl(req.url, "query");
   if (parsed.error || !parsed.code || !parsed.state) {
-    jar.delete(OAUTH_DATA_COOKIE);
+    deleteSessionCookie(jar, OAUTH_DATA_COOKIE);
     const code = parsed.error ?? "missing_code";
     return NextResponse.redirect(
       new URL(`/?auth_error=${encodeURIComponent(code)}`, req.url),
@@ -87,8 +93,8 @@ export async function GET(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const jar = await cookies();
   const existing = parseSessionCookie(jar.get(SESSION_COOKIE_NAME)?.value);
-  jar.delete(SESSION_COOKIE_NAME);
-  jar.delete(OAUTH_DATA_COOKIE);
+  deleteSessionCookie(jar, SESSION_COOKIE_NAME);
+  deleteSessionCookie(jar, OAUTH_DATA_COOKIE);
 
   if (!existing) {
     return NextResponse.json({ ok: true });
