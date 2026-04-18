@@ -37,7 +37,9 @@ export function FeaturedProducts({ products }: { products: readonly WixProduct[]
 
       <ul className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         {products.map((product) => (
-          <ProductCard key={product._id} product={product} />
+          <li key={product._id}>
+            <ProductCard product={product} />
+          </li>
         ))}
       </ul>
     </section>

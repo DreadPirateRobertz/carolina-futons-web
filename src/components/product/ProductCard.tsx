@@ -52,7 +52,7 @@ export function ProductCard({ product }: { product: WixProduct }) {
     : { opacity: 1, y: MOTION_Y_PX };
 
   return (
-    <m.li
+    <m.div
       data-slot="product-card"
       data-has-secondary={hasSecondary ? "true" : "false"}
       data-reduced-motion={prefersReducedMotion ? "true" : "false"}
@@ -118,6 +118,6 @@ export function ProductCard({ product }: { product: WixProduct }) {
           />
         ) : null}
       </Link>
-    </m.li>
+    </m.div>
   );
 }

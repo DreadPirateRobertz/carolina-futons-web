@@ -16,6 +16,7 @@ import {
 } from "@/lib/wix/errors";
 import { logOverPaginatedRender } from "@/lib/shop/plp-observability";
 import { ProductCard } from "@/components/product/ProductCard";
+import { HeroReveal } from "@/components/motion/HeroReveal";
 import { PLPControls } from "@/components/plp/PLPControls";
 import { PLPPagination, buildPageUrl } from "@/components/plp/PLPPagination";
 
@@ -238,8 +239,14 @@ export default async function PlpPage(props: {
         </p>
       ) : (
         <ul className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {page.items.map((product) => (
-            <ProductCard key={product._id} product={product} />
+          {page.items.map((product, i) => (
+            // cf-plp-card-stagger: per-card fade+slide-up reveal with index-
+            // based delay (60ms step). HeroReveal handles reduced-motion
+            // internally — static render under prefers-reduced-motion, no
+            // staggered onset. whileInView fires once per card.
+            <HeroReveal key={product._id} as="li" delay={i * 0.06}>
+              <ProductCard product={product} />
+            </HeroReveal>
           ))}
         </ul>
       )}
