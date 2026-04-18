@@ -8,11 +8,31 @@
 // Phase 0 Q: confirm all 5 collection slugs match Wix Stores (morgott +
 // millicent smoke test) before Phase 2 traffic hits these.
 
+// Supported derived-category filters. A category with `filter` set sources its
+// products from `sourceSlug` (or `collectionSlug` if `sourceSlug` is omitted)
+// and keeps only the items matching this predicate. Add a new value here and
+// a branch in derived-products.ts to register a new derived category.
+export type CategoryFilter = "on-sale";
+
 export type ShopCategory = {
   slug: string;
   name: string;
   description: string;
+  // Wix Stores collection slug for the base product source. For regular
+  // categories this is the collection the PLP renders. For derived categories
+  // (filter set) it's the fallback source when sourceSlug is omitted.
   collectionSlug: string;
+  // Derived categories source products from a different collection than the
+  // one matching their URL slug (there is no 'mattresses-sale' collection in
+  // Wix — the products live in 'mattresses').
+  sourceSlug?: string;
+  // When set, the PLP prefetches the source collection and keeps only the
+  // items passing this predicate before rendering.
+  filter?: CategoryFilter;
+  // Override the default "No products found in this collection yet." empty
+  // state for derived categories where that copy misleads (e.g. "no active
+  // sale" is a normal state, not a data gap).
+  emptyStateCopy?: string;
 };
 
 export const SHOP_CATEGORIES: readonly ShopCategory[] = [
@@ -45,6 +65,9 @@ export const SHOP_CATEGORIES: readonly ShopCategory[] = [
     name: "Mattresses on Sale",
     description: "Current mattress promotions.",
     collectionSlug: "mattresses-sale",
+    sourceSlug: "mattresses",
+    filter: "on-sale",
+    emptyStateCopy: "No mattresses are on sale right now. Check back soon.",
   },
 ] as const;
 

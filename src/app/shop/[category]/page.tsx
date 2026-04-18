@@ -2,13 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import {
-  getCollectionBySlug,
-  listProductsOnSale,
-  type WixProduct,
-} from "@/lib/wix/products";
+import { getCollectionBySlug } from "@/lib/wix/products";
 import { getCollectionPlp, type PlpSort } from "@/lib/wix/plp";
 import { SHOP_CATEGORIES, findCategory } from "@/lib/shop/categories";
+import { resolveDerivedProducts } from "@/lib/shop/derived-products";
 import { ProductCard } from "@/components/product/ProductCard";
 import { PLPControls } from "@/components/plp/PLPControls";
 import { PLPPagination, buildPageUrl } from "@/components/plp/PLPPagination";
@@ -64,18 +61,6 @@ export function parseSearchParams(
   return { pageNum, sort, priceMin, priceMax, inStockOnly };
 }
 
-// cf-3qt.6.D: /shop/mattresses-sale is a virtual category — no matching Wix
-// collection. Its products are the mattresses collection filtered to items with
-// an active Wix Stores discount.
-async function resolvePrefetchedProducts(
-  categorySlug: string,
-): Promise<WixProduct[] | undefined> {
-  if (categorySlug !== "mattresses-sale") return undefined;
-  const mattressesCollection = await getCollectionBySlug("mattresses");
-  if (!mattressesCollection?._id) return [];
-  return listProductsOnSale(mattressesCollection._id);
-}
-
 export default async function PlpPage(props: {
   params: Promise<{ category: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -88,16 +73,19 @@ export default async function PlpPage(props: {
   const category = findCategory(categorySlug);
   if (!category) notFound();
 
+  // Derived categories (category.filter set) skip the collection lookup — their
+  // products come from resolveDerivedProducts sourcing a different collection
+  // and applying the predicate. Regular categories fetch their own collection.
   const [collection, prefetchedProducts] = await Promise.all([
-    getCollectionBySlug(category.collectionSlug),
-    resolvePrefetchedProducts(categorySlug),
+    category.filter ? null : getCollectionBySlug(category.collectionSlug),
+    resolveDerivedProducts(category),
   ]);
 
   const { pageNum, sort, priceMin, priceMax, inStockOnly } =
     parseSearchParams(searchParams);
 
-  // Use collection ID when available; fall back to "" for virtual categories
-  // (e.g. mattresses-sale) where getCollectionPlp will use prefetchedProducts.
+  // Use collection ID when available; fall back to "" for derived categories
+  // where getCollectionPlp will use prefetchedProducts instead.
   const { page, facets } =
     collection?._id || prefetchedProducts !== undefined
       ? await getCollectionPlp(collection?._id ?? "", {
@@ -105,7 +93,9 @@ export default async function PlpPage(props: {
           pageSize: 24,
           sort,
           filters: { priceMin, priceMax, inStockOnly: inStockOnly || undefined },
-          prefetchedProducts,
+          prefetchedProducts: prefetchedProducts
+            ? [...prefetchedProducts]
+            : undefined,
         })
       : {
           page: {
@@ -192,9 +182,8 @@ export default async function PlpPage(props: {
       ) : page.items.length === 0 ? (
         <p className="mt-10 rounded-md bg-zinc-50 p-6 text-zinc-700">
           {facets.total === 0
-            ? categorySlug === "mattresses-sale"
-              ? "No mattresses are on sale right now. Check back soon."
-              : "No products found in this collection yet."
+            ? (category.emptyStateCopy ??
+              "No products found in this collection yet.")
             : "No products match these filters. Try adjusting the price range or removing the in-stock filter."}
         </p>
       ) : (
