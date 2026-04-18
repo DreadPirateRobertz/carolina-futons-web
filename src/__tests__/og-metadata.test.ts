@@ -88,7 +88,7 @@ describe("Root layout metadata", () => {
   });
 
   it("has openGraph.type = 'website'", () => {
-    expect(layoutMetadata.openGraph?.type).toBe("website");
+    expect((layoutMetadata.openGraph as { type?: string } | undefined)?.type).toBe("website");
   });
 
   it("has openGraph.locale = 'en_US'", () => {
@@ -96,7 +96,7 @@ describe("Root layout metadata", () => {
   });
 
   it("has twitter.card = 'summary_large_image'", () => {
-    expect(layoutMetadata.twitter?.card).toBe("summary_large_image");
+    expect((layoutMetadata.twitter as { card?: string } | undefined)?.card).toBe("summary_large_image");
   });
 
   it("includes DEFAULT_OG_IMAGE url in openGraph.images", () => {
