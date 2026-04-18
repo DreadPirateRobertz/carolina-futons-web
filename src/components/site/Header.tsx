@@ -1,10 +1,18 @@
-// Site-wide header (cf-3qt.1 Phase 1).
+"use client";
+
+// Site-wide header (cf-3qt.1 Phase 1 + cf-nav-scroll-shrink).
 // Chrome spec from docs/migration/cf-3qt-phase1-prep.md:
 //   Announcement bar 60px + main row 93px + sub-nav 60px = 213px total
 // CMS wiring + mega-nav content land in Phase 3 (rennala).
-// Keep this server-rendered — no state, no effects.
+//
+// Scroll-shrink (cf-nav-scroll-shrink): once the page scrolls past 80px the
+// header gains a shadow (both modes) and the main row compresses py-4 → py-2
+// (non-reduced-motion only). Under prefers-reduced-motion the height stays
+// static — only the shadow fades in, which is not a vestibular trigger.
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useReducedMotion } from "framer-motion";
 import { Search, User } from "lucide-react";
 import { AnnouncementBar } from "@/components/site/AnnouncementBar";
 import { CartTrigger } from "@/components/cart/CartTrigger";
@@ -26,17 +34,52 @@ const SUB_NAV = [
   { label: "Visit Us", href: "/visit" },
 ] as const;
 
+const SCROLL_THRESHOLD_PX = 80;
+
 export function Header() {
+  const prefersReducedMotion = useReducedMotion() ?? false;
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => {
+      setScrolled(window.scrollY >= SCROLL_THRESHOLD_PX);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const shadowClass = scrolled ? "shadow-md" : "";
+  // Height shrink is motion — suppress under reduced-motion so the chrome
+  // doesn't reflow under the user's eye. Shadow stays either way.
+  const compressMainRow = scrolled && !prefersReducedMotion;
+  const mainRowPaddingClass = compressMainRow ? "py-2" : "py-4";
+  const mainRowTransitionClass = prefersReducedMotion
+    ? ""
+    : "transition-[padding] duration-200 ease-out";
+
   return (
     <header
       data-slot="site-header"
-      className="sticky top-0 z-40 h-cf-header w-full border-b border-cf-divider bg-gradient-to-b from-cf-header-start to-cf-header-end text-cf-ink backdrop-blur"
+      data-scrolled={scrolled ? "true" : "false"}
+      className={[
+        "sticky top-0 z-40 h-cf-header w-full border-b border-cf-divider bg-gradient-to-b from-cf-header-start to-cf-header-end text-cf-ink backdrop-blur transition-shadow duration-200",
+        shadowClass,
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       <AnnouncementBar />
 
       <div
         data-slot="site-header-main"
-        className="flex h-cf-header-main items-center border-b border-cf-divider/60"
+        className={[
+          "flex items-center border-b border-cf-divider/60",
+          mainRowPaddingClass,
+          mainRowTransitionClass,
+        ]
+          .filter(Boolean)
+          .join(" ")}
       >
         <div className="mx-auto flex w-full max-w-7xl items-center gap-8 px-4 sm:px-6 lg:px-8">
           <Link
