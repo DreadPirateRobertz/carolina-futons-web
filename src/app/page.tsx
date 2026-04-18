@@ -4,6 +4,7 @@ import { HeroReveal } from "@/components/motion/HeroReveal";
 import { HeroCarousel, type HeroSlide } from "@/components/site/HeroCarousel";
 import { FeaturedProducts } from "@/components/site/FeaturedProducts";
 import { listFeaturedProducts } from "@/lib/shop/featured";
+import { TrustBar } from "@/components/site/TrustBar";
 
 // Per-card onset delay for the Shop-by-category cascade. 80ms is at the
 // just-noticeable-difference threshold for sequential visual onset (enough
@@ -69,6 +70,8 @@ export default async function HomePage() {
           <HeroCarousel slides={HERO_SLIDES} />
         </div>
       </section>
+
+      <TrustBar />
 
       <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <HeroReveal>

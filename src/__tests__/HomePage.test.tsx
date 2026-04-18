@@ -81,9 +81,41 @@ describe("HomePage", () => {
 
   it("renders the three value-prop headings", async () => {
     await renderHome();
-    expect(screen.getByText(/hardwood, not plywood/i)).toBeTruthy();
-    expect(screen.getByText(/sleep on it first/i)).toBeTruthy();
-    expect(screen.getByText(/white-glove delivery/i)).toBeTruthy();
+    // Use heading-level matchers rather than getByText — the TrustBar at the
+    // top of the page also contains "Free White-Glove Delivery", so a naked
+    // text regex on /white-glove delivery/i would match both nodes.
+    expect(
+      screen.getByRole("heading", { level: 3, name: /hardwood, not plywood/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { level: 3, name: /sleep on it first/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { level: 3, name: /white-glove delivery/i }),
+    ).toBeTruthy();
+  });
+
+  it("places the TrustBar between the hero H1 and the Shop by category H2", async () => {
+    const { container } = await renderHome();
+    const heroHeading = screen.getByRole("heading", {
+      level: 1,
+      name: /quality futons.*for your home/i,
+    });
+    const trustBar = container.querySelector('[data-slot="trust-bar"]');
+    const shopByCategory = screen.getByRole("heading", {
+      level: 2,
+      name: /shop by category/i,
+    });
+    expect(trustBar).not.toBeNull();
+    // compareDocumentPosition bit 4 = "other node follows this one".
+    expect(
+      heroHeading.compareDocumentPosition(trustBar!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      trustBar!.compareDocumentPosition(shopByCategory) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });
 
