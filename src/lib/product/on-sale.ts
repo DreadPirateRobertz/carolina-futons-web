@@ -1,4 +1,4 @@
-// cf-3qt.6.D: client-side discount filter for /shop/mattresses-sale.
+// Client-side discount filter for the "on sale" PLP variant.
 //
 // Rather than maintain a hand-curated Wix "mattresses-sale" collection,
 // the PLP fetches the full mattresses collection and filters to products
@@ -6,9 +6,9 @@
 // priceData.price. Sales auto-appear/disappear as merchants toggle
 // discounts in Wix admin.
 //
-// Variant-priced products (manageVariants: true, e.g. Mesa mattresses) have
-// priceData.price === 0 at the product level and are excluded here. They're
-// covered separately by cf-3qt.6.E once variant data is loaded correctly.
+// Variant-priced products (manageVariants: true) have priceData.price === 0
+// at the product level and are excluded here — their real per-variant prices
+// live on variant.priceData, not the product envelope.
 
 export type OnSaleCheckable = {
   priceData?: {
