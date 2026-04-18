@@ -18,8 +18,8 @@
 // bounded. PLPs currently have < 200 products each, so 500 leaves headroom
 // without risking a pathological scan.
 
-import * as Sentry from "@sentry/nextjs";
 import { getWixClient } from "@/lib/wix-client";
+import { logWixFailure, toReaderError, type ReaderError } from "@/lib/wix/errors";
 import type { WixProduct } from "@/lib/wix/products";
 
 // ── Public types ────────────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ export type PlpFilters = {
 // "unexpected" = anything else (network error, client misconfig, programming bug in the chain).
 // Kept as two values only so the UI can render one copy ("we're having trouble")
 // without branching; callers that want to distinguish can do so from the tag alone.
-export type PlpReaderError = "wix_sdk" | "unexpected";
+export type PlpReaderError = ReaderError;
 
 export type PlpPage<T> = {
   items: T[];
@@ -103,40 +103,7 @@ const DEFAULT_PRICE_BUCKETS: PriceBucketSpec[] = [
 const DEFAULT_SCAN_LIMIT = 500;
 const SDK_MAX_PAGE = 100;
 
-// ── Error handling (mirrors products.ts pattern) ────────────────────────────
-
-type WixErrorShape = {
-  code?: string;
-  details?: { applicationError?: { code?: string } };
-  response?: { status?: number };
-};
-
-function isWixSdkError(err: unknown): err is WixErrorShape {
-  if (typeof err !== "object" || err === null) return false;
-  const e = err as Record<string, unknown>;
-  if (typeof e.code === "string") return true;
-  const details = e.details as { applicationError?: unknown } | undefined;
-  if (details?.applicationError && typeof details.applicationError === "object")
-    return true;
-  const response = e.response as { status?: unknown } | undefined;
-  if (typeof response?.status === "number") return true;
-  return false;
-}
-
-async function logPlpFailure(op: string, err: unknown) {
-  const wix = isWixSdkError(err) ? err : null;
-  const code = wix?.code ?? wix?.details?.applicationError?.code;
-  const httpStatus = wix?.response?.status;
-  const message = err instanceof Error ? err.message : String(err);
-  const kind = wix ? "wix-sdk" : "unexpected";
-  console.error(`[wix] ${op} failed`, { kind, code, httpStatus, message });
-  Sentry.captureException(err, {
-    level: wix ? "warning" : "error",
-    tags: { source: "wix", op, kind },
-    extra: { code, httpStatus, message },
-  });
-  await Sentry.flush(2000);
-}
+// Error helpers live in src/lib/wix/errors.ts — shared across readers.
 
 // ── Effective-price accessor ────────────────────────────────────────────────
 
@@ -200,14 +167,8 @@ export async function queryAllProductsByCollection(
     }
     return { items: collected.slice(0, scanLimit) };
   } catch (err) {
-    await logPlpFailure(
-      `queryAllProductsByCollection(${collectionId})`,
-      err,
-    );
-    return {
-      items: [],
-      error: isWixSdkError(err) ? "wix_sdk" : "unexpected",
-    };
+    await logWixFailure("plp", `queryAllProductsByCollection(${collectionId})`, err);
+    return { items: [], error: toReaderError(err) };
   }
 }
 
