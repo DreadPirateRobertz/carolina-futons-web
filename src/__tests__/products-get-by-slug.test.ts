@@ -1,12 +1,16 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-vi.mock("@sentry/nextjs", () => ({
+const sentryMock = vi.hoisted(() => ({
   captureException: vi.fn(),
   flush: vi.fn(async () => true),
 }));
 
+vi.mock("@sentry/nextjs", () => sentryMock);
+
 beforeEach(() => {
   vi.resetModules();
+  sentryMock.captureException.mockClear();
+  sentryMock.flush.mockClear();
 });
 
 const STUB = { _id: "prod-123", slug: "kingston-futon-frame", name: "Kingston Futon Frame" };
@@ -73,8 +77,9 @@ describe("getProductBySlug — variant picker data", () => {
     expect(await getProductBySlug("not-found")).toBeNull();
   });
 
-  it("returns stub as-is when it has no _id (degenerate catalog entry, getProduct skipped)", async () => {
+  it("returns null and fires Sentry when stub has no _id (malformed catalog entry)", async () => {
     const getProductSpy = vi.fn();
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.doMock("@/lib/wix-client", () => ({
       getWixClient: () => ({
         products: {
@@ -92,18 +97,24 @@ describe("getProductBySlug — variant picker data", () => {
 
     const { getProductBySlug } = await import("@/lib/wix/products");
     const result = await getProductBySlug("mystery-product");
-    // stub has no _id → returned directly without calling getProduct
-    expect(result).toMatchObject({ slug: "mystery-product" });
+    consoleSpy.mockRestore();
+    // stub has no _id → null return + Sentry event (not a silent failure)
+    expect(result).toBeNull();
     expect(getProductSpy).not.toHaveBeenCalled();
+    expect(sentryMock.captureException).toHaveBeenCalledOnce();
   });
 
-  it("returns null when getProduct envelope has no product field", async () => {
+  it("returns null and fires Sentry when getProduct envelope has no product field", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.doMock("@/lib/wix-client", () => ({
       getWixClient: () => makeClient({ getProduct: async () => ({}) }),
     }));
 
     const { getProductBySlug } = await import("@/lib/wix/products");
-    expect(await getProductBySlug("kingston-futon-frame")).toBeNull();
+    const result = await getProductBySlug("kingston-futon-frame");
+    consoleSpy.mockRestore();
+    expect(result).toBeNull();
+    expect(sentryMock.captureException).toHaveBeenCalledOnce();
   });
 
   it("getProduct is called with the stub _id from the slug query", async () => {

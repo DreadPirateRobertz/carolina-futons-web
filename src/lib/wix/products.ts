@@ -35,9 +35,23 @@ export async function getProductBySlug(slug: string) {
       .limit(1)
       .find();
     const stub = result.items[0] ?? null;
-    if (!stub?._id) return stub;
+    if (!stub) return null;
+    if (!stub._id) {
+      await logWixFailure(
+        `getProductBySlug(${slug})`,
+        new Error(`queryProducts returned stub with no _id — malformed catalog entry`),
+      );
+      return null;
+    }
     const full = await client.products.getProduct(stub._id);
-    return full.product ?? null;
+    if (!full.product) {
+      await logWixFailure(
+        `getProductBySlug(${slug})`,
+        new Error(`getProduct(${stub._id}) returned empty envelope`),
+      );
+      return null;
+    }
+    return full.product;
   } catch (err) {
     await logWixFailure("wix", `getProductBySlug(${slug})`, err);
     return null;
