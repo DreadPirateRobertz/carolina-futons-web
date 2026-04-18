@@ -41,11 +41,6 @@ const stubRoutes: Array<{
     load: () => import("@/app/api/search/route"),
   },
   {
-    path: "/api/auth/session",
-    methods: ["GET", "POST", "DELETE"],
-    load: () => import("@/app/api/auth/session/route"),
-  },
-  {
     path: "/api/order-lookup",
     methods: ["POST"],
     load: () => import("@/app/api/order-lookup/route"),
