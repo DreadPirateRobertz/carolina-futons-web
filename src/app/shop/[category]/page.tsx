@@ -5,7 +5,15 @@ import { Suspense } from "react";
 import { getCollectionBySlug } from "@/lib/wix/products";
 import { getCollectionPlp, type PlpSort } from "@/lib/wix/plp";
 import { SHOP_CATEGORIES, findCategory } from "@/lib/shop/categories";
-import { resolveDerivedProducts } from "@/lib/shop/derived-products";
+import {
+  resolveDerivedProducts,
+  type DerivedProductsResult,
+} from "@/lib/shop/derived-products";
+import {
+  logWixFailure,
+  toReaderError,
+  type ReaderError,
+} from "@/lib/wix/errors";
 import { ProductCard } from "@/components/product/ProductCard";
 import { PLPControls } from "@/components/plp/PLPControls";
 import { PLPPagination, buildPageUrl } from "@/components/plp/PLPPagination";
@@ -76,10 +84,21 @@ export default async function PlpPage(props: {
   // Derived categories (category.filter set) skip the collection lookup — their
   // products come from resolveDerivedProducts sourcing a different collection
   // and applying the predicate. Regular categories fetch their own collection.
-  const [collection, prefetchedProducts] = await Promise.all([
-    category.filter ? null : getCollectionBySlug(category.collectionSlug),
-    resolveDerivedProducts(category),
-  ]);
+  // Defensive: both inner readers catch their own SDK failures, so this
+  // try/catch only fires for programmer bugs (cf-3qt.6.D.F3 review). Tag with
+  // page+category context so Sentry triage can pinpoint the failed PLP route.
+  let collection: Awaited<ReturnType<typeof getCollectionBySlug>> = null;
+  let prefetchedProducts: DerivedProductsResult | undefined;
+  let pageReaderError: ReaderError | undefined;
+  try {
+    [collection, prefetchedProducts] = await Promise.all([
+      category.filter ? null : getCollectionBySlug(category.collectionSlug),
+      resolveDerivedProducts(category),
+    ]);
+  } catch (err) {
+    await logWixFailure("plp-page", `categorySlug=${categorySlug}`, err);
+    pageReaderError = toReaderError(err);
+  }
 
   const { pageNum, sort, priceMin, priceMax, inStockOnly } =
     parseSearchParams(searchParams);
@@ -94,7 +113,7 @@ export default async function PlpPage(props: {
           sort,
           filters: { priceMin, priceMax, inStockOnly: inStockOnly || undefined },
           prefetchedProducts: prefetchedProducts
-            ? [...prefetchedProducts]
+            ? [...prefetchedProducts.items]
             : undefined,
         })
       : {
@@ -117,8 +136,14 @@ export default async function PlpPage(props: {
   // cf-3qt.6.B silent-failure fix (blaidd PR #35): an errored scan returns
   // items=[] but it is NOT an empty collection. We MUST render distinct outage
   // copy rather than "No products found" to avoid a bounce trap during Wix
-  // outages (silent-failure review required an explicit branch).
-  const readerFailed = page.error !== undefined;
+  // outages (silent-failure review required an explicit branch). The derived
+  // resolver shares the {items, error?} contract — surface its error too so
+  // a missing-source-collection or unknown-filter renders the outage UI
+  // instead of a bare "no products on sale" empty state (cf-3qt.6.D.F3).
+  const readerFailed =
+    pageReaderError !== undefined ||
+    page.error !== undefined ||
+    prefetchedProducts?.error !== undefined;
 
   const basePath = `/shop/${categorySlug}`;
 
