@@ -28,6 +28,15 @@ describe("ContactPage — rendering", () => {
     expect(region.textContent).toContain(BUSINESS.email);
     expect(region.textContent).toContain(BUSINESS.street);
     expect(region.textContent).toContain(BUSINESS.city);
+    expect(region.textContent).toContain(BUSINESS.zip);
+  });
+
+  it("uses the Gmail business inbox, not a vanity-domain address", () => {
+    // Guards against an accidental flip to hello@carolinafutons.com (mayor
+    // flagged this as a data bug during PR #83 review — the domain isn't
+    // owned, so mail would black-hole).
+    expect(BUSINESS.email).toBe("carolinafutons@gmail.com");
+    expect(BUSINESS.emailHref).toBe("mailto:carolinafutons@gmail.com");
   });
 
   it("renders a tel: link for the phone number", () => {

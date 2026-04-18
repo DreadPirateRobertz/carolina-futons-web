@@ -53,7 +53,7 @@ export default function ContactPage() {
             <div className="flex gap-2">
               <dt className="font-medium">Visit</dt>
               <dd>
-                {BUSINESS.street}, {BUSINESS.city}, {BUSINESS.state}
+                {BUSINESS.street}, {BUSINESS.city}, {BUSINESS.state} {BUSINESS.zip}
               </dd>
             </div>
           </dl>
