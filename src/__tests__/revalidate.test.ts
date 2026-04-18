@@ -99,3 +99,85 @@ describe("POST /api/revalidate", () => {
     expect(json.ok).toBe(false);
   });
 });
+
+// ── F1: observability (correlationId + errorId + logging) ─────────────────
+
+describe("POST /api/revalidate — observability (F1)", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.stubEnv("WIX_WEBHOOK_SECRET", SECRET);
+  });
+
+  it("success response includes correlationId", async () => {
+    const body = JSON.stringify({ collectionId: "products" });
+    const res = await post(body, { "x-wix-signature": sign(body) });
+    const json = (await res.json()) as { correlationId: string };
+    expect(typeof json.correlationId).toBe("string");
+    expect(json.correlationId.length).toBeGreaterThan(0);
+  });
+
+  it("passes through caller-supplied x-correlation-id", async () => {
+    const body = JSON.stringify({ collectionId: "products" });
+    const res = await post(body, {
+      "x-wix-signature": sign(body),
+      "x-correlation-id": "caller-trace-abc",
+    });
+    const json = (await res.json()) as { correlationId: string };
+    expect(json.correlationId).toBe("caller-trace-abc");
+  });
+
+  it("error responses include errorId", async () => {
+    const body = JSON.stringify({ collectionId: "products" });
+    const res = await post(body, { "x-wix-signature": "sha256=deadbeef" });
+    expect(res.status).toBe(401);
+    const json = (await res.json()) as { errorId: string };
+    expect(typeof json.errorId).toBe("string");
+    expect(json.errorId.length).toBeGreaterThan(0);
+  });
+
+  it("errorId in error matches correlationId from header", async () => {
+    const body = JSON.stringify({ collectionId: "products" });
+    const res = await post(body, {
+      "x-wix-signature": "sha256=deadbeef",
+      "x-correlation-id": "trace-xyz",
+    });
+    const json = (await res.json()) as { errorId: string };
+    expect(json.errorId).toBe("trace-xyz");
+  });
+
+  it("logs warn on signature rejection", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const body = JSON.stringify({ collectionId: "products" });
+    await post(body, { "x-wix-signature": "sha256=deadbeef" });
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[revalidate]"),
+      expect.objectContaining({ correlationId: expect.any(String) }),
+    );
+    warnSpy.mockRestore();
+  });
+
+  it("logs error on missing WIX_WEBHOOK_SECRET", async () => {
+    vi.stubEnv("WIX_WEBHOOK_SECRET", "");
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    await post("{}", { "x-wix-signature": "sha256=deadbeef" });
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[revalidate]"),
+      expect.objectContaining({ correlationId: expect.any(String) }),
+    );
+    errorSpy.mockRestore();
+  });
+
+  it("logs info on successful processing", async () => {
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+    const body = JSON.stringify({ collectionId: "products" });
+    await post(body, { "x-wix-signature": sign(body) });
+    expect(infoSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[revalidate]"),
+      expect.objectContaining({
+        correlationId: expect.any(String),
+        tags: expect.arrayContaining(["wix:collection:products"]),
+      }),
+    );
+    infoSpy.mockRestore();
+  });
+});

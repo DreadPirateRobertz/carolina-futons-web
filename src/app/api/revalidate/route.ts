@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual, randomUUID } from "node:crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -34,10 +34,20 @@ function verifySignature(
 }
 
 export async function POST(req: NextRequest) {
+  const correlationId =
+    req.headers.get("x-correlation-id") ?? randomUUID();
+
   const secret = process.env.WIX_WEBHOOK_SECRET;
   if (!secret) {
+    console.error("[revalidate] misconfigured — WIX_WEBHOOK_SECRET missing", {
+      correlationId,
+    });
     return NextResponse.json(
-      { ok: false, error: "WIX_WEBHOOK_SECRET is not configured" },
+      {
+        ok: false,
+        error: "WIX_WEBHOOK_SECRET is not configured",
+        errorId: correlationId,
+      },
       { status: 500 },
     );
   }
@@ -47,8 +57,9 @@ export async function POST(req: NextRequest) {
     req.headers.get("x-wix-signature") ??
     req.headers.get("x-hub-signature-256");
   if (!verifySignature(rawBody, signature, secret)) {
+    console.warn("[revalidate] signature rejected", { correlationId });
     return NextResponse.json(
-      { ok: false, error: "invalid signature" },
+      { ok: false, error: "invalid signature", errorId: correlationId },
       { status: 401 },
     );
   }
@@ -57,8 +68,9 @@ export async function POST(req: NextRequest) {
   try {
     body = rawBody.length > 0 ? (JSON.parse(rawBody) as WixWebhookBody) : {};
   } catch {
+    console.warn("[revalidate] invalid JSON body", { correlationId });
     return NextResponse.json(
-      { ok: false, error: "invalid json" },
+      { ok: false, error: "invalid json", errorId: correlationId },
       { status: 400 },
     );
   }
@@ -67,15 +79,20 @@ export async function POST(req: NextRequest) {
   // Webhooks without ts are still accepted for backward compatibility.
   if (body.ts !== undefined) {
     if (!Number.isFinite(body.ts)) {
+      console.warn("[revalidate] non-finite ts rejected", { correlationId });
       return NextResponse.json(
-        { ok: false, error: "invalid timestamp" },
+        { ok: false, error: "invalid timestamp", errorId: correlationId },
         { status: 400 },
       );
     }
     const age = Math.abs(Date.now() - body.ts);
     if (age > REPLAY_WINDOW_MS) {
+      console.warn("[revalidate] timestamp outside window", {
+        correlationId,
+        ageMs: age,
+      });
       return NextResponse.json(
-        { ok: false, error: "timestamp out of window" },
+        { ok: false, error: "timestamp out of window", errorId: correlationId },
         { status: 401 },
       );
     }
@@ -88,9 +105,16 @@ export async function POST(req: NextRequest) {
 
   for (const t of tags) revalidateTag(t, "default");
 
+  console.info("[revalidate] processed", {
+    correlationId,
+    tags: [...tags],
+    eventType: body.eventType ?? null,
+  });
+
   return NextResponse.json({
     ok: true,
     revalidated: [...tags],
     eventType: body.eventType ?? null,
+    correlationId,
   });
 }
