@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { DashboardShell, DASHBOARD_TABS, type DashboardTabKey } from "@/components/member/DashboardShell";
-import { getMemberSession } from "@/lib/auth/_member-session-stub";
+import { getMemberSession } from "@/lib/auth/member";
 import { getWixClientWithTokens } from "@/lib/wix-client";
 
 export const dynamic = "force-dynamic";

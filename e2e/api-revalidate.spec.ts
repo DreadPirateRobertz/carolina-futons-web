@@ -74,8 +74,11 @@ test.describe("POST /api/revalidate", () => {
 
   test("rejects malformed JSON with 400", async ({ request }) => {
     const raw = "{not-json";
+    // Playwright's APIRequestContext rewrites a non-JSON-parseable `data: string`
+    // when content-type is application/json (JSON.stringify wraps it), which
+    // would break the signature. Send as a Buffer to preserve raw bytes.
     const res = await request.post("/api/revalidate", {
-      data: raw,
+      data: Buffer.from(raw, "utf8"),
       headers: {
         "x-wix-signature": sign(raw),
         "content-type": "application/json",
