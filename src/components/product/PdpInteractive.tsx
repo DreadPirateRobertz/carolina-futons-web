@@ -37,6 +37,10 @@ export function PdpInteractive({
   fallbackPrice,
   fallbackPriceCents,
 }: PdpInteractiveProps) {
+  // Intentional duplication: VariantPicker also seeds from initialSelection() and holds its own
+  // selection state for price/stock display. The two stay in sync via onSelectionChange. If
+  // URL-param hydration ever seeds them differently, lift selection here and make VariantPicker
+  // controlled (accept selection as a prop).
   const [selection, setSelection] = useState<ChoiceSelection>(() =>
     initialSelection(productOptions, variants),
   );

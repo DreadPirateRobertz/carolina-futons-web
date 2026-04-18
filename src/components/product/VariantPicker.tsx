@@ -96,7 +96,7 @@ function PriceDisplay({
       {inStock === false ? (
         <span
           className="inline-flex items-center rounded-full border border-cf-error/30 bg-cf-error/10 px-2 py-0.5 text-xs font-medium text-cf-error"
-          role="status"
+          data-testid="oos-badge"
         >
           Out of stock
         </span>
@@ -132,12 +132,24 @@ function OptionGroup({
       const currentPos = enabledIndexes.indexOf(index);
       let targetPos = currentPos;
       if (event.key === "ArrowRight" || event.key === "ArrowDown") {
-        targetPos = currentPos === -1 ? 0 : (currentPos + 1) % enabledIndexes.length;
+        if (currentPos === -1) {
+          // Focused button is not in the enabled set — go to first enabled button after it.
+          const after = enabledIndexes.findIndex((i) => i > index);
+          targetPos = after === -1 ? 0 : after;
+        } else {
+          targetPos = (currentPos + 1) % enabledIndexes.length;
+        }
       } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-        targetPos =
-          currentPos === -1
-            ? enabledIndexes.length - 1
-            : (currentPos - 1 + enabledIndexes.length) % enabledIndexes.length;
+        if (currentPos === -1) {
+          // Focused button is not in the enabled set — go to last enabled button before it.
+          let before = -1;
+          for (let p = enabledIndexes.length - 1; p >= 0; p--) {
+            if (enabledIndexes[p] < index) { before = p; break; }
+          }
+          targetPos = before === -1 ? enabledIndexes.length - 1 : before;
+        } else {
+          targetPos = (currentPos - 1 + enabledIndexes.length) % enabledIndexes.length;
+        }
       } else if (event.key === "Home") {
         targetPos = 0;
       } else if (event.key === "End") {
