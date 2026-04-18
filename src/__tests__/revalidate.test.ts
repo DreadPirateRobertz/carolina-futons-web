@@ -79,11 +79,23 @@ describe("POST /api/revalidate", () => {
     const body = JSON.stringify({ collectionId: "products", ts: futureTs });
     const res = await post(body, { "x-wix-signature": sign(body) });
     expect(res.status).toBe(401);
+    const json = (await res.json()) as { ok: boolean; error: string };
+    expect(json.ok).toBe(false);
+    expect(json.error).toMatch(/timestamp/i);
   });
 
   it("accepts legacy request without ts field", async () => {
     const body = JSON.stringify({ collectionId: "products" });
     const res = await post(body, { "x-wix-signature": sign(body) });
     expect(res.status).toBe(200);
+  });
+
+  it("rejects request with ts = null (non-finite, 400)", async () => {
+    // JSON.stringify({ts: NaN}) → '{"ts":null}' — null ts is non-finite, should 400
+    const body = JSON.stringify({ collectionId: "products", ts: null });
+    const res = await post(body, { "x-wix-signature": sign(body) });
+    expect(res.status).toBe(400);
+    const json = (await res.json()) as { ok: boolean; error: string };
+    expect(json.ok).toBe(false);
   });
 });

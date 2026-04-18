@@ -4,7 +4,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const dynamic = "force-dynamic";
 
-// Webhooks with a `ts` field older than this are rejected as replays.
+// Webhooks with a `ts` field more than this many ms from the current time
+// (past or future) are rejected to prevent replay and pre-signed-payload attacks.
 const REPLAY_WINDOW_MS = 5 * 60 * 1000;
 
 interface WixWebhookBody {
@@ -63,8 +64,14 @@ export async function POST(req: NextRequest) {
   }
 
   // Replay protection: reject if ts is present and outside the allowed window.
-  // Webhooks without ts (legacy callers before F2) are still accepted.
-  if (typeof body.ts === "number") {
+  // Webhooks without ts are still accepted for backward compatibility.
+  if (body.ts !== undefined) {
+    if (!Number.isFinite(body.ts)) {
+      return NextResponse.json(
+        { ok: false, error: "invalid timestamp" },
+        { status: 400 },
+      );
+    }
     const age = Math.abs(Date.now() - body.ts);
     if (age > REPLAY_WINDOW_MS) {
       return NextResponse.json(
