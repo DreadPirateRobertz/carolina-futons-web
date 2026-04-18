@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Source_Sans_3, Geist_Mono } from "next/font/google";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
 import "./globals.css";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
@@ -39,6 +40,15 @@ export const metadata: Metadata = {
   description:
     "Family-owned Hendersonville, NC retailer of American-made futons, Murphy cabinet beds, and platform beds since 1991.",
   robots: { index: false, follow: false },
+  openGraph: {
+    siteName: "Carolina Futons",
+    type: "website",
+    locale: "en_US",
+    images: [DEFAULT_OG_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({

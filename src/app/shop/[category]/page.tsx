@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
 import { Suspense } from "react";
 import { getCollectionBySlug } from "@/lib/wix/products";
 import { getCollectionPlp, type PlpSort } from "@/lib/wix/plp";
@@ -34,9 +35,15 @@ export async function generateMetadata(props: {
   const { category: categorySlug } = await props.params;
   const category = findCategory(categorySlug);
   if (!category) return { title: "Shop — Carolina Futons" };
+  const ogImage = category.image ? { url: category.image } : DEFAULT_OG_IMAGE;
   return {
     title: `${category.name} — Carolina Futons`,
     description: category.description,
+    openGraph: {
+      title: `${category.name} — Carolina Futons`,
+      description: category.description,
+      images: [ogImage],
+    },
   };
 }
 

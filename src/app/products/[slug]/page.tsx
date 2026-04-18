@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
 
 import { PdpInteractive } from "@/components/product/PdpInteractive";
 import type { GalleryImage } from "@/components/product/PdpGallery";
@@ -30,9 +31,17 @@ export async function generateMetadata(props: {
   const { slug } = await props.params;
   const product = await getProductBySlug(slug);
   if (!product) return { title: "Product — Carolina Futons" };
+  const description = stripHtml(product.description ?? "").slice(0, 160);
+  const mainImageUrl = product.media?.mainMedia?.image?.url;
+  const ogImage = mainImageUrl ? { url: mainImageUrl } : DEFAULT_OG_IMAGE;
   return {
     title: `${product.name} — Carolina Futons`,
-    description: stripHtml(product.description ?? "").slice(0, 160),
+    description,
+    openGraph: {
+      title: `${product.name} — Carolina Futons`,
+      description,
+      images: [ogImage],
+    },
   };
 }
 
