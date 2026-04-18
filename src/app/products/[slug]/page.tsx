@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { PdpInteractive } from "@/components/product/PdpInteractive";
 import type { GalleryImage } from "@/components/product/PdpGallery";
 import { PdpCrossSell } from "@/components/product/PdpCrossSell";
+import { PdpRecentlyViewed } from "@/components/product/PdpRecentlyViewed";
 import { getProductBySlug } from "@/lib/wix/products";
 import { formatPlpPrice } from "@/lib/product/plp-price";
 import { getCrossSellProducts } from "@/lib/product/cross-sell";
@@ -82,6 +83,14 @@ export default async function PdpPage(props: {
           </p>
         </section>
       ) : null}
+
+      <PdpRecentlyViewed
+        currentProductId={product._id ?? ""}
+        currentProductSlug={slug}
+        currentProductName={product.name ?? ""}
+        currentProductImageUrl={mainUrl ?? undefined}
+        currentProductPriceText={fallbackPrice || undefined}
+      />
 
       <PdpCrossSell products={crossSell.items} error={crossSell.error} />
     </main>
