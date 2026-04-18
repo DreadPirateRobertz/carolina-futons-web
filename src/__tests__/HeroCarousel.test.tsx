@@ -299,6 +299,70 @@ describe("HeroCarousel — dot navigation", () => {
   });
 });
 
+describe("HeroCarousel — combined pause state", () => {
+  beforeEach(() => {
+    mockMatchMedia(false);
+    vi.useFakeTimers();
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("hover + focus both active: removing hover keeps autoplay paused", () => {
+    renderCarousel();
+    const carousel = screen.getByTestId("hero-carousel");
+    fireEvent.mouseEnter(carousel);
+    fireEvent.focus(carousel);
+    fireEvent.mouseLeave(carousel);
+    expect(carousel).toHaveAttribute("data-autoplay", "false");
+  });
+
+  it("focus + hover both active: removing focus keeps autoplay paused", () => {
+    renderCarousel();
+    const carousel = screen.getByTestId("hero-carousel");
+    fireEvent.focus(carousel);
+    fireEvent.mouseEnter(carousel);
+    fireEvent.blur(carousel, { relatedTarget: null });
+    expect(carousel).toHaveAttribute("data-autoplay", "false");
+  });
+});
+
+describe("HeroCarousel — blur intra-region", () => {
+  beforeEach(() => {
+    mockMatchMedia(false);
+    vi.useFakeTimers();
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("blur with relatedTarget still inside carousel does not resume autoplay", () => {
+    const { container } = renderCarousel();
+    const carousel = screen.getByTestId("hero-carousel");
+    fireEvent.focus(carousel);
+    // relatedTarget is a dot button inside the carousel — intra-region tab
+    const dot = container.querySelector("[role='tab']") as Element;
+    fireEvent.blur(carousel, { relatedTarget: dot });
+    expect(carousel).toHaveAttribute("data-autoplay", "false");
+  });
+});
+
+describe("HeroCarousel — dot styling", () => {
+  beforeEach(() => mockMatchMedia(false));
+
+  it("active dot has bg-cf-cta class, inactive dots do not", () => {
+    renderCarousel();
+    const dots = screen.getAllByRole("tab");
+    expect(dots[0].className).toContain("bg-cf-cta");
+    expect(dots[1].className).not.toContain("bg-cf-cta");
+    expect(dots[2].className).not.toContain("bg-cf-cta");
+  });
+
+  it("clicking dot 2 moves bg-cf-cta to dot 2", async () => {
+    renderCarousel();
+    const dots = screen.getAllByRole("tab");
+    await userEvent.click(dots[1]);
+    expect(dots[1].className).toContain("bg-cf-cta");
+    expect(dots[0].className).not.toContain("bg-cf-cta");
+  });
+});
+
 describe("HeroCarousel — reduced motion", () => {
   afterEach(() => vi.useRealTimers());
 
@@ -349,5 +413,30 @@ describe("HeroCarousel — reduced motion", () => {
     const { container } = renderCarousel();
     const slideWrapper = container.querySelector("[aria-roledescription='slide']");
     expect(slideWrapper?.getAttribute("class")).toContain("duration-700");
+  });
+
+  it("matchMedia change event updates reduced-motion state", () => {
+    let capturedHandler: ((e: MediaQueryListEvent) => void) | null = null;
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        addEventListener: vi.fn((_event: string, handler: (e: MediaQueryListEvent) => void) => {
+          if (query === "(prefers-reduced-motion: reduce)") capturedHandler = handler;
+        }),
+        removeEventListener: vi.fn(),
+      })),
+    });
+
+    vi.useFakeTimers();
+    renderCarousel();
+    expect(screen.getByTestId("hero-carousel")).toHaveAttribute("data-autoplay", "true");
+
+    act(() => {
+      capturedHandler?.({ matches: true } as MediaQueryListEvent);
+    });
+    expect(screen.getByTestId("hero-carousel")).toHaveAttribute("data-autoplay", "false");
+    vi.useRealTimers();
   });
 });

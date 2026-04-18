@@ -8,13 +8,19 @@ export type HeroSlide = {
   alt: string;
 };
 
-// Hook to read prefers-reduced-motion media query, updating on change.
+// Reads prefers-reduced-motion and updates on media-query change.
+// SSR note: the lazy initializer returns false on the server (window absent),
+// so every SSR render produces non-reduced state. The client corrects on
+// first hydration — devices with reduced-motion may briefly see animated
+// state before hydration. The useEffect guard below prevents a window ReferenceError
+// if the effect is ever invoked outside a browser context.
 function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   });
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     const handler = (e: MediaQueryListEvent) => setReduced(e.matches);
     mq.addEventListener("change", handler);
@@ -30,6 +36,17 @@ type Props = {
 };
 
 export function HeroCarousel({ slides }: Props) {
+  if (slides.length === 0) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[HeroCarousel] received empty slides array — rendering nothing");
+    }
+    return null;
+  }
+
+  return <HeroCarouselInner slides={slides} />;
+}
+
+function HeroCarouselInner({ slides }: { slides: ReadonlyArray<HeroSlide> }) {
   const [active, setActive] = useState(0);
   const [hoverPaused, setHoverPaused] = useState(false);
   const [focusPaused, setFocusPaused] = useState(false);
@@ -38,6 +55,10 @@ export function HeroCarousel({ slides }: Props) {
   const paused = hoverPaused || focusPaused;
   const autoplay = !reducedMotion && !paused && slides.length > 1;
 
+  // Advance the slide every DWELL_MS ms while autoplay is active.
+  // NOTE: pass a stable slides array (module constant or useMemo) — an inline
+  // array literal would change reference every parent render, re-triggering
+  // this effect and restarting the interval on every render cycle.
   useEffect(() => {
     if (!autoplay) return;
     const id = setInterval(() => {
@@ -59,10 +80,16 @@ export function HeroCarousel({ slides }: Props) {
     }
   }
 
-  // Pause autoplay while any descendant has focus; resume when focus leaves the region.
   function onFocusIn() {
     setFocusPaused(true);
   }
+
+  // Resume only when focus leaves the carousel entirely.
+  // relatedTarget is the element receiving focus next; if it is still inside
+  // this container the blur is an intra-region tab, and we must keep the pause.
+  // iOS Safari / older Android Chrome always set relatedTarget = null on blur,
+  // so the `contains(null)` check returns false and focus-pause is best-effort
+  // on those platforms — autoplay resumes on any blur.
   function onBlurOut(e: React.FocusEvent<HTMLDivElement>) {
     if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
       setFocusPaused(false);
@@ -75,7 +102,7 @@ export function HeroCarousel({ slides }: Props) {
       aria-label="Hero image carousel"
       aria-roledescription="carousel"
       data-testid="hero-carousel"
-      data-autoplay={autoplay ? "true" : "false"}
+      data-autoplay={String(autoplay)}
       tabIndex={0}
       onMouseEnter={() => setHoverPaused(true)}
       onMouseLeave={() => setHoverPaused(false)}
@@ -84,7 +111,9 @@ export function HeroCarousel({ slides }: Props) {
       onKeyDown={onKeyDown}
       className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-cf-divider bg-white shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      {/* Slide images — stacked, crossfade via opacity transition */}
+      {/* Slide images — stacked, crossfade via opacity transition.
+          Reduced-motion: omit duration-700 so Tailwind's 150ms default applies
+          instead of 700ms — effectively instant for the user. */}
       {slides.map((slide, i) => (
         <div
           key={`${slide.src}-${i}`}
@@ -93,12 +122,9 @@ export function HeroCarousel({ slides }: Props) {
           aria-hidden={i !== active}
           className={[
             "absolute inset-0 transition-opacity",
-            // Reduced-motion: no duration so the swap is instant, no animation
-            reducedMotion ? "" : "duration-700",
+            ...(reducedMotion ? [] : ["duration-700"]),
             i === active ? "opacity-100" : "opacity-0",
-          ]
-            .filter(Boolean)
-            .join(" ")}
+          ].join(" ")}
         >
           <Image
             src={slide.src}
@@ -107,6 +133,9 @@ export function HeroCarousel({ slides }: Props) {
             priority={i === 0}
             sizes="(min-width: 768px) 50vw, 100vw"
             className="object-cover"
+            onError={() =>
+              console.warn(`[HeroCarousel] failed to load slide image: ${slide.src}`)
+            }
           />
         </div>
       ))}
