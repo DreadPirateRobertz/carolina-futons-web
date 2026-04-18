@@ -1,3 +1,4 @@
+import { act } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
@@ -121,5 +122,92 @@ describe("PdpInteractive (cf-3qt.2.1 + 2.2 integration)", () => {
     );
     expect(container.querySelector('[data-slot="pdp-media"] .bg-cf-sand')).not.toBeNull();
     expect(screen.queryByTestId("pdp-main-image")).toBeNull();
+  });
+
+  describe("sticky CTA (cf-3qt.6.F.3)", () => {
+    function stubIntersectionObserver() {
+      const callbacks: IntersectionObserverCallback[] = [];
+      const ObserverStub = vi.fn().mockImplementation(function (
+        this: IntersectionObserver,
+        cb: IntersectionObserverCallback,
+      ) {
+        callbacks.push(cb);
+        this.observe = vi.fn();
+        this.disconnect = vi.fn();
+        this.unobserve = vi.fn();
+        this.takeRecords = vi.fn(() => []);
+        return this;
+      });
+      vi.stubGlobal("IntersectionObserver", ObserverStub);
+      return {
+        fire(intersecting: boolean) {
+          for (const cb of callbacks) {
+            cb(
+              [{ isIntersecting: intersecting } as IntersectionObserverEntry],
+              {} as IntersectionObserver,
+            );
+          }
+        },
+      };
+    }
+
+    it("hides the sticky bar on initial paint (primary CTA visible)", () => {
+      stubIntersectionObserver();
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Kingston"
+          productOptions={[]}
+          variants={[]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$899"
+        />,
+      );
+      expect(
+        screen.queryByRole("region", { name: /quick add to cart/i }),
+      ).toBeNull();
+    });
+
+    it("shows the sticky bar after the primary CTA scrolls out of view", () => {
+      const observer = stubIntersectionObserver();
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Kingston"
+          productOptions={[]}
+          variants={[]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$899"
+        />,
+      );
+      act(() => observer.fire(false));
+      const region = screen.getByRole("region", { name: /quick add to cart/i });
+      expect(region).toBeInTheDocument();
+      // Both the primary and sticky bar render an AddToCartButton — the sticky
+      // uses the same prop bundle so the cart action is identical.
+      expect(screen.getAllByRole("button", { name: /add to cart/i })).toHaveLength(2);
+    });
+
+    it("hides the sticky bar again when the primary CTA scrolls back into view", () => {
+      const observer = stubIntersectionObserver();
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Kingston"
+          productOptions={[]}
+          variants={[]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$899"
+        />,
+      );
+      act(() => observer.fire(false));
+      expect(
+        screen.getByRole("region", { name: /quick add to cart/i }),
+      ).toBeInTheDocument();
+      act(() => observer.fire(true));
+      expect(
+        screen.queryByRole("region", { name: /quick add to cart/i }),
+      ).toBeNull();
+    });
   });
 });
