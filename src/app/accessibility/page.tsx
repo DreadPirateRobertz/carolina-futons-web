@@ -69,10 +69,10 @@ export default function AccessibilityPage() {
           <p className="leading-relaxed">
             Email{" "}
             <a
-              href="mailto:hello@carolinafutons.com"
+              href="mailto:carolinafutons@gmail.com"
               className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
             >
-              hello@carolinafutons.com
+              carolinafutons@gmail.com
             </a>{" "}
             with the page URL, a description of the issue, and the assistive
             technology you were using, if any.

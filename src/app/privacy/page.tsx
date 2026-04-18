@@ -63,8 +63,8 @@ export default function PrivacyPolicyPage() {
           </h2>
           <p className="leading-relaxed">
             We share information with a limited set of vetted service
-            providers who help us operate: our e-commerce platform (Wix
-            Stores), payment processors, shipping carriers, email
+            providers who help us operate: our e-commerce platform
+            (Vercel/Next.js), payment processors, shipping carriers, email
             deliverability, and analytics. Each is contractually limited to
             using the data only to provide their service to us.
           </p>
@@ -102,10 +102,10 @@ export default function PrivacyPolicyPage() {
           <p className="leading-relaxed">
             Questions about this policy? Email us at{" "}
             <a
-              href="mailto:hello@carolinafutons.com"
+              href="mailto:carolinafutons@gmail.com"
               className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
             >
-              hello@carolinafutons.com
+              carolinafutons@gmail.com
             </a>{" "}
             or call the store during regular business hours.
           </p>
