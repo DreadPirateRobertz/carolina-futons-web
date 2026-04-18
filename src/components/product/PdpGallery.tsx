@@ -42,16 +42,6 @@ const VT_NAME = "pdp-gallery";
 const FALLBACK_PRODUCT_IMG =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
-function handleImgError(
-  e: React.SyntheticEvent<HTMLImageElement>,
-  context: string,
-) {
-  const src = e.currentTarget.src;
-  if (src === FALLBACK_PRODUCT_IMG) return; // prevent infinite loop
-  console.warn(`[PdpGallery] broken image src (${context}):`, src);
-  e.currentTarget.src = FALLBACK_PRODUCT_IMG;
-}
-
 export type GalleryImage = {
   url: string;
   alt?: string;
@@ -87,9 +77,27 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
   // name during this window so the snapshot has no duplicate-name conflict.
   const [vtSourceIndex, setVtSourceIndex] = useState<number | null>(null);
   const activeTransition = useRef<GalleryViewTransition | null>(null);
+  // Tracks URLs that failed to load. State (not DOM mutation) so React renders
+  // FALLBACK_PRODUCT_IMG via the src prop and reconciliation never reverts it.
+  const [brokenSrcs, setBrokenSrcs] = useState<ReadonlySet<string>>(new Set());
 
   const reduce = useReducedMotion();
   const supportsVT = useSupportsViewTransition();
+
+  function markBroken(url: string, context: string) {
+    if (brokenSrcs.has(url)) {
+      // Already marked — means the fallback data URI itself also errored
+      // (e.g. CSP policy blocking data: scheme). Surface it at error level.
+      console.error(`[PdpGallery] fallback also failed for broken src (${context}):`, url);
+      return;
+    }
+    console.warn(`[PdpGallery] broken image src (${context}):`, url);
+    setBrokenSrcs((prev) => new Set(prev).add(url));
+  }
+
+  function resolvedSrc(url: string): string {
+    return brokenSrcs.has(url) ? FALLBACK_PRODUCT_IMG : url;
+  }
 
   if (images.length === 0) {
     return (
@@ -161,11 +169,12 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
   return (
     <div data-slot="pdp-gallery" className="space-y-3">
       <ZoomMainImage
-        src={active.url}
+        src={resolvedSrc(active.url)}
         alt={active.alt ?? productName}
+        crossfadeKey={index}
         carryVTName={vtSourceIndex === null}
         useFramerCrossfade={useFramerCrossfade}
-        onError={(e) => handleImgError(e, "main")}
+        onImgError={() => markBroken(active.url, "main")}
       />
       {images.length > 1 ? (
         <div
@@ -196,11 +205,11 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={img.url}
+                  src={resolvedSrc(img.url)}
                   alt=""
                   aria-hidden="true"
                   className="h-full w-full object-cover"
-                  onError={(e) => handleImgError(e, `thumb ${i}`)}
+                  onError={() => markBroken(img.url, `thumb ${i}`)}
                 />
               </button>
             );
@@ -217,15 +226,17 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
 function ZoomMainImage({
   src,
   alt,
+  crossfadeKey,
   carryVTName,
   useFramerCrossfade,
-  onError,
+  onImgError,
 }: {
   src: string;
   alt: string;
+  crossfadeKey: number;
   carryVTName: boolean;
   useFramerCrossfade: boolean;
-  onError: (e: React.SyntheticEvent<HTMLImageElement>) => void;
+  onImgError: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
@@ -265,15 +276,16 @@ function ZoomMainImage({
   return (
     <div ref={containerRef} className="overflow-hidden rounded-lg">
       <m.img
-        // Keying on src in the framer-crossfade path forces a fresh mount on
-        // swap so initial→animate runs the opacity fade. In the VT path we
-        // keep a stable key (browser-native morph, no remount needed).
-        key={useFramerCrossfade ? src : "static"}
+        // Keying on the logical index (not resolved src) forces a fresh mount
+        // on thumb selection for the opacity fade, while keeping the element
+        // stable on error-fallback swaps so the DOM ref stays valid.
+        // In the VT path the browser handles the morph, no remount needed.
+        key={useFramerCrossfade ? crossfadeKey : "static"}
         src={src}
         alt={alt}
         data-testid="pdp-main-image"
         style={baseStyle}
-        onError={onError}
+        onError={onImgError}
         {...crossfadeProps}
         className="aspect-square w-full object-cover"
       />

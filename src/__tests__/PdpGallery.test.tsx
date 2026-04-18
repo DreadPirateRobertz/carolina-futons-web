@@ -267,7 +267,7 @@ describe("PdpGallery — View Transitions API", () => {
 describe("PdpGallery — onError / broken image fallback", () => {
   beforeEach(() => uninstallViewTransitionStub());
 
-  it("main image falls back to FALLBACK_PRODUCT_IMG on load error", () => {
+  it("main image falls back to FALLBACK data URI on load error", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
     const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
@@ -276,27 +276,31 @@ describe("PdpGallery — onError / broken image fallback", () => {
     warnSpy.mockRestore();
   });
 
-  it("main image onError logs a console.warn with the broken src", () => {
+  it("main image onError logs console.warn with the original broken src", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
     const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
     fireEvent.error(main);
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining("[PdpGallery]"),
-      expect.anything(),
+      "https://img/a.jpg",
     );
     warnSpy.mockRestore();
   });
 
-  it("main image does not re-fire warn if fallback src itself errors", () => {
+  it("second error on same image logs console.error (fallback also failed)", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
     const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
-    fireEvent.error(main); // first error → applies fallback
-    const callCount = warnSpy.mock.calls.length;
-    fireEvent.error(main); // second error on fallback → no-op
-    expect(warnSpy.mock.calls.length).toBe(callCount);
+    fireEvent.error(main);
+    fireEvent.error(main); // fallback also errored
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[PdpGallery] fallback"),
+      "https://img/a.jpg",
+    );
     warnSpy.mockRestore();
+    errorSpy.mockRestore();
   });
 
   it("thumbnail image falls back on load error", () => {
@@ -309,6 +313,22 @@ describe("PdpGallery — onError / broken image fallback", () => {
     ) as NodeListOf<HTMLImageElement>;
     fireEvent.error(thumbImgs[1]);
     expect(thumbImgs[1].src).toMatch(/^data:image\/png/);
+    warnSpy.mockRestore();
+  });
+
+  it("thumbnail onError logs warn with the correct broken src and context", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { container } = render(
+      <PdpGallery images={multiImages} productName="Kingston Futon" />,
+    );
+    const thumbImgs = container.querySelectorAll(
+      "[role='tab'] img",
+    ) as NodeListOf<HTMLImageElement>;
+    fireEvent.error(thumbImgs[0]);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("thumb 0"),
+      "https://img/a.jpg",
+    );
     warnSpy.mockRestore();
   });
 });
