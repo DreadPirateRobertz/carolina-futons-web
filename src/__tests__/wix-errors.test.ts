@@ -89,4 +89,35 @@ describe("logWixFailure", () => {
     expect(spy.mock.calls[0][0]).toContain("[products]");
     expect(spy.mock.calls[0][0]).toContain("getProductBySlug(foo)");
   });
+
+  it("attaches Sentry extras with code + httpStatus pulled from the Wix error", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { logWixFailure } = await import("@/lib/wix/errors");
+    const err = Object.assign(new Error("boom"), {
+      code: "RATE_LIMIT",
+      response: { status: 429 },
+    });
+    await logWixFailure("plp", "queryProducts", err);
+
+    const [, opts] = sentryMock.captureException.mock.calls[0];
+    expect(opts).toMatchObject({
+      extra: { code: "RATE_LIMIT", httpStatus: 429, message: "boom" },
+    });
+  });
+
+  it("falls back to details.applicationError.code when top-level code is absent", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { logWixFailure } = await import("@/lib/wix/errors");
+    // No top-level .code — only the nested applicationError code.
+    const err = {
+      message: "app error",
+      details: { applicationError: { code: "PRODUCT_NOT_FOUND" } },
+    };
+    await logWixFailure("products", "getProductBySlug(x)", err);
+
+    const [, opts] = sentryMock.captureException.mock.calls[0];
+    expect(opts).toMatchObject({
+      extra: { code: "PRODUCT_NOT_FOUND" },
+    });
+  });
 });

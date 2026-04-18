@@ -127,15 +127,18 @@ describe("PdpInteractive (cf-3qt.2.1 + 2.2 integration)", () => {
   describe("sticky CTA (cf-3qt.6.F.3)", () => {
     function stubIntersectionObserver() {
       const callbacks: IntersectionObserverCallback[] = [];
+      const instances: Array<{ disconnect: ReturnType<typeof vi.fn> }> = [];
       const ObserverStub = vi.fn().mockImplementation(function (
         this: IntersectionObserver,
         cb: IntersectionObserverCallback,
       ) {
         callbacks.push(cb);
+        const disconnect = vi.fn();
         this.observe = vi.fn();
-        this.disconnect = vi.fn();
+        this.disconnect = disconnect;
         this.unobserve = vi.fn();
         this.takeRecords = vi.fn(() => []);
+        instances.push({ disconnect });
         return this;
       });
       vi.stubGlobal("IntersectionObserver", ObserverStub);
@@ -148,6 +151,7 @@ describe("PdpInteractive (cf-3qt.2.1 + 2.2 integration)", () => {
             );
           }
         },
+        instances,
       };
     }
 
@@ -208,6 +212,66 @@ describe("PdpInteractive (cf-3qt.2.1 + 2.2 integration)", () => {
       expect(
         screen.queryByRole("region", { name: /quick add to cart/i }),
       ).toBeNull();
+    });
+
+    it("renders without crashing when IntersectionObserver is unavailable (SSR / old browsers)", () => {
+      vi.stubGlobal("IntersectionObserver", undefined);
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Kingston"
+          productOptions={[]}
+          variants={[]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$899"
+        />,
+      );
+      // Primary CTA renders, sticky stays hidden (primaryInView seeds true).
+      expect(screen.getByRole("button", { name: /add to cart/i })).toBeInTheDocument();
+      expect(
+        screen.queryByRole("region", { name: /quick add to cart/i }),
+      ).toBeNull();
+      vi.unstubAllGlobals();
+    });
+
+    it("disconnects the observer on unmount", () => {
+      const observer = stubIntersectionObserver();
+      const { unmount } = render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Kingston"
+          productOptions={[]}
+          variants={[]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$899"
+        />,
+      );
+      expect(observer.instances).toHaveLength(1);
+      unmount();
+      expect(observer.instances[0].disconnect).toHaveBeenCalledTimes(1);
+    });
+
+    it("sticky CTA click invokes the same cart action as the primary CTA (shared props)", async () => {
+      const { addItemAction } = await import("@/app/actions/cart");
+      const observer = stubIntersectionObserver();
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Kingston"
+          productOptions={[]}
+          variants={[]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$899"
+        />,
+      );
+      act(() => observer.fire(false));
+      const buttons = screen.getAllByRole("button", { name: /add to cart/i });
+      expect(buttons).toHaveLength(2);
+      // Second button is the one inside the sticky region.
+      const stickyButton = buttons[1];
+      fireEvent.click(stickyButton);
+      // The click fires the same server action the primary CTA uses.
+      expect(addItemAction).toHaveBeenCalled();
     });
   });
 });
