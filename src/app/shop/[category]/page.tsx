@@ -1,20 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import {
   getCollectionBySlug,
-  listProductsByCollectionId,
   listProductsOnSale,
   type WixProduct,
 } from "@/lib/wix/products";
-import {
-  SHOP_CATEGORIES,
-  findCategory,
-  type ShopCategory,
-} from "@/lib/shop/categories";
-import { formatPlpPrice } from "@/lib/product/plp-price";
+import { getCollectionPlp, type PlpSort } from "@/lib/wix/plp";
+import { SHOP_CATEGORIES, findCategory } from "@/lib/shop/categories";
+import { ProductCard } from "@/components/product/ProductCard";
+import { PLPControls } from "@/components/plp/PLPControls";
+import { PLPPagination } from "@/components/plp/PLPPagination";
 
-export const dynamic = "force-dynamic"; // Phase 2: per-request until facets + caching tags wired
+export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return SHOP_CATEGORIES.map((category) => ({ category: category.slug }));
@@ -32,14 +31,106 @@ export async function generateMetadata(props: {
   };
 }
 
+const VALID_SORTS = new Set<PlpSort>([
+  "featured",
+  "price-asc",
+  "price-desc",
+  "name-asc",
+  "name-desc",
+  "newest",
+]);
+
+export function parseSearchParams(
+  sp: Record<string, string | string[] | undefined>,
+) {
+  const raw = (key: string) =>
+    Array.isArray(sp[key])
+      ? (sp[key] as string[])[0]
+      : (sp[key] as string | undefined);
+
+  const pageNum = Math.max(1, parseInt(raw("page") ?? "1", 10) || 1);
+  const rawSort = raw("sort") ?? "featured";
+  const sort: PlpSort = VALID_SORTS.has(rawSort as PlpSort)
+    ? (rawSort as PlpSort)
+    : "featured";
+  const parsePrice = (v: string | undefined) => {
+    const n = v !== undefined ? Number(v) : NaN;
+    return Number.isFinite(n) ? n : undefined;
+  };
+  const priceMin = parsePrice(raw("priceMin"));
+  const priceMax = parsePrice(raw("priceMax"));
+  const inStockOnly = raw("inStock") === "1";
+
+  return { pageNum, sort, priceMin, priceMax, inStockOnly };
+}
+
+// cf-3qt.6.D: /shop/mattresses-sale is a virtual category — no matching Wix
+// collection. Its products are the mattresses collection filtered to items with
+// an active Wix Stores discount.
+async function resolvePrefetchedProducts(
+  categorySlug: string,
+): Promise<WixProduct[] | undefined> {
+  if (categorySlug !== "mattresses-sale") return undefined;
+  const mattressesCollection = await getCollectionBySlug("mattresses");
+  if (!mattressesCollection?._id) return [];
+  return listProductsOnSale(mattressesCollection._id);
+}
+
 export default async function PlpPage(props: {
   params: Promise<{ category: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { category: categorySlug } = await props.params;
+  const [{ category: categorySlug }, searchParams] = await Promise.all([
+    props.params,
+    props.searchParams,
+  ]);
+
   const category = findCategory(categorySlug);
   if (!category) notFound();
 
-  const products = await resolveCategoryProducts(category);
+  const [collection, prefetchedProducts] = await Promise.all([
+    getCollectionBySlug(category.collectionSlug),
+    resolvePrefetchedProducts(categorySlug),
+  ]);
+
+  const { pageNum, sort, priceMin, priceMax, inStockOnly } =
+    parseSearchParams(searchParams);
+
+  // Use collection ID when available; fall back to "" for virtual categories
+  // (e.g. mattresses-sale) where getCollectionPlp will use prefetchedProducts.
+  const { page, facets } =
+    collection?._id || prefetchedProducts !== undefined
+      ? await getCollectionPlp(collection?._id ?? "", {
+          page: pageNum,
+          pageSize: 24,
+          sort,
+          filters: { priceMin, priceMax, inStockOnly: inStockOnly || undefined },
+          prefetchedProducts,
+        })
+      : {
+          page: {
+            items: [],
+            total: 0,
+            page: 1,
+            pageSize: 24,
+            hasNext: false,
+            hasPrev: false,
+          },
+          facets: {
+            total: 0,
+            inStock: 0,
+            outOfStock: 0,
+            priceBuckets: [],
+          },
+        };
+
+  // cf-3qt.6.B silent-failure fix (blaidd PR #35): an errored scan returns
+  // items=[] but it is NOT an empty collection. We MUST render distinct outage
+  // copy rather than "No products found" to avoid a bounce trap during Wix
+  // outages (silent-failure review required an explicit branch).
+  const readerFailed = page.error !== undefined;
+
+  const basePath = `/shop/${categorySlug}`;
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-10">
@@ -56,67 +147,55 @@ export default async function PlpPage(props: {
           {category.name}
         </h1>
         <p className="mt-2 text-zinc-600">{category.description}</p>
-        <p className="mt-4 text-sm text-zinc-500">
-          {products.length} {products.length === 1 ? "product" : "products"}
-        </p>
       </header>
 
-      {products.length === 0 ? (
+      <div className="mt-6">
+        <Suspense>
+          <PLPControls
+            sort={sort}
+            priceMin={priceMin}
+            priceMax={priceMax}
+            inStockOnly={inStockOnly}
+            totalFiltered={page.total}
+          />
+        </Suspense>
+      </div>
+
+      {readerFailed ? (
+        <p
+          role="alert"
+          className="mt-10 rounded-md border border-amber-200 bg-amber-50 p-6 text-amber-900"
+        >
+          We&rsquo;re having trouble loading products right now. Please refresh
+          in a moment or{" "}
+          <Link href="/contact" className="underline">
+            contact us
+          </Link>{" "}
+          if the problem persists.
+        </p>
+      ) : page.items.length === 0 ? (
         <p className="mt-10 rounded-md bg-zinc-50 p-6 text-zinc-700">
-          {category.slug === "mattresses-sale"
-            ? "No mattresses are on sale right now. Check back soon."
-            : `No products found in this collection yet. Phase 0 smoke may not have populated ${category.collectionSlug}.`}
+          {facets.total === 0
+            ? categorySlug === "mattresses-sale"
+              ? "No mattresses are on sale right now. Check back soon."
+              : "No products found in this collection yet."
+            : "No products match these filters. Try adjusting the price range or removing the in-stock filter."}
         </p>
       ) : (
         <ul className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map((product) => (
+          {page.items.map((product) => (
             <ProductCard key={product._id} product={product} />
           ))}
         </ul>
       )}
+
+      <PLPPagination
+        page={page.page}
+        hasNext={page.hasNext}
+        hasPrev={page.hasPrev}
+        basePath={basePath}
+        searchParams={searchParams}
+      />
     </main>
-  );
-}
-
-// cf-3qt.6.D: /shop/mattresses-sale is derived from the mattresses collection
-// filtered to products with an active Wix Stores discount, not a hand-curated
-// "mattresses-sale" collection.
-async function resolveCategoryProducts(
-  category: ShopCategory,
-): Promise<WixProduct[]> {
-  const sourceSlug =
-    category.slug === "mattresses-sale" ? "mattresses" : category.collectionSlug;
-  const collection = await getCollectionBySlug(sourceSlug);
-  if (!collection?._id) return [];
-  if (category.slug === "mattresses-sale") {
-    return listProductsOnSale(collection._id);
-  }
-  return listProductsByCollectionId(collection._id);
-}
-
-function ProductCard({ product }: { product: WixProduct }) {
-  const href = product.slug ? `/products/${product.slug}` : "#";
-  const mainUrl = product.media?.mainMedia?.image?.url;
-  return (
-    <li className="rounded-lg border border-zinc-200 hover:border-zinc-400">
-      <Link href={href} className="block">
-        {mainUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={mainUrl}
-            alt={product.name ?? ""}
-            className="aspect-square w-full rounded-t-lg object-cover"
-          />
-        ) : (
-          <div className="aspect-square w-full rounded-t-lg bg-zinc-100" />
-        )}
-        <div className="p-4">
-          <h2 className="text-base font-medium">{product.name}</h2>
-          <p className="mt-1 text-sm text-zinc-600">
-            {formatPlpPrice(product)}
-          </p>
-        </div>
-      </Link>
-    </li>
   );
 }

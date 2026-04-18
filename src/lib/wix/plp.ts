@@ -15,8 +15,7 @@
 //     collection, not just the current page — one full-catalog scan feeds
 //     both the paginated slice and the facet counts.
 // Trade-off: we cap the scan at `scanLimit` (default 500) to keep the payload
-// bounded. PLPs currently have < 200 products each, so 500 leaves headroom
-// without risking a pathological scan.
+// bounded. Revisit if any collection grows beyond that threshold.
 
 import * as Sentry from "@sentry/nextjs";
 import { getWixClient } from "@/lib/wix-client";
@@ -88,6 +87,10 @@ export type ListPlpOptions = {
   sort?: PlpSort;
   filters?: PlpFilters;
   scanLimit?: number;
+  // When set, skips the Wix collection scan and uses this array as the full
+  // product set. Note: the caller is responsible for the completeness of this
+  // list — listProductsOnSale returns one SDK page (~48 items), not a full scan.
+  prefetchedProducts?: WixProduct[];
 };
 
 // Default buckets tuned for futon/mattress catalog price distribution
@@ -366,9 +369,14 @@ export async function getCollectionPlp(
   collectionId: string,
   opts: ListPlpOptions & { priceBuckets?: PriceBucketSpec[] } = {},
 ): Promise<{ page: PlpPage<WixProduct>; facets: FacetCounts; error?: PlpReaderError }> {
-  const scan = await queryAllProductsByCollection(collectionId, {
-    scanLimit: opts.scanLimit,
-  });
+  // Callers can short-circuit the Wix scan by supplying pre-filtered products
+  // (cf-3qt.6.D mattresses-sale derives its list from a different query that
+  // has already run upstream). When prefetched, there is no scan → no error.
+  const scan: PlpScanResult = opts.prefetchedProducts
+    ? { items: opts.prefetchedProducts }
+    : await queryAllProductsByCollection(collectionId, {
+        scanLimit: opts.scanLimit,
+      });
   const facets = computeFacets(scan.items, { priceBuckets: opts.priceBuckets });
   const filtered = applyFilters(scan.items, opts.filters);
   const sorted = applySort(filtered, opts.sort ?? "featured");
