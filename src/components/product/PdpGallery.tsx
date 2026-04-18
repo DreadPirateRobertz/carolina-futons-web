@@ -1,11 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { ScrollZoomImage } from "@/components/motion/ScrollZoomImage";
 
 // cf-3qt.6.F.1: multi-image gallery for the PDP. The active main image is
 // also controllable from the parent via `activeUrl` (used by the variant
 // picker — selecting a variant with its own mainMedia wins over the thumb
 // selection so the swatch and main stay consistent).
+//
+// cf-3qt.7.M.1 (cf-2i7): main image is wrapped in ScrollZoomImage so it
+// gets a subtle scroll-linked scale drift. The wrapper clips with
+// overflow-hidden; the underlying <img> keeps its testid/alt/src so the
+// gallery keyboard and thumb-click tests remain stable.
 
 export type GalleryImage = {
   url: string;
@@ -52,12 +58,12 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
 
   return (
     <div data-slot="pdp-gallery" className="space-y-3">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <ScrollZoomImage
         src={active.url}
         alt={active.alt ?? productName}
         data-testid="pdp-main-image"
-        className="aspect-square w-full rounded-lg object-cover"
+        className="aspect-square w-full overflow-hidden rounded-lg"
+        imgClassName="h-full w-full object-cover"
       />
       {images.length > 1 ? (
         <div
