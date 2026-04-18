@@ -7,6 +7,7 @@ import {
   type AddToCartButtonProps,
 } from "@/components/cart/AddToCartButton";
 import { PdpGallery, type GalleryImage } from "@/components/product/PdpGallery";
+import { PdpShippingEstimate } from "@/components/product/PdpShippingEstimate";
 import { PdpStickyCta } from "@/components/product/PdpStickyCta";
 import { PdpStockBadge } from "@/components/product/PdpStockBadge";
 import { VariantPicker } from "@/components/product/VariantPicker";
@@ -147,6 +148,7 @@ export function PdpInteractive({
         <div ref={primaryCtaRef} data-slot="pdp-primary-cta">
           <AddToCartButton {...addToCartProps} />
         </div>
+        <PdpShippingEstimate />
       </div>
       <PdpStickyCta
         visible={!primaryInView}
