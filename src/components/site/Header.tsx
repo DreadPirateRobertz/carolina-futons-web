@@ -3,6 +3,7 @@
 //   Announcement bar 60px + main row 93px + sub-nav 60px = 213px total
 // CMS wiring + mega-nav content land in Phase 3 (rennala).
 // Keep this server-rendered — no state, no effects.
+import Image from "next/image";
 import Link from "next/link";
 import { Search, User } from "lucide-react";
 import { AnnouncementBar } from "@/components/site/AnnouncementBar";
@@ -40,10 +41,20 @@ export function Header() {
         <div className="mx-auto flex w-full max-w-7xl items-center gap-8 px-4 sm:px-6 lg:px-8">
           <Link
             href="/"
-            className="font-heading text-2xl font-semibold tracking-tight text-cf-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
+            className="flex items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             aria-label="Carolina Futons — home"
           >
-            Carolina Futons
+            <Image
+              src="/brand/cf-logo-square.png"
+              alt=""
+              width={36}
+              height={36}
+              priority
+              className="size-9 rounded-sm"
+            />
+            <span className="font-heading text-2xl font-semibold tracking-tight text-cf-navy">
+              Carolina Futons
+            </span>
           </Link>
 
           <nav
