@@ -111,4 +111,53 @@ describe("formatPlpPrice", () => {
     };
     expect(formatPlpPrice(product)).toBe("$250");
   });
+
+  it("returns empty string when base price is $0 with no usable range (Mesa mattress regression — cf-3qt.6.C)", () => {
+    // Wix Studio→Headless catalog migration pending: Mesa line has priceData.price=0
+    // and priceRange not yet populated. Must show nothing rather than "$0.00".
+    expect(
+      formatPlpPrice({
+        priceData: { price: 0, currency: "USD", formatted: { price: "$0.00" } },
+        priceRange: { minValue: 0, maxValue: 0 },
+      }),
+    ).toBe("");
+  });
+
+  it("returns empty string when base price is $0 with null priceRange", () => {
+    expect(
+      formatPlpPrice({
+        priceData: { price: 0, currency: "USD", formatted: { price: "$0.00" } },
+        priceRange: null,
+      }),
+    ).toBe("");
+  });
+
+  it("returns empty string when price is null with no usable range", () => {
+    expect(
+      formatPlpPrice({
+        priceData: { price: null, currency: "USD", formatted: { price: null } },
+      }),
+    ).toBe("");
+  });
+
+  it("honors formatted string when numeric price is absent (partial catalog payload)", () => {
+    // Partial Wix payload / test fixture: formatted is populated but numeric
+    // price is absent. Distinct from manageVariants price===0 — here we don't
+    // know it's a $0 placeholder, so trust the formatted string.
+    expect(
+      formatPlpPrice({
+        priceData: { formatted: { price: "$199" } },
+      }),
+    ).toBe("$199");
+  });
+
+  it("falls back to formatCurrency when price is set but formatted is null", () => {
+    // Wix should always populate formatted, but if it doesn't, don't silently
+    // drop a real price — format it from the numeric value.
+    expect(
+      formatPlpPrice({
+        priceData: { price: 499, currency: "USD", formatted: null },
+      }),
+    ).toBe("$499");
+  });
 });

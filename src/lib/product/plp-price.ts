@@ -10,8 +10,10 @@
 //   - No price data at all                       → ""
 //   - Fixed-price product (priceRange absent)    → priceData.formatted.price
 //   - Variant range with min === max             → the single price
-//   - Variant range with base price $0           → "From $min"
+//   - Variant range with base price $0 or absent → "From $min"
 //   - Variant range with a set base price        → "$min – $max"
+//   - Base price $0 or absent, no usable range   → "" (cf-3qt.6.C: catalog not yet
+//       populated — Mesa mattresses pending Wix Studio→Headless variant migration)
 
 export type PlpPricedProduct = {
   priceData?: {
@@ -43,7 +45,14 @@ export function formatPlpPrice(product: PlpPricedProduct): string {
     return `${formatCurrency(min, currency)} – ${formatCurrency(max, currency)}`;
   }
 
-  return baseFormatted;
+  // Suppress the $0.00 placeholder emitted for manageVariants products with no
+  // usable priceRange — the catalog is mid-migration and a "$0.00" tile misleads
+  // shoppers. A null/undefined basePrice means the product lacks numeric pricing
+  // entirely (test fixtures, partial Wix payloads); in that case honor whatever
+  // formatted string exists rather than blanking the tile.
+  if (basePrice === 0) return "";
+  if (basePrice === null) return baseFormatted;
+  return baseFormatted || formatCurrency(basePrice, currency);
 }
 
 function formatCurrency(amount: number, currency: string): string {
