@@ -107,9 +107,9 @@ describe("resolveDerivedProducts — happy path", () => {
 });
 
 describe("resolveDerivedProducts — error path (cf-3qt.6.D.F3 silent-failure fix)", () => {
-  // Both shapes (null and {}) hit the same `!sourceCollection?._id` branch —
-  // exercising both guards we promised in the resolver against config typos
-  // and deleted/incomplete Wix collections.
+  // Both shapes (null and {}) hit the same `!sourceCollection?._id` branch.
+  // Exercises both guards in the resolver against config typos and
+  // deleted/incomplete Wix collections.
   it.each([
     ["null collection (slug doesn't resolve)", null],
     ["object missing _id (incomplete collection)", {}],

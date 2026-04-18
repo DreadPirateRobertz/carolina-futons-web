@@ -24,16 +24,16 @@ import type { CategoryFilter, ShopCategory } from "@/lib/shop/categories";
 // exact bounce-trap class the {items, error?} contract was introduced to
 // prevent (cf-3qt.6.B silent-failure review).
 export type DerivedProductsResult = {
-  items: readonly WixProduct[];
+  items: WixProduct[];
   error?: ReaderError;
 };
 
 // Predicate dispatch table. Each entry is a reader that takes a collection id
-// and returns the products passing the filter — the existing Wix helpers
-// already encapsulate the predicate logic (isProductOnSale etc.).
+// and returns the products passing the filter — the existing Wix helpers in
+// @/lib/wix/products already encapsulate the predicate logic.
 const FILTER_READERS: Record<
   CategoryFilter,
-  (collectionId: string) => Promise<readonly WixProduct[]>
+  (collectionId: string) => Promise<WixProduct[]>
 > = {
   "on-sale": listProductsOnSale,
 };
@@ -42,6 +42,19 @@ const FILTER_READERS: Record<
  * Returns the prefetched product list for a derived category as
  * `{items, error?}`, or `undefined` if the category is not derived (normal
  * PLPs resolve via collection id, not prefetched products).
+ *
+ * Source resolution: derived categories source products from `sourceSlug`,
+ * falling back to `collectionSlug` when `sourceSlug` is omitted. The fallback
+ * exists so a derived category whose URL slug *happens* to match a real Wix
+ * collection still works without an explicit `sourceSlug` config entry.
+ *
+ * Empty-state semantics — callers MUST distinguish:
+ *   • `{items: []}` (no `error`) is a *genuine* empty state — the source
+ *     collection exists but currently has zero items passing the filter
+ *     (e.g. no items on sale right now). Render `category.emptyStateCopy`.
+ *   • `{items: [], error: …}` is an *outage* — the source collection or its
+ *     scan failed. Render the outage copy, NOT the empty-state copy, to
+ *     avoid bouncing users on a Wix outage masquerading as "no sale items".
  *
  * Failure modes that produce `error: "unexpected"` (rather than silent `[]`):
  *   • Source collection slug doesn't resolve in Wix (config typo, deleted

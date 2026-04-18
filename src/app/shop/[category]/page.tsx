@@ -112,9 +112,7 @@ export default async function PlpPage(props: {
           pageSize: 24,
           sort,
           filters: { priceMin, priceMax, inStockOnly: inStockOnly || undefined },
-          prefetchedProducts: prefetchedProducts
-            ? [...prefetchedProducts.items]
-            : undefined,
+          prefetchedProducts: prefetchedProducts?.items,
         })
       : {
           page: {
