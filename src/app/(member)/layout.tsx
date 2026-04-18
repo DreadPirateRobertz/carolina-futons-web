@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getMemberSession } from "@/lib/auth/_member-session-stub";
+import { getMemberSession } from "@/lib/auth/member";
 
 export const dynamic = "force-dynamic";
 
