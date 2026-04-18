@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { SHOP_CATEGORIES } from "@/lib/shop/categories";
 import { HeroReveal } from "@/components/motion/HeroReveal";
@@ -15,18 +16,17 @@ import { TrustBar } from "@/components/site/TrustBar";
 // maxStagger.
 const CARD_STAGGER_SECONDS = 0.08;
 
-// TODO: replace placeholder URLs with brand assets from public/brand/ once delivered.
 const HERO_SLIDES: HeroSlide[] = [
   {
-    src: "https://static.wixstatic.com/media/e04e89_cf15142c61714ecfad7852522e0a98e4~mv2.jpg/v1/fit/w_2000,h_2000,q_90/file.jpg",
+    src: "https://static.wixstatic.com/media/e04e89_72d82110638045c39e0f6274363c15f8~mv2.jpg/v1/fill/w_1920,h_1080,q_90/file.jpg",
     alt: "Monterey mission-style hardwood futon in a sunlit living room",
   },
   {
-    src: "https://static.wixstatic.com/media/e04e89_cf15142c61714ecfad7852522e0a98e4~mv2.jpg/v1/fit/w_2000,h_2000,q_90/file.jpg",
+    src: "https://static.wixstatic.com/media/e04e89_b9d4cf76a1a84bf5bb4821edc53f6df2~mv2.jpg/v1/fill/w_1920,h_1080,q_90/file.jpg",
     alt: "Natural hardwood platform bed in a coastal bedroom",
   },
   {
-    src: "https://static.wixstatic.com/media/e04e89_cf15142c61714ecfad7852522e0a98e4~mv2.jpg/v1/fit/w_2000,h_2000,q_90/file.jpg",
+    src: "https://static.wixstatic.com/media/e04e89_818d75df410a41e1a0721207333bc93d~mv2.jpg/v1/fill/w_1920,h_1080,q_90/file.jpg",
     alt: "Murphy cabinet bed open in a home office, transforming the space",
   },
 ];
@@ -96,19 +96,32 @@ export default async function HomePage() {
               <HeroReveal delay={i * CARD_STAGGER_SECONDS}>
                 <Link
                   href={`/shop/${category.slug}`}
-                  className="group flex h-full flex-col justify-between rounded-lg border border-cf-divider bg-white p-6 transition-colors hover:border-cf-navy"
+                  className="group flex h-full flex-col overflow-hidden rounded-lg border border-cf-divider bg-white transition-colors hover:border-cf-navy"
                 >
-                  <div>
-                    <h3 className="font-heading text-lg font-semibold text-cf-navy">
-                      {category.name}
-                    </h3>
-                    <p className="mt-2 text-sm text-cf-charcoal/80">
-                      {category.description}
-                    </p>
+                  {category.image && (
+                    <div className="relative aspect-[3/2] w-full overflow-hidden">
+                      <Image
+                        src={category.image}
+                        alt=""
+                        fill
+                        sizes="(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw"
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </div>
+                  )}
+                  <div className="flex flex-1 flex-col justify-between p-6">
+                    <div>
+                      <h3 className="font-heading text-lg font-semibold text-cf-navy">
+                        {category.name}
+                      </h3>
+                      <p className="mt-2 text-sm text-cf-charcoal/80">
+                        {category.description}
+                      </p>
+                    </div>
+                    <span className="mt-6 text-sm font-medium text-cf-cta group-hover:underline">
+                      Browse {category.name.toLowerCase()} →
+                    </span>
                   </div>
-                  <span className="mt-6 text-sm font-medium text-cf-cta group-hover:underline">
-                    Browse {category.name.toLowerCase()} →
-                  </span>
                 </Link>
               </HeroReveal>
             </li>
