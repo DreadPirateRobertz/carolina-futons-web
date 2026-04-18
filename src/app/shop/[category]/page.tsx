@@ -137,10 +137,18 @@ export default async function PlpPage(props: {
   // Offer a back-to-page-1 link that preserves sort + filter params.
   const overPaginated =
     pageNum > 1 && page.total > 0 && page.items.length === 0;
-  const backToPageOneHref = overPaginated
-    ? buildPageUrl(basePath, searchParams, 1)
-    : undefined;
+  const backToPageOneHref = buildPageUrl(basePath, searchParams, 1);
 
+  // Empty-state ladder precedence (order matters — see plp-page.test.ts):
+  //   1. readerFailed      — outage banner must pre-empt every other empty state
+  //                          (PR #35 silent-failure review — items=[] on outage
+  //                          must NOT fall through to "No products found")
+  //   2. overPaginated     — page>1 with page.total>0 but items=[] is NOT
+  //                          "no matches" (cf-3qt.6.B.1 / cf-63w)
+  //   3. page.items.empty  — genuine empty-collection / filter-eliminated /
+  //                          mattresses-sale empty-sale copy
+  //   4. grid              — render products
+  // Re-ordering this ladder breaks the branch-precedence tests.
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-10">
       <nav className="text-sm text-zinc-500">
@@ -185,7 +193,7 @@ export default async function PlpPage(props: {
       ) : overPaginated ? (
         <p className="mt-10 rounded-md bg-zinc-50 p-6 text-zinc-700">
           No more products on page {pageNum}.{" "}
-          <Link href={backToPageOneHref!} className="underline">
+          <Link href={backToPageOneHref} className="underline">
             Back to page 1
           </Link>
         </p>
