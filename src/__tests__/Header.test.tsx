@@ -20,15 +20,24 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
   });
 
   it("renders the logo + wordmark lockup in the brand link", () => {
-    // alt="" on the <img> is intentional — the link's aria-label already
-    // names the destination, so the image is decorative to avoid duplicate SR
-    // announcement ("Carolina Futons Carolina Futons — home").
     renderHeader();
     const home = screen.getByRole("link", { name: /carolina futons.*home/i });
     const img = home.querySelector("img");
     expect(img).not.toBeNull();
     expect(img?.getAttribute("src") ?? "").toMatch(/cf-logo-square/);
     expect(home.textContent).toContain("Carolina Futons");
+  });
+
+  it("marks the brand-lockup image as decorative (alt='') to avoid duplicate SR announcement", () => {
+    // The parent link's aria-label already names the destination ("Carolina
+    // Futons — home"); a non-empty alt would make a screen reader speak the
+    // brand name twice. Locking alt="" here is a regression guard: a future
+    // "fix the empty alt" drive-by would break this assertion loudly.
+    renderHeader();
+    const home = screen.getByRole("link", { name: /carolina futons.*home/i });
+    const img = home.querySelector("img");
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute("alt")).toBe("");
   });
 
   it("renders the primary nav with shop destinations", () => {

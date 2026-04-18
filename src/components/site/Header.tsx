@@ -45,7 +45,7 @@ export function Header() {
             aria-label="Carolina Futons — home"
           >
             <Image
-              src="/brand/cf-logo-square.jpg"
+              src="/brand/cf-logo-square.png"
               alt=""
               width={36}
               height={36}
