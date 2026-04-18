@@ -40,6 +40,15 @@ export default async function PdpPage(props: {
   const productOptions = (product.productOptions ?? []) as ProductOptionInput[];
   const variants = (product.variants ?? []) as VariantInput[];
 
+  // cf-3qt.6.E: throwaway diagnostic — confirms whether Wix catalog is shipping
+  // productOptions/variants. Remove after triage decision (catalog gap vs code).
+  console.log("[pdp-debug]", slug, {
+    optionsCount: productOptions.length,
+    variantsCount: variants.length,
+    manageVariants: product.manageVariants ?? null,
+    hasPriceRange: Boolean(product.priceRange),
+  });
+
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-10">
       <nav aria-label="Breadcrumb" className="text-sm text-cf-espresso/60">
