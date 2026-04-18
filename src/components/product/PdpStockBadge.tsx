@@ -9,13 +9,8 @@ export type PdpStockBadgeProps = {
 
 export function PdpStockBadge({ stock }: PdpStockBadgeProps) {
   // Canary: trackInventory=true with a missing inStock field reads as OOS
-  // (conservative). Log so Wix-schema drift (which would otherwise silently
-  // render Out of stock on every tracked product) surfaces instead of rotting.
-  if (
-    stock &&
-    stock.trackInventory === true &&
-    (stock.inStock === null || stock.inStock === undefined)
-  ) {
+  // (conservative). Log so Wix-schema drift surfaces instead of rotting.
+  if (stock?.trackInventory === true && stock.inStock == null) {
     console.warn(
       "[PdpStockBadge] trackInventory=true with missing inStock — conservative fallback to out_of_stock. Check Wix product.stock schema.",
     );
@@ -24,16 +19,30 @@ export function PdpStockBadge({ stock }: PdpStockBadgeProps) {
   const state = getStockBadgeState(stock);
   if (!state) return null;
 
-  const label = state === "in_stock" ? "In stock" : "Out of stock";
-  const tone =
-    state === "in_stock"
-      ? "bg-cf-success/10 text-cf-success"
-      : "bg-cf-error/10 text-cf-error";
+  if (state === "low_stock") {
+    // getStockBadgeState only returns "low_stock" when quantity is a positive
+    // number — the ?? 0 fallback is unreachable, kept for TS narrowing only.
+    const qty = stock?.quantity ?? 0;
+    return (
+      <span
+        role="status"
+        aria-label={`Low stock — ${qty} left`}
+        data-stock-state="low_stock"
+        className="inline-flex items-center rounded-full bg-cf-warning/10 px-3 py-1 text-xs font-medium text-cf-warning"
+      >
+        Low stock — {qty} left
+      </span>
+    );
+  }
 
-  // role=status + redundant-looking aria-label is deliberate: role=status
-  // hands the label to assistive tech as a live region announcement, which
-  // some screen readers skip when the accessible name comes only from the
-  // visible text. Don't "clean up" the aria-label — it's the SR contract.
+  const isInStock = state === "in_stock";
+  const label = isInStock ? "In stock" : "Out of stock";
+  const tone = isInStock
+    ? "bg-cf-success/10 text-cf-success"
+    : "bg-cf-error/10 text-cf-error";
+
+  // role=status + aria-label: role=status hands the label to assistive tech as
+  // a live region. Don't remove aria-label — it's the screen-reader contract.
   return (
     <span
       role="status"
