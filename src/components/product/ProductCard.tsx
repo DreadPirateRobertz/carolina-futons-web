@@ -25,15 +25,19 @@ function hasRange(product: WixProduct): boolean {
 
 // Phase 7 hover/focus motion budget (pointer or keyboard triggers the same
 // branch for a11y parity):
-//   - scale 1 → 1.015, y 0 → -2px, 200ms ease-out (matches route-transition)
+//   - card lift: y 0 → -4px, 200ms ease-out (cf-card-hover-lift)
+//   - card shadow-sm → shadow-lg on hover/focus-within (CSS, not framer —
+//     shadow is safe under reduced-motion so we keep it even when transforms
+//     are suppressed)
+//   - primary image zoom 1.00 → 1.03 via group-hover:/group-focus-within:
+//     (CSS, suppressed under reduced-motion for vestibular safety)
 //   - secondary image cross-fades in at 100% opacity when product has ≥2 images
 //   - cf-cta accent strip scales from 0 → 100% width at the card bottom
-// Reduced-motion: opacity tint only (no transform), vestibular-safe. Keyboard
-// and pointer both drive the SAME whileHover/whileFocus variant so focus-visible
-// ring users get the same affordance.
+// Reduced-motion: opacity tint + shadow only (no transform), vestibular-safe.
+// Keyboard and pointer both drive the SAME whileHover/whileFocus variant so
+// focus-visible ring users get the same affordance.
 const MOTION_DURATION_SEC = 0.2;
-const MOTION_SCALE = 1.015;
-const MOTION_Y_PX = -2;
+const MOTION_Y_PX = -4;
 const REDUCED_OPACITY = 0.92;
 
 export function ProductCard({ product }: { product: WixProduct }) {
@@ -44,16 +48,16 @@ export function ProductCard({ product }: { product: WixProduct }) {
   const hasSecondary = secondary !== null;
 
   const hoverVariant = prefersReducedMotion
-    ? { opacity: REDUCED_OPACITY, scale: 1, y: 0 }
-    : { opacity: 1, scale: MOTION_SCALE, y: MOTION_Y_PX };
+    ? { opacity: REDUCED_OPACITY, y: 0 }
+    : { opacity: 1, y: MOTION_Y_PX };
 
   return (
     <m.li
       data-slot="product-card"
       data-has-secondary={hasSecondary ? "true" : "false"}
       data-reduced-motion={prefersReducedMotion ? "true" : "false"}
-      className="relative overflow-hidden rounded-lg border border-zinc-200 hover:border-zinc-400 focus-within:border-zinc-400"
-      initial={{ opacity: 1, scale: 1, y: 0 }}
+      className="relative overflow-hidden rounded-lg border border-zinc-200 shadow-sm transition-shadow duration-200 hover:border-zinc-400 hover:shadow-lg focus-within:border-zinc-400 focus-within:shadow-lg"
+      initial={{ opacity: 1, y: 0 }}
       whileHover={hoverVariant}
       whileFocus={hoverVariant}
       transition={{ duration: MOTION_DURATION_SEC, ease: "easeOut" }}
@@ -67,7 +71,11 @@ export function ProductCard({ product }: { product: WixProduct }) {
                 src={primary}
                 alt={product.name ?? ""}
                 data-slot="product-card-primary-image"
-                className="absolute inset-0 h-full w-full object-cover"
+                className={
+                  prefersReducedMotion
+                    ? "absolute inset-0 h-full w-full object-cover"
+                    : "absolute inset-0 h-full w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03] group-focus-within:scale-[1.03]"
+                }
               />
               {hasSecondary && !prefersReducedMotion ? (
                 // eslint-disable-next-line @next/next/no-img-element

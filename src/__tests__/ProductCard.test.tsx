@@ -149,6 +149,40 @@ describe("ProductCard — reduced-motion branch", () => {
   });
 });
 
+describe("ProductCard — hover lift + shadow + image zoom (cf-card-hover-lift)", () => {
+  it("applies shadow-sm base + hover:shadow-lg + focus-within:shadow-lg on the card wrapper", () => {
+    const { container } = render(<ProductCard product={buildProduct()} />);
+    const card = container.querySelector("[data-slot='product-card']");
+    expect(card).not.toBeNull();
+    expect(card!.className).toMatch(/\bshadow-sm\b/);
+    expect(card!.className).toMatch(/hover:shadow-lg/);
+    expect(card!.className).toMatch(/focus-within:shadow-lg/);
+    expect(card!.className).toMatch(/transition-shadow/);
+  });
+
+  it("applies group-hover:scale-[1.03] + group-focus-within:scale-[1.03] on the primary image when reduced-motion is unset", () => {
+    const { container } = render(<ProductCard product={buildProduct()} />);
+    const primary = container.querySelector(
+      "[data-slot='product-card-primary-image']",
+    );
+    expect(primary).not.toBeNull();
+    expect(primary!.className).toMatch(/group-hover:scale-\[1\.03\]/);
+    expect(primary!.className).toMatch(/group-focus-within:scale-\[1\.03\]/);
+    expect(primary!.className).toMatch(/transition-transform/);
+  });
+
+  it("omits the image-zoom scale classes under reduced-motion (no transform)", () => {
+    mockedReducedMotion.mockReturnValue(true);
+    const { container } = render(<ProductCard product={buildProduct()} />);
+    const primary = container.querySelector(
+      "[data-slot='product-card-primary-image']",
+    );
+    expect(primary).not.toBeNull();
+    expect(primary!.className).not.toMatch(/scale-\[1\.03\]/);
+    expect(primary!.className).not.toMatch(/transition-transform/);
+  });
+});
+
 describe("ProductCard — focus/hover parity", () => {
   it("applies group classes on the Link so CSS hover/focus-within drive the same reveal", () => {
     // The motion surface is driven by Tailwind group-hover:/group-focus-within:
