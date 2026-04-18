@@ -13,6 +13,7 @@ import {
   buildOrganizationSchema,
   resolveSiteUrl,
 } from "@/lib/seo/json-ld";
+import { RouteProgressBar } from "@/components/site/RouteProgressBar";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -64,6 +65,7 @@ export default function RootLayout({
         </a>
         <LenisProvider />
         <MotionProvider>
+          <RouteProgressBar />
           <CartProvider>
             <Header />
             <main id="main" className="flex-1">
