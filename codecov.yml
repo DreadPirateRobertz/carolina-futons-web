@@ -1,0 +1,28 @@
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  status:
+    project:
+      default:
+        target: 90%
+        threshold: 1%
+    patch:
+      default:
+        target: 85%
+
+comment:
+  layout: "reach,diff,flags,components"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+
+ignore:
+  - "e2e/**"
+  - "src/__tests__/**"
+  - "src/__tests__/shims/**"
+  - "**/*.config.ts"
+  - "**/*.config.mjs"
+  - "src/app/layout.tsx"
+  - "src/middleware.ts"
