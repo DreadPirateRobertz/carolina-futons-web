@@ -11,6 +11,13 @@ const ABOUT_HERO = {
   alt: "Carolina Futons showroom in Hendersonville, NC — hardwood frames on display",
 };
 
+const TIMELINE_MILESTONES = [
+  { year: "1991", description: "Founded in Hendersonville, NC." },
+  { year: "2000", description: "Showroom expansion — more frames on the floor, more space to sit on them." },
+  { year: "2010", description: "Online catalog launches so out-of-town customers can browse before they drive." },
+  { year: "2024", description: "Web relaunch — new storefront, same family answering the phone." },
+];
+
 export const metadata: Metadata = {
   title: "About — Carolina Futons",
   description:
@@ -44,6 +51,32 @@ export default function AboutPage() {
             North Carolina since {BUSINESS.foundedYear}.
           </p>
         </header>
+
+        <section
+          data-testid="about-timeline"
+          aria-label="Carolina Futons milestones"
+          className="space-y-6"
+        >
+          <h2 className="font-playfair text-2xl font-semibold tracking-tight">
+            Our milestones
+          </h2>
+          <ol className="space-y-5">
+            {TIMELINE_MILESTONES.map(({ year, description }) => (
+              <li
+                key={year}
+                className="flex flex-col gap-1 border-l-2 border-cf-cta/30 pl-4 sm:flex-row sm:items-baseline sm:gap-6"
+              >
+                <span
+                  data-testid={`about-timeline-year-${year}`}
+                  className="font-playfair text-2xl font-bold text-cf-cta sm:min-w-[5rem]"
+                >
+                  {year}
+                </span>
+                <span className="leading-relaxed">{description}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
 
         <p className="text-lg leading-relaxed">
           Carolina Futons opened its doors in {BUSINESS.foundedYear} with
