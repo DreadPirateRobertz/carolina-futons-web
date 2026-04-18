@@ -124,6 +124,12 @@ export default async function PlpPage(props: {
           },
         };
 
+  // cf-3qt.6.B silent-failure fix (blaidd PR #35): an errored scan returns
+  // items=[] but it is NOT an empty collection. We MUST render distinct outage
+  // copy rather than "No products found" to avoid a bounce trap during Wix
+  // outages (silent-failure review required an explicit branch).
+  const readerFailed = page.error !== undefined;
+
   const basePath = `/shop/${categorySlug}`;
 
   return (
@@ -155,7 +161,19 @@ export default async function PlpPage(props: {
         </Suspense>
       </div>
 
-      {page.items.length === 0 ? (
+      {readerFailed ? (
+        <p
+          role="alert"
+          className="mt-10 rounded-md border border-amber-200 bg-amber-50 p-6 text-amber-900"
+        >
+          We&rsquo;re having trouble loading products right now. Please refresh
+          in a moment or{" "}
+          <Link href="/contact" className="underline">
+            contact us
+          </Link>{" "}
+          if the problem persists.
+        </p>
+      ) : page.items.length === 0 ? (
         <p className="mt-10 rounded-md bg-zinc-50 p-6 text-zinc-700">
           {facets.total === 0
             ? categorySlug === "mattresses-sale"

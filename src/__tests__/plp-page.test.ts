@@ -179,3 +179,70 @@ describe("PlpPage — mattresses-sale virtual category", () => {
     );
   });
 });
+
+// ── PlpPage: reader-error outage branch (cf-3qt.6.B silent-failure fix) ────
+
+import { renderToStaticMarkup } from "react-dom/server";
+import type { ReactElement } from "react";
+
+describe("PlpPage — reader outage (error from getCollectionPlp)", () => {
+  beforeEach(() => {
+    vi.mocked(findCategory).mockReturnValue({
+      slug: "futon-frames",
+      name: "Futon Frames",
+      description: "Our frames.",
+      collectionSlug: "futon-frames",
+    });
+    vi.mocked(getCollectionBySlug).mockResolvedValue({
+      _id: "futons-col-id",
+    } as never);
+    vi.mocked(listProductsOnSale).mockResolvedValue([]);
+  });
+
+  it("renders the outage copy (role=alert) when reader returns error", async () => {
+    vi.mocked(getCollectionPlp).mockResolvedValue({
+      ...EMPTY_PLP,
+      page: { ...EMPTY_PLP.page, error: "wix_sdk" },
+      error: "wix_sdk",
+    } as never);
+
+    const tree = (await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({}),
+    })) as ReactElement;
+    const html = renderToStaticMarkup(tree);
+
+    expect(html).toContain('role="alert"');
+    expect(html).toMatch(/having trouble loading products/i);
+    expect(html).not.toMatch(/No products found in this collection/);
+  });
+
+  it("renders the normal empty-state copy when reader returns no error", async () => {
+    vi.mocked(getCollectionPlp).mockResolvedValue(EMPTY_PLP);
+
+    const tree = (await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({}),
+    })) as ReactElement;
+    const html = renderToStaticMarkup(tree);
+
+    expect(html).not.toContain('role="alert"');
+    expect(html).toContain("No products found in this collection");
+  });
+
+  it("propagates both 'wix_sdk' and 'unexpected' error tags to outage copy", async () => {
+    for (const tag of ["wix_sdk", "unexpected"] as const) {
+      vi.mocked(getCollectionPlp).mockResolvedValue({
+        ...EMPTY_PLP,
+        page: { ...EMPTY_PLP.page, error: tag },
+        error: tag,
+      } as never);
+      const tree = (await PlpPage({
+        params: Promise.resolve({ category: "futon-frames" }),
+        searchParams: Promise.resolve({}),
+      })) as ReactElement;
+      const html = renderToStaticMarkup(tree);
+      expect(html, `error tag ${tag}`).toContain('role="alert"');
+    }
+  });
+});
