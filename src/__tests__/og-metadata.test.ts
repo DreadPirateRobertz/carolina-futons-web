@@ -105,7 +105,9 @@ describe("Root layout metadata", () => {
   });
 
   it("has metadataBase set to an https URL", () => {
-    expect(layoutMetadata.metadataBase?.protocol).toBe("https:");
+    const base = layoutMetadata.metadataBase;
+    const protocol = base instanceof URL ? base.protocol : new URL(base as string).protocol;
+    expect(protocol).toBe("https:");
   });
 });
 
