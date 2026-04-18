@@ -6,6 +6,7 @@ beforeEach(() => {
 
 const sentryMock = vi.hoisted(() => ({
   captureException: vi.fn(),
+  flush: vi.fn(async () => true),
 }));
 
 vi.mock("@sentry/nextjs", () => sentryMock);
@@ -48,6 +49,7 @@ function clientThatThrows(thrown: ThrownShape) {
 describe("logWixFailure", () => {
   beforeEach(() => {
     sentryMock.captureException.mockClear();
+    sentryMock.flush.mockClear();
   });
 
   it("tags known Wix SDK errors as kind=wix-sdk, level=warning", async () => {
@@ -117,5 +119,33 @@ describe("logWixFailure", () => {
     expect(await listProducts()).toEqual([]);
     expect(await getProductBySlug("x")).toBeNull();
     expect(await getCollectionBySlug("y")).toBeNull();
+  });
+
+  it("awaits Sentry.flush after captureException so serverless handlers ship the event", async () => {
+    vi.doMock("@/lib/wix-client", () => ({
+      getWixClient: () =>
+        clientThatThrows({
+          message: "boom",
+          code: "FLAKY",
+          response: { status: 500 },
+        }),
+    }));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const order: string[] = [];
+    sentryMock.captureException.mockImplementation(() => {
+      order.push("capture");
+    });
+    sentryMock.flush.mockImplementation(async () => {
+      order.push("flush");
+      return true;
+    });
+
+    const { listProducts } = await import("@/lib/wix/products");
+    await listProducts();
+
+    expect(sentryMock.captureException).toHaveBeenCalledTimes(1);
+    expect(sentryMock.flush).toHaveBeenCalledWith(2000);
+    expect(order).toEqual(["capture", "flush"]);
   });
 });
