@@ -8,7 +8,7 @@ export default function HomePage() {
         <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 md:items-center md:py-24 lg:px-8">
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-cf-cta">
-              Family owned since 1990
+              Family owned since 1991
             </p>
             <h1 className="mt-4 font-heading text-4xl font-semibold leading-tight tracking-tight text-cf-navy sm:text-5xl">
               American-made futons, Murphy beds, and mattresses.

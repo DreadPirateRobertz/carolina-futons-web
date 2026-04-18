@@ -28,7 +28,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Carolina Futons — American-made futons, Murphy beds, and mattresses",
   description:
-    "Family-owned Hendersonville, NC retailer of American-made futons, Murphy cabinet beds, and platform beds since 1990.",
+    "Family-owned Hendersonville, NC retailer of American-made futons, Murphy cabinet beds, and platform beds since 1991.",
   robots: { index: false, follow: false },
 };
 
