@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { DashboardShell } from "@/components/member/DashboardShell";
 import { getMemberSession } from "@/lib/auth/_member-session-stub";
 import { getWixClientWithTokens } from "@/lib/wix-client";
@@ -59,12 +60,12 @@ function EmptyCard({
     <article className="rounded-lg border border-cf-divider bg-white p-6">
       <h2 className="mb-2 text-lg font-semibold text-cf-ink">{title}</h2>
       <p className="mb-4 text-sm text-cf-muted">{body}</p>
-      <a
+      <Link
         href={ctaHref}
         className="text-sm font-medium text-cf-cta hover:underline"
       >
         {ctaLabel} &rarr;
-      </a>
+      </Link>
     </article>
   );
 }
