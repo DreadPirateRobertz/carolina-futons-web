@@ -73,7 +73,8 @@ describe("getProductBySlug — variant picker data", () => {
     expect(await getProductBySlug("not-found")).toBeNull();
   });
 
-  it("returns null when stub has no _id (degenerate catalog entry)", async () => {
+  it("returns stub as-is when it has no _id (degenerate catalog entry, getProduct skipped)", async () => {
+    const getProductSpy = vi.fn();
     vi.doMock("@/lib/wix-client", () => ({
       getWixClient: () => ({
         products: {
@@ -84,17 +85,25 @@ describe("getProductBySlug — variant picker data", () => {
               }),
             }),
           }),
-          getProduct: vi.fn(),
+          getProduct: getProductSpy,
         },
       }),
     }));
 
     const { getProductBySlug } = await import("@/lib/wix/products");
-    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     const result = await getProductBySlug("mystery-product");
-    spy.mockRestore();
-    // stub has no _id → returned as-is (null coalesced) without calling getProduct
+    // stub has no _id → returned directly without calling getProduct
     expect(result).toMatchObject({ slug: "mystery-product" });
+    expect(getProductSpy).not.toHaveBeenCalled();
+  });
+
+  it("returns null when getProduct envelope has no product field", async () => {
+    vi.doMock("@/lib/wix-client", () => ({
+      getWixClient: () => makeClient({ getProduct: async () => ({}) }),
+    }));
+
+    const { getProductBySlug } = await import("@/lib/wix/products");
+    expect(await getProductBySlug("kingston-futon-frame")).toBeNull();
   });
 
   it("getProduct is called with the stub _id from the slug query", async () => {

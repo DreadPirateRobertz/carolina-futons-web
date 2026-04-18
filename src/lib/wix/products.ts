@@ -26,8 +26,9 @@ export async function listProducts(limit = 24) {
 export async function getProductBySlug(slug: string) {
   try {
     const client = getWixClient();
-    // queryProducts omits productOptions from the response payload; re-fetch
-    // via getProduct so the PDP variant picker receives the option definitions.
+    // Two-step fetch: slug query resolves the _id, then getProduct(_id) returns
+    // the full product including productOptions/variants. queryProducts omits
+    // productOptions from its response, leaving the PDP variant picker empty.
     const result = await client.products
       .queryProducts()
       .eq("slug", slug)
