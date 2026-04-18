@@ -16,10 +16,13 @@ import {
 //   mainMedia wins over the user's thumb selection so swatch + main agree).
 // - The main image gets a subtle scroll-driven zoom (1.00 → 1.05 over its
 //   viewport pass). Honors prefers-reduced-motion (flat scale).
-// - Thumbnail swap uses the View Transitions API (Chromium 111+, Safari 18+)
-//   to morph from the clicked thumb into the main image. Browsers without
-//   the API fall back to a framer opacity crossfade keyed on src.
+// - Thumbnail swap uses the View Transitions API (Chromium 111+, Firefox 126+,
+//   Safari 18+) to morph from the clicked thumb into the main image. Browsers
+//   without the API fall back to a framer opacity crossfade keyed on src.
 //   prefers-reduced-motion = instant swap, no animation.
+//   Firefox note: view-transition-name on dynamically-toggled inline styles
+//   has an open spec question (https://github.com/w3c/csswg-drafts/issues/8319);
+//   the fallback path handles any browser where startViewTransition is absent.
 
 // Local shape — kept narrow (`finished` + `skipTransition` are the only
 // members we touch). The lib.dom.d.ts ViewTransition type doesn't ship in
@@ -48,16 +51,20 @@ export type PdpGalleryProps = {
   activeUrl?: string;
 };
 
-// Detects document.startViewTransition. Server renders `false` (no document)
-// and client renders the real value; useSyncExternalStore's getServerSnapshot
-// arg makes the SSR/client divergence safe (React handles the hydration
-// without the mismatch warning we'd get from useState+useEffect).
+// Detects document.startViewTransition synchronously on both server and client.
+// Kept as a named hook rather than inlined because the three snapshot constants
+// (subscribeNoop, getVTClientSnapshot, getVTServerSnapshot) must be module-stable
+// — inlining would require either duplicating them or defining them outside the
+// component anyway, with no net reduction in lines.
 const subscribeNoop = () => () => {};
 const getVTClientSnapshot = () =>
   typeof (document as DocumentWithVT).startViewTransition === "function";
 const getVTServerSnapshot = () => false;
 
 function useSupportsViewTransition() {
+  // useSyncExternalStore's getServerSnapshot arg makes the SSR/client
+  // divergence safe: server always returns false, client corrects on hydration
+  // without the mismatch warning useState+useEffect would produce.
   return useSyncExternalStore(
     subscribeNoop,
     getVTClientSnapshot,
@@ -110,6 +117,10 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
 
     // Phase 1 (synchronous): give the clicked thumb the view-transition-name
     // and pull it off main. Browser's BEFORE snapshot captures thumb-as-source.
+    // NOTE: benchmark before removing this flushSync — the forced sync re-render
+    // is necessary for the BEFORE snapshot to see the name on the thumb before
+    // startViewTransition captures it. Removing it causes the name to be absent
+    // in the BEFORE snapshot on slower devices, breaking the morph.
     flushSync(() => setVtSourceIndex(next));
 
     // Phase 2 (inside transition callback): swap selectedIndex and clear the
