@@ -29,7 +29,11 @@ function isWixSdkError(err: unknown): err is WixErrorShape {
   return false;
 }
 
-function logWixFailure(op: string, err: unknown) {
+// Await flush so Sentry's HTTP POST completes before Vercel freezes the
+// serverless function — otherwise captureException queues the event and the
+// request dies before it ships. 2s is the Sentry-recommended ceiling for
+// serverless handlers.
+async function logWixFailure(op: string, err: unknown) {
   const wix = isWixSdkError(err) ? err : null;
   const code = wix?.code ?? wix?.details?.applicationError?.code;
   const httpStatus = wix?.response?.status;
@@ -43,6 +47,8 @@ function logWixFailure(op: string, err: unknown) {
     tags: { source: "wix", op, kind },
     extra: { code, httpStatus, message },
   });
+
+  await Sentry.flush(2000);
 }
 
 export async function listProducts(limit = 24) {
@@ -51,7 +57,7 @@ export async function listProducts(limit = 24) {
     const result = await client.products.queryProducts().limit(limit).find();
     return result.items;
   } catch (err) {
-    logWixFailure("listProducts", err);
+    await logWixFailure("listProducts", err);
     return [];
   }
 }
@@ -66,7 +72,7 @@ export async function getProductBySlug(slug: string) {
       .find();
     return result.items[0] ?? null;
   } catch (err) {
-    logWixFailure(`getProductBySlug(${slug})`, err);
+    await logWixFailure(`getProductBySlug(${slug})`, err);
     return null;
   }
 }
@@ -84,7 +90,7 @@ export async function listProductsByCollectionId(
       .find();
     return result.items;
   } catch (err) {
-    logWixFailure(`listProductsByCollectionId(${collectionId})`, err);
+    await logWixFailure(`listProductsByCollectionId(${collectionId})`, err);
     return [];
   }
 }
@@ -95,7 +101,7 @@ export async function getCollectionBySlug(slug: string) {
     const result = await client.collections.getCollectionBySlug(slug);
     return result.collection ?? null;
   } catch (err) {
-    logWixFailure(`getCollectionBySlug(${slug})`, err);
+    await logWixFailure(`getCollectionBySlug(${slug})`, err);
     return null;
   }
 }
@@ -109,7 +115,7 @@ export async function listCollections(limit = 25) {
       .find();
     return result.items;
   } catch (err) {
-    logWixFailure("listCollections", err);
+    await logWixFailure("listCollections", err);
     return [];
   }
 }
