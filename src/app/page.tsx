@@ -57,36 +57,43 @@ export default function HomePage() {
       </section>
 
       <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="flex items-end justify-between gap-6">
-          <h2 className="font-heading text-2xl font-semibold text-cf-navy sm:text-3xl">
-            Shop by category
-          </h2>
-          <Link
-            href="/shop"
-            className="text-sm font-medium text-cf-cta hover:underline"
-          >
-            View all →
-          </Link>
-        </div>
+        <HeroReveal>
+          <div className="flex items-end justify-between gap-6">
+            <h2 className="font-heading text-2xl font-semibold text-cf-navy sm:text-3xl">
+              Shop by category
+            </h2>
+            <Link
+              href="/shop"
+              className="text-sm font-medium text-cf-cta hover:underline"
+            >
+              View all →
+            </Link>
+          </div>
+        </HeroReveal>
         <ul className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {SHOP_CATEGORIES.map((category) => (
+          {SHOP_CATEGORIES.map((category, i) => (
             <li key={category.slug}>
-              <Link
-                href={`/shop/${category.slug}`}
-                className="group flex h-full flex-col justify-between rounded-lg border border-cf-divider bg-white p-6 transition-colors hover:border-cf-navy"
-              >
-                <div>
-                  <h3 className="font-heading text-lg font-semibold text-cf-navy">
-                    {category.name}
-                  </h3>
-                  <p className="mt-2 text-sm text-cf-charcoal/80">
-                    {category.description}
-                  </p>
-                </div>
-                <span className="mt-6 text-sm font-medium text-cf-cta group-hover:underline">
-                  Browse {category.name.toLowerCase()} →
-                </span>
-              </Link>
+              {/* Stagger cards in at 80ms intervals so they read as a deliberate
+                  cascade rather than a block reveal. whileInView fires once —
+                  no replay on scroll-back. */}
+              <HeroReveal delay={i * 0.08}>
+                <Link
+                  href={`/shop/${category.slug}`}
+                  className="group flex h-full flex-col justify-between rounded-lg border border-cf-divider bg-white p-6 transition-colors hover:border-cf-navy"
+                >
+                  <div>
+                    <h3 className="font-heading text-lg font-semibold text-cf-navy">
+                      {category.name}
+                    </h3>
+                    <p className="mt-2 text-sm text-cf-charcoal/80">
+                      {category.description}
+                    </p>
+                  </div>
+                  <span className="mt-6 text-sm font-medium text-cf-cta group-hover:underline">
+                    Browse {category.name.toLowerCase()} →
+                  </span>
+                </Link>
+              </HeroReveal>
             </li>
           ))}
         </ul>
