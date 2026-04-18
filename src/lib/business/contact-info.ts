@@ -19,3 +19,14 @@ export const BUSINESS = {
   foundedYear: 1991,
   warrantyYears: 15,
 } as const;
+
+// Canonical CF social presences. Consumed by the Footer rebrand + the
+// Organization JSON-LD `sameAs` array. Handles default to @carolinafutons
+// on every platform; if one is ever renamed, update here and both
+// surfaces (footer + structured data) flip in lockstep.
+export const SOCIALS = [
+  { name: "Facebook", href: "https://www.facebook.com/carolinafutons" },
+  { name: "Instagram", href: "https://www.instagram.com/carolinafutons" },
+  { name: "TikTok", href: "https://www.tiktok.com/@carolinafutons" },
+  { name: "Pinterest", href: "https://www.pinterest.com/carolinafutons" },
+] as const;
