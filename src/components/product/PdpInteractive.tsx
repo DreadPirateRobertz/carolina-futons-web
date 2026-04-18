@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { PdpGallery, type GalleryImage } from "@/components/product/PdpGallery";
+import { PdpStickyCta } from "@/components/product/PdpStickyCta";
 import { VariantPicker } from "@/components/product/VariantPicker";
 import {
   findMatchingVariant,
@@ -47,6 +48,23 @@ export function PdpInteractive({
   const [selection, setSelection] = useState<ChoiceSelection>(() =>
     initialSelection(productOptions, variants),
   );
+  const primaryCtaRef = useRef<HTMLDivElement>(null);
+  // Seed `true` so we don't flash the sticky bar on first paint before the
+  // observer fires.
+  const [primaryInView, setPrimaryInView] = useState(true);
+
+  useEffect(() => {
+    const el = primaryCtaRef.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setPrimaryInView(entry.isIntersecting),
+      { threshold: 0 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const imageUrl = getSelectedImageUrl(variants, selection, fallbackImageUrl);
   const selectedPrice = getSelectedPrice(variants, selection, fallbackPrice);
   const selectedVariant = findMatchingVariant(variants, selection);
@@ -64,6 +82,20 @@ export function PdpInteractive({
     : !inStock
       ? "Out of stock"
       : undefined;
+
+  const addToCartProps = {
+    productId,
+    productName,
+    variantId: selectedVariant?._id ?? undefined,
+    variantLabel: variantLabel || undefined,
+    options: selection,
+    imageUrl,
+    productUrl: `/products/${productSlug}`,
+    unitPriceCents: fallbackPriceCents,
+    formattedUnitPrice: selectedPrice,
+    disabled: !selectionComplete || !inStock,
+    disabledReason,
+  };
 
   return (
     <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
@@ -96,20 +128,17 @@ export function PdpInteractive({
           fallbackPrice={fallbackPrice}
           onSelectionChange={(next) => setSelection(next)}
         />
-        <AddToCartButton
-          productId={productId}
-          productName={productName}
-          variantId={selectedVariant?._id ?? undefined}
-          variantLabel={variantLabel || undefined}
-          options={selection}
-          imageUrl={imageUrl}
-          productUrl={`/products/${productSlug}`}
-          unitPriceCents={fallbackPriceCents}
-          formattedUnitPrice={selectedPrice}
-          disabled={!selectionComplete || !inStock}
-          disabledReason={disabledReason}
-        />
+        <div ref={primaryCtaRef} data-slot="pdp-primary-cta">
+          <AddToCartButton {...addToCartProps} />
+        </div>
       </div>
+      <PdpStickyCta
+        visible={!primaryInView}
+        productName={productName}
+        formattedPrice={selectedPrice}
+      >
+        <AddToCartButton {...addToCartProps} />
+      </PdpStickyCta>
     </div>
   );
 }
