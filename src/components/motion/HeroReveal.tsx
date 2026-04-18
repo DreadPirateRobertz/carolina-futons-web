@@ -1,6 +1,6 @@
 "use client";
 
-import { m } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import type { ReactNode } from "react";
 
 // Hero copy scroll-reveal wrapper. Phase 7 visual-prototype demo for the
@@ -12,10 +12,14 @@ import type { ReactNode } from "react";
 //
 // Uses `m` (not `motion`) so the LazyMotion features in MotionProvider stay
 // effective — `motion` would force-load the full feature set and blow the
-// bundle budget. Reduced-motion enforcement comes from MotionProvider's
-// MotionConfig reducedMotion="user" wrap (framer's variant-level auto-honor
-// does NOT apply to literal `initial`/`whileInView` objects like the ones
-// below — MotionConfig is what makes this WCAG 2.3.3-safe).
+// bundle budget.
+//
+// WCAG 2.3.3 safety (cf-3qt.7.M.FIX.2 per-component gate): we can't rely on
+// the app-wide MotionConfig reducedMotion="user" alone here — framer's
+// auto-honor applies to the variants API, not to the literal `initial` /
+// `whileInView` objects used below. So we read useReducedMotion() and
+// drop the motion props entirely on reduce, which is byte-for-byte static
+// rather than a zeroed-transform render with the subscription overhead.
 export function HeroReveal({
   children,
   delay = 0,
@@ -23,8 +27,15 @@ export function HeroReveal({
   children: ReactNode;
   delay?: number;
 }) {
+  const reduce = useReducedMotion() ?? false;
+
+  if (reduce) {
+    return <m.div data-slot="hero-reveal" data-reduced-motion="1">{children}</m.div>;
+  }
+
   return (
     <m.div
+      data-slot="hero-reveal"
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.4 }}
