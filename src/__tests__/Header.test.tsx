@@ -19,6 +19,18 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
     expect(home).toHaveAttribute("href", "/");
   });
 
+  it("renders the logo + wordmark lockup in the brand link", () => {
+    // alt="" on the <img> is intentional — the link's aria-label already
+    // names the destination, so the image is decorative to avoid duplicate SR
+    // announcement ("Carolina Futons Carolina Futons — home").
+    renderHeader();
+    const home = screen.getByRole("link", { name: /carolina futons.*home/i });
+    const img = home.querySelector("img");
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute("src") ?? "").toMatch(/cf-logo-square/);
+    expect(home.textContent).toContain("Carolina Futons");
+  });
+
   it("renders the primary nav with shop destinations", () => {
     renderHeader();
     // Two "Primary" navs exist: desktop (hidden md:flex) + mobile drawer

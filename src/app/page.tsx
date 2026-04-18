@@ -93,9 +93,12 @@ export default function HomePage() {
       </section>
 
       <section className="border-t border-cf-divider bg-cf-sand/40">
-        <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-14 sm:grid-cols-3 sm:px-6 lg:px-8">
+        <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-14 sm:grid-cols-3 sm:px-6 lg:px-8">
           {VALUE_PROPS.map((prop) => (
-            <div key={prop.title}>
+            <div
+              key={prop.title}
+              className="rounded-lg border border-cf-divider bg-cf-cream p-6 shadow-sm"
+            >
               <h3 className="font-heading text-base font-semibold text-cf-navy">
                 {prop.title}
               </h3>
