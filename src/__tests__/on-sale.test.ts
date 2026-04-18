@@ -22,7 +22,7 @@ describe("isProductOnSale", () => {
     expect(isProductOnSale({ priceData: { price: 1000 } })).toBe(false);
   });
 
-  it("returns false when price is 0 (manageVariants product — cf-3qt.6.E scope)", () => {
+  it("returns false when price is 0 (manageVariants product — variant-priced at root)", () => {
     expect(
       isProductOnSale({
         priceData: { price: 0, discountedPrice: 499 },
