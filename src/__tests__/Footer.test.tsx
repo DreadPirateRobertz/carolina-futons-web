@@ -112,4 +112,12 @@ describe("Footer — Phase 3 rebrand", () => {
       expect(link.getAttribute("target")).toBe("_blank");
     }
   });
+
+  it("mounts the newsletter signup form (cf-newsletter-footer)", () => {
+    render(<Footer />);
+    expect(
+      screen.getByRole("form", { name: /newsletter signup/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/stay in the loop/i)).toBeInTheDocument();
+  });
 });

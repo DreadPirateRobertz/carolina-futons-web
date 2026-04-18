@@ -8,6 +8,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { BUSINESS } from "@/lib/business/contact-info";
+import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 
 type SocialLink = {
   name: string;
@@ -173,6 +174,15 @@ export function Footer() {
             <p className="mt-1 text-cf-cream/70">
               Showroom hours: Wed–Sat, 10am–5pm
             </p>
+          </div>
+        </div>
+
+        <div
+          data-slot="site-footer-newsletter"
+          className="mt-10 border-t border-cf-cream/10 pt-8"
+        >
+          <div className="mx-auto max-w-md">
+            <NewsletterSignup />
           </div>
         </div>
       </div>
