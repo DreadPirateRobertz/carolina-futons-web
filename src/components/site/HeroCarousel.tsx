@@ -57,6 +57,19 @@ function HeroCarouselInner({ slides }: { slides: ReadonlyArray<HeroSlide> }) {
   const [manualPaused, setManualPaused] = useState(false);
   const reducedMotion = useReducedMotion();
 
+  // If the OS flips to reduced-motion mid-session, the pause button disappears
+  // — the user cannot clear a sticky manualPaused themselves. Without clearing
+  // it here, autoplay would remain silently blocked when reducedMotion later
+  // flips back off. Adjusting state during render with a prev-value guard is
+  // the React-blessed alternative to a useEffect + setState pair (which trips
+  // react-hooks/set-state-in-effect). See:
+  // react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevReducedMotion, setPrevReducedMotion] = useState(reducedMotion);
+  if (reducedMotion !== prevReducedMotion) {
+    setPrevReducedMotion(reducedMotion);
+    if (reducedMotion) setManualPaused(false);
+  }
+
   const paused = hoverPaused || focusPaused || manualPaused;
   const autoplay = !reducedMotion && !paused && slides.length > 1;
 
@@ -71,13 +84,6 @@ function HeroCarouselInner({ slides }: { slides: ReadonlyArray<HeroSlide> }) {
     }, DWELL_MS);
     return () => clearInterval(id);
   }, [autoplay, slides.length]);
-
-  // If the OS flips to reduced-motion mid-session, the pause button disappears.
-  // Without this reset, manualPaused stays true and autoplay remains silently
-  // blocked if the user later turns reduced-motion back off.
-  useEffect(() => {
-    if (reducedMotion) setManualPaused(false);
-  }, [reducedMotion]);
 
   const goTo = (index: number) =>
     setActive(((index % slides.length) + slides.length) % slides.length);
