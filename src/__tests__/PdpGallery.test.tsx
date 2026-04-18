@@ -199,6 +199,20 @@ describe("PdpGallery — prefers-reduced-motion", () => {
       [1, 1.05, 1],
     );
   });
+
+  it("does NOT apply framer crossfade props to the main image when reduce=true (cf-3qt.7.M.FIX.2)", () => {
+    // useFramerCrossfade = !supportsVT && !reduce. No VT stub is installed
+    // here, so supportsVT=false; with reduce=true the spread must be empty,
+    // meaning the rendered <img> has no initial/animate attributes. This
+    // closes the last reduce-path contract for ZoomMainImage: both the
+    // scroll scale AND the swap crossfade are off under reduced-motion.
+    motionMocks.useReducedMotion.mockReturnValue(true);
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    expect(main.getAttribute("initial")).toBeNull();
+    expect(main.getAttribute("animate")).toBeNull();
+    expect(main.getAttribute("transition")).toBeNull();
+  });
 });
 
 // cf-3qt.7.O.1: View Transitions API for thumb→main image swap.

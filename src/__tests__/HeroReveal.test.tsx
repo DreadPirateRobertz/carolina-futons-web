@@ -5,20 +5,23 @@ import type { ReactNode } from "react";
 import { HeroReveal } from "@/components/motion/HeroReveal";
 import { MotionProvider } from "@/components/motion/MotionProvider";
 
-// Capture the props passed to m.div / MotionConfig so we can assert the
-// WCAG 2.3.3 contract directly: HeroReveal hands literal initial/whileInView
-// to m.div, and MotionProvider's MotionConfig is what makes those literals
-// reduced-motion-safe app-wide.
+// Capture props passed to m.div / MotionConfig + control useReducedMotion so
+// we can assert the WCAG 2.3.3 contract directly. The per-component gate
+// (cf-3qt.7.M.FIX.2) means HeroReveal itself reads the user's preference —
+// literal initial/whileInView objects aren't auto-honored by MotionConfig
+// reducedMotion="user", so the component has to take the reduce path itself.
 type CapturedDivProps = {
   initial?: { opacity?: number; y?: number };
   whileInView?: { opacity?: number; y?: number };
   viewport?: { once?: boolean; amount?: number };
   transition?: { duration?: number; delay?: number; ease?: string };
+  "data-reduced-motion"?: string;
 };
 
 const motionMocks = vi.hoisted(() => ({
   divCalls: [] as CapturedDivProps[],
   motionConfigCalls: [] as Array<{ reducedMotion?: string }>,
+  reduce: false,
 }));
 
 vi.mock("framer-motion", () => ({
@@ -34,6 +37,7 @@ vi.mock("framer-motion", () => ({
     motionMocks.motionConfigCalls.push({ reducedMotion });
     return <>{children}</>;
   },
+  useReducedMotion: () => motionMocks.reduce,
   m: {
     div: ({
       children,
@@ -41,8 +45,15 @@ vi.mock("framer-motion", () => ({
       whileInView,
       viewport,
       transition,
+      ...rest
     }: CapturedDivProps & { children?: ReactNode }) => {
-      motionMocks.divCalls.push({ initial, whileInView, viewport, transition });
+      motionMocks.divCalls.push({
+        initial,
+        whileInView,
+        viewport,
+        transition,
+        "data-reduced-motion": (rest as Record<string, string>)["data-reduced-motion"],
+      });
       return <div data-testid="hero-reveal">{children}</div>;
     },
   },
@@ -51,24 +62,17 @@ vi.mock("framer-motion", () => ({
 beforeEach(() => {
   motionMocks.divCalls = [];
   motionMocks.motionConfigCalls = [];
+  motionMocks.reduce = false;
 });
 
-describe("HeroReveal — reduced-motion contract (WCAG 2.3.3)", () => {
+describe("HeroReveal — motion path (prefers-reduced-motion: no-preference)", () => {
   it("renders an m.div whose `initial` is the no-motion fallback (opacity 0, y 20)", () => {
-    // The reduce=true effective state: framer (with MotionConfig
-    // reducedMotion='user') skips the y transform and snaps to the animate
-    // target. The `initial` prop here is what the user without motion
-    // perception ends up perceiving as their reset/baseline.
     render(<HeroReveal>headline</HeroReveal>);
     expect(motionMocks.divCalls[0].initial).toEqual({ opacity: 0, y: 20 });
     expect(screen.getByTestId("hero-reveal").textContent).toBe("headline");
   });
 
   it("renders an m.div whose `whileInView` target is the visible state (opacity 1, y 0)", () => {
-    // The reduce=false effective state: framer interpolates from initial
-    // → whileInView when the element enters the viewport. The target must
-    // be the fully-visible state so reduced-motion users (who skip the
-    // interpolation) still land at the readable end-state.
     render(<HeroReveal>headline</HeroReveal>);
     expect(motionMocks.divCalls[0].whileInView).toEqual({ opacity: 1, y: 0 });
   });
@@ -88,12 +92,43 @@ describe("HeroReveal — reduced-motion contract (WCAG 2.3.3)", () => {
   });
 });
 
+describe("HeroReveal — reduced-motion path (cf-3qt.7.M.FIX.2)", () => {
+  it("drops initial/whileInView/transition entirely when useReducedMotion reports true (WCAG 2.3.3)", () => {
+    // With the per-component gate in place, reduce=true users get a plain
+    // m.div with NO motion props — not a zeroed-transform render. This keeps
+    // the subscription overhead off their critical path and guarantees no
+    // stray transform ever reaches the DOM.
+    motionMocks.reduce = true;
+    render(<HeroReveal>headline</HeroReveal>);
+    expect(motionMocks.divCalls[0].initial).toBeUndefined();
+    expect(motionMocks.divCalls[0].whileInView).toBeUndefined();
+    expect(motionMocks.divCalls[0].transition).toBeUndefined();
+    expect(motionMocks.divCalls[0].viewport).toBeUndefined();
+  });
+
+  it("still renders the children in the reduced-motion path", () => {
+    // A common regression: a too-aggressive gate would also unmount the
+    // child text. Reading the hero on reduce users must still work.
+    motionMocks.reduce = true;
+    render(<HeroReveal>headline copy</HeroReveal>);
+    expect(screen.getByTestId("hero-reveal").textContent).toBe("headline copy");
+  });
+
+  it("marks the reduced-motion render with data-reduced-motion='1' for regression lockup", () => {
+    // The attribute gives Playwright / Lighthouse assertions a direct hook
+    // to verify the gate fired without having to inspect motion props.
+    motionMocks.reduce = true;
+    render(<HeroReveal>headline</HeroReveal>);
+    expect(motionMocks.divCalls[0]["data-reduced-motion"]).toBe("1");
+  });
+});
+
 describe("MotionProvider — WCAG 2.3.3 enforcement", () => {
   it("wraps children in MotionConfig with reducedMotion='user'", () => {
-    // This is the load-bearing assertion for the fix: MotionConfig at the
-    // root is what makes literal `initial`/`whileInView`/`animate` props
-    // (the ones HeroReveal et al. use) honor prefers-reduced-motion. Without
-    // it, framer's auto-honor only fires for the *variants* API.
+    // The root MotionConfig is belt: framer's variants-API auto-honor. The
+    // suspenders are the per-component gates (HeroReveal above, PageTransition,
+    // PdpGallery/ZoomMainImage). Together they cover both the variants and
+    // literal-object paths.
     render(
       <MotionProvider>
         <div data-testid="provider-child" />
