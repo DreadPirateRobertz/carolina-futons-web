@@ -7,6 +7,7 @@
 // errors (programmer bugs, etc.) are still caught to keep the page up, but
 // are flagged as "unexpected" in Sentry so they don't hide inside Wix-outage
 // noise.
+import * as Sentry from "@sentry/nextjs";
 import { getWixClient } from "@/lib/wix-client";
 import { isProductOnSale } from "@/lib/product/on-sale";
 import { logWixFailure as logWixFailureShared } from "@/lib/wix/errors";
@@ -61,9 +62,37 @@ export async function listProductsByCollectionId(
   }
 }
 
-export async function listProductsOnSale(collectionId: string, limit = 48) {
-  const products = await listProductsByCollectionId(collectionId, limit);
-  return products.filter(isProductOnSale);
+// Scan up to this many products total when building the sale page. Mattresses
+// catalog is small (~30 SKUs), so this ceiling only fires if the collection
+// grows unexpectedly large — raising a Sentry warning for ops review.
+const SALE_SCAN_LIMIT = 500;
+const SALE_PAGE_SIZE = 100;
+
+export async function listProductsOnSale(collectionId: string) {
+  try {
+    const client = getWixClient();
+    const all: WixProduct[] = [];
+    let page = await client.products
+      .queryProducts()
+      .hasSome("collectionIds", [collectionId])
+      .limit(SALE_PAGE_SIZE)
+      .find();
+    all.push(...page.items);
+    while (page.hasNext() && all.length < SALE_SCAN_LIMIT) {
+      page = await page.next();
+      all.push(...page.items);
+    }
+    if (all.length >= SALE_SCAN_LIMIT && page.hasNext()) {
+      Sentry.captureMessage(
+        `[listProductsOnSale] scan ceiling (${SALE_SCAN_LIMIT}) hit for collection ${collectionId} — some sale products may be missing from PLP`,
+        { level: "warning" },
+      );
+    }
+    return all.filter(isProductOnSale);
+  } catch (err) {
+    await logWixFailure("listProductsOnSale", err);
+    return [];
+  }
 }
 
 export async function getCollectionBySlug(slug: string) {
