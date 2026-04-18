@@ -2,17 +2,20 @@
 // Keep these as 1-call wrappers so downstream consumers import once per helper
 // instead of pulling the full Wix client construct into page/route files.
 //
-// Each reader catches SDK failures and returns null/[] so a transient Wix
-// outage renders as an empty state or 404 at the route layer instead of a raw
-// 500. Real errors still hit server logs and are forwarded to Sentry via
-// captureException for alerting.
+// Each reader catches recognized Wix API errors and returns null/[] so a
+// transient Wix outage renders as an empty state or 404 at the route layer
+// instead of a raw 500. Non-Wix errors (TypeError, ReferenceError, etc.) are
+// re-thrown so programming mistakes surface. Real errors hit server logs and
+// are forwarded to Sentry via captureException for alerting.
 import * as Sentry from "@sentry/nextjs";
 import { getWixClient } from "@/lib/wix-client";
 
-// Wix SDK errors carry a `code` field (HTTP status or application error code)
-// and/or a `response` property (FetchErrorResponse). Non-Wix errors such as
-// TypeError or ReferenceError are programming mistakes — they should surface,
-// not be silently swallowed.
+// Wix SDK errors are always Error instances and carry a `code` field (HTTP
+// status or application error code) and/or a `response` property
+// (FetchErrorResponse). Non-Wix errors such as TypeError or ReferenceError
+// are programming mistakes — they should surface, not be silently swallowed.
+// Note: plain objects like { code: 404 } won't pass because instanceof Error
+// is required.
 type WixApiError = Error & { code?: string | number; response?: Response };
 
 function isWixApiError(err: unknown): err is WixApiError {

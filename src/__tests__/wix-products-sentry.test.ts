@@ -130,6 +130,36 @@ describe("logWixFailure Sentry wiring", () => {
     expect(captureException).not.toHaveBeenCalled();
   });
 
+  it("re-throws non-Wix errors in getProductBySlug", async () => {
+    const err = new TypeError("Cannot read property of null");
+    mockClient.products.queryProducts.mockReturnValue({
+      eq: () => ({ limit: () => ({ find: () => Promise.reject(err) }) }),
+    });
+
+    await expect(getProductBySlug("slug")).rejects.toThrow(TypeError);
+    expect(captureException).not.toHaveBeenCalled();
+  });
+
+  it("re-throws non-Wix errors in listProductsByCollectionId", async () => {
+    const err = new TypeError("hasSome is not a function");
+    mockClient.products.queryProducts.mockReturnValue({
+      hasSome: () => ({ limit: () => ({ find: () => Promise.reject(err) }) }),
+    });
+
+    await expect(listProductsByCollectionId("col-123")).rejects.toThrow(TypeError);
+    expect(captureException).not.toHaveBeenCalled();
+  });
+
+  it("re-throws non-Wix errors in listCollections", async () => {
+    const err = new TypeError("queryCollections is not a function");
+    mockClient.collections.queryCollections.mockReturnValue({
+      limit: () => ({ find: () => Promise.reject(err) }),
+    });
+
+    await expect(listCollections()).rejects.toThrow(TypeError);
+    expect(captureException).not.toHaveBeenCalled();
+  });
+
   it("remains graceful when captureException itself throws", async () => {
     captureException.mockImplementationOnce(() => {
       throw new Error("Sentry transport failed");
