@@ -57,6 +57,10 @@ npm run lint
 | `WIX_BACKEND_KEY` | Server only | Wix backend API key for elevated operations |
 | `WIX_VELO_SITE_URL` | Server only | Base URL of live Velo site for HTTP function calls (default `https://www.carolinafutons.com`) |
 | `WIX_WEBHOOK_SECRET` | Server only | HMAC shared secret used by `/api/revalidate` to verify Wix CMS webhook signatures (`x-wix-signature`, `sha256=<hex>`) |
+| `SMTP_HOST` | Server only | SMTP server hostname for the `/contact` form Server Action |
+| `SMTP_PORT` | Server only | SMTP port (465 = implicit TLS, 587 = STARTTLS) |
+| `SMTP_USER` | Server only | SMTP auth user — also used as the `From:` envelope sender |
+| `SMTP_PASS` | Server only | SMTP auth password (app password for Gmail) |
 
 ## Secrets
 
