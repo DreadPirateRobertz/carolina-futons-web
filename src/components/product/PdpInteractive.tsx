@@ -8,7 +8,9 @@ import {
 } from "@/components/cart/AddToCartButton";
 import { PdpGallery, type GalleryImage } from "@/components/product/PdpGallery";
 import { PdpStickyCta } from "@/components/product/PdpStickyCta";
+import { PdpStockBadge } from "@/components/product/PdpStockBadge";
 import { VariantPicker } from "@/components/product/VariantPicker";
+import type { StockBadgeInput } from "@/lib/product/stock-badge-state";
 import {
   findMatchingVariant,
   getSelectedImageUrl,
@@ -31,6 +33,7 @@ export type PdpInteractiveProps = {
   fallbackPrice: string;
   fallbackPriceCents: number;
   galleryImages?: ReadonlyArray<GalleryImage>;
+  stock?: StockBadgeInput | null;
 };
 
 export function PdpInteractive({
@@ -43,6 +46,7 @@ export function PdpInteractive({
   fallbackPrice,
   fallbackPriceCents,
   galleryImages,
+  stock,
 }: PdpInteractiveProps) {
   // Intentional duplication: VariantPicker also seeds from initialSelection() and holds its own
   // selection state for price/stock display. The two stay in sync via onSelectionChange. If
@@ -133,6 +137,7 @@ export function PdpInteractive({
         <h1 className="font-heading text-3xl font-semibold tracking-tight text-cf-espresso">
           {productName}
         </h1>
+        <PdpStockBadge stock={stock} />
         <VariantPicker
           productOptions={productOptions}
           variants={variants}
