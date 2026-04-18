@@ -16,7 +16,7 @@ import { TrustBar } from "@/components/site/TrustBar";
 // maxStagger.
 const CARD_STAGGER_SECONDS = 0.08;
 
-const HERO_SLIDES: HeroSlide[] = [
+export const HERO_SLIDES: HeroSlide[] = [
   {
     src: "https://static.wixstatic.com/media/e04e89_72d82110638045c39e0f6274363c15f8~mv2.jpg/v1/fill/w_1920,h_1080,q_90/file.jpg",
     alt: "Monterey mission-style hardwood futon in a sunlit living room",

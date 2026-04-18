@@ -1,7 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 
 import { SHOP_CATEGORIES } from "@/lib/shop/categories";
+
+// Stub motion wrappers so jsdom rendering succeeds without a Framer context.
+vi.mock("@/components/motion/HeroReveal", () => ({
+  HeroReveal: ({ children }: { children: ReactNode }) => <>{children}</>,
+}));
+vi.mock("@/components/site/HeroCarousel", () => ({
+  HeroCarousel: () => null,
+}));
 
 // cf-3qt.7.M.2 (cf-swsg): pin the home-page section contract after wrapping
 // Shop-by-category heading + cards in HeroReveal. We don't assert animation
@@ -116,6 +125,27 @@ describe("HomePage", () => {
       trustBar!.compareDocumentPosition(shopByCategory) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+
+  it("renders an img for each category card that has an image field", async () => {
+    const { container } = await renderHome();
+    const imgs = container.querySelectorAll("ul img");
+    const categoriesWithImages = SHOP_CATEGORIES.filter((c) => c.image);
+    expect(imgs.length).toBe(categoriesWithImages.length);
+  });
+
+  it("category card images use the CDN src from SHOP_CATEGORIES", async () => {
+    const { container } = await renderHome();
+    const imgs = Array.from(container.querySelectorAll("ul img"));
+    for (const cat of SHOP_CATEGORIES) {
+      if (!cat.image) continue;
+      const match = imgs.find((img) =>
+        img.getAttribute("src")?.includes(
+          cat.image!.split("/media/")[1]?.split("~")[0] ?? "",
+        ),
+      );
+      expect(match, `no img found for category ${cat.slug}`).toBeTruthy();
+    }
   });
 });
 
