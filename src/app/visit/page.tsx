@@ -10,15 +10,15 @@ export const metadata: Metadata = {
 // Single source of truth for showroom details — update here to propagate to all copy, links, and map embed.
 const STORE = {
   name: "Carolina Futons",
-  address: "1 Gallery Blvd",
+  address: "824 Locust St",
   city: "Hendersonville",
   state: "NC",
   zip: "28792",
-  phone: "(828) 692-0093",
-  email: "info@carolinafutons.com",
+  phone: "(828) 252-9449",
+  email: "carolinafutons@gmail.com",
   hours: [
-    { days: "Monday – Friday", hours: "10 am – 6 pm" },
-    { days: "Saturday", hours: "10 am – 5 pm" },
+    { days: "Monday – Tuesday", hours: "Closed" },
+    { days: "Wednesday – Saturday", hours: "10 am – 5 pm" },
     { days: "Sunday", hours: "Closed" },
   ],
 } as const;
