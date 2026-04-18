@@ -4,9 +4,14 @@ import { notFound } from "next/navigation";
 import {
   getCollectionBySlug,
   listProductsByCollectionId,
+  listProductsOnSale,
   type WixProduct,
 } from "@/lib/wix/products";
-import { SHOP_CATEGORIES, findCategory } from "@/lib/shop/categories";
+import {
+  SHOP_CATEGORIES,
+  findCategory,
+  type ShopCategory,
+} from "@/lib/shop/categories";
 import { formatPlpPrice } from "@/lib/product/plp-price";
 
 export const dynamic = "force-dynamic"; // Phase 2: per-request until facets + caching tags wired
@@ -34,10 +39,7 @@ export default async function PlpPage(props: {
   const category = findCategory(categorySlug);
   if (!category) notFound();
 
-  const collection = await getCollectionBySlug(category.collectionSlug);
-  const products = collection?._id
-    ? await listProductsByCollectionId(collection._id)
-    : [];
+  const products = await resolveCategoryProducts(category);
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-10">
@@ -61,8 +63,9 @@ export default async function PlpPage(props: {
 
       {products.length === 0 ? (
         <p className="mt-10 rounded-md bg-zinc-50 p-6 text-zinc-700">
-          No products found in this collection yet. Phase 0 smoke may not
-          have populated {category.collectionSlug}.
+          {category.slug === "mattresses-sale"
+            ? "No mattresses are on sale right now. Check back soon."
+            : `No products found in this collection yet. Phase 0 smoke may not have populated ${category.collectionSlug}.`}
         </p>
       ) : (
         <ul className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -73,6 +76,22 @@ export default async function PlpPage(props: {
       )}
     </main>
   );
+}
+
+// cf-3qt.6.D: /shop/mattresses-sale is derived from the mattresses collection
+// filtered to products with an active Wix Stores discount, not a hand-curated
+// "mattresses-sale" collection.
+async function resolveCategoryProducts(
+  category: ShopCategory,
+): Promise<WixProduct[]> {
+  const sourceSlug =
+    category.slug === "mattresses-sale" ? "mattresses" : category.collectionSlug;
+  const collection = await getCollectionBySlug(sourceSlug);
+  if (!collection?._id) return [];
+  if (category.slug === "mattresses-sale") {
+    return listProductsOnSale(collection._id);
+  }
+  return listProductsByCollectionId(collection._id);
 }
 
 function ProductCard({ product }: { product: WixProduct }) {
