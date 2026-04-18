@@ -11,20 +11,13 @@ vi.mock("@sentry/nextjs", () => sentryMock);
 beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
+  vi.restoreAllMocks();
 });
 
 type MockProduct = {
   _id: string;
   priceData?: { price?: number; discountedPrice?: number };
 };
-
-function makePage(items: MockProduct[], hasMore = false) {
-  return {
-    items,
-    hasNext: () => hasMore,
-    next: vi.fn(),
-  };
-}
 
 function makeClient(pages: MockProduct[][]) {
   const pageObjects = pages.map((items, i) => ({
@@ -109,6 +102,33 @@ describe("listProductsOnSale — pagination", () => {
     expect(sentryMock.captureException).toHaveBeenCalledOnce();
   });
 
+  it("returns partial results when a mid-loop page.next() throws", async () => {
+    const page0 = {
+      items: [onSale("p1"), notOnSale("p2")],
+      hasNext: () => true,
+      next: vi.fn().mockRejectedValue(new Error("transient 503")),
+    };
+    vi.doMock("@/lib/wix-client", () => ({
+      getWixClient: () => ({
+        products: {
+          queryProducts: () => ({
+            hasSome: () => ({
+              limit: () => ({ find: async () => page0 }),
+            }),
+          }),
+        },
+      }),
+    }));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { listProductsOnSale } = await import("@/lib/wix/products");
+    const result = await listProductsOnSale("col-1");
+
+    expect(result.map((p) => p._id)).toEqual(["p1"]);
+    expect(sentryMock.captureException).toHaveBeenCalledOnce();
+    expect(sentryMock.captureMessage).not.toHaveBeenCalled();
+  });
+
   it("fires a Sentry warning (not exception) when scan ceiling is hit and more products exist", async () => {
     // Build enough pages to trigger the SALE_SCAN_LIMIT=500 ceiling.
     // 5 pages × 100 items = 500 items; 6th page still hasNext=true → ceiling triggers.
@@ -149,6 +169,40 @@ describe("listProductsOnSale — pagination", () => {
       expect.stringContaining("scan ceiling"),
       expect.objectContaining({ level: "warning" }),
     );
+    expect(sentryMock.flush).toHaveBeenCalledWith(2000);
+    expect(sentryMock.captureException).not.toHaveBeenCalled();
+  });
+
+  it("truncates to scan limit and fires warning when last page overshoots the ceiling", async () => {
+    // 490-item page0 + 100-item page1 → all=590 after loop, overshot=true → splice to 500
+    const page1 = {
+      items: Array.from({ length: 100 }, (_, i) => onSale(`b${i}`)),
+      hasNext: () => false,
+      next: vi.fn(),
+    };
+    const page0 = {
+      items: Array.from({ length: 490 }, (_, i) => onSale(`a${i}`)),
+      hasNext: () => true,
+      next: vi.fn().mockResolvedValue(page1),
+    };
+    vi.doMock("@/lib/wix-client", () => ({
+      getWixClient: () => ({
+        products: {
+          queryProducts: () => ({
+            hasSome: () => ({
+              limit: () => ({ find: async () => page0 }),
+            }),
+          }),
+        },
+      }),
+    }));
+
+    const { listProductsOnSale } = await import("@/lib/wix/products");
+    const result = await listProductsOnSale("col-1");
+
+    expect(result).toHaveLength(500);
+    expect(sentryMock.captureMessage).toHaveBeenCalledOnce();
+    expect(sentryMock.flush).toHaveBeenCalledWith(2000);
     expect(sentryMock.captureException).not.toHaveBeenCalled();
   });
 

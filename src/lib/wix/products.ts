@@ -79,14 +79,23 @@ export async function listProductsOnSale(collectionId: string) {
       .find();
     all.push(...page.items);
     while (page.hasNext() && all.length < SALE_SCAN_LIMIT) {
-      page = await page.next();
+      try {
+        page = await page.next();
+      } catch (midErr) {
+        await logWixFailure(`listProductsOnSale(mid-loop, after ${all.length} items)`, midErr);
+        return all.filter(isProductOnSale);
+      }
       all.push(...page.items);
     }
-    if (all.length >= SALE_SCAN_LIMIT && page.hasNext()) {
+    const overshot = all.length > SALE_SCAN_LIMIT;
+    const ceilingHit = all.length >= SALE_SCAN_LIMIT && page.hasNext();
+    if (overshot) all.splice(SALE_SCAN_LIMIT);
+    if (overshot || ceilingHit) {
       Sentry.captureMessage(
         `[listProductsOnSale] scan ceiling (${SALE_SCAN_LIMIT}) hit for collection ${collectionId} — some sale products may be missing from PLP`,
         { level: "warning" },
       );
+      await Sentry.flush(2000);
     }
     return all.filter(isProductOnSale);
   } catch (err) {

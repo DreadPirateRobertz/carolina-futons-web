@@ -88,7 +88,7 @@ export type ListPlpOptions = {
   filters?: PlpFilters;
   scanLimit?: number;
   // When set, skips the Wix collection scan and uses this array as the full
-  // product set. listProductsOnSale paginates to SALE_SCAN_LIMIT (500) before
+  // product set. listProductsOnSale paginates to SALE_SCAN_LIMIT before
   // passing the result here, so virtual-sale categories see the full catalog.
   prefetchedProducts?: WixProduct[];
 };
