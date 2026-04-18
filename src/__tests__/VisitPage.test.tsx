@@ -67,7 +67,7 @@ describe("VisitPage — rendering", () => {
 
   it("renders email link with mailto: href", () => {
     renderPage();
-    const mailLink = screen.getByRole("link", { name: /info@carolinafutons/i });
+    const mailLink = screen.getByRole("link", { name: /carolinafutons@gmail/i });
     expect(mailLink.getAttribute("href")).toMatch(/^mailto:/);
   });
 });
