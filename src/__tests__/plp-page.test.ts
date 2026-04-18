@@ -246,3 +246,142 @@ describe("PlpPage — reader outage (error from getCollectionPlp)", () => {
     }
   });
 });
+
+// ── PlpPage: over-paginated branch (cf-3qt.6.B.1) ──────────────────────────
+
+describe("PlpPage — over-paginated (page beyond last filled page)", () => {
+  beforeEach(() => {
+    vi.mocked(findCategory).mockReturnValue({
+      slug: "futon-frames",
+      name: "Futon Frames",
+      description: "Our frames.",
+      collectionSlug: "futon-frames",
+    });
+    vi.mocked(getCollectionBySlug).mockResolvedValue({
+      _id: "futons-col-id",
+    } as never);
+    vi.mocked(listProductsOnSale).mockResolvedValue([]);
+  });
+
+  it("renders back-to-page-1 link when pageNum>1 and page.total>0 but items=[]", async () => {
+    vi.mocked(getCollectionPlp).mockResolvedValue({
+      page: {
+        items: [],
+        total: 6,
+        page: 2,
+        pageSize: 24,
+        hasNext: false,
+        hasPrev: true,
+      },
+      facets: { total: 6, inStock: 6, outOfStock: 0, priceBuckets: [] },
+    });
+
+    const tree = (await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({ page: "2" }),
+    })) as ReactElement;
+    const html = renderToStaticMarkup(tree);
+
+    expect(html).toMatch(/No more products on page 2/);
+    expect(html).toMatch(/href="\/shop\/futon-frames"/);
+    expect(html).toContain("Back to page 1");
+    expect(html).not.toMatch(/No products found in this collection/);
+    expect(html).not.toMatch(/No products match these filters/);
+  });
+
+  it("preserves sort + filter params in back-to-page-1 link", async () => {
+    vi.mocked(getCollectionPlp).mockResolvedValue({
+      page: {
+        items: [],
+        total: 3,
+        page: 5,
+        pageSize: 24,
+        hasNext: false,
+        hasPrev: true,
+      },
+      facets: { total: 6, inStock: 3, outOfStock: 3, priceBuckets: [] },
+    });
+
+    const tree = (await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({
+        page: "5",
+        sort: "price-asc",
+        priceMin: "200",
+        inStock: "1",
+      }),
+    })) as ReactElement;
+    const html = renderToStaticMarkup(tree);
+
+    expect(html).toMatch(/No more products on page 5/);
+    expect(html).toMatch(/sort=price-asc/);
+    expect(html).toMatch(/priceMin=200/);
+    expect(html).toMatch(/inStock=1/);
+    // Back-to-page-1 link MUST NOT carry a page param
+    const hrefs = html.match(/href="([^"]+)"/g) ?? [];
+    const backHref = hrefs.find((h) => h.includes("sort=price-asc"));
+    expect(backHref).toBeDefined();
+    expect(backHref).not.toMatch(/page=/);
+  });
+
+  it("does NOT trigger over-paginated branch on page 1 with empty collection", async () => {
+    vi.mocked(getCollectionPlp).mockResolvedValue(EMPTY_PLP);
+
+    const tree = (await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({}),
+    })) as ReactElement;
+    const html = renderToStaticMarkup(tree);
+
+    expect(html).not.toMatch(/Back to page 1/);
+    expect(html).toMatch(/No products found in this collection/);
+  });
+
+  it("does NOT trigger over-paginated branch when filters eliminated everything (page.total=0)", async () => {
+    vi.mocked(getCollectionPlp).mockResolvedValue({
+      page: {
+        items: [],
+        total: 0,
+        page: 2,
+        pageSize: 24,
+        hasNext: false,
+        hasPrev: false,
+      },
+      facets: { total: 10, inStock: 5, outOfStock: 5, priceBuckets: [] },
+    });
+
+    const tree = (await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({ page: "2", priceMin: "99999" }),
+    })) as ReactElement;
+    const html = renderToStaticMarkup(tree);
+
+    expect(html).not.toMatch(/Back to page 1/);
+    expect(html).toMatch(/No products match these filters/);
+  });
+
+  it("outage error takes precedence over over-paginated branch", async () => {
+    vi.mocked(getCollectionPlp).mockResolvedValue({
+      page: {
+        items: [],
+        total: 6,
+        page: 2,
+        pageSize: 24,
+        hasNext: false,
+        hasPrev: true,
+        error: "wix_sdk",
+      },
+      facets: { total: 6, inStock: 6, outOfStock: 0, priceBuckets: [] },
+      error: "wix_sdk",
+    } as never);
+
+    const tree = (await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({ page: "2" }),
+    })) as ReactElement;
+    const html = renderToStaticMarkup(tree);
+
+    expect(html).toContain('role="alert"');
+    expect(html).not.toMatch(/Back to page 1/);
+  });
+});
