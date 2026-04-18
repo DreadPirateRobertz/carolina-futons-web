@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
-import AccountPage from "@/app/account/page";
+import AccountPage, { metadata } from "@/app/account/page";
 
 // ── matchMedia stub (required for jsdom) ──────────────────────────────────────
 beforeEach(() => {
@@ -35,6 +35,25 @@ function getSignInButton() {
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
+
+// cf-3qt.8.A.F1: /account was previously a pure client component and could
+// not export metadata (Next.js app-router disallows it). The page is now a
+// server wrapper around <AccountSignIn> so we can assert the metadata here.
+describe("AccountPage — metadata (cf-3qt.8.A.F1)", () => {
+  it("exports a static Metadata object", () => {
+    expect(metadata).toBeDefined();
+  });
+
+  it("sets a descriptive title containing 'Sign In' and brand", () => {
+    expect(metadata.title).toMatch(/sign in/i);
+    expect(metadata.title).toMatch(/carolina futons/i);
+  });
+
+  it("sets a non-trivial description (>= 40 chars)", () => {
+    expect(typeof metadata.description).toBe("string");
+    expect((metadata.description as string).length).toBeGreaterThanOrEqual(40);
+  });
+});
 
 describe("AccountPage — rendering", () => {
   it("renders sign-in heading", () => {
@@ -168,5 +187,87 @@ describe("AccountPage — sign-in failure", () => {
       expect(screen.getByRole("alert")).toBeInTheDocument();
     });
     expect(window.location.href).toBe("");
+  });
+
+  it("does NOT navigate when authUrl is null (cf-3qt.8.A.F1 guard)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ authUrl: null }),
+      }),
+    );
+    renderPage();
+    fireEvent.click(getSignInButton());
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+    });
+    expect(window.location.href).toBe("");
+  });
+
+  it("does NOT navigate when authUrl is a non-string type (cf-3qt.8.A.F1 guard)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ authUrl: 42 }),
+      }),
+    );
+    renderPage();
+    fireEvent.click(getSignInButton());
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+    });
+    expect(window.location.href).toBe("");
+  });
+});
+
+// cf-3qt.8.A.F1: every catch path must surface to devtools / Sentry. A bare
+// catch that discards the error blocks Sentry's global handler; these tests
+// lock in that every failure-path invokes console.error with the thrown value.
+describe("AccountPage — catch-path logging (cf-3qt.8.A.F1)", () => {
+  it("console.errors the network failure in catch", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const thrown = new Error("network down");
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(thrown));
+    renderPage();
+    fireEvent.click(getSignInButton());
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+    });
+    expect(spy).toHaveBeenCalled();
+    const args = spy.mock.calls[spy.mock.calls.length - 1];
+    expect(args.some((a) => a === thrown)).toBe(true);
+  });
+
+  it("console.errors on non-ok HTTP response", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, status: 503, json: async () => ({}) }),
+    );
+    renderPage();
+    fireEvent.click(getSignInButton());
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+    });
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it("console.errors on invalid authUrl shape", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ authUrl: null }),
+      }),
+    );
+    renderPage();
+    fireEvent.click(getSignInButton());
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+    });
+    expect(spy).toHaveBeenCalled();
   });
 });
