@@ -263,3 +263,52 @@ describe("PdpGallery — View Transitions API", () => {
     expect(main.src).toBe("https://img/c.jpg");
   });
 });
+
+describe("PdpGallery — onError / broken image fallback", () => {
+  beforeEach(() => uninstallViewTransitionStub());
+
+  it("main image falls back to FALLBACK_PRODUCT_IMG on load error", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    fireEvent.error(main);
+    expect(main.src).toMatch(/^data:image\/png/);
+    warnSpy.mockRestore();
+  });
+
+  it("main image onError logs a console.warn with the broken src", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    fireEvent.error(main);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[PdpGallery]"),
+      expect.anything(),
+    );
+    warnSpy.mockRestore();
+  });
+
+  it("main image does not re-fire warn if fallback src itself errors", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    fireEvent.error(main); // first error → applies fallback
+    const callCount = warnSpy.mock.calls.length;
+    fireEvent.error(main); // second error on fallback → no-op
+    expect(warnSpy.mock.calls.length).toBe(callCount);
+    warnSpy.mockRestore();
+  });
+
+  it("thumbnail image falls back on load error", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { container } = render(
+      <PdpGallery images={multiImages} productName="Kingston Futon" />,
+    );
+    const thumbImgs = container.querySelectorAll(
+      "[role='tab'] img",
+    ) as NodeListOf<HTMLImageElement>;
+    fireEvent.error(thumbImgs[1]);
+    expect(thumbImgs[1].src).toMatch(/^data:image\/png/);
+    warnSpy.mockRestore();
+  });
+});

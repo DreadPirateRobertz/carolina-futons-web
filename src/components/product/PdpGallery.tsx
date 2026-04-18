@@ -37,6 +37,21 @@ type DocumentWithVT = Document & {
 
 const VT_NAME = "pdp-gallery";
 
+// 1×1 transparent PNG — safe fallback when a product image URL is broken.
+// Prevents the "torn image" icon and keeps VT transitions completing cleanly.
+const FALLBACK_PRODUCT_IMG =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
+function handleImgError(
+  e: React.SyntheticEvent<HTMLImageElement>,
+  context: string,
+) {
+  const src = e.currentTarget.src;
+  if (src === FALLBACK_PRODUCT_IMG) return; // prevent infinite loop
+  console.warn(`[PdpGallery] broken image src (${context}):`, src);
+  e.currentTarget.src = FALLBACK_PRODUCT_IMG;
+}
+
 export type GalleryImage = {
   url: string;
   alt?: string;
@@ -150,6 +165,7 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
         alt={active.alt ?? productName}
         carryVTName={vtSourceIndex === null}
         useFramerCrossfade={useFramerCrossfade}
+        onError={(e) => handleImgError(e, "main")}
       />
       {images.length > 1 ? (
         <div
@@ -184,6 +200,7 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
                   alt=""
                   aria-hidden="true"
                   className="h-full w-full object-cover"
+                  onError={(e) => handleImgError(e, `thumb ${i}`)}
                 />
               </button>
             );
@@ -202,11 +219,13 @@ function ZoomMainImage({
   alt,
   carryVTName,
   useFramerCrossfade,
+  onError,
 }: {
   src: string;
   alt: string;
   carryVTName: boolean;
   useFramerCrossfade: boolean;
+  onError: (e: React.SyntheticEvent<HTMLImageElement>) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
@@ -254,6 +273,7 @@ function ZoomMainImage({
         alt={alt}
         data-testid="pdp-main-image"
         style={baseStyle}
+        onError={onError}
         {...crossfadeProps}
         className="aspect-square w-full object-cover"
       />
