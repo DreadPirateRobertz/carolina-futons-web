@@ -28,7 +28,7 @@ export function Header() {
   return (
     <header
       data-slot="site-header"
-      className="sticky top-0 z-40 h-cf-header w-full border-b border-cf-divider bg-cf-cream/95 backdrop-blur supports-[backdrop-filter]:bg-cf-cream/80"
+      className="sticky top-0 z-40 h-cf-header w-full border-b border-cf-divider bg-gradient-to-b from-cf-header-start to-cf-header-end text-cf-ink backdrop-blur"
     >
       <AnnouncementBar />
 

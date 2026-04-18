@@ -39,7 +39,7 @@ export function Footer() {
   return (
     <footer
       data-slot="site-footer"
-      className="mt-auto h-cf-footer border-t border-cf-divider bg-cf-navy text-cf-cream"
+      className="mt-auto h-cf-footer border-t border-cf-divider bg-cf-footer-bg text-cf-cream"
     >
       <div
         data-slot="site-footer-main"

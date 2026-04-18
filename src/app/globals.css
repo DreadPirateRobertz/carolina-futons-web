@@ -62,6 +62,13 @@
   --color-cf-warning: var(--cf-warning);
   --color-cf-error: var(--cf-error);
 
+  /* cf-9jp brand chrome tokens (P7-hero-#1). Header gradient mirrors STAGING_SITE
+     Velo CSS; footer + ink mirror carolinafutons.com production chrome. */
+  --color-cf-header-start: var(--cf-header-start);
+  --color-cf-header-end: var(--cf-header-end);
+  --color-cf-footer-bg: var(--cf-footer-bg);
+  --color-cf-ink: var(--cf-ink);
+
   /* Chrome height tokens (cf-3qt.1 — header 213px / footer 108px live-site-measured) */
   --height-cf-header: var(--cf-header-total);
   --height-cf-header-top: var(--cf-header-top);
@@ -95,6 +102,12 @@
   --cf-warning: #c05621;
   --cf-error: #c53030;
 
+  /* cf-9jp brand chrome (P7-hero-#1) */
+  --cf-header-start: #F0F5F8; /* gradient top — matches STAGING_SITE Velo */
+  --cf-header-end: #E4EDF2;   /* gradient bottom */
+  --cf-footer-bg: #1E2A3A;    /* dark navy — matches carolinafutons.com */
+  --cf-ink: #1E2A3A;          /* dark navy primary text */
+
   /* Chrome pixel specs (cf-3qt.1 — measured live on carolinafutons.com 2026-04-17) */
   --cf-header-top: 60px;         /* announcement + utility row */
   --cf-header-main: 93px;        /* logo + primary nav */
@@ -106,7 +119,7 @@
 
   /* ── shadcn runtime theme tuned to CF ──────────────────────────────── */
   --background: oklch(0.966 0.008 230);     /* ≈ #f0f4f8 cf-sand */
-  --foreground: oklch(0.205 0.006 240);     /* ≈ #1a1a1a cf-charcoal */
+  --foreground: oklch(0.235 0.032 260);     /* ≈ #1E2A3A cf-ink (cf-9jp) */
   --card: oklch(0.992 0.005 85);            /* ≈ #fefcf7 cf-cream */
   --card-foreground: oklch(0.205 0.006 240);
   --popover: oklch(0.992 0.005 85);
