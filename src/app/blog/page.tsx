@@ -53,10 +53,10 @@ export default function BlogPage() {
             For now, the best way to follow along is by email. Drop us a line
             at{" "}
             <a
-              href="mailto:hello@carolinafutons.com"
+              href="mailto:carolinafutons@gmail.com"
               className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
             >
-              hello@carolinafutons.com
+              carolinafutons@gmail.com
             </a>{" "}
             and we&rsquo;ll add you to the journal list. You&rsquo;re also
             welcome to stop by the showroom in Hendersonville any time

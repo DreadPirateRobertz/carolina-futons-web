@@ -21,14 +21,14 @@ describe("PressPage", () => {
 
   it("links the press contact email", () => {
     render(<PressPage />);
-    const link = screen.getByRole("link", { name: /hello@carolinafutons\.com/i });
-    expect(link.getAttribute("href")).toBe("mailto:hello@carolinafutons.com");
+    const link = screen.getByRole("link", { name: /carolinafutons@gmail\.com/i });
+    expect(link.getAttribute("href")).toBe("mailto:carolinafutons@gmail.com");
   });
 
   it("renders the showroom street address for press visitors", () => {
     render(<PressPage />);
     const main = screen.getByRole("main");
-    expect(main.textContent).toMatch(/1611 Brevard Road/);
+    expect(main.textContent).toMatch(/824 Locust Street/);
   });
 
   it("exports a metadata object with title and description", () => {

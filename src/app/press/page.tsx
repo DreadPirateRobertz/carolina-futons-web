@@ -66,16 +66,16 @@ export default function PressPage() {
           <p className="leading-relaxed">
             For interviews, product photography, or fact-checking, email{" "}
             <a
-              href="mailto:hello@carolinafutons.com"
+              href="mailto:carolinafutons@gmail.com"
               className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
             >
-              hello@carolinafutons.com
+              carolinafutons@gmail.com
             </a>{" "}
             with your outlet, deadline, and what you&rsquo;re working on.
             We&rsquo;ll get back to you within one business day.
           </p>
           <p className="leading-relaxed">
-            Showroom: 1611 Brevard Road, Hendersonville, NC 28791.
+            Showroom: 824 Locust Street, Hendersonville, NC.
           </p>
         </section>
       </article>

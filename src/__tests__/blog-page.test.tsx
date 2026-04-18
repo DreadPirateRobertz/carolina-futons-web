@@ -20,8 +20,8 @@ describe("BlogPage", () => {
 
   it("links the contact email", () => {
     render(<BlogPage />);
-    const link = screen.getByRole("link", { name: /hello@carolinafutons\.com/i });
-    expect(link.getAttribute("href")).toBe("mailto:hello@carolinafutons.com");
+    const link = screen.getByRole("link", { name: /carolinafutons@gmail\.com/i });
+    expect(link.getAttribute("href")).toBe("mailto:carolinafutons@gmail.com");
   });
 
   it("exports a metadata object with title and description", () => {
