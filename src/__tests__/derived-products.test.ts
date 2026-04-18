@@ -1,6 +1,4 @@
 // Unit tests for the config-driven derived-category resolver (cf-3qt.6.D.F3).
-// Replaces the two hard-coded `if slug === "mattresses-sale"` branches that
-// used to live in src/app/shop/[category]/page.tsx.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -109,32 +107,31 @@ describe("resolveDerivedProducts — happy path", () => {
 });
 
 describe("resolveDerivedProducts — error path (cf-3qt.6.D.F3 silent-failure fix)", () => {
-  it("tags missing source collection as error: 'unexpected' AND logs to Sentry (NOT silent [])", async () => {
-    wixMock.getCollectionBySlug.mockResolvedValue(null);
+  // Both shapes (null and {}) hit the same `!sourceCollection?._id` branch —
+  // exercising both guards we promised in the resolver against config typos
+  // and deleted/incomplete Wix collections.
+  it.each([
+    ["null collection (slug doesn't resolve)", null],
+    ["object missing _id (incomplete collection)", {}],
+  ])(
+    "tags missing source collection as error: 'unexpected' AND logs (%s)",
+    async (_label, mockReturn) => {
+      wixMock.getCollectionBySlug.mockResolvedValue(mockReturn);
 
-    const result = await resolveDerivedProducts(derived);
+      const result = await resolveDerivedProducts(derived);
 
-    expect(result).toEqual({ items: [], error: "unexpected" });
-    // Predicate never runs — nothing to filter.
-    expect(wixMock.listProductsOnSale).not.toHaveBeenCalled();
-    // Critical: log fired so a config typo / deleted Wix collection surfaces
-    // in Sentry instead of rendering an empty PLP forever.
-    expect(errorsMock.logWixFailure).toHaveBeenCalledWith(
-      "derived-products",
-      expect.stringContaining("mattresses-sale"),
-      expect.any(Error),
-    );
-  });
-
-  it("tags source-collection-missing-_id as error: 'unexpected' + logs", async () => {
-    wixMock.getCollectionBySlug.mockResolvedValue({});
-
-    const result = await resolveDerivedProducts(derived);
-
-    expect(result).toEqual({ items: [], error: "unexpected" });
-    expect(wixMock.listProductsOnSale).not.toHaveBeenCalled();
-    expect(errorsMock.logWixFailure).toHaveBeenCalledTimes(1);
-  });
+      expect(result).toEqual({ items: [], error: "unexpected" });
+      // Predicate never runs — nothing to filter.
+      expect(wixMock.listProductsOnSale).not.toHaveBeenCalled();
+      // Critical: log fired so a config typo / deleted Wix collection surfaces
+      // in Sentry instead of rendering an empty PLP forever.
+      expect(errorsMock.logWixFailure).toHaveBeenCalledWith(
+        "derived-products",
+        expect.stringContaining("mattresses-sale"),
+        expect.any(Error),
+      );
+    },
+  );
 
   it("tags unknown filter as error: 'unexpected' + logs (defensive guard for TS-bypass path)", async () => {
     wixMock.getCollectionBySlug.mockResolvedValue({ _id: "coll-y" });

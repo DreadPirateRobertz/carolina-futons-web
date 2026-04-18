@@ -149,9 +149,8 @@ const EMPTY_PLP = {
 
 describe("PlpPage — mattresses-sale virtual category", () => {
   beforeEach(() => {
-    // cf-3qt.6.D.F3: mattresses-sale is now a config-driven derived category
-    // (filter: "on-sale" + sourceSlug: "mattresses"). The hardcoded slug
-    // special-case in page.tsx was removed.
+    // cf-3qt.6.D.F3: mattresses-sale is a config-driven derived category
+    // (filter: "on-sale" + sourceSlug: "mattresses").
     vi.mocked(findCategory).mockReturnValue({
       slug: "mattresses-sale",
       name: "Mattresses on Sale",

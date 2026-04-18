@@ -4,9 +4,6 @@
 // `collections.getCollectionBySlug`. We keep them separate so marketing
 // can later remap a PLP URL without re-slugging the Wix collection (or
 // vice versa).
-//
-// Phase 0 Q: confirm all 5 collection slugs match Wix Stores (morgott +
-// millicent smoke test) before Phase 2 traffic hits these.
 
 // Supported derived-category filters. A category with `filter` set sources its
 // products from `sourceSlug` (or `collectionSlug` if `sourceSlug` is omitted)
