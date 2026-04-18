@@ -191,6 +191,20 @@ describe("logWixFailure Sentry wiring", () => {
     consoleSpy.mockRestore();
   });
 
+  it("treats Node fetch() network failures (TypeError: fetch failed) as Wix errors — returns [] not throw", async () => {
+    const err = Object.assign(new TypeError("fetch failed"), {
+      cause: { code: "ECONNREFUSED" },
+    });
+    mockClient.products.queryProducts.mockReturnValue({
+      limit: () => ({ find: () => Promise.reject(err) }),
+    });
+
+    const result = await listProducts();
+
+    expect(result).toEqual([]);
+    expect(captureException).toHaveBeenCalledOnce();
+  });
+
   it("treats FetchErrorResponse-shaped errors (with response) as Wix errors", async () => {
     const err = Object.assign(new Error("HTTP 503"), {
       response: new Response(null, { status: 503 }),

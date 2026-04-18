@@ -10,16 +10,27 @@
 import * as Sentry from "@sentry/nextjs";
 import { getWixClient } from "@/lib/wix-client";
 
-// Wix SDK errors are always Error instances and carry a `code` field (HTTP
-// status or application error code) and/or a `response` property
-// (FetchErrorResponse). Non-Wix errors such as TypeError or ReferenceError
-// are programming mistakes — they should surface, not be silently swallowed.
+// Wix SDK errors are always Error instances. They carry either a `code` field
+// (HTTP status / application error code), a `response` property (SDK REST
+// error), or are a network-level `TypeError` from Node's fetch() failing to
+// reach the Wix API (ECONNREFUSED, DNS failure, etc.). All three are
+// infrastructure failures that should degrade gracefully. Non-Wix errors
+// (ReferenceError, null-deref TypeError without "fetch failed", etc.) are
+// programming mistakes — they should surface, not be silently swallowed.
 // Note: plain objects like { code: 404 } won't pass because instanceof Error
-// is required.
-type WixApiError = Error & { code?: string | number; response?: Response };
+// is required. `response` is typed loosely because SDKError carries a plain
+// status-object there, not a Fetch API Response.
+type WixApiError = Error & {
+  code?: string | number;
+  response?: Record<string, unknown>;
+};
 
 function isWixApiError(err: unknown): err is WixApiError {
-  return err instanceof Error && ("code" in err || "response" in err);
+  if (!(err instanceof Error)) return false;
+  if ("code" in err || "response" in err) return true;
+  // Node fetch() network failures (ECONNREFUSED, DNS, timeout) throw a
+  // plain TypeError with no code/response — treat as infrastructure failure.
+  return err instanceof TypeError && err.message === "fetch failed";
 }
 
 function logWixFailure(op: string, err: WixApiError) {
