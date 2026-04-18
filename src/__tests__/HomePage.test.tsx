@@ -11,6 +11,20 @@ vi.mock("@/components/motion/HeroReveal", () => ({
 vi.mock("@/components/site/HeroCarousel", () => ({
   HeroCarousel: () => null,
 }));
+// FeaturedProducts renders ProductCard which uses framer-motion m.* components.
+// Those require a Framer context that isn't present in the cfw-tdd jsdom env
+// (two-React-instance problem via node_modules symlink). Stub at the component
+// boundary so the test exercises page-level behavior without traversing
+// ProductCard's render tree.
+vi.mock("@/components/site/TrustBar", () => ({
+  TrustBar: () => <div data-slot="trust-bar" />,
+}));
+vi.mock("@/components/site/FeaturedProducts", () => ({
+  FeaturedProducts: ({ products }: { products: unknown[] }) =>
+    products.length > 0 ? (
+      <section aria-label="Featured products" />
+    ) : null,
+}));
 
 // cf-3qt.7.M.2 (cf-swsg): pin the home-page section contract after wrapping
 // Shop-by-category heading + cards in HeroReveal. We don't assert animation

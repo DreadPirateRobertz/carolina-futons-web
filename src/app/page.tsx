@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { SHOP_CATEGORIES } from "@/lib/shop/categories";
 import { HeroReveal } from "@/components/motion/HeroReveal";
@@ -6,6 +5,7 @@ import { HeroCarousel, type HeroSlide } from "@/components/site/HeroCarousel";
 import { FeaturedProducts } from "@/components/site/FeaturedProducts";
 import { listFeaturedProducts } from "@/lib/shop/featured";
 import { TrustBar } from "@/components/site/TrustBar";
+import { CategoryCardImage } from "@/components/site/CategoryCardImage";
 
 // Per-card onset delay for the Shop-by-category cascade. 80ms is at the
 // just-noticeable-difference threshold for sequential visual onset (enough
@@ -100,18 +100,9 @@ export default async function HomePage() {
                 >
                   {category.image && (
                     <div className="relative aspect-[3/2] w-full overflow-hidden">
-                      <Image
+                      <CategoryCardImage
                         src={category.image}
-                        alt=""
-                        fill
-                        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        onError={() =>
-                          console.warn(
-                            `[HomePage] failed to load category image: ${category.slug}`,
-                            category.image,
-                          )
-                        }
+                        slug={category.slug}
                       />
                     </div>
                   )}
