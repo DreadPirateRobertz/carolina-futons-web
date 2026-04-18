@@ -111,4 +111,24 @@ describe("formatPlpPrice", () => {
     };
     expect(formatPlpPrice(product)).toBe("$250");
   });
+
+  it("returns empty string when base price is $0 with no usable range (Mesa mattress regression — cf-3qt.6.C)", () => {
+    // Wix Studio→Headless catalog migration pending: Mesa line has priceData.price=0
+    // and priceRange not yet populated. Must show nothing rather than "$0.00".
+    expect(
+      formatPlpPrice({
+        priceData: { price: 0, currency: "USD", formatted: { price: "$0.00" } },
+        priceRange: { minValue: 0, maxValue: 0 },
+      }),
+    ).toBe("");
+  });
+
+  it("returns empty string when base price is $0 with null priceRange", () => {
+    expect(
+      formatPlpPrice({
+        priceData: { price: 0, currency: "USD", formatted: { price: "$0.00" } },
+        priceRange: null,
+      }),
+    ).toBe("");
+  });
 });

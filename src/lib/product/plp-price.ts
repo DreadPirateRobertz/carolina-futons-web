@@ -12,6 +12,8 @@
 //   - Variant range with min === max             → the single price
 //   - Variant range with base price $0           → "From $min"
 //   - Variant range with a set base price        → "$min – $max"
+//   - Base price $0, no usable range             → "" (cf-3qt.6.C: catalog not yet
+//       populated — Mesa mattresses pending Wix Studio→Headless variant migration)
 
 export type PlpPricedProduct = {
   priceData?: {
@@ -43,6 +45,7 @@ export function formatPlpPrice(product: PlpPricedProduct): string {
     return `${formatCurrency(min, currency)} – ${formatCurrency(max, currency)}`;
   }
 
+  if (!basePrice) return "";
   return baseFormatted;
 }
 
