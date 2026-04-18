@@ -8,10 +8,8 @@ import { m, useReducedMotion, useScroll, useTransform } from "framer-motion";
 // picker — selecting a variant with its own mainMedia wins over the thumb
 // selection so the swatch and main stay consistent).
 //
-// Phase 7 motion companion: the main image gets a subtle scroll-driven
-// zoom (1.00 → 1.05 over its viewport pass) — feels like the photo is
-// breathing as you scroll the PDP. Honors prefers-reduced-motion (returns
-// a static scale of 1).
+// The main image gets a subtle scroll-driven zoom (1.00 → 1.05 over its
+// viewport pass). Honors prefers-reduced-motion (flat scale of 1).
 
 export type GalleryImage = {
   url: string;
@@ -112,7 +110,10 @@ function ZoomMainImage({ src, alt }: { src: string; alt: string }) {
   });
   // Map scroll progress through the gallery to a tiny scale curve.
   // Range [start end → end start] = element entering bottom of viewport
-  // through leaving the top. Reduced-motion users get a flat scale of 1.
+  // through leaving the top. The 1.05 ceiling is deliberate — anything
+  // larger compounds with Lenis's smoothed scroll velocity into perceptible
+  // parallax, which is the vestibular trigger WCAG 2.3.3 (Animation from
+  // Interactions, AAA) is designed to avoid.
   const scale = useTransform(scrollYProgress, [0, 0.5, 1], [1, 1.05, 1]);
 
   return (
@@ -121,6 +122,9 @@ function ZoomMainImage({ src, alt }: { src: string; alt: string }) {
         src={src}
         alt={alt}
         data-testid="pdp-main-image"
+        // WCAG 2.3.3: when prefers-reduced-motion is set, omit the scale
+        // style entirely (no MotionValue subscription, no transform) — not
+        // just scale=1 — so the image is byte-for-byte static.
         style={reduce ? undefined : { scale }}
         className="aspect-square w-full object-cover"
       />

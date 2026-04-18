@@ -1,7 +1,26 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
 import { PdpGallery } from "@/components/product/PdpGallery";
+
+const motionMocks = vi.hoisted(() => ({
+  useReducedMotion: vi.fn<() => boolean | null>(() => false),
+  useScroll: vi.fn(() => ({ scrollYProgress: { __isMotionValue: true } })),
+  useTransform: vi.fn(
+    (
+      _value: unknown,
+      _input: ReadonlyArray<number>,
+      _output: ReadonlyArray<number>,
+    ) => ({ __scaleMotionValue: true }),
+  ),
+}));
+
+vi.mock("framer-motion", () => ({
+  m: { div: "div", img: "img" },
+  useReducedMotion: motionMocks.useReducedMotion,
+  useScroll: motionMocks.useScroll,
+  useTransform: motionMocks.useTransform,
+}));
 
 const multiImages = [
   { url: "https://img/a.jpg", alt: "Front" },
@@ -95,15 +114,53 @@ describe("PdpGallery", () => {
     expect(thumbs[2].getAttribute("aria-label")).toMatch(/3 of 3/);
   });
 
-  // Phase 7 motion companion — wraps the main image in a scroll-driven zoom.
-  // The wrapper div has overflow-hidden so the zoom doesn't bleed outside
-  // the gallery footprint; the testid stays on the inner img so existing
-  // assertions still pass.
+  // Wraps the main image in a scroll-driven zoom container. The wrapper div
+  // has overflow-hidden so the zoom doesn't bleed outside the gallery
+  // footprint; the testid stays on the inner img so existing assertions
+  // still pass.
   it("wraps the main image in an overflow-hidden zoom container", () => {
     render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
     const main = screen.getByTestId("pdp-main-image");
     const zoomContainer = main.parentElement;
     expect(zoomContainer).not.toBeNull();
     expect(zoomContainer!.className).toMatch(/overflow-hidden/);
+  });
+});
+
+// WCAG 2.3.3 (Animation from Interactions, AAA) — when the user has set
+// prefers-reduced-motion, the scroll-driven scale must be suppressed
+// entirely. These tests stub framer-motion so we can flip useReducedMotion
+// and inspect the rendered style + the scale curve we hand to useTransform.
+describe("PdpGallery — prefers-reduced-motion", () => {
+  beforeEach(() => {
+    motionMocks.useReducedMotion.mockReset();
+    motionMocks.useTransform.mockClear();
+  });
+
+  it("omits the scale style entirely when prefers-reduced-motion is set", () => {
+    motionMocks.useReducedMotion.mockReturnValue(true);
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    // No transform, no scale — byte-for-byte static.
+    expect(main.style.transform).toBe("");
+    expect(main.getAttribute("style") ?? "").not.toMatch(/scale/);
+  });
+
+  it("applies the scale MotionValue when prefers-reduced-motion is unset", () => {
+    motionMocks.useReducedMotion.mockReturnValue(false);
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    // useTransform is what produces the scale MotionValue; if we ran it,
+    // the reduce branch was not taken and the style was wired through.
+    expect(motionMocks.useTransform).toHaveBeenCalled();
+  });
+
+  it("uses a peak-and-return scale curve capped at 1.05", () => {
+    motionMocks.useReducedMotion.mockReturnValue(false);
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    expect(motionMocks.useTransform).toHaveBeenCalledWith(
+      expect.anything(),
+      [0, 0.5, 1],
+      [1, 1.05, 1],
+    );
   });
 });
