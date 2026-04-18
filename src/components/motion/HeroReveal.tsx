@@ -12,8 +12,10 @@ import type { ReactNode } from "react";
 //
 // Uses `m` (not `motion`) so the LazyMotion features in MotionProvider stay
 // effective — `motion` would force-load the full feature set and blow the
-// bundle budget. Reduced-motion users get the final state immediately
-// (Framer Motion honors prefers-reduced-motion at the variant level).
+// bundle budget. Reduced-motion enforcement comes from MotionProvider's
+// MotionConfig reducedMotion="user" wrap (framer's variant-level auto-honor
+// does NOT apply to literal `initial`/`whileInView` objects like the ones
+// below — MotionConfig is what makes this WCAG 2.3.3-safe).
 export function HeroReveal({
   children,
   delay = 0,
