@@ -30,6 +30,8 @@ export type ShopCategory = {
   // state for derived categories where that copy misleads (e.g. "no active
   // sale" is a normal state, not a data gap).
   emptyStateCopy?: string;
+  // Wix CDN image URL for the category card thumbnail.
+  image?: string;
 };
 
 export const SHOP_CATEGORIES: readonly ShopCategory[] = [
@@ -38,24 +40,28 @@ export const SHOP_CATEGORIES: readonly ShopCategory[] = [
     name: "Futon Frames",
     description: "Hardwood futon frames made in North Carolina.",
     collectionSlug: "futon-frames",
+    image: "https://static.wixstatic.com/media/e04e89_4bea49a709a3470a8315b5acd7309b0f~mv2.jpg/v1/fill/w_600,h_400,q_90/file.jpg",
   },
   {
     slug: "murphy-cabinet-beds",
     name: "Murphy Cabinet Beds",
     description: "Cabinet beds that fold away without hardware in the wall.",
     collectionSlug: "murphy-cabinet-beds",
+    image: "https://static.wixstatic.com/media/e04e89_818d75df410a41e1a0721207333bc93d~mv2.jpg/v1/fill/w_600,h_400,q_90/file.jpg",
   },
   {
     slug: "platform-beds",
     name: "Platform Beds",
     description: "Low-profile solid-wood platform beds.",
     collectionSlug: "platform-beds",
+    image: "https://static.wixstatic.com/media/e04e89_8cd0de059f244e8485a600d4783caa92~mv2.jpg/v1/fill/w_600,h_400,q_90/file.jpg",
   },
   {
     slug: "mattresses",
     name: "Mattresses",
     description: "Futon mattresses and bed mattresses.",
     collectionSlug: "mattresses",
+    image: "https://static.wixstatic.com/media/e04e89_55ecd0dfe1d5498b8a3f8cb583d5089b~mv2.jpg/v1/fill/w_600,h_400,q_90/file.jpg",
   },
   {
     slug: "mattresses-sale",
@@ -65,6 +71,7 @@ export const SHOP_CATEGORIES: readonly ShopCategory[] = [
     sourceSlug: "mattresses",
     filter: "on-sale",
     emptyStateCopy: "No mattresses are on sale right now. Check back soon.",
+    image: "https://static.wixstatic.com/media/e04e89_9a21133f83c3412ebe88d2f232c56cf9~mv2.jpg/v1/fill/w_600,h_400,q_90/file.jpg",
   },
 ] as const;
 
