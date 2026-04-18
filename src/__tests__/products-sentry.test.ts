@@ -30,6 +30,9 @@ function clientThatThrows(thrown: ThrownShape) {
           },
         }),
       }),
+      getProduct: async () => {
+        throw thrown;
+      },
     },
     collections: {
       getCollectionBySlug: async () => {

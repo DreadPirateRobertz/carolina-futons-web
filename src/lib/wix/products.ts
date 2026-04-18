@@ -26,12 +26,34 @@ export async function listProducts(limit = 24) {
 export async function getProductBySlug(slug: string) {
   try {
     const client = getWixClient();
+    // Two-step fetch: slug query resolves the _id, then getProduct(_id) returns
+    // the full product including productOptions/variants. queryProducts omits
+    // productOptions from its response, leaving the PDP variant picker empty.
     const result = await client.products
       .queryProducts()
       .eq("slug", slug)
       .limit(1)
       .find();
-    return result.items[0] ?? null;
+    const stub = result.items[0] ?? null;
+    if (!stub) return null;
+    if (!stub._id) {
+      await logWixFailure(
+        "wix",
+        `getProductBySlug(${slug})`,
+        new Error(`queryProducts returned stub with no _id — malformed catalog entry`),
+      );
+      return null;
+    }
+    const full = await client.products.getProduct(stub._id);
+    if (!full.product) {
+      await logWixFailure(
+        "wix",
+        `getProductBySlug(${slug})`,
+        new Error(`getProduct(${stub._id}) returned empty envelope`),
+      );
+      return null;
+    }
+    return full.product;
   } catch (err) {
     await logWixFailure("wix", `getProductBySlug(${slug})`, err);
     return null;
