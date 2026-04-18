@@ -2,13 +2,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import {
-  getCollectionBySlug,
-  listProductsOnSale,
-  type WixProduct,
-} from "@/lib/wix/products";
+import { getCollectionBySlug } from "@/lib/wix/products";
 import { getCollectionPlp, type PlpSort } from "@/lib/wix/plp";
 import { SHOP_CATEGORIES, findCategory } from "@/lib/shop/categories";
+import {
+  resolveDerivedProducts,
+  type DerivedProductsResult,
+} from "@/lib/shop/derived-products";
+import {
+  logWixFailure,
+  toReaderError,
+  type ReaderError,
+} from "@/lib/wix/errors";
 import { ProductCard } from "@/components/product/ProductCard";
 import { PLPControls } from "@/components/plp/PLPControls";
 import { PLPPagination, buildPageUrl } from "@/components/plp/PLPPagination";
@@ -64,18 +69,6 @@ export function parseSearchParams(
   return { pageNum, sort, priceMin, priceMax, inStockOnly };
 }
 
-// cf-3qt.6.D: /shop/mattresses-sale is a virtual category — no matching Wix
-// collection. Its products are the mattresses collection filtered to items with
-// an active Wix Stores discount.
-async function resolvePrefetchedProducts(
-  categorySlug: string,
-): Promise<WixProduct[] | undefined> {
-  if (categorySlug !== "mattresses-sale") return undefined;
-  const mattressesCollection = await getCollectionBySlug("mattresses");
-  if (!mattressesCollection?._id) return [];
-  return listProductsOnSale(mattressesCollection._id);
-}
-
 export default async function PlpPage(props: {
   params: Promise<{ category: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -88,16 +81,30 @@ export default async function PlpPage(props: {
   const category = findCategory(categorySlug);
   if (!category) notFound();
 
-  const [collection, prefetchedProducts] = await Promise.all([
-    getCollectionBySlug(category.collectionSlug),
-    resolvePrefetchedProducts(categorySlug),
-  ]);
+  // Derived categories (category.filter set) skip the collection lookup — their
+  // products come from resolveDerivedProducts sourcing a different collection
+  // and applying the predicate. Regular categories fetch their own collection.
+  // Defensive: both inner readers catch their own SDK failures, so this
+  // try/catch only fires for programmer bugs (cf-3qt.6.D.F3 review). Tag with
+  // page+category context so Sentry triage can pinpoint the failed PLP route.
+  let collection: Awaited<ReturnType<typeof getCollectionBySlug>> = null;
+  let prefetchedProducts: DerivedProductsResult | undefined;
+  let pageReaderError: ReaderError | undefined;
+  try {
+    [collection, prefetchedProducts] = await Promise.all([
+      category.filter ? null : getCollectionBySlug(category.collectionSlug),
+      resolveDerivedProducts(category),
+    ]);
+  } catch (err) {
+    await logWixFailure("plp-page", `categorySlug=${categorySlug}`, err);
+    pageReaderError = toReaderError(err);
+  }
 
   const { pageNum, sort, priceMin, priceMax, inStockOnly } =
     parseSearchParams(searchParams);
 
-  // Use collection ID when available; fall back to "" for virtual categories
-  // (e.g. mattresses-sale) where getCollectionPlp will use prefetchedProducts.
+  // Use collection ID when available; fall back to "" for derived categories
+  // where getCollectionPlp will use prefetchedProducts instead.
   const { page, facets } =
     collection?._id || prefetchedProducts !== undefined
       ? await getCollectionPlp(collection?._id ?? "", {
@@ -105,7 +112,7 @@ export default async function PlpPage(props: {
           pageSize: 24,
           sort,
           filters: { priceMin, priceMax, inStockOnly: inStockOnly || undefined },
-          prefetchedProducts,
+          prefetchedProducts: prefetchedProducts?.items,
         })
       : {
           page: {
@@ -127,8 +134,14 @@ export default async function PlpPage(props: {
   // cf-3qt.6.B silent-failure fix (blaidd PR #35): an errored scan returns
   // items=[] but it is NOT an empty collection. We MUST render distinct outage
   // copy rather than "No products found" to avoid a bounce trap during Wix
-  // outages (silent-failure review required an explicit branch).
-  const readerFailed = page.error !== undefined;
+  // outages (silent-failure review required an explicit branch). The derived
+  // resolver shares the {items, error?} contract — surface its error too so
+  // a missing-source-collection or unknown-filter renders the outage UI
+  // instead of a bare "no products on sale" empty state (cf-3qt.6.D.F3).
+  const readerFailed =
+    pageReaderError !== undefined ||
+    page.error !== undefined ||
+    prefetchedProducts?.error !== undefined;
 
   const basePath = `/shop/${categorySlug}`;
 
@@ -200,9 +213,8 @@ export default async function PlpPage(props: {
       ) : page.items.length === 0 ? (
         <p className="mt-10 rounded-md bg-zinc-50 p-6 text-zinc-700">
           {facets.total === 0
-            ? categorySlug === "mattresses-sale"
-              ? "No mattresses are on sale right now. Check back soon."
-              : "No products found in this collection yet."
+            ? (category.emptyStateCopy ??
+              "No products found in this collection yet.")
             : "No products match these filters. Try adjusting the price range or removing the in-stock filter."}
         </p>
       ) : (

@@ -149,11 +149,16 @@ const EMPTY_PLP = {
 
 describe("PlpPage — mattresses-sale virtual category", () => {
   beforeEach(() => {
+    // cf-3qt.6.D.F3: mattresses-sale is a config-driven derived category
+    // (filter: "on-sale" + sourceSlug: "mattresses").
     vi.mocked(findCategory).mockReturnValue({
       slug: "mattresses-sale",
       name: "Mattresses on Sale",
       description: "Current promotions.",
       collectionSlug: "mattresses-sale",
+      sourceSlug: "mattresses",
+      filter: "on-sale",
+      emptyStateCopy: "No mattresses on sale.",
     });
     // mattresses-sale has no Wix collection; "mattresses" does
     vi.mocked(getCollectionBySlug).mockImplementation(async (slug: string) =>
