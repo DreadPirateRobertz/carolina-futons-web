@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { SHOP_CATEGORIES } from "@/lib/shop/categories";
 import { HeroReveal } from "@/components/motion/HeroReveal";
+import { HeroCarousel, type HeroSlide } from "@/components/site/HeroCarousel";
 
 // Per-card onset delay for the Shop-by-category cascade. 80ms is at the
 // just-noticeable-difference threshold for sequential visual onset (enough
@@ -12,10 +12,21 @@ import { HeroReveal } from "@/components/motion/HeroReveal";
 // maxStagger.
 const CARD_STAGGER_SECONDS = 0.08;
 
-const HERO_IMAGE_SRC =
-  "https://static.wixstatic.com/media/e04e89_cf15142c61714ecfad7852522e0a98e4~mv2.jpg/v1/fit/w_2000,h_2000,q_90/file.jpg";
-const HERO_IMAGE_ALT =
-  "Monterey mission-style hardwood futon frame in a sunlit living room";
+// TODO: replace placeholder URLs with brand assets from public/brand/ once delivered.
+const HERO_SLIDES: HeroSlide[] = [
+  {
+    src: "https://static.wixstatic.com/media/e04e89_cf15142c61714ecfad7852522e0a98e4~mv2.jpg/v1/fit/w_2000,h_2000,q_90/file.jpg",
+    alt: "Monterey mission-style hardwood futon in a sunlit living room",
+  },
+  {
+    src: "https://static.wixstatic.com/media/e04e89_cf15142c61714ecfad7852522e0a98e4~mv2.jpg/v1/fit/w_2000,h_2000,q_90/file.jpg",
+    alt: "Natural hardwood platform bed in a coastal bedroom",
+  },
+  {
+    src: "https://static.wixstatic.com/media/e04e89_cf15142c61714ecfad7852522e0a98e4~mv2.jpg/v1/fit/w_2000,h_2000,q_90/file.jpg",
+    alt: "Murphy cabinet bed open in a home office, transforming the space",
+  },
+];
 
 export default function HomePage() {
   return (
@@ -52,16 +63,7 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-cf-divider bg-white shadow-sm">
-            <Image
-              src={HERO_IMAGE_SRC}
-              alt={HERO_IMAGE_ALT}
-              fill
-              priority
-              sizes="(min-width: 768px) 50vw, 100vw"
-              className="object-cover"
-            />
-          </div>
+          <HeroCarousel slides={HERO_SLIDES} />
         </div>
       </section>
 
