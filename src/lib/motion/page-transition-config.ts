@@ -8,35 +8,34 @@ export type PageTransitionVariants = {
 };
 
 const Y_OFFSET_PX = 8;
+const DURATION_SEC = 0.2;
+const REDUCED_DURATION_SEC = 0.1;
+const EASE: Easing = "easeOut";
 
 /**
  * Page-transition variants for the PLP → PDP (and any client route change)
  * cross-fade. Phase 7 motion budget:
- *   - 200ms fade + 8px y-offset
+ *   - `DURATION_SEC` fade + `Y_OFFSET_PX` y-offset
  *   - ease-out for perceived snappiness on enter
  *
  * Under OS-level reduced-motion, drop the y-offset entirely and shorten the
- * duration to a near-instant cross-fade (users who opted out of motion still
- * benefit from a tiny opacity blink as a route-change cue — zero transition
- * would make the content swap feel abrupt).
+ * duration (users who opted out of motion still benefit from a tiny opacity
+ * blink as a route-change cue — zero transition would make the content swap
+ * feel abrupt).
  */
 export function getPageTransitionVariants({
   reducedMotion,
 }: {
   reducedMotion: boolean;
 }): PageTransitionVariants {
-  if (reducedMotion) {
-    return {
-      initial: { opacity: 0, y: 0 },
-      animate: { opacity: 1, y: 0 },
-      exit: { opacity: 0, y: 0 },
-      transition: { duration: 0.1, ease: "easeOut" },
-    };
-  }
+  const y = reducedMotion ? 0 : Y_OFFSET_PX;
+  const duration = reducedMotion ? REDUCED_DURATION_SEC : DURATION_SEC;
   return {
-    initial: { opacity: 0, y: Y_OFFSET_PX },
+    initial: { opacity: 0, y },
     animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -Y_OFFSET_PX },
-    transition: { duration: 0.2, ease: "easeOut" },
+    // Guard against JS's `-0` when y is 0 (reduced-motion path) — Object.is
+    // distinguishes +0 / -0 and tooling/snapshots occasionally surface it.
+    exit: { opacity: 0, y: y === 0 ? 0 : -y },
+    transition: { duration, ease: EASE },
   };
 }

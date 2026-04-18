@@ -17,7 +17,7 @@ describe("getPageTransitionVariants — default motion", () => {
     expect(v.exit.y).toBe(-8);
   });
 
-  it("runs at 200ms (0.2s) per Phase 7 motion budget", () => {
+  it("runs at the configured duration (Phase 7 motion budget, in seconds)", () => {
     expect(v.transition.duration).toBe(0.2);
   });
 
