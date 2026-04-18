@@ -6,6 +6,7 @@ import { FeaturedProducts } from "@/components/site/FeaturedProducts";
 import { listFeaturedProducts } from "@/lib/shop/featured";
 import { TrustBar } from "@/components/site/TrustBar";
 import { CategoryCardImage } from "@/components/site/CategoryCardImage";
+import { HeroParallax } from "@/components/site/HeroParallax";
 
 // Per-card onset delay for the Shop-by-category cascade. 80ms is at the
 // just-noticeable-difference threshold for sequential visual onset (enough
@@ -67,7 +68,9 @@ export default async function HomePage() {
               </Link>
             </div>
           </div>
-          <HeroCarousel slides={HERO_SLIDES} />
+          <HeroParallax>
+            <HeroCarousel slides={HERO_SLIDES} />
+          </HeroParallax>
         </div>
       </section>
 
