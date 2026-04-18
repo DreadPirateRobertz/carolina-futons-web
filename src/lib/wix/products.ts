@@ -9,12 +9,19 @@
 import * as Sentry from "@sentry/nextjs";
 import { getWixClient } from "@/lib/wix-client";
 
-function logWixFailure(op: string, err: unknown) {
-  const code =
-    typeof err === "object" && err !== null && "code" in err
-      ? (err as { code?: unknown }).code
-      : undefined;
-  const message = err instanceof Error ? err.message : String(err);
+// Wix SDK errors carry a `code` field (HTTP status or application error code)
+// and/or a `response` property (FetchErrorResponse). Non-Wix errors such as
+// TypeError or ReferenceError are programming mistakes — they should surface,
+// not be silently swallowed.
+type WixApiError = Error & { code?: string | number; response?: Response };
+
+function isWixApiError(err: unknown): err is WixApiError {
+  return err instanceof Error && ("code" in err || "response" in err);
+}
+
+function logWixFailure(op: string, err: WixApiError) {
+  const code = err.code;
+  const message = err.message;
   console.error(`[wix] ${op} failed`, { code, message });
   try {
     Sentry.captureException(err, { extra: { op, code } });
@@ -29,6 +36,7 @@ export async function listProducts(limit = 24) {
     const result = await client.products.queryProducts().limit(limit).find();
     return result.items;
   } catch (err) {
+    if (!isWixApiError(err)) throw err;
     logWixFailure("listProducts", err);
     return [];
   }
@@ -44,6 +52,7 @@ export async function getProductBySlug(slug: string) {
       .find();
     return result.items[0] ?? null;
   } catch (err) {
+    if (!isWixApiError(err)) throw err;
     logWixFailure(`getProductBySlug(${slug})`, err);
     return null;
   }
@@ -62,6 +71,7 @@ export async function listProductsByCollectionId(
       .find();
     return result.items;
   } catch (err) {
+    if (!isWixApiError(err)) throw err;
     logWixFailure(`listProductsByCollectionId(${collectionId})`, err);
     return [];
   }
@@ -73,6 +83,7 @@ export async function getCollectionBySlug(slug: string) {
     const result = await client.collections.getCollectionBySlug(slug);
     return result.collection ?? null;
   } catch (err) {
+    if (!isWixApiError(err)) throw err;
     logWixFailure(`getCollectionBySlug(${slug})`, err);
     return null;
   }
@@ -87,6 +98,7 @@ export async function listCollections(limit = 25) {
       .find();
     return result.items;
   } catch (err) {
+    if (!isWixApiError(err)) throw err;
     logWixFailure("listCollections", err);
     return [];
   }
