@@ -5,6 +5,8 @@ import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { CartDrawer } from "@/components/cart/CartDrawer";
+import { LenisProvider } from "@/components/motion/LenisProvider";
+import { MotionProvider } from "@/components/motion/MotionProvider";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -49,14 +51,17 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        <CartProvider>
-          <Header />
-          <main id="main" className="flex-1">
-            {children}
-          </main>
-          <Footer />
-          <CartDrawer />
-        </CartProvider>
+        <LenisProvider />
+        <MotionProvider>
+          <CartProvider>
+            <Header />
+            <main id="main" className="flex-1">
+              {children}
+            </main>
+            <Footer />
+            <CartDrawer />
+          </CartProvider>
+        </MotionProvider>
       </body>
     </html>
   );
