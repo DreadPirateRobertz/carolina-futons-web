@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 
 import { BUSINESS } from "@/lib/business/contact-info";
+
+// Wix CDN photo reused from HERO_SLIDES on the home page — one source of
+// brand imagery until /public/brand/ assets are delivered. See
+// next.config.ts for the static.wixstatic.com remotePattern allowlist.
+const ABOUT_HERO = {
+  src: "https://static.wixstatic.com/media/e04e89_cf15142c61714ecfad7852522e0a98e4~mv2.jpg/v1/fit/w_2000,h_2000,q_90/file.jpg",
+  alt: "Carolina Futons showroom in Hendersonville, NC — hardwood frames on display",
+};
 
 export const metadata: Metadata = {
   title: "About — Carolina Futons",
@@ -10,8 +19,19 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <main className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
-      <article className="mx-auto max-w-[65ch] space-y-8 font-source-sans text-cf-ink">
+    <main className="mx-auto w-full">
+      <div className="relative aspect-video max-h-96 w-full overflow-hidden">
+        <Image
+          data-testid="about-hero-image"
+          src={ABOUT_HERO.src}
+          alt={ABOUT_HERO.alt}
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
+        />
+      </div>
+      <article className="mx-auto max-w-[65ch] space-y-8 px-4 py-12 font-source-sans text-cf-ink sm:px-6 sm:py-16">
         <header className="space-y-3">
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
             Our story
