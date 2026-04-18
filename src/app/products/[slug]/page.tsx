@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { PdpInteractive } from "@/components/product/PdpInteractive";
 import { getProductBySlug } from "@/lib/wix/products";
+import { formatPlpPrice } from "@/lib/product/plp-price";
 import type {
   ProductOptionInput,
   VariantInput,
@@ -31,7 +32,9 @@ export default async function PdpPage(props: {
   if (!product) notFound();
 
   const mainUrl = product.media?.mainMedia?.image?.url;
-  const fallbackPrice = product.priceData?.formatted?.price ?? "";
+  // cf-24q: use priceRange-aware formatter so manageVariants products don't
+  // render "$0.00" before a variant is picked.
+  const fallbackPrice = formatPlpPrice(product);
   const fallbackPriceCents = toCents(product.priceData?.price);
   const descriptionText = stripHtml(product.description ?? "");
   const productOptions = (product.productOptions ?? []) as ProductOptionInput[];
