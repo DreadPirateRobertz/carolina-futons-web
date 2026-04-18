@@ -7,18 +7,8 @@ import {
   listProductsOnSale,
   type WixProduct,
 } from "@/lib/wix/products";
-import {
-  SHOP_CATEGORIES,
-  findCategory,
-  type ShopCategory,
-} from "@/lib/shop/categories";
-import {
-  getCollectionPlp,
-  type FacetCounts,
-  type PlpFilters,
-  type PlpPage,
-  type PlpSort,
-} from "@/lib/wix/plp";
+import { getCollectionPlp, type PlpSort } from "@/lib/wix/plp";
+import { SHOP_CATEGORIES, findCategory } from "@/lib/shop/categories";
 import { ProductCard } from "@/components/product/ProductCard";
 import { PLPControls } from "@/components/plp/PLPControls";
 import { PLPPagination } from "@/components/plp/PLPPagination";
@@ -50,9 +40,13 @@ const VALID_SORTS = new Set<PlpSort>([
   "newest",
 ]);
 
-export function parseSearchParams(sp: Record<string, string | string[] | undefined>) {
+export function parseSearchParams(
+  sp: Record<string, string | string[] | undefined>,
+) {
   const raw = (key: string) =>
-    Array.isArray(sp[key]) ? (sp[key] as string[])[0] : (sp[key] as string | undefined);
+    Array.isArray(sp[key])
+      ? (sp[key] as string[])[0]
+      : (sp[key] as string | undefined);
 
   const pageNum = Math.max(1, parseInt(raw("page") ?? "1", 10) || 1);
   const rawSort = raw("sort") ?? "featured";
@@ -66,82 +60,16 @@ export function parseSearchParams(sp: Record<string, string | string[] | undefin
   return { pageNum, sort, priceMin, priceMax, inStockOnly };
 }
 
-type PlpResult = { page: PlpPage<WixProduct>; facets: FacetCounts };
-
-const emptyPlp: PlpResult = {
-  page: {
-    items: [],
-    total: 0,
-    page: 1,
-    pageSize: 24,
-    hasNext: false,
-    hasPrev: false,
-  },
-  facets: { total: 0, inStock: 0, outOfStock: 0, priceBuckets: [] },
-};
-
-// cf-3qt.6.D: /shop/mattresses-sale is derived from the mattresses collection
-// filtered to active Wix Stores discounts — not a hand-curated collection.
-// Bypasses getCollectionPlp (which expects a collectionId) and applies
-// filter + paginate inline so the sale page still honors PLPControls.
-async function resolveSaleDerivedPlp(
-  collectionId: string,
-  opts: { pageNum: number; pageSize: number; filters: PlpFilters },
-): Promise<PlpResult> {
-  const all = await listProductsOnSale(collectionId);
-  const filtered = all.filter((p) => {
-    const { priceMin, priceMax, inStockOnly } = opts.filters;
-    if (inStockOnly && p.stock?.inStock === false) return false;
-    const price = p.priceRange?.minValue ?? p.priceData?.price ?? 0;
-    if (priceMin !== undefined && price < priceMin) return false;
-    if (priceMax !== undefined && price > priceMax) return false;
-    return true;
-  });
-  const start = (opts.pageNum - 1) * opts.pageSize;
-  const slice = filtered.slice(start, start + opts.pageSize);
-  return {
-    page: {
-      items: slice,
-      total: filtered.length,
-      page: opts.pageNum,
-      pageSize: opts.pageSize,
-      hasNext: start + slice.length < filtered.length,
-      hasPrev: start > 0,
-    },
-    facets: {
-      total: all.length,
-      inStock: all.filter((p) => p.stock?.inStock !== false).length,
-      outOfStock: all.filter((p) => p.stock?.inStock === false).length,
-      priceBuckets: [],
-    },
-  };
-}
-
-async function resolveCategoryPlp(
-  category: ShopCategory,
-  opts: {
-    pageNum: number;
-    sort: PlpSort;
-    filters: PlpFilters;
-  },
-): Promise<PlpResult> {
-  const sourceSlug =
-    category.slug === "mattresses-sale" ? "mattresses" : category.collectionSlug;
-  const collection = await getCollectionBySlug(sourceSlug);
-  if (!collection?._id) return emptyPlp;
-  if (category.slug === "mattresses-sale") {
-    return resolveSaleDerivedPlp(collection._id, {
-      pageNum: opts.pageNum,
-      pageSize: 24,
-      filters: opts.filters,
-    });
-  }
-  return getCollectionPlp(collection._id, {
-    page: opts.pageNum,
-    pageSize: 24,
-    sort: opts.sort,
-    filters: opts.filters,
-  });
+// cf-3qt.6.D: /shop/mattresses-sale is a virtual category — no matching Wix
+// collection. Its products are the mattresses collection filtered to items with
+// an active Wix Stores discount.
+async function resolvePrefetchedProducts(
+  categorySlug: string,
+): Promise<WixProduct[] | undefined> {
+  if (categorySlug !== "mattresses-sale") return undefined;
+  const mattressesCollection = await getCollectionBySlug("mattresses");
+  if (!mattressesCollection?._id) return [];
+  return listProductsOnSale(mattressesCollection._id);
 }
 
 export default async function PlpPage(props: {
@@ -156,20 +84,38 @@ export default async function PlpPage(props: {
   const category = findCategory(categorySlug);
   if (!category) notFound();
 
+  const [collection, prefetchedProducts] = await Promise.all([
+    getCollectionBySlug(category.collectionSlug),
+    resolvePrefetchedProducts(categorySlug),
+  ]);
+
   const { pageNum, sort, priceMin, priceMax, inStockOnly } =
     parseSearchParams(searchParams);
 
-  const filters: PlpFilters = {
-    priceMin,
-    priceMax,
-    inStockOnly: inStockOnly || undefined,
-  };
-
-  const { page, facets } = await resolveCategoryPlp(category, {
-    pageNum,
-    sort,
-    filters,
-  });
+  const { page, facets } = collection?._id
+    ? await getCollectionPlp(collection._id, {
+        page: pageNum,
+        pageSize: 24,
+        sort,
+        filters: { priceMin, priceMax, inStockOnly: inStockOnly || undefined },
+        prefetchedProducts,
+      })
+    : {
+        page: {
+          items: [],
+          total: 0,
+          page: 1,
+          pageSize: 24,
+          hasNext: false,
+          hasPrev: false,
+        },
+        facets: {
+          total: 0,
+          inStock: 0,
+          outOfStock: 0,
+          priceBuckets: [],
+        },
+      };
 
   const basePath = `/shop/${categorySlug}`;
 
@@ -205,7 +151,7 @@ export default async function PlpPage(props: {
       {page.items.length === 0 ? (
         <p className="mt-10 rounded-md bg-zinc-50 p-6 text-zinc-700">
           {facets.total === 0
-            ? category.slug === "mattresses-sale"
+            ? categorySlug === "mattresses-sale"
               ? "No mattresses are on sale right now. Check back soon."
               : "No products found in this collection yet."
             : "No products match these filters. Try adjusting the price range or removing the in-stock filter."}
