@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { SHOP_CATEGORIES } from "@/lib/shop/categories";
+import { HeroReveal } from "@/components/motion/HeroReveal";
 
 const HERO_IMAGE_SRC =
   "https://static.wixstatic.com/media/e04e89_cf15142c61714ecfad7852522e0a98e4~mv2.jpg/v1/fit/w_2000,h_2000,q_90/file.jpg";
@@ -16,13 +17,17 @@ export default function HomePage() {
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-cf-cta">
               Family owned since 1991
             </p>
-            <h1 className="mt-4 font-heading text-4xl font-bold uppercase leading-[1.05] tracking-tight text-cf-navy sm:text-5xl md:text-6xl">
-              Quality futons &amp; furniture for your home
-            </h1>
-            <p className="mt-5 max-w-xl text-lg text-cf-charcoal/80">
-              Hendersonville, NC. Hardwood frames built by hand, mattresses we
-              actually sleep on, and shipping that shows up.
-            </p>
+            <HeroReveal>
+              <h1 className="mt-4 font-heading text-4xl font-bold uppercase leading-[1.05] tracking-tight text-cf-navy sm:text-5xl md:text-6xl">
+                Quality futons &amp; furniture for your home
+              </h1>
+            </HeroReveal>
+            <HeroReveal delay={0.15}>
+              <p className="mt-5 max-w-xl text-lg text-cf-charcoal/80">
+                Hendersonville, NC. Hardwood frames built by hand, mattresses
+                we actually sleep on, and shipping that shows up.
+              </p>
+            </HeroReveal>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/shop"
