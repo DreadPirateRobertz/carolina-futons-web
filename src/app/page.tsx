@@ -5,6 +5,7 @@ import { HeroWordStagger } from "@/components/motion/HeroWordStagger";
 import { HeroCarousel, type HeroSlide } from "@/components/site/HeroCarousel";
 import { FeaturedProducts } from "@/components/site/FeaturedProducts";
 import { listFeaturedProducts } from "@/lib/shop/featured";
+import { StatsStrip } from "@/components/site/StatsStrip";
 import { TestimonialsStrip } from "@/components/site/TestimonialsStrip";
 import { TrustBar } from "@/components/site/TrustBar";
 import { CategoryCardImage } from "@/components/site/CategoryCardImage";
@@ -130,6 +131,8 @@ export default async function HomePage() {
       </section>
 
       <FeaturedProducts products={featured} />
+
+      <StatsStrip />
 
       <TestimonialsStrip />
 
