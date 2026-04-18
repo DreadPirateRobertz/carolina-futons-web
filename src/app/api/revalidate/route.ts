@@ -4,14 +4,22 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const dynamic = "force-dynamic";
 
+// Webhooks with a `ts` field older than this are rejected as replays.
+const REPLAY_WINDOW_MS = 5 * 60 * 1000;
+
 interface WixWebhookBody {
   collectionId?: string;
   itemId?: string;
   eventType?: string;
   tags?: string[];
+  ts?: number;
 }
 
-function verifySignature(rawBody: string, signatureHeader: string | null, secret: string): boolean {
+function verifySignature(
+  rawBody: string,
+  signatureHeader: string | null,
+  secret: string,
+): boolean {
   if (!signatureHeader) return false;
   const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
   const got = signatureHeader.startsWith("sha256=")
@@ -19,7 +27,8 @@ function verifySignature(rawBody: string, signatureHeader: string | null, secret
     : signatureHeader;
   const expectedBuf = Buffer.from(expected, "hex");
   const gotBuf = Buffer.from(got, "hex");
-  if (expectedBuf.length !== gotBuf.length || expectedBuf.length === 0) return false;
+  if (expectedBuf.length !== gotBuf.length || expectedBuf.length === 0)
+    return false;
   return timingSafeEqual(expectedBuf, gotBuf);
 }
 
@@ -33,16 +42,36 @@ export async function POST(req: NextRequest) {
   }
 
   const rawBody = await req.text();
-  const signature = req.headers.get("x-wix-signature") ?? req.headers.get("x-hub-signature-256");
+  const signature =
+    req.headers.get("x-wix-signature") ??
+    req.headers.get("x-hub-signature-256");
   if (!verifySignature(rawBody, signature, secret)) {
-    return NextResponse.json({ ok: false, error: "invalid signature" }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: "invalid signature" },
+      { status: 401 },
+    );
   }
 
   let body: WixWebhookBody;
   try {
     body = rawBody.length > 0 ? (JSON.parse(rawBody) as WixWebhookBody) : {};
   } catch {
-    return NextResponse.json({ ok: false, error: "invalid json" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "invalid json" },
+      { status: 400 },
+    );
+  }
+
+  // Replay protection: reject if ts is present and outside the allowed window.
+  // Webhooks without ts (legacy callers before F2) are still accepted.
+  if (typeof body.ts === "number") {
+    const age = Math.abs(Date.now() - body.ts);
+    if (age > REPLAY_WINDOW_MS) {
+      return NextResponse.json(
+        { ok: false, error: "timestamp out of window" },
+        { status: 401 },
+      );
+    }
   }
 
   const tags = new Set<string>();
