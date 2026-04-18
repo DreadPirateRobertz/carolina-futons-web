@@ -262,4 +262,48 @@ describe("PdpGallery — View Transitions API", () => {
     const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
     expect(main.src).toBe("https://img/c.jpg");
   });
+
+  // cf-bq1q: miquella silent-failure-hunter P2. `.finished` rejects on
+  // cancel/abort; a bare `.finally` would swallow the rejection and surface
+  // as an unhandled-rejection warning in devtools + Sentry. The fix chains
+  // `.catch(logBreadcrumb).finally(cleanup)` — breadcrumb fires, cleanup
+  // still runs.
+  it("swallows a `.finished` rejection via .catch and still runs cleanup", async () => {
+    let rejectFinished: ((reason: unknown) => void) | undefined;
+    const rejectingImpl = (cb: () => void) => {
+      cb();
+      return {
+        finished: new Promise<undefined>((_resolve, reject) => {
+          rejectFinished = reject;
+        }),
+        skipTransition: vi.fn(),
+      };
+    };
+    installViewTransitionStub(rejectingImpl);
+
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const unhandledSpy = vi.fn();
+    const originalOnUnhandled = window.onunhandledrejection;
+    window.addEventListener("unhandledrejection", unhandledSpy);
+
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const thumbs = screen.getAllByRole("tab");
+    fireEvent.click(thumbs[1]);
+
+    rejectFinished?.(new Error("vt aborted"));
+    // Flush microtasks so the .catch handler runs before assertions.
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("pdp-gallery"),
+      expect.any(Error),
+    );
+    // The .catch eats the rejection so no unhandled-rejection fires.
+    expect(unhandledSpy).not.toHaveBeenCalled();
+
+    window.removeEventListener("unhandledrejection", unhandledSpy);
+    window.onunhandledrejection = originalOnUnhandled;
+    warnSpy.mockRestore();
+  });
 });

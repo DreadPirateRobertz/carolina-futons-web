@@ -122,9 +122,19 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
       });
     });
     activeTransition.current = t;
-    void t.finished.finally(() => {
-      if (activeTransition.current === t) activeTransition.current = null;
-    });
+    // `.finished` rejects when the animation is cancelled (rapid click →
+    // skipTransition) or when the browser aborts mid-morph. Swallowing the
+    // rejection with a bare `.finally` would surface as an unhandled promise
+    // rejection in devtools and Sentry. `.catch` logs a breadcrumb (console
+    // only — the morph is UX polish, not a user-visible error), and the
+    // chained `.finally` still runs so the ref cleanup is unconditional.
+    void t.finished
+      .catch((err: unknown) => {
+        console.warn("[pdp-gallery] view-transition did not finish", err);
+      })
+      .finally(() => {
+        if (activeTransition.current === t) activeTransition.current = null;
+      });
   };
 
   const handleKey = (event: React.KeyboardEvent) => {
