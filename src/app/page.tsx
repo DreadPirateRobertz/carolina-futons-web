@@ -2,6 +2,8 @@ import Link from "next/link";
 import { SHOP_CATEGORIES } from "@/lib/shop/categories";
 import { HeroReveal } from "@/components/motion/HeroReveal";
 import { HeroCarousel, type HeroSlide } from "@/components/site/HeroCarousel";
+import { FeaturedProducts } from "@/components/site/FeaturedProducts";
+import { listFeaturedProducts } from "@/lib/shop/featured";
 
 // Per-card onset delay for the Shop-by-category cascade. 80ms is at the
 // just-noticeable-difference threshold for sequential visual onset (enough
@@ -28,7 +30,8 @@ const HERO_SLIDES: HeroSlide[] = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const featured = await listFeaturedProducts();
   return (
     <>
       <section className="bg-cf-cream">
@@ -109,6 +112,8 @@ export default function HomePage() {
           ))}
         </ul>
       </section>
+
+      <FeaturedProducts products={featured} />
 
       <section className="border-t border-cf-divider bg-cf-sand/40">
         <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-14 sm:grid-cols-3 sm:px-6 lg:px-8">
