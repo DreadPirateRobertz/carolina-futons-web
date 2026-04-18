@@ -2,7 +2,7 @@
 // The page itself is a server component — tested via unit-level helpers extracted
 // from the module rather than a full render.
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Module-level stubs for server-side dependencies pulled in transitively
 vi.mock("@sentry/nextjs", () => ({
@@ -13,6 +13,7 @@ vi.mock("@/lib/wix-client", () => ({ getWixClient: vi.fn() }));
 vi.mock("@/lib/wix/products", () => ({
   getCollectionBySlug: vi.fn(),
   listProductsByCollectionId: vi.fn(),
+  listProductsOnSale: vi.fn().mockResolvedValue([]),
 }));
 vi.mock("@/lib/wix/plp", () => ({
   getCollectionPlp: vi.fn(),
@@ -74,7 +75,7 @@ describe("PLPPagination buildPageUrl", () => {
 
 // ── parseSearchParams (re-exported for test access) ────────────────────────
 
-import { parseSearchParams } from "@/app/shop/[category]/page";
+import PlpPage, { parseSearchParams } from "@/app/shop/[category]/page";
 
 describe("parseSearchParams", () => {
   it("defaults: page=1, sort=featured, no filters", () => {
@@ -132,5 +133,49 @@ describe("parseSearchParams", () => {
 
   it("accepts priceMin=0 as a valid lower bound", () => {
     expect(parseSearchParams({ priceMin: "0" }).priceMin).toBe(0);
+  });
+});
+
+// ── PlpPage: virtual category (mattresses-sale) ────────────────────────────
+
+import { getCollectionBySlug, listProductsOnSale } from "@/lib/wix/products";
+import { getCollectionPlp } from "@/lib/wix/plp";
+import { findCategory } from "@/lib/shop/categories";
+
+const EMPTY_PLP = {
+  page: { items: [], total: 0, page: 1, pageSize: 24, hasNext: false, hasPrev: false },
+  facets: { total: 0, inStock: 0, outOfStock: 0, priceBuckets: [] },
+};
+
+describe("PlpPage — mattresses-sale virtual category", () => {
+  beforeEach(() => {
+    vi.mocked(findCategory).mockReturnValue({
+      slug: "mattresses-sale",
+      name: "Mattresses on Sale",
+      description: "Current promotions.",
+      collectionSlug: "mattresses-sale",
+    });
+    // mattresses-sale has no Wix collection; "mattresses" does
+    vi.mocked(getCollectionBySlug).mockImplementation(async (slug: string) =>
+      slug === "mattresses" ? ({ _id: "mattresses-col-id" } as never) : null,
+    );
+    // listProductsOnSale fetches from the mattresses collection
+    vi.mocked(listProductsOnSale).mockResolvedValue([
+      { _id: "m1", name: "Sale Mattress" } as never,
+    ]);
+    vi.mocked(getCollectionPlp).mockResolvedValue(EMPTY_PLP);
+  });
+
+  it("calls getCollectionPlp with prefetchedProducts even when collection is null", async () => {
+    await PlpPage({
+      params: Promise.resolve({ category: "mattresses-sale" }),
+      searchParams: Promise.resolve({}),
+    });
+    expect(getCollectionPlp).toHaveBeenCalledWith(
+      "",
+      expect.objectContaining({
+        prefetchedProducts: [{ _id: "m1", name: "Sale Mattress" }],
+      }),
+    );
   });
 });

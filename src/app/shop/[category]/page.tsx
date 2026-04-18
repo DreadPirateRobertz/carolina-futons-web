@@ -96,30 +96,33 @@ export default async function PlpPage(props: {
   const { pageNum, sort, priceMin, priceMax, inStockOnly } =
     parseSearchParams(searchParams);
 
-  const { page, facets } = collection?._id
-    ? await getCollectionPlp(collection._id, {
-        page: pageNum,
-        pageSize: 24,
-        sort,
-        filters: { priceMin, priceMax, inStockOnly: inStockOnly || undefined },
-        prefetchedProducts,
-      })
-    : {
-        page: {
-          items: [],
-          total: 0,
-          page: 1,
+  // Use collection ID when available; fall back to "" for virtual categories
+  // (e.g. mattresses-sale) where getCollectionPlp will use prefetchedProducts.
+  const { page, facets } =
+    collection?._id || prefetchedProducts !== undefined
+      ? await getCollectionPlp(collection?._id ?? "", {
+          page: pageNum,
           pageSize: 24,
-          hasNext: false,
-          hasPrev: false,
-        },
-        facets: {
-          total: 0,
-          inStock: 0,
-          outOfStock: 0,
-          priceBuckets: [],
-        },
-      };
+          sort,
+          filters: { priceMin, priceMax, inStockOnly: inStockOnly || undefined },
+          prefetchedProducts,
+        })
+      : {
+          page: {
+            items: [],
+            total: 0,
+            page: 1,
+            pageSize: 24,
+            hasNext: false,
+            hasPrev: false,
+          },
+          facets: {
+            total: 0,
+            inStock: 0,
+            outOfStock: 0,
+            priceBuckets: [],
+          },
+        };
 
   const basePath = `/shop/${categorySlug}`;
 
