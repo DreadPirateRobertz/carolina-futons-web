@@ -17,13 +17,13 @@ describe("TermsPage — smoke", () => {
     ).toBeDefined();
   });
 
-  it("exposes the hello@carolinafutons.com mailto contact (compliance net)", () => {
+  it("exposes the carolinafutons@gmail.com mailto contact (compliance net)", () => {
     render(<TermsPage />);
     const mailto = screen.getByRole("link", {
-      name: /hello@carolinafutons\.com/i,
+      name: /carolinafutons@gmail\.com/i,
     });
     expect(mailto.getAttribute("href")).toBe(
-      "mailto:hello@carolinafutons.com",
+      "mailto:carolinafutons@gmail.com",
     );
   });
 });
