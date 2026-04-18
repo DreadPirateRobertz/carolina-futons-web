@@ -1,4 +1,4 @@
-"use client";
+"use client"; // window.location.href redirect requires a Client Component — cannot be server-rendered
 
 import { useState } from "react";
 import Link from "next/link";
@@ -14,12 +14,20 @@ export default function AccountPage() {
       const res = await fetch("/api/auth/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // callbackUrl is the post-login destination (stored as originalUri in the
+        // API route), NOT the OAuth callback URL — that is always /api/auth/session.
         body: JSON.stringify({ callbackUrl: "/dashboard" }),
       });
-      if (!res.ok) throw new Error("auth_init_failed");
-      const { authUrl } = (await res.json()) as { authUrl: string };
-      window.location.href = authUrl;
-    } catch {
+      if (!res.ok) {
+        throw new Error(`auth_init_failed: HTTP ${res.status}`);
+      }
+      const data = (await res.json()) as { authUrl?: string };
+      if (typeof data.authUrl !== "string" || !data.authUrl) {
+        throw new Error("auth_init_failed: missing authUrl in response");
+      }
+      window.location.href = data.authUrl;
+    } catch (err) {
+      console.error("[AccountPage] sign-in init failed", err);
       setError("Could not start sign-in. Please try again.");
       setLoading(false);
     }

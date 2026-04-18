@@ -7,6 +7,7 @@ export const metadata: Metadata = {
     "Visit the Carolina Futons showroom in Hendersonville, NC. Try every futon, mattress, and Murphy bed before you buy.",
 };
 
+// Single source of truth for showroom details — update here to propagate to all copy, links, and map embed.
 const STORE = {
   name: "Carolina Futons",
   address: "1 Gallery Blvd",
@@ -74,7 +75,7 @@ export default function VisitPage() {
             href={mapsHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-6 inline-flex h-10 items-center justify-center rounded-md border border-cf-navy px-5 text-sm font-medium text-cf-navy transition-colors hover:bg-cf-navy hover:text-cf-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="mt-6 inline-flex h-10 items-center justify-center rounded-md border border-cf-navy px-5 text-sm font-medium text-cf-navy transition-colors hover:bg-cf-navy hover:text-cf-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             Get directions
           </a>
