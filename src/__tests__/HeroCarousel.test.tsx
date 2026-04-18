@@ -440,3 +440,31 @@ describe("HeroCarousel — reduced motion", () => {
     vi.useRealTimers();
   });
 });
+
+// WCAG 2.2.2 (Pause, Stop, Hide) — an always-visible pause/play control is
+// required for auto-advancing content so keyboard and SR users can stop motion
+// without relying on hover or focus. cf-p7-hero-carousel-pause.
+describe("HeroCarousel — pause/play button", () => {
+  beforeEach(() => {
+    mockMatchMedia(false);
+    vi.useFakeTimers();
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("renders a pause button with accessible label", () => {
+    renderCarousel();
+    expect(
+      screen.getByRole("button", { name: /pause slideshow/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("clicking the pause button stops autoplay", () => {
+    renderCarousel();
+    const pauseBtn = screen.getByRole("button", { name: /pause slideshow/i });
+    fireEvent.click(pauseBtn);
+    expect(screen.getByTestId("hero-carousel")).toHaveAttribute(
+      "data-autoplay",
+      "false",
+    );
+  });
+});

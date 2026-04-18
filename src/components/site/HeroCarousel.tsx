@@ -50,9 +50,10 @@ function HeroCarouselInner({ slides }: { slides: ReadonlyArray<HeroSlide> }) {
   const [active, setActive] = useState(0);
   const [hoverPaused, setHoverPaused] = useState(false);
   const [focusPaused, setFocusPaused] = useState(false);
+  const [manualPaused, setManualPaused] = useState(false);
   const reducedMotion = useReducedMotion();
 
-  const paused = hoverPaused || focusPaused;
+  const paused = hoverPaused || focusPaused || manualPaused;
   const autoplay = !reducedMotion && !paused && slides.length > 1;
 
   // Advance the slide every DWELL_MS ms while autoplay is active.
@@ -139,6 +140,26 @@ function HeroCarouselInner({ slides }: { slides: ReadonlyArray<HeroSlide> }) {
           />
         </div>
       ))}
+
+      {/* WCAG 2.2.2: always-visible pause/play control for auto-advancing content. */}
+      {slides.length > 1 && !reducedMotion && (
+        <button
+          type="button"
+          aria-label={manualPaused ? "Play slideshow" : "Pause slideshow"}
+          onClick={() => setManualPaused((prev) => !prev)}
+          className="absolute bottom-3 right-3 flex h-7 w-7 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-colors hover:bg-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+        >
+          {manualPaused ? (
+            <svg aria-hidden="true" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3">
+              <path d="M3 2.5l10 5.5-10 5.5V2.5z" />
+            </svg>
+          ) : (
+            <svg aria-hidden="true" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3">
+              <path d="M5 3h2v10H5V3zm4 0h2v10H9V3z" />
+            </svg>
+          )}
+        </button>
+      )}
 
       {/* Dot indicators */}
       <div
