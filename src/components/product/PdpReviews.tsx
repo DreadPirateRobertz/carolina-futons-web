@@ -48,14 +48,17 @@ export function PdpReviews({
 
       {stats ? (
         <p
-          className="mt-3 text-sm text-cf-espresso/80"
+          className="mt-3 flex flex-wrap items-center gap-x-2 text-sm text-cf-espresso/80"
           data-slot="pdp-reviews-aggregate"
+          aria-label={`${stats.rating.toFixed(1)} out of 5 stars, ${stats.count} ${stats.count === 1 ? "review" : "reviews"}`}
         >
-          <span aria-label={`${stats.rating} out of 5 stars`}>
+          <span aria-hidden="true" className="inline-flex gap-0.5">
             <Stars rating={stats.rating} />
-          </span>{" "}
-          <span className="ml-1 font-medium">{stats.rating.toFixed(1)}</span>{" "}
-          <span className="text-cf-espresso/60">
+          </span>
+          <span aria-hidden="true" className="font-medium">
+            {stats.rating.toFixed(1)}
+          </span>
+          <span aria-hidden="true" className="text-cf-espresso/60">
             ({stats.count} {stats.count === 1 ? "review" : "reviews"})
           </span>
         </p>
@@ -125,7 +128,10 @@ function Stars({ rating }: { rating: number }) {
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
+  // Echoing the raw input back into the DOM on parse failure leaks malformed
+  // data to the user. "—" is the visible placeholder; the SEED is hardcoded
+  // so this branch only fires if a future loader feeds garbage.
+  if (Number.isNaN(d.getTime())) return "—";
   return d.toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
@@ -133,22 +139,30 @@ function formatDate(iso: string): string {
   });
 }
 
-// Slug-to-category mapping for fallback when no review names this product.
-// Order matters: "murphy" must precede "bed" so a Murphy bed slug isn't
-// caught as a frame.
+const FRAME_TOKENS = new Set([
+  "frame",
+  "frames",
+  "futon",
+  "futons",
+  "daybed",
+  "daybeds",
+]);
+// Hyphenated phrases that should also map to frames. Substring-checking
+// these is safe because the hyphen acts as a word boundary on both sides.
+const FRAME_PHRASES = ["platform-bed", "bed-frame"];
+
+// Match `-`-delimited tokens (or curated multi-token phrases) so unrelated
+// substrings like "frameworks-comparison" or "subframe-x" don't pull
+// frames reviews. Murphy precedence is enforced by checking it first.
 function categoryForSlug(slug: string): ReviewCategory | null {
   const s = slug.toLowerCase();
-  if (s.includes("murphy")) return "murphy-beds";
-  if (s.includes("mattress")) return "mattresses";
-  if (
-    s.includes("frame") ||
-    s.includes("futon") ||
-    s.includes("daybed") ||
-    s.includes("platform-bed") ||
-    s.includes("bed-frame")
-  ) {
-    return "frames";
+  const tokens = s.split("-");
+  if (tokens.includes("murphy")) return "murphy-beds";
+  if (tokens.includes("mattress") || tokens.includes("mattresses")) {
+    return "mattresses";
   }
+  if (tokens.some((t) => FRAME_TOKENS.has(t))) return "frames";
+  if (FRAME_PHRASES.some((p) => s.includes(p))) return "frames";
   return null;
 }
 
@@ -157,20 +171,23 @@ function pickReviews(
   productSlug: string,
   limit: number,
 ): readonly Review[] {
-  // 1. Reviews that name this product.
-  const named = REVIEWS.filter(
-    (r) => r.productName.toLowerCase() === productName.toLowerCase(),
-  );
-  if (named.length > 0) return named.slice(0, limit);
+  // Trim trailing whitespace so a stray space on `product.name` doesn't
+  // silently demote an exact match to the category fallback.
+  const normalized = productName.trim().toLowerCase();
+  if (normalized) {
+    const named = REVIEWS.filter(
+      (r) => r.productName.toLowerCase() === normalized,
+    );
+    if (named.length > 0) return named.slice(0, limit);
+  }
 
-  // 2. Reviews in the same category (mapped from slug).
   const category = categoryForSlug(productSlug);
   if (category) {
     const inCategory = REVIEWS.filter((r) => r.category === category);
     if (inCategory.length > 0) return inCategory.slice(0, limit);
   }
 
-  // 3. No fallback to all reviews — the empty state is more honest than
-  // showing reviews of unrelated products.
+  // No fallback to "show all reviews" — unrelated reviews on a PDP would
+  // mislead more than an empty state.
   return [];
 }

@@ -1,11 +1,20 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 
 import { PdpReviews } from "@/components/product/PdpReviews";
 
+vi.mock("@/lib/product/review-stats", async (importActual) => {
+  const actual =
+    await importActual<typeof import("@/lib/product/review-stats")>();
+  return {
+    ...actual,
+    getReviewStats: vi.fn(actual.getReviewStats),
+  };
+});
+import * as reviewStats from "@/lib/product/review-stats";
+
 describe("PdpReviews", () => {
   it("renders aggregate rating + count from getReviewStats SEED for known slug", () => {
-    // monterey-futon: rating 4.9, count 42 (per review-stats SEED)
     render(<PdpReviews productName="Monterey Futon" productSlug="monterey-futon" />);
 
     expect(
@@ -15,25 +24,35 @@ describe("PdpReviews", () => {
     expect(screen.getByText(/\(42 reviews\)/)).toBeTruthy();
   });
 
-  it("aggregate uses 'review' singular when count is 1", () => {
-    // No SEED entry for this slug; hash returns at least 8, so build a
-    // direct render path instead — assert the generic plural never produces
-    // a "1 reviews" string by using a synthetic slug with the singular
-    // boundary covered indirectly via the production code path. We assert
-    // pluralization correctness via the SEED values where count > 1.
-    render(<PdpReviews productName="Anything" productSlug="monterey-futon" />);
-    expect(screen.getByText(/\(42 reviews\)/)).toBeTruthy();
-    expect(screen.queryByText(/\(42 review\)/)).toBeNull();
+  it("uses 'review' singular when count is 1", () => {
+    vi.mocked(reviewStats.getReviewStats).mockReturnValueOnce({
+      rating: 5,
+      count: 1,
+    });
+    render(<PdpReviews productName="Solo" productSlug="some-slug" />);
+    expect(screen.getByText(/\(1 review\)/)).toBeTruthy();
+    expect(screen.queryByText(/\(1 reviews\)/)).toBeNull();
   });
 
-  it("falls back to category match when no review names this product", () => {
-    // Slug includes "murphy" → category murphy-beds. REVIEWS has 2 murphy
-    // entries (Studio Murphy Bed, Asheville Murphy Bed).
+  it("suppresses the aggregate paragraph when getReviewStats returns null", () => {
+    vi.mocked(reviewStats.getReviewStats).mockReturnValueOnce(null);
+    const { container } = render(
+      <PdpReviews productName="Anything" productSlug="any-slug" />,
+    );
+    expect(
+      container.querySelector('[data-slot="pdp-reviews-aggregate"]'),
+    ).toBeNull();
+    // Section heading still renders even without stats
+    expect(
+      screen.getByRole("heading", { name: /customer reviews/i }),
+    ).toBeTruthy();
+  });
+
+  it("falls back to murphy-beds reviews when slug contains the 'murphy' token", () => {
     render(
       <PdpReviews productName="Unrelated Name" productSlug="murphy-cabinet-bed" />,
     );
 
-    // The headings of the two seeded murphy reviews
     expect(
       screen.getByRole("heading", { name: /saved our tiny guest room/i }),
     ).toBeTruthy();
@@ -44,10 +63,76 @@ describe("PdpReviews", () => {
     ).toBeTruthy();
   });
 
+  it("falls back to mattresses reviews when slug contains the 'mattress' token", () => {
+    render(
+      <PdpReviews
+        productName="Generic Bedding Item"
+        productSlug="classic-8-inch-mattress"
+      />,
+    );
+    // Both seeded mattress-category reviews appear.
+    expect(
+      screen.getByRole("heading", { name: /comfortable for sitting/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: /real wool, real difference/i }),
+    ).toBeTruthy();
+  });
+
+  it("falls back to frames reviews on slugs with 'frame', 'futon', or 'daybed' tokens", () => {
+    for (const slug of [
+      "hardwood-bed-frame",
+      "monterey-futon",
+      "craftsman-daybed",
+    ]) {
+      const { unmount } = render(
+        <PdpReviews productName="Unrelated Name For Fallback" productSlug={slug} />,
+      );
+      // Solid hardwood is the seeded frames review with the most distinctive title.
+      expect(
+        screen.getByRole("heading", { name: /built to last/i }),
+      ).toBeTruthy();
+      unmount();
+    }
+  });
+
+  it("token match blocks substring collisions — 'frameworks-comparison' must not pull frames reviews", () => {
+    // The old `s.includes("frame")` substring check would match any slug
+    // with "frame" as a substring (frameworks, subframe, etc). Token-based
+    // mapping requires "frame"/"futon"/"daybed" to appear as their own
+    // `-`-delimited tokens.
+    render(
+      <PdpReviews
+        productName="Frameworks Comparison Guide"
+        productSlug="frameworks-comparison-guide"
+      />,
+    );
+    expect(
+      screen.queryByRole("heading", { name: /built to last/i }),
+    ).toBeNull();
+    expect(screen.getByText(/be the first to share your story/i)).toBeTruthy();
+  });
+
+  it("murphy-bed-frame routes to murphy-beds, not frames (precedence)", () => {
+    // Critical ordering invariant: a Murphy product whose slug also contains
+    // a frame token must NOT be miscategorized as frames.
+    render(
+      <PdpReviews
+        productName="Unrelated Name"
+        productSlug="murphy-bed-frame"
+      />,
+    );
+    // Murphy review present
+    expect(
+      screen.getByRole("heading", { name: /saved our tiny guest room/i }),
+    ).toBeTruthy();
+    // Frames-only review absent
+    expect(
+      screen.queryByRole("heading", { name: /built to last/i }),
+    ).toBeNull();
+  });
+
   it("prefers exact productName match over category fallback", () => {
-    // "Highland Wool Mattress" is a single entry in REVIEWS (mattresses).
-    // The Heritage Futon Mattress entry is also mattresses; ensure ONLY
-    // the Highland Wool Mattress review appears when we name it.
     render(
       <PdpReviews
         productName="Highland Wool Mattress"
@@ -63,8 +148,19 @@ describe("PdpReviews", () => {
     ).toBeNull();
   });
 
+  it("matches productName case-insensitively and trims trailing whitespace", () => {
+    render(
+      <PdpReviews
+        productName="  HIGHLAND WOOL MATTRESS  "
+        productSlug="highland-wool-mattress"
+      />,
+    );
+    expect(
+      screen.getByRole("heading", { name: /real wool, real difference/i }),
+    ).toBeTruthy();
+  });
+
   it("caps the review list at the limit prop", () => {
-    // mattresses has 2 entries; pass limit=1 to assert capping.
     render(
       <PdpReviews
         productName="Unmatched"
@@ -81,8 +177,6 @@ describe("PdpReviews", () => {
     expect(screen.queryAllByRole("article")).toHaveLength(0);
     expect(screen.getByText(/be the first to share your story/i)).toBeTruthy();
 
-    // Both the header "See all reviews" link and the empty-state link
-    // point at /reviews.
     const links = screen
       .getAllByRole("link")
       .filter((l) => l.getAttribute("href") === "/reviews");
@@ -95,12 +189,18 @@ describe("PdpReviews", () => {
     expect(region).toBeTruthy();
   });
 
-  it("renders an accessible aria-label for each star row", () => {
+  it("aggregate row exposes a single composite aria-label (no duplicated reading of the rating)", () => {
     render(<PdpReviews productName="Anything" productSlug="monterey-futon" />);
-    // Aggregate row label: "4.9 out of 5 stars"
-    const aggregate = screen.getByLabelText("4.9 out of 5 stars");
+    // Composite label includes rating + count once. The inner glyphs / numbers
+    // are aria-hidden so screen readers don't double-announce "4.9".
+    const aggregate = screen.getByLabelText(
+      /4\.9 out of 5 stars, 42 reviews/i,
+    );
     expect(aggregate).toBeTruthy();
-    // Each review card has its own integer star label (1..5 out of 5 stars).
+  });
+
+  it("each review card exposes its own integer star aria-label", () => {
+    render(<PdpReviews productName="Anything" productSlug="monterey-futon" />);
     const articles = screen.getAllByRole("article");
     for (const article of articles) {
       const label = within(article).getByLabelText(/\d out of 5 stars/);

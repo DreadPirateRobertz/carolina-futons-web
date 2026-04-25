@@ -44,6 +44,7 @@ export default async function PdpPage(props: {
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
+  const productName = product.name ?? "";
   const mainUrl = product.media?.mainMedia?.image?.url;
   // cf-24q: use priceRange-aware formatter so manageVariants products don't
   // render "$0.00" before a variant is picked.
@@ -59,7 +60,7 @@ export default async function PdpPage(props: {
   const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
   const canonicalUrl = `${siteUrl}/products/${slug}`;
   const productSchema = buildProductSchema({
-    name: product.name ?? "",
+    name: productName,
     description: descriptionText,
     imageUrl: mainUrl ?? undefined,
     priceUSD: product.priceData?.price ?? 0,
@@ -69,7 +70,7 @@ export default async function PdpPage(props: {
   const breadcrumbSchema = buildBreadcrumbSchema([
     { name: "Home", url: `${siteUrl}/` },
     { name: "Shop", url: `${siteUrl}/shop` },
-    { name: product.name ?? "", url: canonicalUrl },
+    { name: productName, url: canonicalUrl },
   ]);
 
   return (
@@ -88,7 +89,7 @@ export default async function PdpPage(props: {
         <PdpInteractive
           productId={product._id ?? ""}
           productSlug={slug}
-          productName={product.name ?? ""}
+          productName={productName}
           productOptions={productOptions}
           variants={variants}
           fallbackImageUrl={mainUrl}
@@ -110,18 +111,18 @@ export default async function PdpPage(props: {
         </section>
       ) : null}
 
-      <PdpReviews productName={product.name ?? ""} productSlug={slug} />
+      <PdpReviews productName={productName} productSlug={slug} />
 
       <PdpShareButtons
         productUrl={canonicalUrl}
-        productName={product.name ?? ""}
+        productName={productName}
         imageUrl={mainUrl ?? undefined}
       />
 
       <PdpRecentlyViewed
         currentProductId={product._id ?? ""}
         currentProductSlug={slug}
-        currentProductName={product.name ?? ""}
+        currentProductName={productName}
         currentProductImageUrl={mainUrl ?? undefined}
         currentProductPriceText={fallbackPrice || undefined}
       />
