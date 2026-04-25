@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { BlueRidgeTimeline } from "@/components/illustrations/BlueRidgeTimeline";
+import { MountainSkyline } from "@/components/illustrations/MountainSkyline";
 import { BUSINESS } from "@/lib/business/contact-info";
 
 export const metadata: Metadata = {
@@ -10,9 +12,13 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <main className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
-      <article className="mx-auto max-w-[65ch] space-y-8 font-source-sans text-cf-ink">
-        <header className="space-y-3">
+    <main className="w-full">
+      {/* cf-93rb A.2: full-bleed Blue Ridge skyline above the page header
+          to anchor the brand sense of place before the prose begins. */}
+      <MountainSkyline />
+      <div className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
+        <article className="mx-auto max-w-[65ch] space-y-8 font-source-sans text-cf-ink">
+          <header className="space-y-3">
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
             Our story
           </p>
@@ -80,6 +86,26 @@ export default function AboutPage() {
           </p>
         </section>
 
+        <section
+          aria-labelledby="about-milestones"
+          className="space-y-4"
+        >
+          <h2
+            id="about-milestones"
+            className="font-playfair text-2xl font-semibold tracking-tight"
+          >
+            Three decades, four waypoints
+          </h2>
+          <p className="leading-relaxed">
+            A look back at the milestones that shaped Carolina Futons —
+            from opening in {BUSINESS.foundedYear} to where we stand today.
+          </p>
+          {/* cf-93rb A.2: editorial milestone strip — the SVG carries the
+              1991 / 2005 / 2015 / present waypoints visually; the alt text
+              summarizes the same arc for screen readers. */}
+          <BlueRidgeTimeline />
+        </section>
+
         <section className="space-y-4">
           <h2 className="font-playfair text-2xl font-semibold tracking-tight">
             The team
@@ -91,7 +117,8 @@ export default function AboutPage() {
             — we answer our own email.
           </p>
         </section>
-      </article>
+        </article>
+      </div>
     </main>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { ContactForm } from "@/components/contact/ContactForm";
+import { ContactHero } from "@/components/illustrations/ContactHero";
 import { BUSINESS } from "@/lib/business/contact-info";
 
 export const metadata: Metadata = {
@@ -11,8 +12,12 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <main className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
-      <article className="mx-auto max-w-[65ch] space-y-10 font-source-sans text-cf-ink">
+    <main className="w-full">
+      {/* cf-93rb A.2: sunrise band above the contact form — sets the tone
+          for the page (warm, inviting) without competing with the form. */}
+      <ContactHero />
+      <div className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
+        <article className="mx-auto max-w-[65ch] space-y-10 font-source-sans text-cf-ink">
         <header className="space-y-3">
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
             Contact
@@ -68,7 +73,8 @@ export default function ContactPage() {
           </h2>
           <ContactForm />
         </section>
-      </article>
+        </article>
+      </div>
     </main>
   );
 }

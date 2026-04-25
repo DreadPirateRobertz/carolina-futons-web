@@ -27,4 +27,23 @@ describe("AboutPage — smoke", () => {
     expect(screen.getAllByText(new RegExp(BUSINESS.street, "i")).length).toBeGreaterThan(0);
     expect(screen.getAllByText(new RegExp(BUSINESS.city, "i")).length).toBeGreaterThan(0);
   });
+
+  // cf-93rb A.2: hero band + milestone-strip illustrations are wired into
+  // /about. The skyline is decorative; the timeline carries the
+  // 1991→present milestone semantics and ships a meaningful alt.
+  it("renders the decorative MountainSkyline header band", () => {
+    const { container } = render(<AboutPage />);
+    expect(
+      container.querySelector("[data-slot='mountain-skyline']"),
+    ).not.toBeNull();
+  });
+
+  it("renders the BlueRidgeTimeline milestone strip with its company-history alt", () => {
+    render(<AboutPage />);
+    expect(
+      screen.getByAltText(
+        /carolina futons company milestones from 1991 to present/i,
+      ),
+    ).toBeInTheDocument();
+  });
 });
