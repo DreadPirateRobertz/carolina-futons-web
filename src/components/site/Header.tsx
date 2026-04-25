@@ -117,13 +117,13 @@ export function Header() {
 
           <div className="ml-auto flex items-center gap-1">
             <HeaderMobileMenu />
-            <button
-              type="button"
+            <Link
+              href="/search"
               aria-label="Search"
               className="inline-flex h-11 w-11 items-center justify-center rounded-md text-cf-charcoal transition-colors hover:bg-cf-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Search className="size-5" aria-hidden="true" />
-            </button>
+            </Link>
             <Link
               href="/account"
               aria-label="Account"

@@ -69,7 +69,10 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
 
   it("exposes search, account, and cart actions with accessible labels", () => {
     renderHeader();
-    expect(screen.getByRole("button", { name: /search/i })).toBeInTheDocument();
+    // cf-3qt.5.4: search is now a link to /search, not a placeholder button.
+    const searchLink = screen.getByRole("link", { name: /search/i });
+    expect(searchLink).toBeInTheDocument();
+    expect(searchLink.getAttribute("href")).toBe("/search");
     expect(screen.getByRole("link", { name: /account/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /cart/i })).toBeInTheDocument();
   });

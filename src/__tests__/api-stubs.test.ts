@@ -30,11 +30,7 @@ const stubRoutes: Array<{
     methods: ["GET", "POST", "DELETE"],
     load: () => import("@/app/api/wishlist/route"),
   },
-  {
-    path: "/api/search",
-    methods: ["GET"],
-    load: () => import("@/app/api/search/route"),
-  },
+  // cf-3qt.5.4: /api/search now implemented; covered by api-search.test.ts
   {
     path: "/api/order-lookup",
     methods: ["POST"],
