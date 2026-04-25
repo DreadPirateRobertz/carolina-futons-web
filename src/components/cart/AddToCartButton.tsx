@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { fireMetaEvent } from "@/components/analytics/MetaPixel";
 import { useCart } from "@/components/cart/CartProvider";
 import { makeLineId, type CartLineItem } from "@/lib/cart/cart-state";
 import { addItemAction } from "@/app/actions/cart";
@@ -85,6 +86,17 @@ export function AddToCartButton({
       setError(result.error ?? "Could not add to cart");
       return;
     }
+    // cf-3qt.7.3: Meta Pixel AddToCart fires only after the server
+    // confirms — keeps the analytics signal aligned with the real cart
+    // state and avoids inflating AddToCart counts on validation failures.
+    // No-ops if the pixel never loaded (env unset).
+    fireMetaEvent("AddToCart", {
+      content_ids: [productId],
+      content_type: "product",
+      value: (unitPriceCents * quantity) / 100,
+      currency: "USD",
+      contents: [{ id: productId, quantity }],
+    });
     onAdded?.();
   }
 
