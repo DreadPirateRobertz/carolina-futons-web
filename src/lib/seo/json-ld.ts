@@ -199,3 +199,40 @@ export function buildBreadcrumbSchema(
     })),
   };
 }
+
+// cf-3qt.4.1: FAQPage schema for /faq. Mirrors the structure documented
+// at https://schema.org/FAQPage so the rich-result eligibility checker
+// in Search Console accepts it. Each Question must have a single
+// acceptedAnswer Answer; pages with more than one answer per question
+// are not eligible per Google's docs.
+export type FaqPageEntry = { question: string; answer: string };
+
+export type FaqPageSchema = {
+  "@context": "https://schema.org";
+  "@type": "FAQPage";
+  mainEntity: ReadonlyArray<{
+    "@type": "Question";
+    name: string;
+    acceptedAnswer: {
+      "@type": "Answer";
+      text: string;
+    };
+  }>;
+};
+
+export function buildFaqPageSchema(
+  entries: ReadonlyArray<FaqPageEntry>,
+): FaqPageSchema {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: entries.map((e) => ({
+      "@type": "Question",
+      name: e.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: e.answer,
+      },
+    })),
+  };
+}
