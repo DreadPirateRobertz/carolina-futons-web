@@ -14,6 +14,7 @@ import {
   resolveSiteUrl,
 } from "@/lib/seo/json-ld";
 import { RouteProgressBar } from "@/components/site/RouteProgressBar";
+import { BackToTop } from "@/components/site/BackToTop";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -73,6 +74,7 @@ export default function RootLayout({
             </main>
             <Footer />
             <CartDrawer />
+            <BackToTop />
           </CartProvider>
         </MotionProvider>
       </body>
