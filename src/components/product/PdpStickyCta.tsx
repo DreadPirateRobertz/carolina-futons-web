@@ -24,8 +24,12 @@ export type PdpStickyCtaProps = {
   // ReactNode keeps the pre-7.M.3 call site signature (single AddToCartButton
   // passed in). The render-prop form lets a caller consume the sheet's
   // internal quantity state without lifting qty up to the PDP (which would
-  // bleed into the primary CTA, changing its qty=1 contract).
-  children: ReactNode | ((quantity: number) => ReactNode);
+  // bleed into the primary CTA, changing its qty=1 contract). The second arg
+  // (`dismiss`) is the cf-pdp-sticky-cta spike hook — wiring it into the
+  // child's onAdded triggers an immediate hide once the cart server action
+  // confirms. Reset still keys on `visible` flipping false → true, so the
+  // sheet reappears the next time the primary CTA scrolls out of view.
+  children: ReactNode | ((quantity: number, dismiss: () => void) => ReactNode);
 };
 
 // Vertical pointer delta to count as a dismiss swipe. 80px is enough to avoid
@@ -55,8 +59,9 @@ export function PdpStickyCta({
 
   if (!visible || dismissed) return null;
 
+  const dismiss = () => setDismissed(true);
   const action =
-    typeof children === "function" ? children(quantity) : children;
+    typeof children === "function" ? children(quantity, dismiss) : children;
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     // setPointerCapture can be absent in jsdom — guard so tests don't throw.
