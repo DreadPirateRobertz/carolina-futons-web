@@ -7,6 +7,7 @@ import { Minus, Plus, ShoppingBag, X } from "lucide-react";
 
 import { useCart } from "@/components/cart/CartProvider";
 import { formatCents } from "@/lib/cart/cart-state";
+import { trackBeginCheckout } from "@/lib/analytics/ga4-events";
 import { cn } from "@/lib/utils";
 
 // Right-hand slide-in cart drawer. `Dialog.Root` is explicitly `modal` so
@@ -166,6 +167,20 @@ export function CartDrawer() {
                   href="/checkout"
                   onClick={(e) => {
                     if (isModifiedClick(e)) return;
+                    // cf-rfb6: GA4 begin_checkout fires at the moment of
+                    // checkout intent — clicking through to /checkout —
+                    // mirroring how Wix Studio's built-in GA4 wires the
+                    // "Initiate Checkout" event. No-ops if gtag is unset.
+                    trackBeginCheckout(
+                      state.lines.map((line) => ({
+                        item_id: line.productId,
+                        item_name: line.productName,
+                        item_variant: line.variantLabel,
+                        price: line.unitPriceCents / 100,
+                        quantity: line.quantity,
+                      })),
+                      subtotalCents / 100,
+                    );
                     setOpen(false);
                   }}
                   data-testid="cart-checkout-cta"
