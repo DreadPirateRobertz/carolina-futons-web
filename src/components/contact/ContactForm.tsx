@@ -3,11 +3,11 @@
 import { useActionState, useId } from "react";
 import { useFormStatus } from "react-dom";
 
+import { sendContactForm } from "@/app/contact/actions";
 import {
-  sendContactForm,
   initialContactActionState,
   type ContactActionState,
-} from "@/app/contact/actions";
+} from "@/app/contact/contact-state";
 import type { ContactErrors, ContactRequest } from "@/lib/contact/contact-schema";
 
 // cf-contact-form: thin client wrapper around the `sendContactForm` Server
