@@ -81,7 +81,7 @@ export default async function HomePage() {
       {/* cf-93rb Phase A: atmospheric Blue Ridge band between hero and the
           TrustBar — anchors the page in place (Hendersonville, NC) and
           breaks up the previously-flat cream → trust-bar transition. */}
-      <LivingSky alt="Blue Ridge mountain skyline above Hendersonville, NC" />
+      <LivingSky />
 
       <TrustBar />
 

@@ -1,8 +1,19 @@
+// cf-93rb-livingsky-dynamic: SVG body for the dynamic Living Sky.
+// Element IDs (sky-stop-0..3, glow-0..1, sun-disc, moon-*, stars,
+// clouds, fog, ridges, fireflies, owl-*) are targeted by
+// LivingSkyClient at runtime. Default attribute values represent the
+// midday state — matches the SSR / reduced-motion fallback.
+//
+// Lifted verbatim from cfutons/src/public/living-sky-component.html so
+// the visual contract matches the Wix Studio site. Do not hand-edit
+// individual elements — refresh the whole body from the source if the
+// upstream design changes.
+
+export const LIVING_SKY_SVG_BODY = String.raw`
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 150" width="100%" height="100%"
      preserveAspectRatio="xMidYMax meet"
-     role="img" aria-labelledby="living-sky-title" aria-describedby="living-sky-desc">
+     role="img" aria-labelledby="living-sky-title">
   <title id="living-sky-title">Blue Ridge mountain skyline — living time-of-day illustration</title>
-  <desc id="living-sky-desc">Layered Blue Ridge mountain ridgelines with animated sky gradient, celestial bodies, wildlife, and weather effects driven by living-sky.js based on time of day.</desc>
 
   <defs>
     <!-- Sky gradient — stop colors dynamically updated by living-sky.js -->
@@ -22,23 +33,23 @@
 
     <!-- Ridge fill gradients (day defaults; colours updated by living-sky.js) -->
     <linearGradient id="ridge-r4-grad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#9AAAB8"/>
-      <stop offset="100%" stop-color="#8899A8"/>
+      <stop id="r4-stop-0" offset="0%"   stop-color="#9AAAB8"/>
+      <stop id="r4-stop-1" offset="100%" stop-color="#8899A8"/>
     </linearGradient>
     <linearGradient id="ridge-r3-grad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#7A8FA0"/>
-      <stop offset="100%" stop-color="#6A7F90"/>
+      <stop id="r3-stop-0" offset="0%"   stop-color="#7A8FA0"/>
+      <stop id="r3-stop-1" offset="100%" stop-color="#6A7F90"/>
     </linearGradient>
     <linearGradient id="ridge-r2-grad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#5B8FA8"/>
-      <stop offset="100%" stop-color="#4A7888"/>
+      <stop id="r2-stop-0" offset="0%"   stop-color="#5B8FA8"/>
+      <stop id="r2-stop-1" offset="100%" stop-color="#4A7888"/>
     </linearGradient>
     <linearGradient id="ridge-r1-grad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#3A4A55"/>
-      <stop offset="100%" stop-color="#2A3840"/>
+      <stop id="r1-stop-0" offset="0%"   stop-color="#3A4A55"/>
+      <stop id="r1-stop-1" offset="100%" stop-color="#2A3840"/>
     </linearGradient>
 
-    <!-- Edge glow filter for rim-light effect — applied to rim-light-line at golden hour -->
+    <!-- Edge glow filter for rim-light effect -->
     <filter id="edge-glow" x="-2%" y="-10%" width="104%" height="120%">
       <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
       <feColorMatrix in="blur" type="matrix"
@@ -54,7 +65,7 @@
       <feGaussianBlur stdDeviation="3"/>
     </filter>
 
-    <!-- Star glow filter — applied by living-sky.js to individual stars (not group) -->
+    <!-- Star glow filter -->
     <filter id="star-glow" x="-100%" y="-100%" width="300%" height="300%">
       <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="blur"/>
       <feMerge>
@@ -63,51 +74,38 @@
       </feMerge>
     </filter>
 
-    <!-- Moon glow filter — composites blur + source so disc stays crisp -->
+    <!-- Moon glow filter -->
     <filter id="moon-glow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4"/>
     </filter>
 
-    <!-- Shooting star trail gradient — userSpaceOnUse so it works on a zero-height <line> -->
-    <linearGradient id="star-trail-grad" gradientUnits="userSpaceOnUse" x1="-32" y1="9" x2="0" y2="0">
+    <!-- Shooting star trail gradient -->
+    <linearGradient id="star-trail-grad" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%"   stop-color="#FFFDE8" stop-opacity="0"/>
       <stop offset="100%" stop-color="#FFFDE8" stop-opacity="0.9"/>
     </linearGradient>
   </defs>
 
   <!-- ── 1. Sky backdrop ──────────────────────────────────────────────────── -->
-  <!-- Primary sky rect: fill updated by living-sky.js via dyn-sky gradient -->
-  <rect id="sky-backdrop" width="1040" height="150" fill="url(#dyn-sky) #B8D0E0"/>
-  <!-- Horizon glow overlay: opacity driven by living-sky.js -->
+  <rect id="sky-backdrop" width="1040" height="150" fill="url(#dyn-sky)"/>
   <rect id="sky-glow-overlay" width="1040" height="150" fill="url(#sun-radial)" opacity="0.6"/>
 
   <!-- ── 2. Celestial bodies ─────────────────────────────────────────────── -->
   <g id="celestial">
-    <!-- Sun: cx/cy/opacity/fill updated by JS throughout the day arc -->
     <circle id="sun-halo-outer" cx="520" cy="75" r="40" fill="#FFE860" opacity="0.15"/>
     <circle id="sun-halo-inner" cx="520" cy="75" r="24" fill="#FFF080" opacity="0.25"/>
     <circle id="sun-disc"       cx="520" cy="75" r="14" fill="#FFF5A0"/>
 
-    <!-- Moon: opacity=0 by day; cx/cy/opacity driven by JS for night arc -->
     <g id="moon-group" opacity="0">
-      <!-- Ambient glow: blur applied via moon-glow filter -->
       <circle id="moon-glow-ring" cx="730" cy="28" r="28"
               fill="#B0C8DC" opacity="0.15" filter="url(#moon-glow)"/>
-      <!-- Moon disc: fill colour updated by JS for moon phase tint -->
       <circle id="moon-disc"         cx="730" cy="28" r="13" fill="#DCE8F0"/>
-      <!-- Phase shadow: cx offset by JS to create crescent/gibbous/full shapes -->
       <circle id="moon-phase-shadow" cx="730" cy="28" r="13" fill="#1A2A3C"/>
     </g>
   </g>
 
   <!-- ── 3. Stars ────────────────────────────────────────────────────────── -->
-  <!-- opacity=0 by default; group opacity driven by living-sky.js at night -->
   <g id="stars" opacity="0">
-    <!-- Primary stars (bright layer) -->
     <circle id="star-0"  cx="48"   cy="12" r="0.9" fill="#8BAFC8"/>
     <circle id="star-1"  cx="112"  cy="8"  r="1.1" fill="#A0C0D4"/>
     <circle id="star-2"  cx="195"  cy="18" r="0.8" fill="#8BAFC8"/>
@@ -124,7 +122,6 @@
     <circle id="star-13" cx="240"  cy="10" r="0.9" fill="#8BAFC8"/>
     <circle id="star-14" cx="680"  cy="17" r="0.9" fill="#8BAFC8"/>
     <circle id="star-15" cx="1005" cy="9"  r="1.0" fill="#A0C0D4"/>
-    <!-- Secondary stars (dimmer layer) -->
     <circle id="star-16" cx="155"  cy="28" r="0.7" fill="#7090A8"/>
     <circle id="star-17" cx="380"  cy="24" r="0.8" fill="#7090A8"/>
     <circle id="star-18" cx="475"  cy="32" r="0.7" fill="#7090A8"/>
@@ -141,34 +138,27 @@
     <circle id="star-29" cx="418"  cy="9"  r="0.6" fill="#5878A0"/>
     <circle id="star-30" cx="182"  cy="14" r="0.7" fill="#7090A8"/>
     <circle id="star-31" cx="590"  cy="14" r="0.8" fill="#8BAFC8"/>
-    <!-- Deep background stars (faintest layer) -->
     <circle id="star-32" cx="330"  cy="35" r="0.7" fill="#6888A0"/>
     <circle id="star-33" cx="700"  cy="35" r="0.6" fill="#5878A0"/>
     <circle id="star-34" cx="870"  cy="32" r="0.7" fill="#7090A8"/>
   </g>
 
   <!-- ── 4. Clouds ────────────────────────────────────────────────────────── -->
-  <!-- opacity=0 by default; shown in morning/overcast phases by JS -->
   <g id="clouds" opacity="0">
-    <!-- Sea of low cloud filling the valleys at morning -->
     <path id="cloud-main"
           d="M0,150 L0,96 C80,90 160,86 240,90 C300,93 340,96 400,92
              C460,88 520,82 590,86 C640,89 680,94 740,90 C800,86 860,80
              930,84 C970,87 1000,91 1040,88 L1040,150Z"
           fill="#F0EDE8" opacity="0.85" filter="url(#mist-blur)"/>
-    <!-- Secondary high cloud wisp -->
     <ellipse id="cloud-secondary"
              cx="400" cy="30" rx="240" ry="10"
              fill="#FFFFFF" opacity="0.3" filter="url(#mist-blur)"/>
-    <!-- Additional wisp for depth -->
     <ellipse id="cloud-wisp-2"
              cx="780" cy="22" rx="180" ry="8"
              fill="#FFFFFF" opacity="0.2" filter="url(#mist-blur)"/>
   </g>
 
   <!-- ── 5. Fog ─────────────────────────────────────────────────────────── -->
-  <!-- 5 layered ellipses along ridgeline; opacity=0 by default;
-       each layer independently animated by living-sky.js -->
   <g id="fog" opacity="0">
     <ellipse id="fog-layer-1" cx="520"  cy="108" rx="500" ry="18"
              fill="#E8F0F8" opacity="0.6" filter="url(#mist-blur)"/>
@@ -183,27 +173,22 @@
   </g>
 
   <!-- ── 6. Ridges ────────────────────────────────────────────────────────── -->
-  <!-- Fills updated by living-sky.js. Back-to-front: r4 → r3 → r2 → r1 -->
   <g id="ridges">
-    <!-- Ridge r4 — farthest; nearly sky-toned; Appalachian atmospheric haze -->
     <path id="ridge-r4"
           d="M0,150 L0,62 C240,52 480,38 660,32 C780,28 880,27 980,30
              C1010,31 1028,32 1040,32 L1040,150Z"
-          fill="url(#ridge-r4-grad) #9AAAB8"/>
+          fill="url(#ridge-r4-grad)"/>
 
-    <!-- Ridge r3 — mid-distant; wide smooth arch, dominant crest left-of-centre -->
     <path id="ridge-r3"
           d="M0,150 L0,78 C200,64 400,50 560,45 C660,42 750,43 860,47
              C940,50 995,53 1040,52 L1040,150Z"
-          fill="url(#ridge-r3-grad) #7A8FA0"/>
+          fill="url(#ridge-r3-grad)"/>
 
-    <!-- Ridge r2 — mid distance; blue-purple isoprene band (Pisgah-area character) -->
     <path id="ridge-r2"
           d="M0,150 L0,88 C110,76 240,64 380,57 C470,53 550,56 650,51
              C730,47 820,46 920,50 C965,53 1005,57 1040,56 L1040,150Z"
-          fill="url(#ridge-r2-grad) #5B8FA8"/>
+          fill="url(#ridge-r2-grad)"/>
 
-    <!-- Ridge r2 mini pine silhouettes on skyline -->
     <g id="ridge-r2-trees" fill="#3A4A55" opacity="0.7">
       <polygon points="148,77 150,70 152,77"/>
       <polygon points="155,76 157,69 159,76"/>
@@ -217,15 +202,13 @@
       <polygon points="869,51 871,43 873,51"/>
     </g>
 
-    <!-- Ridge r1 — nearest; Mt. Pisgah-style summit ~x500; dense forested slopes -->
     <path id="ridge-r1"
           d="M0,150 L0,104 C80,94 170,84 250,78 C310,73 355,76 400,69
              C438,63 462,57 498,53 C528,50 556,53 588,50 C626,47 668,46
              718,50 C768,54 818,59 876,57 C916,55 960,60 1005,65
              C1022,67 1033,68 1040,68 L1040,150Z"
-          fill="url(#ridge-r1-grad) #3A4A55"/>
+          fill="url(#ridge-r1-grad)"/>
 
-    <!-- Foreground tree canopy — dark base, silhouette undulation -->
     <path id="tree-line"
           d="M0,150 L0,124 C22,120 50,115 74,118 C88,120 98,124 112,121
              C125,118 133,113 148,116 C160,118 170,123 186,120 C200,117
@@ -239,7 +222,6 @@
              1040,106 L1040,150Z"
           fill="#1E2830"/>
 
-    <!-- Pine silhouettes on foreground treeline -->
     <g fill="#162030">
       <polygon points="72,117 75,105 78,117"/>
       <polygon points="79,118 83,104 87,118"/>
@@ -254,7 +236,6 @@
       <polygon points="892,113 895,98 898,113"/>
     </g>
 
-    <!-- Deciduous tree crowns mixed into foreground -->
     <g id="deciduous-trees" fill="#162030">
       <ellipse cx="130" cy="113" rx="11" ry="7"/>  <rect x="128.5" y="118" width="3" height="5"/>
       <ellipse cx="382" cy="110" rx="10" ry="6.5"/><rect x="380.5" y="115" width="3" height="5"/>
@@ -270,7 +251,6 @@
 
   <!-- ── 7. Wildlife ──────────────────────────────────────────────────────── -->
   <g id="wildlife">
-    <!-- Flock of V-shaped birds — morning/midday; opacity driven by JS -->
     <g id="bird-group" opacity="0">
       <g id="birds-flock" fill="none" stroke="#111" stroke-width="1.4">
         <path d="M550,50 Q553,47 556,50"/>
@@ -286,7 +266,6 @@
       </g>
     </g>
 
-    <!-- Hawk — soaring in midday thermals; SMIL-animated across the sky -->
     <g id="hawk" opacity="0">
       <g fill="#1A2830">
         <path d="M-5,0 C-9,-2.5 -17,-5 -21,-2 C-17,1 -9,0.8 -5,0.5 Z"/>
@@ -297,14 +276,11 @@
         <animateTransform attributeName="transform" type="translate"
           values="180,23; 320,16; 480,26; 640,18; 800,24; 940,16; 800,24; 640,18; 480,26; 320,16; 180,23"
           dur="65s" repeatCount="indefinite" calcMode="spline"
-          keyTimes="0;0.1;0.2;0.3;0.4;0.5;0.6;0.7;0.8;0.9;1"
           keySplines="0.4 0 0.6 1;0.4 0 0.6 1;0.4 0 0.6 1;0.4 0 0.6 1;0.4 0 0.6 1;0.4 0 0.6 1;0.4 0 0.6 1;0.4 0 0.6 1;0.4 0 0.6 1;0.4 0 0.6 1"/>
       </g>
     </g>
 
-    <!-- 3 circling vultures — dusk thermals; very Blue Ridge -->
     <g id="vulture-group" opacity="0" fill="#0A1420">
-      <!-- Vulture 1 — slow wide circle -->
       <g>
         <path d="M290,22 C288,19.5 283.5,18 281,20 C283,22 288,22.5 290,22"/>
         <path d="M290,22 C292,19.5 296.5,18 299,20 C297,22 292,22.5 290,22"/>
@@ -313,7 +289,6 @@
           values="0,0; 28,-12; 52,-2; 40,14; 12,16; -12,5; 0,0"
           dur="30s" repeatCount="indefinite" calcMode="linear"/>
       </g>
-      <!-- Vulture 2 — different orbit, offset phase -->
       <g>
         <path d="M620,17 C618,14.5 613.5,13 611,15 C613,17 618,17.5 620,17"/>
         <path d="M620,17 C622,14.5 626.5,13 629,15 C627,17 622,17.5 620,17"/>
@@ -322,7 +297,6 @@
           values="0,0; -22,-9; -36,5; -20,16; 10,12; 22,-3; 0,0"
           dur="36s" repeatCount="indefinite" calcMode="linear"/>
       </g>
-      <!-- Vulture 3 — higher, smaller (most distant) -->
       <g>
         <path d="M860,13 C858.5,11 854.5,10 852.5,11.5 C854.5,13.5 858.5,14 860,13"/>
         <path d="M860,13 C861.5,11 865.5,10 867.5,11.5 C865.5,13.5 861.5,14 860,13"/>
@@ -333,7 +307,6 @@
       </g>
     </g>
 
-    <!-- Barred owl sweep — glides right-to-left at dusk/night -->
     <g id="owl-sweep" opacity="0">
       <g fill="#090F1A">
         <path d="M0,0 C-5,-4 -13,-10 -18,-7 C-15,-2 -7,-0.5 0,0"/>
@@ -345,12 +318,11 @@
         <circle cx="1.8"  cy="-2.5" r="1.6" fill="#131F2E"/>
         <animateTransform attributeName="transform" type="translate"
           values="1080,36; 800,29; 520,34; 240,27; -120,32"
-          dur="22s" begin="2s" repeatCount="indefinite" calcMode="spline"
+          dur="22s" begin="2s;47s" repeatCount="indefinite" calcMode="spline"
           keySplines="0.25 0 0.75 1;0.25 0 0.75 1;0.25 0 0.75 1;0.25 0 0.75 1"/>
       </g>
     </g>
 
-    <!-- Great horned owl perched on pine tip — night only -->
     <g id="owl-perch" opacity="0">
       <g transform="translate(489,96)" fill="#060C16">
         <ellipse cx="0" cy="6" rx="3.5" ry="5.5"/>
@@ -363,7 +335,6 @@
       </g>
     </g>
 
-    <!-- Fireflies — dusk into night; scattered along treeline -->
     <g id="firefly-group" opacity="0">
       <circle cx="108"  cy="117" r="1.3" fill="#C8FF3A"/>
       <circle cx="192"  cy="111" r="1.0" fill="#C0FF32"/>
@@ -383,7 +354,6 @@
       <circle cx="992"  cy="112" r="0.9" fill="#C4FF38"/>
     </g>
 
-    <!-- Shooting star — rare night event; opacity/position driven by JS -->
     <g id="shooting-star" opacity="0">
       <line x1="0" y1="0" x2="-32" y2="9"
             stroke="url(#star-trail-grad)" stroke-width="1.8" stroke-linecap="round"/>
@@ -393,7 +363,6 @@
 
   <!-- ── 8. Precipitation ─────────────────────────────────────────────────── -->
   <g id="precipitation">
-    <!-- Snow particles — winter season; opacity=0 default -->
     <g id="snow-group" opacity="0">
       <circle cx="88"   cy="8"  r="0.9" fill="#E8F0F8"/>
       <circle cx="175"  cy="22" r="0.7" fill="#EDF4FC"/>
@@ -415,7 +384,6 @@
       <circle cx="990"  cy="32" r="0.7" fill="#D8E8F4"/>
     </g>
 
-    <!-- Mist rain — spring/overcast; subtle diagonal lines; opacity=0 default -->
     <g id="mist-overlay" opacity="0">
       <line x1="80"  y1="5"  x2="74"  y2="20" stroke="#A8C4D8" stroke-width="0.5" stroke-linecap="round"/>
       <line x1="200" y1="8"  x2="194" y2="23" stroke="#A4C0D4" stroke-width="0.5" stroke-linecap="round"/>
@@ -429,46 +397,31 @@
       <line x1="380" y1="2"  x2="374" y2="17" stroke="#A4C0D4" stroke-width="0.5" stroke-linecap="round"/>
       <line x1="620" y1="13" x2="614" y2="28" stroke="#A8C4D8" stroke-width="0.5" stroke-linecap="round"/>
       <line x1="860" y1="7"  x2="854" y2="22" stroke="#A4C0D4" stroke-width="0.5" stroke-linecap="round"/>
-      <line x1="50"  y1="12" x2="44"  y2="27" stroke="#A8C4D8" stroke-width="0.5" stroke-linecap="round"/>
-      <line x1="250" y1="5"  x2="244" y2="20" stroke="#A4C0D4" stroke-width="0.5" stroke-linecap="round"/>
-      <line x1="490" y1="8"  x2="484" y2="23" stroke="#A8C4D8" stroke-width="0.5" stroke-linecap="round"/>
-      <line x1="730" y1="4"  x2="724" y2="19" stroke="#A4C0D4" stroke-width="0.5" stroke-linecap="round"/>
-      <line x1="970" y1="14" x2="964" y2="29" stroke="#A8C4D8" stroke-width="0.5" stroke-linecap="round"/>
-      <line x1="170" y1="10" x2="164" y2="25" stroke="#A4C0D4" stroke-width="0.5" stroke-linecap="round"/>
-      <line x1="700" y1="2"  x2="694" y2="17" stroke="#A8C4D8" stroke-width="0.5" stroke-linecap="round"/>
-      <line x1="1000" y1="9" x2="994" y2="24" stroke="#A4C0D4" stroke-width="0.5" stroke-linecap="round"/>
     </g>
   </g>
 
   <!-- ── 9. Rim light ─────────────────────────────────────────────────────── -->
-  <!-- opacity=0 by default; living-sky.js sets opacity + stroke at golden hour -->
   <g id="rim-light">
-    <!-- Primary rim light — follows ridge r1 crest; stroke colour/opacity set by JS -->
     <path id="rim-light-line"
           d="M0,104 C80,94 170,84 250,78 C310,73 355,76 400,69
              C438,63 462,57 498,53 C528,50 556,53 588,50 C626,47 668,46
              718,50 C768,54 818,59 876,57 C916,55 960,60 1005,65
              C1022,67 1033,68 1040,68"
-          fill="none" stroke="#F08020" stroke-width="2" opacity="0"
-          filter="url(#edge-glow)"/>
-    <!-- Soft glow layer beneath rim-light-line -->
+          fill="none" stroke="#F08020" stroke-width="2" opacity="0"/>
     <path id="rim-light-soft"
           d="M0,104 C80,94 170,84 250,78 C310,73 355,76 400,69
              C438,63 462,57 498,53 C528,50 556,53 588,50 C626,47 668,46
              718,50 C768,54 818,59 876,57 C916,55 960,60 1005,65
              C1022,67 1033,68 1040,68"
           fill="none" stroke="#FFD070" stroke-width="5" opacity="0"/>
-    <!-- Ridge r2 rim light -->
     <path id="rim-r2"
           d="M0,88 C110,76 240,64 380,57 C470,53 550,56 650,51
              C730,47 820,46 920,50 C965,53 1005,57 1040,56"
           fill="none" stroke="#F0A020" stroke-width="1.5" opacity="0"/>
-    <!-- Ridge r3 rim light -->
     <path id="rim-r3"
           d="M0,78 C200,64 400,50 560,45 C660,42 750,43 860,47
              C940,50 995,53 1040,52"
           fill="none" stroke="#F0D080" stroke-width="1" opacity="0"/>
-    <!-- Ridge r4 rim light -->
     <path id="rim-r4"
           d="M0,62 C240,52 480,38 660,32 C780,28 880,27 980,30
              C1010,31 1028,32 1040,32"
@@ -476,3 +429,4 @@
   </g>
 
 </svg>
+`;
