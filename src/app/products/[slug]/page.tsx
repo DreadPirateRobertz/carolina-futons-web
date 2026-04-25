@@ -6,6 +6,7 @@ import { PdpInteractive } from "@/components/product/PdpInteractive";
 import type { GalleryImage } from "@/components/product/PdpGallery";
 import { PdpCrossSell } from "@/components/product/PdpCrossSell";
 import { PdpRecentlyViewed } from "@/components/product/PdpRecentlyViewed";
+import { PdpReviews } from "@/components/product/PdpReviews";
 import { PdpShareButtons } from "@/components/product/PdpShareButtons";
 import { getProductBySlug } from "@/lib/wix/products";
 import { formatPlpPrice } from "@/lib/product/plp-price";
@@ -108,6 +109,8 @@ export default async function PdpPage(props: {
           </p>
         </section>
       ) : null}
+
+      <PdpReviews productName={product.name ?? ""} productSlug={slug} />
 
       <PdpShareButtons
         productUrl={canonicalUrl}
