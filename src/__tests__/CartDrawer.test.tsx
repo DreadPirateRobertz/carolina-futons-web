@@ -1,11 +1,20 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { useEffect } from "react";
+
+const trackBeginCheckout = vi.fn();
+vi.mock("@/lib/analytics/ga4-events", () => ({
+  trackBeginCheckout: (...args: unknown[]) => trackBeginCheckout(...args),
+}));
 
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { CartProvider, useCart } from "@/components/cart/CartProvider";
 import { CartTrigger } from "@/components/cart/CartTrigger";
 import type { CartLineItem } from "@/lib/cart/cart-state";
+
+beforeEach(() => {
+  trackBeginCheckout.mockReset();
+});
 
 function Seed({ lines }: { lines: ReadonlyArray<CartLineItem> }) {
   const { addLine } = useCart();
@@ -198,6 +207,44 @@ describe("CartDrawer (cf-3qt.2.3)", () => {
     fireEvent.click(screen.getByTestId("cart-trigger"));
     fireEvent.click(screen.getByTestId("cart-checkout-cta"));
     expect(screen.queryByTestId("cart-drawer")).toBeNull();
+  });
+
+  // cf-rfb6: GA4 begin_checkout fires at the moment of checkout intent
+  // (clicking through to /checkout) with the full cart items[] and value.
+  it("fires GA4 begin_checkout with cart lines + subtotal on a plain checkout click", () => {
+    renderWith([lineA, lineB]);
+    fireEvent.click(screen.getByTestId("cart-trigger"));
+    fireEvent.click(screen.getByTestId("cart-checkout-cta"));
+    expect(trackBeginCheckout).toHaveBeenCalledTimes(1);
+    expect(trackBeginCheckout).toHaveBeenCalledWith(
+      [
+        {
+          item_id: "p-full",
+          item_name: "Carolina Classic Futon",
+          item_variant: "Size: Full",
+          price: 799,
+          quantity: 1,
+        },
+        {
+          item_id: "p-queen",
+          item_name: "Blue Ridge Murphy Bed",
+          item_variant: undefined,
+          price: 1299,
+          quantity: 2,
+        },
+      ],
+      // 79900 + (129900 * 2) = 339700 cents → 3397 dollars
+      3397,
+    );
+  });
+
+  it("does not fire GA4 begin_checkout on a modifier-click (open-in-new-tab)", () => {
+    renderWith([lineA]);
+    fireEvent.click(screen.getByTestId("cart-trigger"));
+    fireEvent.click(screen.getByTestId("cart-checkout-cta"), {
+      metaKey: true,
+    });
+    expect(trackBeginCheckout).not.toHaveBeenCalled();
   });
 });
 
