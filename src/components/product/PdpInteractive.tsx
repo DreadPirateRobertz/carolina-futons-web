@@ -11,6 +11,7 @@ import { PdpShippingEstimate } from "@/components/product/PdpShippingEstimate";
 import { PdpStickyCta } from "@/components/product/PdpStickyCta";
 import { PdpStockBadge } from "@/components/product/PdpStockBadge";
 import { PdpWhiteGlove } from "@/components/product/PdpWhiteGlove";
+import { PdpWishlistButton } from "@/components/product/PdpWishlistButton";
 import { VariantPicker } from "@/components/product/VariantPicker";
 import type { StockBadgeInput } from "@/lib/product/stock-badge-state";
 import {
@@ -146,8 +147,15 @@ export function PdpInteractive({
           fallbackPrice={fallbackPrice}
           onSelectionChange={(next) => setSelection(next)}
         />
-        <div ref={primaryCtaRef} data-slot="pdp-primary-cta">
+        <div ref={primaryCtaRef} data-slot="pdp-primary-cta" className="flex flex-wrap items-center gap-3">
           <AddToCartButton {...addToCartProps} />
+          <PdpWishlistButton
+            productId={productId}
+            productName={productName}
+            price={fallbackPriceCents / 100}
+            productSlug={productSlug}
+            imageUrl={fallbackImageUrl}
+          />
         </div>
         <PdpWhiteGlove unitPriceCents={fallbackPriceCents} />
         <PdpShippingEstimate />
