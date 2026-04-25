@@ -20,6 +20,11 @@ export type AddToCartButtonProps = {
   disabled?: boolean;
   disabledReason?: string;
   className?: string;
+  // Fires after the server action confirms the line was added. Used by the
+  // PDP sticky-CTA spike (cf-pdp-sticky-cta) to auto-dismiss the bottom sheet
+  // once the user has successfully added — failure path keeps the sheet open
+  // so the inline error remains visible.
+  onAdded?: () => void;
 };
 
 // Client-cart-first per cf-3qt.2.3 contract: call useCart().addLine() for
@@ -41,6 +46,7 @@ export function AddToCartButton({
   disabled,
   disabledReason,
   className,
+  onAdded,
 }: AddToCartButtonProps) {
   const { addLine, removeLine, openCart } = useCart();
   const [pending, setPending] = useState(false);
@@ -77,7 +83,9 @@ export function AddToCartButton({
     if (!result.ok) {
       removeLine(line.id);
       setError(result.error ?? "Could not add to cart");
+      return;
     }
+    onAdded?.();
   }
 
   return (

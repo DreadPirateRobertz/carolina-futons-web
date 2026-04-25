@@ -112,4 +112,25 @@ describe("AddToCartButton", () => {
     render(<AddToCartButton {...baseProps} productId="" />);
     expect(screen.getByRole("button")).toBeDisabled();
   });
+
+  // cf-pdp-sticky-cta spike: PdpStickyCta wires onAdded → dismiss to auto-hide
+  // the bottom sheet once the user successfully adds. The callback must NOT
+  // fire on failure — the sheet must stay open so the inline error remains
+  // associated with the action that produced it.
+  it("calls onAdded after a successful server sync", async () => {
+    addItemAction.mockResolvedValueOnce({ ok: true, cart: null });
+    const onAdded = vi.fn();
+    render(<AddToCartButton {...baseProps} onAdded={onAdded} />);
+    await userEvent.click(screen.getByRole("button"));
+    expect(onAdded).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not call onAdded when the server sync fails", async () => {
+    addItemAction.mockResolvedValueOnce({ ok: false, error: "Out of stock" });
+    const onAdded = vi.fn();
+    render(<AddToCartButton {...baseProps} onAdded={onAdded} />);
+    await userEvent.click(screen.getByRole("button"));
+    await screen.findByRole("alert");
+    expect(onAdded).not.toHaveBeenCalled();
+  });
 });

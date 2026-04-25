@@ -218,6 +218,46 @@ describe("PdpStickyCta", () => {
       ).toBeInTheDocument();
     });
 
+    // cf-pdp-sticky-cta spike: dismiss-on-cart-add. The render-prop receives a
+    // `dismiss` callback so the consumer (PdpInteractive wires it to
+    // AddToCartButton.onAdded) can hide the sheet immediately on a successful
+    // add without lifting dismiss state up to the PDP.
+    it("dismisses when the render-prop dismiss callback is invoked", () => {
+      render(
+        <PdpStickyCta visible productName="Kingston" formattedPrice="$899">
+          {(_qty, dismiss) => (
+            <button onClick={dismiss}>Add to cart</button>
+          )}
+        </PdpStickyCta>,
+      );
+      fireEvent.click(screen.getByRole("button", { name: /add to cart/i }));
+      expect(
+        screen.queryByRole("region", { name: /quick add to cart/i }),
+      ).toBeNull();
+    });
+
+    it("re-shows after a callback dismiss when visible flips false → true", () => {
+      const renderTree = (visible: boolean) => (
+        <PdpStickyCta visible={visible} productName="x" formattedPrice="$1">
+          {(_qty, dismiss) => (
+            <button onClick={dismiss}>Add to cart</button>
+          )}
+        </PdpStickyCta>
+      );
+      const { rerender } = render(renderTree(true));
+      fireEvent.click(screen.getByRole("button", { name: /add to cart/i }));
+      expect(
+        screen.queryByRole("region", { name: /quick add to cart/i }),
+      ).toBeNull();
+      // Primary CTA scrolls back into view, then out again — the callback
+      // dismiss should reset the same way swipe dismiss already does.
+      rerender(renderTree(false));
+      rerender(renderTree(true));
+      expect(
+        screen.getByRole("region", { name: /quick add to cart/i }),
+      ).toBeInTheDocument();
+    });
+
     it("renders a plain div (no inline transform) when prefers-reduced-motion is set", () => {
       mockUseReducedMotion.mockReturnValue(true);
       render(
