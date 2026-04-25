@@ -12,6 +12,9 @@ vi.mock("@/lib/wix-client", () => ({ getWixClient: vi.fn() }));
 vi.mock("@/lib/wix/products", () => ({
   listProducts: vi.fn(),
 }));
+vi.mock("@/lib/wix/blog", () => ({
+  listAllPostSlugs: vi.fn(),
+}));
 vi.mock("@/lib/shop/categories", () => ({
   SHOP_CATEGORIES: [
     { slug: "futon-frames", name: "Futon Frames", collectionSlug: "futon-frames" },
@@ -22,12 +25,14 @@ vi.mock("@/lib/shop/categories", () => ({
 import sitemap from "@/app/sitemap";
 import robots from "@/app/robots";
 import { listProducts } from "@/lib/wix/products";
+import { listAllPostSlugs } from "@/lib/wix/blog";
 
 const ORIGINAL_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL;
 
 beforeEach(() => {
   process.env.NEXT_PUBLIC_SITE_URL = "https://www.carolinafutons.com";
   vi.mocked(listProducts).mockResolvedValue([]);
+  vi.mocked(listAllPostSlugs).mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -87,6 +92,21 @@ describe("sitemap()", () => {
     expect(urls).toContain("https://www.carolinafutons.com/products/good");
     expect(urls.some((u) => u.endsWith("/products/"))).toBe(false);
     expect(urls.some((u) => u.includes("/products/undefined"))).toBe(false);
+  });
+
+  it("adds one entry per blog post slug returned by listAllPostSlugs", async () => {
+    vi.mocked(listAllPostSlugs).mockResolvedValueOnce([
+      "futon-vs-sofa-bed",
+      "wool-wrapped-mattress-care",
+    ]);
+    const entries = await sitemap();
+    const urls = entries.map((e) => e.url);
+    expect(urls).toContain(
+      "https://www.carolinafutons.com/blog/futon-vs-sofa-bed",
+    );
+    expect(urls).toContain(
+      "https://www.carolinafutons.com/blog/wool-wrapped-mattress-care",
+    );
   });
 
   it("every entry carries a lastModified Date so Next serializes <lastmod>", async () => {
