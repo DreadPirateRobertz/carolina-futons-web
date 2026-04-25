@@ -145,6 +145,32 @@ export async function listCollections(limit = 25) {
   }
 }
 
+// cf-3qt.5.4: case-insensitive name prefix match for /search. Empty/whitespace
+// q returns []; the page handles the guided empty state. Wix Stores
+// queryProducts() builder only supports startsWith on `name` — substring
+// `contains` is not exposed in this SDK, so the search is prefix-only for now.
+// Limit is small — /search is dual-source (products + posts) and we don't
+// paginate yet.
+export async function searchProducts(
+  q: string,
+  limit = 12,
+): Promise<WixProduct[]> {
+  const trimmed = q.trim();
+  if (!trimmed) return [];
+  try {
+    const client = getWixClient();
+    const result = await client.products
+      .queryProducts()
+      .startsWith("name", trimmed)
+      .limit(limit)
+      .find();
+    return result.items;
+  } catch (err) {
+    await logWixFailure("wix", `searchProducts(${trimmed})`, err);
+    return [];
+  }
+}
+
 export type WixProduct = NonNullable<
   Awaited<ReturnType<typeof listProducts>>
 >[number];

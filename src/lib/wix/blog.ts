@@ -95,6 +95,33 @@ export async function listAllPostSlugs(limit = 100): Promise<string[]> {
   }
 }
 
+// cf-3qt.5.4: case-insensitive title prefix match for /search. Empty/whitespace
+// q returns []; page renders the guided empty state. Wix Blog queryPosts()
+// builder supports startsWith on `title` only — substring `contains` is not
+// in the SDK, so search is prefix-only for now.
+export async function searchPosts(
+  q: string,
+  limit = 12,
+): Promise<BlogPostSummary[]> {
+  const trimmed = q.trim();
+  if (!trimmed) return [];
+  try {
+    const client = getWixClient();
+    const result = await client.posts
+      .queryPosts()
+      .startsWith("title", trimmed)
+      .limit(limit)
+      .find();
+    const items = (result.items ?? []) as RawPost[];
+    return items
+      .map(toSummary)
+      .filter((p): p is BlogPostSummary => p !== null);
+  } catch (err) {
+    await logWixFailure("wix", `searchPosts(${trimmed})`, err);
+    return [];
+  }
+}
+
 export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
   if (!slug) return null;
   try {
