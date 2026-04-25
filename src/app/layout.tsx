@@ -18,6 +18,7 @@ import { RouteProgressBar } from "@/components/site/RouteProgressBar";
 import { BackToTop } from "@/components/site/BackToTop";
 import { TikTokPixel } from "@/components/analytics/TikTokPixel";
 import { PinterestTag } from "@/components/analytics/PinterestTag";
+import { MetaPixel } from "@/components/analytics/MetaPixel";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -96,6 +97,7 @@ export default function RootLayout({
         </MotionProvider>
         <TikTokPixel />
         <PinterestTag />
+        <MetaPixel />
       </body>
     </html>
   );

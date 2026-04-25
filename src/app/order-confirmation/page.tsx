@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { MetaPurchaseTracker } from "@/components/analytics/MetaPurchaseTracker";
 import { getOrder } from "@/lib/wix/orders";
 
 export const dynamic = "force-dynamic";
@@ -28,8 +29,32 @@ export default async function OrderConfirmationPage(props: {
   const shippingAddress = order.shippingInfo?.logistics?.shippingDestination?.address;
   const billingAddress = order.billingInfo?.address;
 
+  // cf-3qt.7.3: derive Meta Pixel Purchase params from the resolved order.
+  // priceSummary.total.amount is a stringified decimal per Wix conventions;
+  // a non-numeric value means a malformed order — skip the event rather
+  // than ship NaN to Meta (which would silently break Events Manager
+  // reporting). Same guard for currency: skip if Wix returned no ISO code.
+  const totalAmountRaw = order.priceSummary?.total?.amount ?? "";
+  const totalAmount = Number(totalAmountRaw);
+  const orderCurrency = order.currency ?? "";
+  const purchaseTrackable =
+    Number.isFinite(totalAmount) &&
+    totalAmount > 0 &&
+    /^[A-Z]{3}$/.test(orderCurrency);
+  const purchaseContentIds = lineItems
+    .map((li) => li.catalogReference?.catalogItemId)
+    .filter((id): id is string => typeof id === "string" && id.length > 0);
+
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-10">
+      {purchaseTrackable ? (
+        <MetaPurchaseTracker
+          value={totalAmount}
+          currency={orderCurrency}
+          contentIds={purchaseContentIds}
+          orderId={orderNumber || undefined}
+        />
+      ) : null}
       <header>
         <p className="text-sm uppercase tracking-wide text-emerald-700">
           Order confirmed

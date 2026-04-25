@@ -15,6 +15,11 @@ vi.mock("@/app/actions/cart", () => ({
   addItemAction: (...args: unknown[]) => addItemAction(...args),
 }));
 
+const fireMetaEvent = vi.fn();
+vi.mock("@/components/analytics/MetaPixel", () => ({
+  fireMetaEvent: (...args: unknown[]) => fireMetaEvent(...args),
+}));
+
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 
 const baseProps = {
@@ -30,6 +35,7 @@ describe("AddToCartButton", () => {
     removeLine.mockReset();
     openCart.mockReset();
     addItemAction.mockReset();
+    fireMetaEvent.mockReset();
   });
 
   it("adds a line client-side and syncs to the server on click", async () => {
@@ -132,5 +138,30 @@ describe("AddToCartButton", () => {
     await userEvent.click(screen.getByRole("button"));
     await screen.findByRole("alert");
     expect(onAdded).not.toHaveBeenCalled();
+  });
+
+  // cf-3qt.7.3: Meta Pixel AddToCart fires after the server confirms,
+  // with value derived from unitPriceCents * quantity / 100. Failure
+  // path must NOT fire, otherwise Meta would over-report AddToCart
+  // events on validation errors.
+  it("fires Meta AddToCart with derived value after successful server sync", async () => {
+    addItemAction.mockResolvedValueOnce({ ok: true, cart: null });
+    render(<AddToCartButton {...baseProps} quantity={2} />);
+    await userEvent.click(screen.getByRole("button"));
+    expect(fireMetaEvent).toHaveBeenCalledWith("AddToCart", {
+      content_ids: ["p1"],
+      content_type: "product",
+      value: 1598, // unitPriceCents 79900 * qty 2 / 100
+      currency: "USD",
+      contents: [{ id: "p1", quantity: 2 }],
+    });
+  });
+
+  it("does not fire Meta AddToCart when the server sync fails", async () => {
+    addItemAction.mockResolvedValueOnce({ ok: false, error: "Out of stock" });
+    render(<AddToCartButton {...baseProps} />);
+    await userEvent.click(screen.getByRole("button"));
+    await screen.findByRole("alert");
+    expect(fireMetaEvent).not.toHaveBeenCalled();
   });
 });
