@@ -9,6 +9,7 @@ import { PdpCrossSell } from "@/components/product/PdpCrossSell";
 import { PdpRecentlyViewed } from "@/components/product/PdpRecentlyViewed";
 import { PdpReviews, pickPdpReviews } from "@/components/product/PdpReviews";
 import { PdpShareButtons } from "@/components/product/PdpShareButtons";
+import { PdpViewItemTracker } from "@/components/product/PdpViewItemTracker";
 import { getReviewStats } from "@/lib/product/review-stats";
 import { getProductBySlug } from "@/lib/wix/products";
 import { logWixFailure } from "@/lib/wix/errors";
@@ -130,6 +131,15 @@ export default async function PdpPage(props: {
           { label: "Shop", href: "/shop" },
           { label: product.name ?? "Product" },
         ]}
+      />
+
+      <PdpViewItemTracker
+        item={{
+          item_id: product._id ?? slug,
+          item_name: product.name ?? "",
+          item_category: product.collectionIds?.[0],
+          price: product.priceData?.price ?? undefined,
+        }}
       />
 
       <div className="mt-6">
