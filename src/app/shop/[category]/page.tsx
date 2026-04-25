@@ -273,7 +273,10 @@ export default async function PlpPage(props: {
             // internally — static render under prefers-reduced-motion, no
             // staggered onset. whileInView fires once per card.
             <HeroReveal key={product._id} as="li" delay={i * 0.06}>
-              <ProductCard product={product} />
+              {/* cf-pdp-lcp-fetchpriority: first 4 cards are above-the-fold
+                  on the 4-col PLP grid; primary image of card #1 is the
+                  LCP element per Lighthouse trace on /shop/futon-frames. */}
+              <ProductCard product={product} priority={i < 4} />
             </HeroReveal>
           ))}
         </ul>

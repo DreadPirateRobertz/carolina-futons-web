@@ -36,9 +36,11 @@ export function FeaturedProducts({ products }: { products: readonly WixProduct[]
       </div>
 
       <ul className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        {products.map((product) => (
+        {products.map((product, i) => (
           <li key={product._id}>
-            <ProductCard product={product} />
+            {/* cf-pdp-lcp-fetchpriority: first 3 cards above the fold on
+                the home page (2-col mobile, 3-col tablet, 6-col desktop). */}
+            <ProductCard product={product} priority={i < 3} />
           </li>
         ))}
       </ul>
