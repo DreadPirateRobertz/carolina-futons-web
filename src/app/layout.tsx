@@ -19,6 +19,7 @@ import { BackToTop } from "@/components/site/BackToTop";
 import { TikTokPixel } from "@/components/analytics/TikTokPixel";
 import { PinterestTag } from "@/components/analytics/PinterestTag";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
+import { GA4Tag } from "@/components/analytics/GA4Tag";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -95,6 +96,7 @@ export default function RootLayout({
             <BackToTop />
           </CartProvider>
         </MotionProvider>
+        <GA4Tag />
         <TikTokPixel />
         <PinterestTag />
         <MetaPixel />
