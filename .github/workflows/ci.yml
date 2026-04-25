@@ -28,10 +28,18 @@ jobs:
       - name: Unit tests
         run: npx vitest run
 
+      # Dependabot PRs do not receive repository secrets, so E2E tests that
+      # need WIX_* or SESSION_COOKIE_SECRET would always fail on those PRs
+      # even when the bump itself is safe. Lint / typecheck / unit still
+      # run for dependabot, which is enough signal to verify a bump.
+      # Only static strings are referenced via ${{ }} below — no untrusted
+      # event input is interpolated into run: scripts.
       - name: Install Playwright browsers
+        if: github.actor != 'dependabot[bot]'
         run: npx playwright install --with-deps chromium
 
       - name: E2E tests
+        if: github.actor != 'dependabot[bot]'
         run: npx playwright test
         env:
           WIX_CLIENT_ID_HEADLESS: ${{ secrets.WIX_CLIENT_ID_HEADLESS }}
