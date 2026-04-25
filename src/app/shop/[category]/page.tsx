@@ -22,6 +22,7 @@ import { PLPControls } from "@/components/plp/PLPControls";
 import { PLPPagination, buildPageUrl } from "@/components/plp/PLPPagination";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { buildBreadcrumbSchema, resolveSiteUrl } from "@/lib/seo/json-ld";
+import { Breadcrumbs } from "@/components/site/Breadcrumbs";
 
 export const dynamic = "force-dynamic";
 
@@ -197,13 +198,13 @@ export default async function PlpPage(props: {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-10">
       <JsonLd id="jsonld-breadcrumb" schema={breadcrumbSchema} />
-      <nav className="text-sm text-zinc-500">
-        <Link href="/shop" className="hover:underline">
-          Shop
-        </Link>
-        <span className="mx-2">/</span>
-        <span className="text-zinc-900">{category.name}</span>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Shop", href: "/shop" },
+          { label: category.name },
+        ]}
+      />
 
       <header className="mt-4">
         <h1 className="text-3xl font-semibold tracking-tight">

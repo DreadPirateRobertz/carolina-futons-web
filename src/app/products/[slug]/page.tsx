@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
 
+import { Breadcrumbs } from "@/components/site/Breadcrumbs";
 import { PdpInteractive } from "@/components/product/PdpInteractive";
 import type { GalleryImage } from "@/components/product/PdpGallery";
 import { PdpCrossSell } from "@/components/product/PdpCrossSell";
@@ -124,13 +124,13 @@ export default async function PdpPage(props: {
     <main className="mx-auto w-full max-w-6xl px-4 py-10">
       <JsonLd id="jsonld-product" schema={productSchema} />
       <JsonLd id="jsonld-breadcrumb" schema={breadcrumbSchema} />
-      <nav aria-label="Breadcrumb" className="text-sm text-cf-espresso/60">
-        <Link href="/shop" className="hover:underline">
-          Shop
-        </Link>
-        <span className="mx-2">/</span>
-        <span className="text-cf-espresso">{product.name}</span>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Shop", href: "/shop" },
+          { label: product.name ?? "Product" },
+        ]}
+      />
 
       <div className="mt-6">
         <PdpInteractive
