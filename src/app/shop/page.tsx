@@ -1,11 +1,18 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { SHOP_CATEGORIES } from "@/lib/shop/categories";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
+
+const DESCRIPTION = "Futon frames, Murphy cabinet beds, platform beds, and mattresses.";
 
 export const metadata: Metadata = {
   title: "Shop — Carolina Futons",
-  description:
-    "Futon frames, Murphy cabinet beds, platform beds, and mattresses.",
+  description: DESCRIPTION,
+  openGraph: {
+    title: "Shop — Carolina Futons",
+    description: DESCRIPTION,
+    images: [DEFAULT_OG_IMAGE],
+  },
 };
 
 export default function ShopIndex() {

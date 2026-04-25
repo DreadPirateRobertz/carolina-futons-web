@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
 import { Suspense } from "react";
 import { getCollectionBySlug } from "@/lib/wix/products";
 import { getCollectionPlp, type PlpSort } from "@/lib/wix/plp";
@@ -31,13 +32,29 @@ export function generateStaticParams() {
 export async function generateMetadata(props: {
   params: Promise<{ category: string }>;
 }): Promise<Metadata> {
-  const { category: categorySlug } = await props.params;
-  const category = findCategory(categorySlug);
-  if (!category) return { title: "Shop — Carolina Futons" };
-  return {
-    title: `${category.name} — Carolina Futons`,
-    description: category.description,
-  };
+  try {
+    const { category: categorySlug } = await props.params;
+    const category = findCategory(categorySlug);
+    if (!category) return { title: "Shop — Carolina Futons" };
+    // Category card thumbnails are 600×400. Declared dimensions let crawlers
+    // pre-size the image without fetching it; they are above the 200×200 OG
+    // minimum so social cards render correctly.
+    const ogImage = category.image
+      ? { url: category.image, width: 600, height: 400 }
+      : DEFAULT_OG_IMAGE;
+    return {
+      title: `${category.name} — Carolina Futons`,
+      description: category.description,
+      openGraph: {
+        title: `${category.name} — Carolina Futons`,
+        description: category.description,
+        images: [ogImage],
+      },
+    };
+  } catch (err) {
+    await logWixFailure("category-generateMetadata", "params resolution", err);
+    return { title: "Shop — Carolina Futons" };
+  }
 }
 
 const VALID_SORTS = new Set<PlpSort>([
