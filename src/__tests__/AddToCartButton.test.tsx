@@ -20,6 +20,11 @@ vi.mock("@/components/analytics/MetaPixel", () => ({
   fireMetaEvent: (...args: unknown[]) => fireMetaEvent(...args),
 }));
 
+const trackAddToCart = vi.fn();
+vi.mock("@/lib/analytics/ga4-events", () => ({
+  trackAddToCart: (...args: unknown[]) => trackAddToCart(...args),
+}));
+
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 
 const baseProps = {
@@ -36,6 +41,7 @@ describe("AddToCartButton", () => {
     openCart.mockReset();
     addItemAction.mockReset();
     fireMetaEvent.mockReset();
+    trackAddToCart.mockReset();
   });
 
   it("adds a line client-side and syncs to the server on click", async () => {
@@ -163,5 +169,45 @@ describe("AddToCartButton", () => {
     await userEvent.click(screen.getByRole("button"));
     await screen.findByRole("alert");
     expect(fireMetaEvent).not.toHaveBeenCalled();
+  });
+
+  // cf-pzx5: GA4 add_to_cart fires after the server confirms, with the
+  // GA4 ecommerce schema (item_id, item_name, item_variant, price, quantity).
+  // Failure path must NOT fire, otherwise GA4 over-reports add_to_cart on
+  // validation errors.
+  it("fires GA4 add_to_cart with the line details after successful server sync", async () => {
+    addItemAction.mockResolvedValueOnce({ ok: true, cart: null });
+    render(
+      <AddToCartButton
+        {...baseProps}
+        variantLabel="Size: Queen"
+        quantity={2}
+      />,
+    );
+    await userEvent.click(screen.getByRole("button"));
+    expect(trackAddToCart).toHaveBeenCalledWith({
+      item_id: "p1",
+      item_name: "Test Futon",
+      item_variant: "Size: Queen",
+      price: 799, // unitPriceCents 79900 / 100
+      quantity: 2,
+    });
+  });
+
+  it("omits item_variant when no variantLabel is supplied", async () => {
+    addItemAction.mockResolvedValueOnce({ ok: true, cart: null });
+    render(<AddToCartButton {...baseProps} />);
+    await userEvent.click(screen.getByRole("button"));
+    expect(trackAddToCart).toHaveBeenCalledWith(
+      expect.objectContaining({ item_variant: undefined }),
+    );
+  });
+
+  it("does not fire GA4 add_to_cart when the server sync fails", async () => {
+    addItemAction.mockResolvedValueOnce({ ok: false, error: "Out of stock" });
+    render(<AddToCartButton {...baseProps} />);
+    await userEvent.click(screen.getByRole("button"));
+    await screen.findByRole("alert");
+    expect(trackAddToCart).not.toHaveBeenCalled();
   });
 });
