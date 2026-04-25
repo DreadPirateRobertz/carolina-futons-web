@@ -37,26 +37,31 @@ describe("FooterMountainDivider", () => {
 });
 
 describe("LivingSky", () => {
-  it("renders meaningful alt text by default", () => {
-    render(<LivingSky />);
-    const img = screen.getByAltText(/blue ridge mountain skyline/i);
-    expect(srcOf(img as HTMLElement)).toContain("living-sky.svg");
+  // cf-93rb-livingsky-dynamic: LivingSky now mounts the dynamic Client
+  // Component which inlines the full SVG body and ticks the time-of-day
+  // engine. The wrapper contract stays the same — data-slot + className
+  // merge — so the rest of the page places it identically to the
+  // previous static facade.
+  it("mounts the dynamic SVG slot inside its wrapper", () => {
+    const { container } = render(<LivingSky />);
+    const wrapper = container.querySelector("[data-slot='living-sky']");
+    expect(wrapper).not.toBeNull();
+    expect(
+      container.querySelector("[data-slot='living-sky-svg']"),
+    ).not.toBeNull();
   });
 
-  it("accepts a custom alt for placement-specific descriptions", () => {
-    render(<LivingSky alt="Skyline above the press section" />);
-    expect(
-      screen.getByAltText(/skyline above the press section/i),
-    ).toBeInTheDocument();
+  it("inlines the SVG with the canonical living-sky title for AT users", () => {
+    const { container } = render(<LivingSky />);
+    expect(container.querySelector("svg")).not.toBeNull();
+    expect(container.innerHTML).toContain("Blue Ridge mountain skyline");
   });
 
   it("merges a caller-supplied className onto the wrapper", () => {
     const { container } = render(<LivingSky className="opacity-60" />);
     const wrapper = container.querySelector("[data-slot='living-sky']");
     expect(wrapper?.className).toContain("opacity-60");
-    // Defaults still present so the wrapper stays full-width + non-interactive.
     expect(wrapper?.className).toContain("w-full");
-    expect(wrapper?.className).toContain("pointer-events-none");
   });
 });
 

@@ -80,7 +80,7 @@ export default async function SpringSalePage() {
             </div>
           </div>
           <div data-slot="spring-sale-aside" className="hidden md:block">
-            <LivingSky alt="Blue Ridge mountain skyline above the spring-sale promotion" />
+            <LivingSky />
           </div>
         </div>
       </section>
