@@ -100,19 +100,30 @@ describe("FeaturedProducts — 6-product ceiling", () => {
 });
 
 // cf-review-count-badges: subtle star + count under each card's price.
-// Assertions are shape-based (one badge per card, each has a star glyph
-// and a count-with-"reviews") so the handpicked rating/count values can
-// be tweaked without breaking these tests.
+// Assertions are shape-based (one badge per seeded card, each has a star glyph
+// and a count-with-"reviews"). cf-xe54: badges only render for seeded slugs
+// since the dishonest hash fallback was removed; tests pin that seam by
+// using fixtures with real SEED slugs from review-stats.ts.
+function fourSeededProducts(): TestProduct[] {
+  // Slugs from SEED in src/lib/product/review-stats.ts.
+  return [
+    makeProduct("a", { slug: "monterey-futon" }),
+    makeProduct("b", { slug: "murphy-cabinet-bed" }),
+    makeProduct("c", { slug: "classic-8-inch-mattress" }),
+    makeProduct("d", { slug: "hardwood-bed-frame" }),
+  ];
+}
+
 describe("FeaturedProducts — review count badges", () => {
-  it("renders a review badge on every product card", () => {
-    render(<FeaturedProducts products={fourProducts() as never} />);
+  it("renders a review badge on every product card with seeded review stats", () => {
+    render(<FeaturedProducts products={fourSeededProducts() as never} />);
     const region = screen.getByRole("region", { name: /featured/i });
     const badges = within(region).getAllByTestId("review-badge");
     expect(badges).toHaveLength(4);
   });
 
   it("each badge contains a star glyph and a reviews count", () => {
-    render(<FeaturedProducts products={fourProducts() as never} />);
+    render(<FeaturedProducts products={fourSeededProducts() as never} />);
     const region = screen.getByRole("region", { name: /featured/i });
     const badges = within(region).getAllByTestId("review-badge");
     for (const badge of badges) {
@@ -121,5 +132,11 @@ describe("FeaturedProducts — review count badges", () => {
       expect(text).toMatch(/\d+(\.\d+)?/); // rating number
       expect(text).toMatch(/\d+\s*reviews?/i); // "(24 reviews)"
     }
+  });
+
+  it("omits the badge for cards whose slug has no seeded review stats", () => {
+    render(<FeaturedProducts products={fourProducts() as never} />);
+    const region = screen.getByRole("region", { name: /featured/i });
+    expect(within(region).queryAllByTestId("review-badge")).toHaveLength(0);
   });
 });

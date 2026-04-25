@@ -15,11 +15,11 @@ export type PdpReviewsProps = {
 const HEADING_ID = "pdp-reviews-heading";
 const MAX_CARDS = 3;
 
-// cf-3qt.6.F.8: select reviews to spotlight on the PDP. Static data only —
-// the real review service lands later. Fallback chain favors specificity:
-// exact productName -> inferred category -> top-rated overall. Always returns
-// up to MAX_CARDS so the empty state below is reserved for the rare case
-// where REVIEWS itself is empty (test seam, or future per-category lookup).
+// cf-xe54 (cf-3qt.6.F.8.FU): select reviews to spotlight on the PDP. Static
+// data only — the real review service lands later. Fallback chain favors
+// honest specificity: exact productName -> inferred category -> []. The
+// previous "top-rated overall" tier was removed because it surfaced reviews
+// from unrelated categories captioned as the current product's reviews.
 export function pickPdpReviews(productName: string): readonly Review[] {
   const exact = REVIEWS.filter((r) => r.productName === productName);
   if (exact.length > 0) return exact.slice(0, MAX_CARDS);
@@ -30,18 +30,12 @@ export function pickPdpReviews(productName: string): readonly Review[] {
     if (byCategory.length > 0) return byCategory.slice(0, MAX_CARDS);
   }
 
-  // Top fallback: highest rating wins, then most recent.
-  return [...REVIEWS]
-    .sort((a, b) => {
-      if (b.rating !== a.rating) return b.rating - a.rating;
-      return b.date.localeCompare(a.date);
-    })
-    .slice(0, MAX_CARDS);
+  return [];
 }
 
 // Map a free-form Wix product name to a ReviewCategory. Keyword matching is
 // intentionally simple — phase 2 swaps this for an explicit category prop
-// once the Wix product schema carries one.
+// once the Wix product schema carries one (cf-3qt.6.F.8 phase 2).
 function inferReviewCategory(productName: string): ReviewCategory | null {
   const name = productName.toLowerCase();
   if (name.includes("murphy")) return "murphy-beds";
@@ -56,7 +50,9 @@ export function PdpReviews({ productSlug, productName }: PdpReviewsProps) {
   const stats = getReviewStats(productSlug);
   const reviews = pickPdpReviews(productName);
 
-  if (!stats && reviews.length === 0) {
+  // Aggregate is suppressed when reviews is empty so we never show a count
+  // ("42 reviews") with zero cards beneath it (cf-xe54).
+  if (reviews.length === 0) {
     return (
       <section
         aria-labelledby={HEADING_ID}
@@ -96,13 +92,11 @@ export function PdpReviews({ productSlug, productName }: PdpReviewsProps) {
         {stats ? <AggregateRating stats={stats} /> : null}
       </header>
 
-      {reviews.length > 0 ? (
-        <ul className="mt-6 space-y-6">
-          {reviews.map((review) => (
-            <ReviewCard key={review.id} review={review} />
-          ))}
-        </ul>
-      ) : null}
+      <ul className="mt-6 space-y-6">
+        {reviews.map((review) => (
+          <ReviewCard key={review.id} review={review} />
+        ))}
+      </ul>
 
       <p className="mt-6 text-sm">
         <Link href="/reviews" className="underline hover:no-underline">
@@ -145,7 +139,8 @@ function ReviewCard({ review }: { review: Review }) {
       </div>
       <p className="mt-2 text-sm text-cf-espresso/80">{review.body}</p>
       <p className="mt-2 text-xs text-cf-espresso/60">
-        {review.author} · {formatDate(review.date)}
+        {review.author} ·{" "}
+        <time dateTime={review.date}>{formatDate(review.date)}</time>
       </p>
     </li>
   );
@@ -153,7 +148,12 @@ function ReviewCard({ review }: { review: Review }) {
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
+  if (Number.isNaN(d.getTime())) {
+    if (process.env.NODE_ENV !== "test") {
+      console.warn(`[pdp-reviews] invalid review date: "${iso}"`);
+    }
+    return iso;
+  }
   return d.toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",

@@ -57,6 +57,19 @@ export function buildOrganizationSchema(siteUrl: string): OrganizationSchema {
   };
 }
 
+export type ProductReviewInput = {
+  author: string;
+  rating: number;
+  title: string;
+  body: string;
+  date: string;
+};
+
+export type ProductAggregateRatingInput = {
+  ratingValue: number;
+  reviewCount: number;
+};
+
 export type ProductSchemaInput = {
   name: string;
   description: string;
@@ -64,6 +77,8 @@ export type ProductSchemaInput = {
   priceUSD: number;
   inStock: boolean;
   canonicalUrl: string;
+  aggregateRating?: ProductAggregateRatingInput;
+  reviews?: ReadonlyArray<ProductReviewInput>;
 };
 
 type Offer = {
@@ -76,6 +91,28 @@ type Offer = {
   url: string;
 };
 
+type AggregateRating = {
+  "@type": "AggregateRating";
+  ratingValue: string;
+  reviewCount: number;
+  bestRating: "5";
+  worstRating: "1";
+};
+
+type ReviewNode = {
+  "@type": "Review";
+  author: { "@type": "Person"; name: string };
+  reviewRating: {
+    "@type": "Rating";
+    ratingValue: string;
+    bestRating: "5";
+    worstRating: "1";
+  };
+  name: string;
+  reviewBody: string;
+  datePublished: string;
+};
+
 export type ProductSchema = {
   "@context": "https://schema.org";
   "@type": "Product";
@@ -84,6 +121,8 @@ export type ProductSchema = {
   image?: string;
   url: string;
   offers: Offer;
+  aggregateRating?: AggregateRating;
+  review?: ReadonlyArray<ReviewNode>;
 };
 
 export function buildProductSchema(input: ProductSchemaInput): ProductSchema {
@@ -104,6 +143,32 @@ export function buildProductSchema(input: ProductSchemaInput): ProductSchema {
     },
   };
   if (input.imageUrl) schema.image = input.imageUrl;
+  // Only emit aggregateRating when honest stats exist; cf-xe54 removed the
+  // hash-fabricated fallback so callers must pass real data or omit.
+  if (input.aggregateRating && input.aggregateRating.reviewCount > 0) {
+    schema.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: input.aggregateRating.ratingValue.toFixed(1),
+      reviewCount: input.aggregateRating.reviewCount,
+      bestRating: "5",
+      worstRating: "1",
+    };
+  }
+  if (input.reviews && input.reviews.length > 0) {
+    schema.review = input.reviews.map((r) => ({
+      "@type": "Review",
+      author: { "@type": "Person", name: r.author },
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: r.rating.toFixed(1),
+        bestRating: "5",
+        worstRating: "1",
+      },
+      name: r.title,
+      reviewBody: r.body,
+      datePublished: r.date,
+    }));
+  }
   return schema;
 }
 
