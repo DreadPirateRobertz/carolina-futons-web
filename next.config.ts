@@ -24,6 +24,7 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      // Legacy nav shortcuts (cf-tjh) — pre-migration permalinks.
       { source: "/futons", destination: "/shop/futon-frames", permanent: true },
       {
         source: "/murphy-beds",
@@ -37,6 +38,82 @@ const nextConfig: NextConfig = {
       },
       { source: "/frames", destination: "/shop/platform-beds", permanent: true },
       { source: "/sale", destination: "/shop/mattresses-sale", permanent: true },
+
+      // cf-3qt.7.1 — Wix Studio canonical paths → cfw equivalents.
+      // Sourced from EDITOR-HOOKUP-GUIDE.md page table + URL-CMS-MAP.md.
+      // permanent: true emits HTTP 308 (path + method preserved).
+      // Routes still on the migration backlog (/faq, /getting-it-home,
+      // /search, /cart, /checkout) keep their Wix path as the cfw canonical
+      // — no redirect needed; they resolve once those pages ship.
+      { source: "/home", destination: "/", permanent: true },
+
+      // Wix Stores dynamic routes.
+      {
+        source: "/product-page/:slug",
+        destination: "/products/:slug",
+        permanent: true,
+      },
+      { source: "/product-page", destination: "/shop", permanent: true },
+      {
+        source: "/category-page/:slug",
+        destination: "/shop/:slug",
+        permanent: true,
+      },
+      { source: "/category-page", destination: "/shop", permanent: true },
+
+      // Wix Blog dynamic routes.
+      { source: "/post/:slug", destination: "/blog/:slug", permanent: true },
+      { source: "/post", destination: "/blog", permanent: true },
+
+      // Policy pages.
+      {
+        source: "/shipping-policy",
+        destination: "/shipping",
+        permanent: true,
+      },
+      { source: "/privacy-policy", destination: "/privacy", permanent: true },
+      { source: "/refund-policy", destination: "/returns", permanent: true },
+      {
+        source: "/terms-and-conditions",
+        destination: "/terms",
+        permanent: true,
+      },
+      {
+        source: "/accessibility-statement",
+        destination: "/accessibility",
+        permanent: true,
+      },
+
+      // Member surfaces collapse onto /account until cf-3qt.3 lands the full
+      // dashboard split.
+      { source: "/members-area", destination: "/account", permanent: true },
+      { source: "/members", destination: "/account", permanent: true },
+      { source: "/paywall", destination: "/account", permanent: true },
+      { source: "/plans-pricing", destination: "/account", permanent: true },
+
+      // Order confirmation aliases.
+      {
+        source: "/thank-you",
+        destination: "/order-confirmation",
+        permanent: true,
+      },
+      {
+        source: "/thank-you-page",
+        destination: "/order-confirmation",
+        permanent: true,
+      },
+
+      // Booking / consultation surfaces collapse onto /contact (booking is
+      // post-migration optimization per URL-CMS-MAP §5).
+      { source: "/book-online", destination: "/contact", permanent: true },
+      { source: "/booking-form", destination: "/contact", permanent: true },
+
+      // White-glove delivery info merged into /shipping.
+      {
+        source: "/white-glove-delivery",
+        destination: "/shipping",
+        permanent: true,
+      },
     ];
   },
 };
