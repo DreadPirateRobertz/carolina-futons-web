@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { SHOP_CATEGORIES } from "@/lib/shop/categories";
+import { listAllPostSlugs } from "@/lib/wix/blog";
 import { listProducts } from "@/lib/wix/products";
 
 // Site-wide sitemap (cf-sitemap). Next.js serves this at /sitemap.xml.
@@ -58,5 +59,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
     }));
 
-  return [...staticEntries, ...categoryEntries, ...productEntries];
+  const postSlugs = await listAllPostSlugs(100);
+  const postEntries: MetadataRoute.Sitemap = postSlugs.map((slug) => ({
+    url: `${base}/blog/${slug}`,
+    lastModified: now,
+  }));
+
+  return [
+    ...staticEntries,
+    ...categoryEntries,
+    ...productEntries,
+    ...postEntries,
+  ];
 }

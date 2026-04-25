@@ -4,6 +4,7 @@ import { items } from "@wix/data";
 import { members } from "@wix/members";
 import { currentCart, checkout, orders } from "@wix/ecom";
 import { redirects } from "@wix/redirects";
+import { posts } from "@wix/blog";
 import { env } from "@/lib/env";
 
 const MODULES = {
@@ -15,6 +16,7 @@ const MODULES = {
   checkout,
   orders,
   redirects,
+  posts,
 };
 
 export function getWixClient() {
