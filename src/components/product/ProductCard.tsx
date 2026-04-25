@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { m, useReducedMotion } from "framer-motion";
 
@@ -41,17 +42,25 @@ const MOTION_DURATION_SEC = 0.2;
 const MOTION_Y_PX = -4;
 const REDUCED_OPACITY = 0.92;
 
-// `priority` marks above-fold cards so the primary image preloads with
-// fetchpriority="high" + loading="eager" (LCP win, especially on PLP grids
-// where the first product card is the LCP element). Cards below the fold
-// keep loading="lazy" + fetchpriority="auto". Callers should pass priority
-// for the first N visible cards (~3 on the Featured strip, ~4 on PLP).
+// Default `sizes` matches the PLP /shop/[category] 4-col grid (the LCP-critical
+// surface): 25vw on desktop, 33vw on tablet, 50vw on mobile. Featured strip
+// (6-col desktop) passes a tighter override.
+const DEFAULT_PLP_SIZES =
+  "(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw";
+
+// `priority` marks above-fold cards so next/image emits fetchpriority="high"
+// + loading="eager" (LCP win, especially on PLP grids where the first product
+// card image is the LCP element). Cards below the fold default to lazy.
+// Callers should pass priority for the first N visible cards (~3 on the
+// Featured strip, ~4 on PLP).
 export function ProductCard({
   product,
   priority = false,
+  sizes = DEFAULT_PLP_SIZES,
 }: {
   product: WixProduct;
   priority?: boolean;
+  sizes?: string;
 }) {
   const prefersReducedMotion = useReducedMotion() ?? false;
   const href = product.slug ? `/products/${product.slug}` : "#";
@@ -80,30 +89,29 @@ export function ProductCard({
         <div className="relative aspect-square w-full overflow-hidden rounded-t-lg bg-zinc-100">
           {primary ? (
             <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={primary}
                 alt={product.name ?? ""}
                 data-slot="product-card-primary-image"
-                fetchPriority={priority ? "high" : "auto"}
-                loading={priority ? "eager" : "lazy"}
-                decoding="async"
+                fill
+                sizes={sizes}
+                priority={priority}
                 className={
                   prefersReducedMotion
-                    ? "absolute inset-0 h-full w-full object-cover"
-                    : "absolute inset-0 h-full w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03] group-focus-within:scale-[1.03]"
+                    ? "object-cover"
+                    : "object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03] group-focus-within:scale-[1.03]"
                 }
               />
-              {hasSecondary && !prefersReducedMotion ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={secondary ?? undefined}
+              {hasSecondary && secondary && !prefersReducedMotion ? (
+                <Image
+                  src={secondary}
                   alt=""
                   aria-hidden="true"
                   data-slot="product-card-secondary-image"
+                  fill
+                  sizes={sizes}
                   loading="lazy"
-                  decoding="async"
-                  className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100"
+                  className="object-cover opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100"
                 />
               ) : null}
             </>
