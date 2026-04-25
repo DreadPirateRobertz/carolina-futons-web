@@ -39,8 +39,14 @@ export function FeaturedProducts({ products }: { products: readonly WixProduct[]
         {products.map((product, i) => (
           <li key={product._id}>
             {/* cf-pdp-lcp-fetchpriority: first 3 cards above the fold on
-                the home page (2-col mobile, 3-col tablet, 6-col desktop). */}
-            <ProductCard product={product} priority={i < 3} />
+                the home page (2-col mobile, 3-col tablet, 6-col desktop).
+                Tighter `sizes` than the PLP default — Featured strip cards
+                are narrower on desktop (6 cols vs 4). */}
+            <ProductCard
+              product={product}
+              priority={i < 3}
+              sizes="(min-width: 1024px) 17vw, (min-width: 640px) 33vw, 50vw"
+            />
           </li>
         ))}
       </ul>

@@ -47,7 +47,10 @@ describe("ProductCard — rendering basics", () => {
     const primary = container.querySelector(
       "[data-slot='product-card-primary-image']",
     );
-    expect(primary?.getAttribute("src")).toBe("https://cdn/main.jpg");
+    // next/image proxies through /_next/image?url=…; assert the upstream URL
+    // is encoded in the src rather than matching the raw URL.
+    const src = primary?.getAttribute("src") ?? "";
+    expect(decodeURIComponent(src)).toContain("https://cdn/main.jpg");
     expect(primary?.getAttribute("alt")).toBe("Test Product");
   });
 
@@ -71,7 +74,8 @@ describe("ProductCard — secondary image swap", () => {
     const secondary = container.querySelector(
       "[data-slot='product-card-secondary-image']",
     );
-    expect(secondary?.getAttribute("src")).toBe("https://cdn/alt.jpg");
+    const src = secondary?.getAttribute("src") ?? "";
+    expect(decodeURIComponent(src)).toContain("https://cdn/alt.jpg");
     // Decorative swap — must not compete with the primary image for AT users.
     expect(secondary?.getAttribute("aria-hidden")).toBe("true");
     expect(secondary?.getAttribute("alt")).toBe("");
@@ -217,27 +221,45 @@ describe("ProductCard — focus/hover parity", () => {
   });
 });
 
-describe("ProductCard — fetchPriority for above-fold cards (cf-pdp-lcp-fetchpriority)", () => {
-  it("defaults to fetchPriority='auto' + loading='lazy' when no priority prop", () => {
+describe("ProductCard — priority + sizes wiring (cf-pdp-lcp-fetchpriority + next/image)", () => {
+  // next/image strips fetchpriority from the rendered DOM in jsdom but
+  // preserves loading; we pin priority via the loading attribute, and pin
+  // the sizes attribute end-to-end since that's what drives srcset selection.
+  it("defaults to loading='lazy' + DEFAULT_PLP_SIZES when no priority prop", () => {
     const { container } = render(<ProductCard product={buildProduct()} />);
     const primary = container.querySelector(
       "[data-slot='product-card-primary-image']",
     );
-    // React serializes the camelCased fetchPriority as fetchpriority on DOM.
-    expect(primary?.getAttribute("fetchpriority")).toBe("auto");
     expect(primary?.getAttribute("loading")).toBe("lazy");
-    expect(primary?.getAttribute("decoding")).toBe("async");
+    const sizes = primary?.getAttribute("sizes") ?? "";
+    expect(sizes).toContain("25vw");
+    expect(sizes).toContain("33vw");
+    expect(sizes).toContain("50vw");
   });
 
-  it("emits fetchPriority='high' + loading='eager' when priority is true", () => {
+  it("removes the lazy hint when priority is true (next/image marks it eager)", () => {
     const { container } = render(
       <ProductCard product={buildProduct()} priority />,
     );
     const primary = container.querySelector(
       "[data-slot='product-card-primary-image']",
     );
-    expect(primary?.getAttribute("fetchpriority")).toBe("high");
-    expect(primary?.getAttribute("loading")).toBe("eager");
+    // next/image emits no loading attr OR loading="eager" for priority cards.
+    const loading = primary?.getAttribute("loading");
+    expect(loading === null || loading === "eager").toBe(true);
+  });
+
+  it("respects a caller-provided sizes override (Featured strip uses tighter widths)", () => {
+    const { container } = render(
+      <ProductCard
+        product={buildProduct()}
+        sizes="(min-width: 1024px) 17vw, (min-width: 640px) 33vw, 50vw"
+      />,
+    );
+    const primary = container.querySelector(
+      "[data-slot='product-card-primary-image']",
+    );
+    expect(primary?.getAttribute("sizes")).toContain("17vw");
   });
 
   it("never marks the secondary (decorative) image as priority — always lazy", () => {
