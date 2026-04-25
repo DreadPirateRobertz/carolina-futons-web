@@ -6,6 +6,14 @@ const nextConfig: NextConfig = {
     root: path.join(__dirname),
   },
   images: {
+    // cf-93rb Phase A: the brand illustrations under /public/illustrations
+    // are vetted, inert SVGs (no <script>/on*=/javascript: URIs). Enabling
+    // dangerouslyAllowSVG is required for next/image to serve any local
+    // SVG; the CSP forbids script execution and sandboxes the response so
+    // even a future SVG slipped past review can't run code from our origin.
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy:
+      "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: [
       {
         protocol: "https",

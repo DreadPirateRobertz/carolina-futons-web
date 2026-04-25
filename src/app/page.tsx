@@ -11,6 +11,7 @@ import { TrustBar } from "@/components/site/TrustBar";
 import { CategoryCardImage } from "@/components/site/CategoryCardImage";
 import { HeroParallax } from "@/components/site/HeroParallax";
 import { EmailCapturePopup } from "@/components/site/EmailCapturePopup";
+import { LivingSky } from "@/components/illustrations/LivingSky";
 
 // Per-card onset delay for the Shop-by-category cascade. 80ms is at the
 // just-noticeable-difference threshold for sequential visual onset (enough
@@ -76,6 +77,11 @@ export default async function HomePage() {
           </HeroParallax>
         </div>
       </section>
+
+      {/* cf-93rb Phase A: atmospheric Blue Ridge band between hero and the
+          TrustBar — anchors the page in place (Hendersonville, NC) and
+          breaks up the previously-flat cream → trust-bar transition. */}
+      <LivingSky alt="Blue Ridge mountain skyline above Hendersonville, NC" />
 
       <TrustBar />
 

@@ -8,6 +8,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { BUSINESS } from "@/lib/business/contact-info";
+import { FooterMountainDivider } from "@/components/illustrations/FooterMountainDivider";
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 
 type SocialLink = {
@@ -94,6 +95,9 @@ export function Footer() {
       data-slot="site-footer"
       className="mt-auto border-t border-cf-divider bg-cf-footer-bg text-cf-cream"
     >
+      {/* cf-93rb Phase A: ridge silhouette softens the hard top edge of the
+          dark footer. Decorative — content is conveyed by the footer body. */}
+      <FooterMountainDivider />
       <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col gap-4">
