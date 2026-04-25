@@ -10,6 +10,7 @@ import { PdpGallery, type GalleryImage } from "@/components/product/PdpGallery";
 import { PdpShippingEstimate } from "@/components/product/PdpShippingEstimate";
 import { PdpStickyCta } from "@/components/product/PdpStickyCta";
 import { PdpStockBadge } from "@/components/product/PdpStockBadge";
+import { PdpWhiteGlove } from "@/components/product/PdpWhiteGlove";
 import { VariantPicker } from "@/components/product/VariantPicker";
 import type { StockBadgeInput } from "@/lib/product/stock-badge-state";
 import {
@@ -148,6 +149,7 @@ export function PdpInteractive({
         <div ref={primaryCtaRef} data-slot="pdp-primary-cta">
           <AddToCartButton {...addToCartProps} />
         </div>
+        <PdpWhiteGlove unitPriceCents={fallbackPriceCents} />
         <PdpShippingEstimate />
       </div>
       <PdpStickyCta
