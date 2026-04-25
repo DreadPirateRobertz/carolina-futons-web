@@ -7,9 +7,9 @@ import {
   coerceContactRequest,
   hasContactErrors,
   validateContactRequest,
-  type ContactErrors,
   type ContactRequest,
 } from "@/lib/contact/contact-schema";
+import type { ContactActionState } from "@/app/contact/contact-state";
 
 // cf-contact-form: /contact Server Action. Validates inbound submissions
 // with the shared contact-schema rules (one source of truth with the client),
@@ -18,18 +18,9 @@ import {
 // Shape is designed for `useActionState`: the form binds this action and
 // renders { status, errors?, values? } directly — on error we echo back the
 // submitted values so the user doesn't have to retype everything.
-
-export type ContactActionState =
-  | { status: "idle" }
-  | {
-      status: "error";
-      errors: ContactErrors;
-      transportError?: string;
-      values: ContactRequest;
-    }
-  | { status: "success" };
-
-export const initialContactActionState: ContactActionState = { status: "idle" };
+// `ContactActionState` + `initialContactActionState` live in
+// `./contact-state` because `"use server"` modules may only export async
+// functions.
 
 function readEnv(): { host: string; port: number; user: string; pass: string } | null {
   const host = process.env.SMTP_HOST;

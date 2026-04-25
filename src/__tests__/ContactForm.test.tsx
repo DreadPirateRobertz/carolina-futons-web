@@ -39,6 +39,8 @@ vi.mock("react-dom", async () => {
 // The action itself is irrelevant to these tests — the form just binds it.
 vi.mock("@/app/contact/actions", () => ({
   sendContactForm: vi.fn(async () => ({ status: "idle" })),
+}));
+vi.mock("@/app/contact/contact-state", () => ({
   initialContactActionState: { status: "idle" },
 }));
 
