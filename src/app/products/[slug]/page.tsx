@@ -7,8 +7,9 @@ import { PdpInteractive } from "@/components/product/PdpInteractive";
 import type { GalleryImage } from "@/components/product/PdpGallery";
 import { PdpCrossSell } from "@/components/product/PdpCrossSell";
 import { PdpRecentlyViewed } from "@/components/product/PdpRecentlyViewed";
-import { PdpReviews } from "@/components/product/PdpReviews";
+import { PdpReviews, pickPdpReviews } from "@/components/product/PdpReviews";
 import { PdpShareButtons } from "@/components/product/PdpShareButtons";
+import { getReviewStats } from "@/lib/product/review-stats";
 import { getProductBySlug } from "@/lib/wix/products";
 import { logWixFailure } from "@/lib/wix/errors";
 import { formatPlpPrice } from "@/lib/product/plp-price";
@@ -84,13 +85,34 @@ export default async function PdpPage(props: {
 
   const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
   const canonicalUrl = `${siteUrl}/products/${slug}`;
+  // cf-xe54: surface the same review data the PdpReviews component renders
+  // so on-page UI and JSON-LD stay in sync (Search Console flags mismatched
+  // aggregateRating). Only honest stats + matching reviews are emitted —
+  // pickPdpReviews returns [] when neither exact name nor category matches.
+  const productNameForSchema = product.name ?? "";
+  const reviewStats = getReviewStats(slug);
+  const pdpReviews = pickPdpReviews(productNameForSchema);
   const productSchema = buildProductSchema({
-    name: product.name ?? "",
+    name: productNameForSchema,
     description: descriptionText,
     imageUrl: mainUrl ?? undefined,
     priceUSD: product.priceData?.price ?? 0,
     inStock: stock?.inStock !== false,
     canonicalUrl,
+    aggregateRating:
+      reviewStats && pdpReviews.length > 0
+        ? { ratingValue: reviewStats.rating, reviewCount: reviewStats.count }
+        : undefined,
+    reviews:
+      pdpReviews.length > 0
+        ? pdpReviews.map((r) => ({
+            author: r.author,
+            rating: r.rating,
+            title: r.title,
+            body: r.body,
+            date: r.date,
+          }))
+        : undefined,
   });
   const breadcrumbSchema = buildBreadcrumbSchema([
     { name: "Home", url: `${siteUrl}/` },

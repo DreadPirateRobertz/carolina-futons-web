@@ -107,6 +107,67 @@ describe("buildProductSchema", () => {
     const schema = buildProductSchema({ ...baseInput, priceUSD: 0 });
     expect(schema.offers.price).toBe("0.00");
   });
+
+  it("omits aggregateRating and review when callers do not pass them", () => {
+    const schema = buildProductSchema(baseInput);
+    expect(schema.aggregateRating).toBeUndefined();
+    expect(schema.review).toBeUndefined();
+  });
+
+  it("emits aggregateRating with bestRating/worstRating when stats are honest", () => {
+    const schema = buildProductSchema({
+      ...baseInput,
+      aggregateRating: { ratingValue: 4.9, reviewCount: 42 },
+    });
+    expect(schema.aggregateRating).toEqual({
+      "@type": "AggregateRating",
+      ratingValue: "4.9",
+      reviewCount: 42,
+      bestRating: "5",
+      worstRating: "1",
+    });
+  });
+
+  it("omits aggregateRating when reviewCount is 0 — never advertise zero-count averages", () => {
+    const schema = buildProductSchema({
+      ...baseInput,
+      aggregateRating: { ratingValue: 0, reviewCount: 0 },
+    });
+    expect(schema.aggregateRating).toBeUndefined();
+  });
+
+  it("emits Review nodes with Person author, Rating, datePublished, name, body", () => {
+    const schema = buildProductSchema({
+      ...baseInput,
+      reviews: [
+        {
+          author: "Marcia R.",
+          rating: 5,
+          title: "Solid hardwood",
+          body: "Six years, still rock solid.",
+          date: "2026-02-14",
+        },
+      ],
+    });
+    expect(schema.review).toHaveLength(1);
+    const r = schema.review![0]!;
+    expect(r["@type"]).toBe("Review");
+    expect(r.author).toEqual({ "@type": "Person", name: "Marcia R." });
+    expect(r.reviewRating).toEqual({
+      "@type": "Rating",
+      ratingValue: "5.0",
+      bestRating: "5",
+      worstRating: "1",
+    });
+    expect(r.name).toBe("Solid hardwood");
+    expect(r.reviewBody).toBe("Six years, still rock solid.");
+    expect(r.datePublished).toBe("2026-02-14");
+  });
+
+  it("omits the review array entirely when callers pass an empty list", () => {
+    const schema = buildProductSchema({ ...baseInput, reviews: [] });
+    expect(schema.review).toBeUndefined();
+  });
 });
 
 describe("buildBreadcrumbSchema", () => {
