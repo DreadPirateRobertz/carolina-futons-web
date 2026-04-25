@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { MetaPurchaseTracker } from "@/components/analytics/MetaPurchaseTracker";
+import { Ga4PurchaseTracker } from "@/components/analytics/Ga4PurchaseTracker";
+import type { Ga4Item } from "@/lib/analytics/ga4-events";
 import { getOrder } from "@/lib/wix/orders";
 
 export const dynamic = "force-dynamic";
@@ -45,15 +47,48 @@ export default async function OrderConfirmationPage(props: {
     .map((li) => li.catalogReference?.catalogItemId)
     .filter((id): id is string => typeof id === "string" && id.length > 0);
 
+  // cf-o4ws: derive GA4 purchase items from the same lineItems source so
+  // Meta + GA4 see identical attribution. Same trackability gate as Meta —
+  // no fire on malformed totals or missing currency.
+  const ga4Items: Ga4Item[] = [];
+  for (const li of lineItems) {
+    const itemId = li.catalogReference?.catalogItemId;
+    if (typeof itemId !== "string" || itemId.length === 0) continue;
+    const priceRaw = li.priceBeforeDiscounts?.amount ?? li.price?.amount;
+    const priceNum = typeof priceRaw === "string" ? Number(priceRaw) : NaN;
+    const productName =
+      (typeof li.productName === "string"
+        ? li.productName
+        : li.productName?.original) ?? "";
+    ga4Items.push({
+      item_id: itemId,
+      item_name: productName,
+      price: Number.isFinite(priceNum) ? priceNum : 0,
+      quantity: typeof li.quantity === "number" ? li.quantity : 1,
+    });
+  }
+  const taxAmount = Number(order.priceSummary?.tax?.amount ?? "");
+  const shippingAmount = Number(order.priceSummary?.shipping?.amount ?? "");
+
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-10">
       {purchaseTrackable ? (
-        <MetaPurchaseTracker
-          value={totalAmount}
-          currency={orderCurrency}
-          contentIds={purchaseContentIds}
-          orderId={orderNumber || undefined}
-        />
+        <>
+          <MetaPurchaseTracker
+            value={totalAmount}
+            currency={orderCurrency}
+            contentIds={purchaseContentIds}
+            orderId={orderNumber || undefined}
+          />
+          <Ga4PurchaseTracker
+            transactionId={orderNumber || String(order._id ?? "")}
+            value={totalAmount}
+            currency={orderCurrency}
+            items={ga4Items}
+            tax={Number.isFinite(taxAmount) ? taxAmount : undefined}
+            shipping={Number.isFinite(shippingAmount) ? shippingAmount : undefined}
+          />
+        </>
       ) : null}
       <header>
         <p className="text-sm uppercase tracking-wide text-emerald-700">
