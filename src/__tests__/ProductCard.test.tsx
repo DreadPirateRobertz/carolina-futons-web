@@ -216,3 +216,43 @@ describe("ProductCard — focus/hover parity", () => {
     expect(accent?.className).toMatch(/group-focus-within:/);
   });
 });
+
+describe("ProductCard — fetchPriority for above-fold cards (cf-pdp-lcp-fetchpriority)", () => {
+  it("defaults to fetchPriority='auto' + loading='lazy' when no priority prop", () => {
+    const { container } = render(<ProductCard product={buildProduct()} />);
+    const primary = container.querySelector(
+      "[data-slot='product-card-primary-image']",
+    );
+    // React serializes the camelCased fetchPriority as fetchpriority on DOM.
+    expect(primary?.getAttribute("fetchpriority")).toBe("auto");
+    expect(primary?.getAttribute("loading")).toBe("lazy");
+    expect(primary?.getAttribute("decoding")).toBe("async");
+  });
+
+  it("emits fetchPriority='high' + loading='eager' when priority is true", () => {
+    const { container } = render(
+      <ProductCard product={buildProduct()} priority />,
+    );
+    const primary = container.querySelector(
+      "[data-slot='product-card-primary-image']",
+    );
+    expect(primary?.getAttribute("fetchpriority")).toBe("high");
+    expect(primary?.getAttribute("loading")).toBe("eager");
+  });
+
+  it("never marks the secondary (decorative) image as priority — always lazy", () => {
+    const product = buildProduct({
+      media: {
+        mainMedia: { image: { url: "https://cdn/main.jpg" } },
+        items: [{ image: { url: "https://cdn/alt.jpg" }, mediaType: "image" }],
+      },
+    } as Partial<WixProduct>);
+    const { container } = render(<ProductCard product={product} priority />);
+    const secondary = container.querySelector(
+      "[data-slot='product-card-secondary-image']",
+    );
+    expect(secondary?.getAttribute("loading")).toBe("lazy");
+    // Secondary is purely a hover swap — must never compete with the LCP image.
+    expect(secondary?.getAttribute("fetchpriority")).toBeNull();
+  });
+});

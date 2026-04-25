@@ -41,7 +41,18 @@ const MOTION_DURATION_SEC = 0.2;
 const MOTION_Y_PX = -4;
 const REDUCED_OPACITY = 0.92;
 
-export function ProductCard({ product }: { product: WixProduct }) {
+// `priority` marks above-fold cards so the primary image preloads with
+// fetchpriority="high" + loading="eager" (LCP win, especially on PLP grids
+// where the first product card is the LCP element). Cards below the fold
+// keep loading="lazy" + fetchpriority="auto". Callers should pass priority
+// for the first N visible cards (~3 on the Featured strip, ~4 on PLP).
+export function ProductCard({
+  product,
+  priority = false,
+}: {
+  product: WixProduct;
+  priority?: boolean;
+}) {
   const prefersReducedMotion = useReducedMotion() ?? false;
   const href = product.slug ? `/products/${product.slug}` : "#";
   const { primary, secondary } = getPlpCardImages(product);
@@ -74,6 +85,9 @@ export function ProductCard({ product }: { product: WixProduct }) {
                 src={primary}
                 alt={product.name ?? ""}
                 data-slot="product-card-primary-image"
+                fetchPriority={priority ? "high" : "auto"}
+                loading={priority ? "eager" : "lazy"}
+                decoding="async"
                 className={
                   prefersReducedMotion
                     ? "absolute inset-0 h-full w-full object-cover"
@@ -87,6 +101,8 @@ export function ProductCard({ product }: { product: WixProduct }) {
                   alt=""
                   aria-hidden="true"
                   data-slot="product-card-secondary-image"
+                  loading="lazy"
+                  decoding="async"
                   className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100"
                 />
               ) : null}
