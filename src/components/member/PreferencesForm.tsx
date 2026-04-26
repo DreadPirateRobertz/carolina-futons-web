@@ -2,12 +2,12 @@
 
 import { useState, useTransition } from "react";
 
+import { managePushPreferences } from "@/app/actions/preferences";
 import {
-  managePushPreferences,
   PREFERENCE_CATEGORIES,
   type PreferenceCategory,
   type PreferenceMap,
-} from "@/app/actions/preferences";
+} from "@/app/actions/preferences-state";
 
 export type PreferencesFormProps = {
   initial: PreferenceMap;

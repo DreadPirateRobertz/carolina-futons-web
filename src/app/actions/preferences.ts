@@ -2,34 +2,20 @@
 
 import { withMember } from "@/lib/auth/member";
 import { callVelo } from "@/lib/wix/velo-client";
+import {
+  DEFAULT_PREFERENCES,
+  PREFERENCE_CATEGORIES,
+  type PreferenceMap,
+  type PreferencesResult,
+} from "@/app/actions/preferences-state";
+
+// `PREFERENCE_CATEGORIES`, `DEFAULT_PREFERENCES`, and the type aliases
+// live in `./preferences-state` because `"use server"` modules may only
+// export async functions — exporting them here broke
+// /dashboard/preferences page-data collection. See cf-3qt.4.6 /
+// contact-state.ts for the same extraction pattern.
 
 const m = (method: string) => `pushNotificationService/${method}`;
-
-// Categories supported by managePushPreferences in
-// src/backend/pushNotificationService.web.js. Mirrored here so the cfw form
-// can render toggles without a roundtrip to read the taxonomy.
-export const PREFERENCE_CATEGORIES = [
-  "challenges",
-  "streak",
-  "marketing",
-  "tier",
-  "badges",
-] as const;
-
-export type PreferenceCategory = (typeof PREFERENCE_CATEGORIES)[number];
-export type PreferenceMap = Record<PreferenceCategory, boolean>;
-
-export const DEFAULT_PREFERENCES: PreferenceMap = Object.freeze({
-  challenges: true,
-  streak: true,
-  marketing: true,
-  tier: true,
-  badges: true,
-}) as PreferenceMap;
-
-export type PreferencesResult =
-  | { success: true; prefs: PreferenceMap }
-  | { success: false; error: string };
 
 export async function getMyPushPreferences(): Promise<PreferencesResult> {
   return withMember(async (s) => {

@@ -1,10 +1,10 @@
 import { DashboardShell } from "@/components/member/DashboardShell";
 import { PreferencesForm } from "@/components/member/PreferencesForm";
+import { getMyPushPreferences } from "@/app/actions/preferences";
 import {
   DEFAULT_PREFERENCES,
-  getMyPushPreferences,
   type PreferenceMap,
-} from "@/app/actions/preferences";
+} from "@/app/actions/preferences-state";
 import { getMemberSession } from "@/lib/auth/member";
 import { getWixClientWithTokens } from "@/lib/wix-client";
 
