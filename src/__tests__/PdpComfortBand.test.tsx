@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 
 import { PdpComfortBand } from "@/components/product/PdpComfortBand";
 
-// cf-marugame-illustrations: comfort-level callout band with inline SVG scenes.
+// marugame-illustrations: comfort-level callout band with inline SVG scenes.
 
 describe("PdpComfortBand (cf-marugame-illustrations)", () => {
   it("renders the comfort levels landmark", () => {
@@ -43,5 +43,13 @@ describe("PdpComfortBand (cf-marugame-illustrations)", () => {
     expect(
       container.querySelector('[data-slot="pdp-comfort-band"]'),
     ).not.toBeNull();
+  });
+
+  it("presents comfort levels in soft-to-firm order", () => {
+    render(<PdpComfortBand />);
+    const items = screen.getAllByRole("listitem");
+    expect(items[0]).toHaveTextContent(/plush/i);
+    expect(items[1]).toHaveTextContent(/medium/i);
+    expect(items[2]).toHaveTextContent(/firm/i);
   });
 });

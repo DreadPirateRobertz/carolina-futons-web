@@ -74,10 +74,10 @@ export function CartDrawer() {
             <EmptyCart onClose={() => setOpen(false)} />
           ) : (
             <>
-              <CartIllustration className="w-full shrink-0" />
+              <CartIllustration className="w-full" />
               <ul
                 data-slot="cart-lines"
-                className="flex-1 divide-y divide-cf-divider overflow-y-auto px-5"
+                className="min-h-0 flex-1 divide-y divide-cf-divider overflow-y-auto px-5"
               >
                 {state.lines.map((line) => (
                   <li

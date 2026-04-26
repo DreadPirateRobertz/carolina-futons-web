@@ -146,6 +146,7 @@ describe("CartDrawer (cf-3qt.2.3)", () => {
       }),
     );
     expect(screen.getByTestId("cart-empty")).toBeInTheDocument();
+    expect(screen.queryByTestId("cart-illustration")).toBeNull();
   });
 
   it("closes when the Close control is activated (Escape support comes from base-ui)", () => {
@@ -247,17 +248,17 @@ describe("CartDrawer (cf-3qt.2.3)", () => {
     expect(trackBeginCheckout).not.toHaveBeenCalled();
   });
 
-  // cf-marugame-illustrations: Blue Ridge strip in filled cart
+  // marugame-illustrations: Blue Ridge strip in filled cart
   it("renders the Blue Ridge cart illustration strip when items are present", () => {
     renderWith([lineA]);
     fireEvent.click(screen.getByTestId("cart-trigger"));
-    expect(document.querySelector('[data-slot="cart-illustration"]')).not.toBeNull();
+    expect(screen.queryByTestId("cart-illustration")).not.toBeNull();
   });
 
   it("does not render the cart illustration in the empty state", () => {
     renderWith();
     fireEvent.click(screen.getByTestId("cart-trigger"));
-    expect(document.querySelector('[data-slot="cart-illustration"]')).toBeNull();
+    expect(screen.queryByTestId("cart-illustration")).toBeNull();
   });
 });
 
