@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { SHOP_CATEGORIES } from "@/lib/shop/categories";
 
+// HERO_SLIDES was removed on feat/cf-theme-C-seacat-luxury — the SeaCat hero
+// uses a static copywritten headline, not a carousel. Tests below cover the
+// data constants that are still in use across the site.
+
 describe("SHOP_CATEGORIES data integrity", () => {
   it("every category has a non-empty image URL", () => {
     for (const cat of SHOP_CATEGORIES) {

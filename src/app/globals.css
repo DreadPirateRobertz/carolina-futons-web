@@ -48,6 +48,14 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
 
+  /* SeaCat Luxury theme tokens (Theme C) */
+  --color-sc-slate: var(--sc-slate);
+  --color-sc-slate-mid: var(--sc-slate-mid);
+  --color-sc-gold: var(--sc-gold);
+  --color-sc-gold-dim: var(--sc-gold-dim);
+  --color-sc-cream: var(--sc-cream);
+  --color-sc-muted: var(--sc-muted);
+
   /* CF brand tokens (explicit, for direct class use: bg-cf-navy, text-cf-cta, etc.) */
   --color-cf-navy: var(--cf-navy);
   --color-cf-blue: var(--cf-blue);
@@ -89,6 +97,14 @@
 
 :root {
   /* ── CF brand palette (source of truth: src/public/sharedTokens.js) ──── */
+  /* ── SeaCat Luxury palette (Theme C) ──────────────────────────────────── */
+  --sc-slate:     #0d1520;   /* deep dark slate — hero & chapter bg */
+  --sc-slate-mid: #162032;   /* slightly lighter slate for section variation */
+  --sc-gold:      #c9a84c;   /* antique gold — primary accent */
+  --sc-gold-dim:  #8c7035;   /* muted gold for secondary accents */
+  --sc-cream:     #f5efdf;   /* warm cream — primary text on dark bg */
+  --sc-muted:     #9b9b8a;   /* warm grey — secondary text on dark bg */
+
   --cf-navy: #1e3a5f;        /* espresso / deep brand header */
   --cf-blue: #5b8fa8;        /* mountain blue / mid decorative */
   --cf-cta: #4a7d94;         /* sunset coral / primary CTA — WCAG AA 4.51:1 on white */

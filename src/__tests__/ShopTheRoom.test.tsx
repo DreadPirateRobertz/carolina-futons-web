@@ -121,6 +121,9 @@ describe("ShopTheRoom — surface differentiation", () => {
     expect(ABOUT_HERO_PHOTO.src).not.toBe(SHOP_HERO_PHOTO.src);
   });
 
+  // HERO_SLIDES carousel deduplication tests removed on feat/cf-theme-C-seacat-luxury:
+  // SeaCat hero is static copywritten text — no carousel, no deduplication constraint.
+
   it("HOME and FUTON_FRAMES_PLP intentionally share the same lifestyle-futon-frames asset", () => {
     // Documented cross-page repeat: visitor going home → 'Browse futons'
     // CTA → /shop/futon-frames sees the same scene with different
