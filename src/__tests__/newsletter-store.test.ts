@@ -1,64 +1,76 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 
-// cf-newsletter-footer: the file-backed subscriber store. We point
-// NEWSLETTER_STORE_PATH at a per-test scratch file so the tests can assert
-// creation, upsert, and duplicate handling against real disk without
-// polluting the repo's /data directory.
+// cf-newsletter-velo-wire: upsertSubscriber POSTs to the Wix Velo HTTP
+// function instead of writing to disk (Vercel serverless FS is read-only).
 
-let tmpDir: string;
-let storePath: string;
+const VELO_BASE = "https://www.carolinafutons.com";
 
 beforeEach(() => {
-  tmpDir = mkdtempSync(join(tmpdir(), "cf-newsletter-store-"));
-  storePath = join(tmpDir, "subscribers.json");
-  process.env.NEWSLETTER_STORE_PATH = storePath;
+  process.env.WIX_VELO_SITE_URL = VELO_BASE;
+  vi.stubGlobal("fetch", vi.fn());
 });
 
 afterEach(() => {
-  delete process.env.NEWSLETTER_STORE_PATH;
-  rmSync(tmpDir, { recursive: true, force: true });
+  delete process.env.WIX_VELO_SITE_URL;
+  vi.unstubAllGlobals();
+  vi.resetModules();
 });
 
 async function freshStore() {
-  // vi.resetModules() gives each test a fresh module so the store reads
-  // the scratch-dir env var set in beforeEach (storePath() is lazy enough
-  // that this isn't strictly needed today, but it future-proofs against
-  // any module-level env caching we might add later).
   vi.resetModules();
   return import("@/lib/newsletter/newsletter-store");
 }
 
-describe("newsletter-store.upsertSubscriber", () => {
-  it("creates the store file and records the first subscriber as `created:true`", async () => {
-    const { upsertSubscriber, readAllSubscribers } = await freshStore();
-    const result = await upsertSubscriber("hello@example.com");
+function mockFetch(body: object, status = 200) {
+  vi.mocked(fetch).mockResolvedValueOnce(
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { "content-type": "application/json" },
+    }),
+  );
+}
+
+describe("newsletter-store.upsertSubscriber — Velo HTTP wire", () => {
+  it("POSTs to /_functions/mailingListSignups with the subscriber email", async () => {
+    mockFetch({ success: true, discountCode: null });
+    const { upsertSubscriber } = await freshStore();
+    await upsertSubscriber("hello@example.com");
+    const [url, init] = vi.mocked(fetch).mock.calls[0]!;
+    expect(String(url)).toBe(`${VELO_BASE}/_functions/mailingListSignups`);
+    expect((init as RequestInit).method).toBe("POST");
+    const body = JSON.parse((init as RequestInit).body as string);
+    expect(body.email).toBe("hello@example.com");
+    expect(body.source).toBe("footer_newsletter");
+  });
+
+  it("returns { created: true } on HTTP 200 success", async () => {
+    mockFetch({ success: true, discountCode: null });
+    const { upsertSubscriber } = await freshStore();
+    const result = await upsertSubscriber("new@example.com");
     expect(result.created).toBe(true);
-    const subs = await readAllSubscribers();
-    expect(subs).toHaveLength(1);
-    expect(subs[0]!.email).toBe("hello@example.com");
-    expect(typeof subs[0]!.subscribedAt).toBe("string");
   });
 
-  it("returns `created:false` for a second upsert of the same email (idempotent)", async () => {
-    const { upsertSubscriber, readAllSubscribers } = await freshStore();
-    await upsertSubscriber("dup@example.com");
-    const second = await upsertSubscriber("dup@example.com");
-    expect(second.created).toBe(false);
-    const subs = await readAllSubscribers();
-    expect(subs).toHaveLength(1);
+  it("throws when Velo returns HTTP 500", async () => {
+    mockFetch({ success: false, error: "Internal server error" }, 500);
+    const { upsertSubscriber } = await freshStore();
+    await expect(upsertSubscriber("bad@example.com")).rejects.toThrow();
   });
 
-  it("stores distinct emails as separate records", async () => {
-    const { upsertSubscriber, readAllSubscribers } = await freshStore();
-    await upsertSubscriber("a@example.com");
-    await upsertSubscriber("b@example.com");
-    const subs = await readAllSubscribers();
-    expect(subs.map((s) => s.email).sort()).toEqual([
-      "a@example.com",
-      "b@example.com",
-    ]);
+  it("throws when Velo returns HTTP 429 (rate limited)", async () => {
+    mockFetch({ success: false, error: "Too many requests" }, 429);
+    const { upsertSubscriber } = await freshStore();
+    await expect(upsertSubscriber("rate@example.com")).rejects.toThrow();
+  });
+
+  it("throws when Velo returns HTTP 400 (validation error)", async () => {
+    mockFetch({ success: false, error: "Invalid email" }, 400);
+    const { upsertSubscriber } = await freshStore();
+    await expect(upsertSubscriber("notanemail")).rejects.toThrow();
+  });
+
+  it("throws when WIX_VELO_SITE_URL is not set", async () => {
+    delete process.env.WIX_VELO_SITE_URL;
+    const { upsertSubscriber } = await freshStore();
+    await expect(upsertSubscriber("x@example.com")).rejects.toThrow(/WIX_VELO_SITE_URL/);
   });
 });
