@@ -19,6 +19,8 @@ import {
   ABOUT_HOTSPOT_CONFIGS,
   SHOP_HERO_PHOTO,
   SHOP_HOTSPOT_CONFIGS,
+  FUTON_FRAMES_PLP_HERO_PHOTO,
+  FUTON_FRAMES_PLP_HOTSPOT_CONFIGS,
   type HotspotConfig,
 } from "@/components/site/ShopTheRoom";
 
@@ -52,6 +54,7 @@ beforeEach(() => {
     const fixtures: Record<string, ReturnType<typeof product>> = {
       "ranchero-murphy-cabinet-bed": product("Ranchero Murphy Cabinet Bed", 2978),
       "canby-mattress": product("Canby Mattress", 737),
+      "ekko-futon-frame": product("Ekko Futon Frame", 599),
       "solstice-mattress": product("Solstice Mattress", 829),
       "charleston-platform-bed": product("Charleston Platform Bed", 1099),
       "nutmeg-platform-bed": product("Nutmeg Platform Bed", 949),
@@ -67,6 +70,11 @@ const SURFACES = [
   { name: "home", photo: HOME_HERO_PHOTO, configs: HOME_HOTSPOT_CONFIGS },
   { name: "about", photo: ABOUT_HERO_PHOTO, configs: ABOUT_HOTSPOT_CONFIGS },
   { name: "shop", photo: SHOP_HERO_PHOTO, configs: SHOP_HOTSPOT_CONFIGS },
+  {
+    name: "plp-futon-frames",
+    photo: FUTON_FRAMES_PLP_HERO_PHOTO,
+    configs: FUTON_FRAMES_PLP_HOTSPOT_CONFIGS,
+  },
 ] as const;
 
 describe.each(SURFACES)(
@@ -113,14 +121,32 @@ describe("ShopTheRoom — surface differentiation", () => {
     expect(ABOUT_HERO_PHOTO.src).not.toBe(SHOP_HERO_PHOTO.src);
   });
 
-  it("HOME hero src does not duplicate ANY entry in the home-page carousel (HERO_SLIDES)", async () => {
-    // Tightened from the prior single-index check (which missed Murphy
-    // duplicating HERO_SLIDES[2]). The carousel rotates through every
-    // slide; ShopTheRoom on home must not match any of them.
-    const page = await import("@/app/page");
-    const carouselSrcs = page.HERO_SLIDES.map((s) => s.src);
-    expect(carouselSrcs.length).toBeGreaterThan(0);
-    expect(carouselSrcs).not.toContain(HOME_HERO_PHOTO.src);
+  it.each([
+    ["HOME", HOME_HERO_PHOTO],
+    ["ABOUT", ABOUT_HERO_PHOTO],
+    ["SHOP", SHOP_HERO_PHOTO],
+    ["FUTON_FRAMES_PLP", FUTON_FRAMES_PLP_HERO_PHOTO],
+  ])(
+    "%s hero src does not duplicate any entry in the home-page carousel (HERO_SLIDES)",
+    async (_, photo) => {
+      // Tightened from the prior single-index + HOME-only check (which
+      // missed Murphy duplicating HERO_SLIDES[2] in Phase 2). NO
+      // ShopTheRoom surface should match the carousel — visitors moving
+      // home → any other surface shouldn't see a recently-rotated
+      // carousel slide as the next page's hero.
+      const page = await import("@/app/page");
+      const carouselSrcs = page.HERO_SLIDES.map((s) => s.src);
+      expect(carouselSrcs.length).toBeGreaterThan(0);
+      expect(carouselSrcs).not.toContain(photo.src);
+    },
+  );
+
+  it("HOME and FUTON_FRAMES_PLP intentionally share the same lifestyle-futon-frames asset", () => {
+    // Documented cross-page repeat: visitor going home → 'Browse futons'
+    // CTA → /shop/futon-frames sees the same scene with different
+    // products tagged. Single source of truth lives in
+    // LIFESTYLE_FUTON_FRAMES_PHOTO inside ShopTheRoom.tsx.
+    expect(HOME_HERO_PHOTO.src).toBe(FUTON_FRAMES_PLP_HERO_PHOTO.src);
   });
 });
 

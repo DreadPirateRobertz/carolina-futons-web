@@ -23,6 +23,10 @@ import { PLPPagination, buildPageUrl } from "@/components/plp/PLPPagination";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { buildBreadcrumbSchema, resolveSiteUrl } from "@/lib/seo/json-ld";
 import { Breadcrumbs } from "@/components/site/Breadcrumbs";
+import {
+  ShopTheRoom,
+  PLP_SHOP_THE_ROOM_CONFIGS,
+} from "@/components/site/ShopTheRoom";
 
 export const dynamic = "force-dynamic";
 
@@ -289,6 +293,14 @@ export default async function PlpPage(props: {
         basePath={basePath}
         searchParams={searchParams}
       />
+
+      {/* cf-delight: shop-the-room hotspots per PLP. Configured via
+          PLP_SHOP_THE_ROOM_CONFIGS (a slug → props lookup); a typo on
+          this consumer side returns undefined → no section, no crash.
+          Adding a new PLP is one entry in that map. */}
+      {PLP_SHOP_THE_ROOM_CONFIGS[categorySlug] ? (
+        <ShopTheRoom {...PLP_SHOP_THE_ROOM_CONFIGS[categorySlug]!} />
+      ) : null}
     </main>
   );
 }

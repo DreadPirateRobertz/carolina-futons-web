@@ -97,18 +97,26 @@ export async function resolveHotspots(
 
 // ── Per-surface configs ─────────────────────────────────────────────────────
 //
-// All three photos are pulled from the SHOP_CATEGORIES card images
+// All photos are pulled from the SHOP_CATEGORIES card images
 // (lib/shop/categories.ts) at full lifestyle resolution. Category card
 // assets are deliberately distinct from HERO_SLIDES so the home-page
 // carousel can't re-show whichever scene the home ShopTheRoom is using
 // (caught in code review: HOME_HERO_PHOTO previously dup'd HERO_SLIDES[2]).
+//
+// LIFESTYLE_FUTON_FRAMES_PHOTO is shared between HOME and the
+// /shop/futon-frames PLP. A visitor going home → "Browse futons" → PLP
+// will see the same scene twice across two pages — different pages,
+// different products tagged. Acceptable cross-page repeat; the
+// alternative was tagging the PLP with a non-futon photo.
 
-export const HOME_HERO_PHOTO: HeroPhoto = {
+const LIFESTYLE_FUTON_FRAMES_PHOTO: HeroPhoto = {
   src: "https://static.wixstatic.com/media/e04e89_4bea49a709a3470a8315b5acd7309b0f~mv2.jpg/v1/fill/w_1920,h_1080,q_90/file.jpg",
   alt: "Sunlit living room with a hardwood futon frame and natural mattress",
   width: 1920,
   height: 1080,
 } as const;
+
+export const HOME_HERO_PHOTO: HeroPhoto = LIFESTYLE_FUTON_FRAMES_PHOTO;
 
 export const HOME_HOTSPOT_CONFIGS: ReadonlyArray<HotspotConfig> = [
   { id: "monterey", xPct: 38, yPct: 70, productSlug: "monterey-futon-frame" },
@@ -141,6 +149,38 @@ export const SHOP_HOTSPOT_CONFIGS: ReadonlyArray<HotspotConfig> = [
   { id: "portofino-shop", xPct: 30, yPct: 60, productSlug: "portofino-mattress" },
   { id: "canby-shop", xPct: 70, yPct: 60, productSlug: "canby-mattress" },
 ];
+
+// /shop/futon-frames PLP. Reuses the shared LIFESTYLE_FUTON_FRAMES_PHOTO
+// (same asset as HOME_HERO_PHOTO) — a single source of truth for the
+// futon-room scene. Hotspot products are all real futon SKUs verified
+// live on prod (canby-mattress was flagged stale in review and dropped
+// in favor of ekko-futon-frame).
+export const FUTON_FRAMES_PLP_HERO_PHOTO: HeroPhoto = LIFESTYLE_FUTON_FRAMES_PHOTO;
+
+export const FUTON_FRAMES_PLP_HOTSPOT_CONFIGS: ReadonlyArray<HotspotConfig> = [
+  { id: "monterey-plp", xPct: 38, yPct: 70, productSlug: "monterey-futon-frame" },
+  { id: "kingston-plp", xPct: 60, yPct: 65, productSlug: "kingston-futon-frame" },
+  { id: "ekko-plp", xPct: 50, yPct: 55, productSlug: "ekko-futon-frame" },
+];
+
+// ── PLP gating ──────────────────────────────────────────────────────────────
+//
+// Map from PLP category slug → ShopTheRoom props. The PLP page reads
+// from this lookup rather than string-matching, so a typo on the consumer
+// side returns undefined (no section, no crash) and adding a new PLP is
+// one entry here.
+
+export const PLP_SHOP_THE_ROOM_CONFIGS: Readonly<
+  Record<string, ShopTheRoomProps>
+> = {
+  "futon-frames": {
+    headingId: "plp-futon-frames-shop-the-room-heading",
+    eyebrow: "Shop the room",
+    heading: "See the futons in a room",
+    heroPhoto: FUTON_FRAMES_PLP_HERO_PHOTO,
+    hotspotConfigs: FUTON_FRAMES_PLP_HOTSPOT_CONFIGS,
+  },
+};
 
 // ── Component ──────────────────────────────────────────────────────────────
 
@@ -195,15 +235,7 @@ export async function ShopTheRoom({
   );
 }
 
-// Exported so the unit test can pin invariants for every surface's
-// config (in-bounds coords, non-empty slug, no duplicate ids) without
-// touching the network.
-export const __TEST__ = {
-  HOME_HOTSPOT_CONFIGS,
-  HOME_HERO_PHOTO,
-  ABOUT_HOTSPOT_CONFIGS,
-  ABOUT_HERO_PHOTO,
-  SHOP_HOTSPOT_CONFIGS,
-  SHOP_HERO_PHOTO,
-  resolveHotspots,
-};
+// Exported so the unit test can call resolveHotspots without touching
+// the network. Per-surface config constants are already public exports
+// — tests import them directly rather than through `__TEST__`.
+export const __TEST__ = { resolveHotspots };

@@ -29,6 +29,16 @@ vi.mock("@/lib/shop/plp-observability", () => ({
 vi.mock("next/navigation", () => ({
   notFound: vi.fn(),
 }));
+// cf-delight: PLP page renders ShopTheRoom for slugs in
+// PLP_SHOP_THE_ROOM_CONFIGS. Stub the section to skip the async
+// product-fetch path (which would suspend renderToStaticMarkup) and
+// stub the lookup map empty so the standard tests don't accidentally
+// emit the section. The dedicated gating describe block below
+// re-mocks per test to flip the map and assert the conditional.
+vi.mock("@/components/site/ShopTheRoom", () => ({
+  ShopTheRoom: () => null,
+  PLP_SHOP_THE_ROOM_CONFIGS: {},
+}));
 import { buildPageUrl } from "@/components/plp/PLPPagination";
 
 // ── PLPPagination.buildPageUrl ──────────────────────────────────────────────
@@ -723,5 +733,112 @@ describe("PlpPage — product card stagger (cf-plp-card-stagger)", () => {
     expect(html).toMatch(/<li[^>]*data-slot="hero-reveal"/);
     const cardMatches = html.match(/data-slot="product-card"/g) ?? [];
     expect(cardMatches.length).toBe(3);
+  });
+});
+
+// ── PlpPage: cf-delight ShopTheRoom gating ─────────────────────────────────
+//
+// PlpPage reads `PLP_SHOP_THE_ROOM_CONFIGS[categorySlug]` and only
+// renders the section when the lookup returns a config. These tests
+// pin the gating contract:
+//   - configured slug (futon-frames) → section renders + receives the
+//     right props (catches a future swap that points the PLP at the
+//     wrong photo or heading)
+//   - unconfigured slug (mattresses, mattresses-sale) → section absent
+//
+// We swap only the @/components/site/ShopTheRoom mock per test so the
+// other six mocks at the top of the file stay in force; only `categories`
+// + `ShopTheRoom` need to vary between the gating cases. Spy fn captures
+// the props passed at the call site so a future copy/paste regression
+// (wrong heroPhoto / headingId) fails this test.
+
+describe("PlpPage — cf-delight ShopTheRoom gating", () => {
+  type SectionProps = {
+    headingId: string;
+    eyebrow: string;
+    heading: string;
+    heroPhoto: { src: string };
+    hotspotConfigs: Array<{ id: string }>;
+  };
+
+  const FUTON_CONFIG: SectionProps = {
+    headingId: "plp-futon-frames-shop-the-room-heading",
+    eyebrow: "Shop the room",
+    heading: "See the futons in a room",
+    heroPhoto: { src: "stub-futon-frames" },
+    hotspotConfigs: [{ id: "monterey-plp" }],
+  };
+
+  async function renderForCategory(
+    slug: string,
+    configMap: Record<string, SectionProps> = { "futon-frames": FUTON_CONFIG },
+  ): Promise<{ html: string; spyCalls: SectionProps[] }> {
+    vi.resetModules();
+    const spyCalls: SectionProps[] = [];
+    vi.doMock("@/lib/shop/categories", () => ({
+      SHOP_CATEGORIES: [
+        { slug, name: "X", description: "", collectionSlug: slug },
+      ],
+      findCategory: (s: string) =>
+        s === slug
+          ? { slug, name: "X", description: "", collectionSlug: slug }
+          : undefined,
+    }));
+    vi.doMock("@/components/site/ShopTheRoom", () => ({
+      ShopTheRoom: (props: SectionProps) => {
+        spyCalls.push(props);
+        return (
+          <div data-slot="cf-delight-shop-the-room" data-heading-id={props.headingId} />
+        );
+      },
+      PLP_SHOP_THE_ROOM_CONFIGS: configMap,
+    }));
+    const Page = (await import("@/app/shop/[category]/page")).default;
+    const tree = (await Page({
+      params: Promise.resolve({ category: slug }),
+      searchParams: Promise.resolve({}),
+    })) as ReactElement;
+    return { html: renderToStaticMarkup(tree), spyCalls };
+  }
+
+  it("renders ShopTheRoom on /shop/futon-frames with the futon-frames PLP config", async () => {
+    const { html, spyCalls } = await renderForCategory("futon-frames");
+    expect(html).toContain('data-slot="cf-delight-shop-the-room"');
+    expect(spyCalls).toHaveLength(1);
+    expect(spyCalls[0]!.headingId).toBe(
+      "plp-futon-frames-shop-the-room-heading",
+    );
+    expect(spyCalls[0]!.heading).toMatch(/see the futons/i);
+    expect(spyCalls[0]!.heroPhoto.src).toBe("stub-futon-frames");
+  });
+
+  it("does NOT render ShopTheRoom on /shop/mattresses (other PLPs unchanged)", async () => {
+    const { html, spyCalls } = await renderForCategory("mattresses");
+    expect(html).not.toContain('data-slot="cf-delight-shop-the-room"');
+    expect(spyCalls).toHaveLength(0);
+  });
+
+  it("does NOT render ShopTheRoom on /shop/mattresses-sale (virtual category)", async () => {
+    const { html, spyCalls } = await renderForCategory("mattresses-sale");
+    expect(html).not.toContain('data-slot="cf-delight-shop-the-room"');
+    expect(spyCalls).toHaveLength(0);
+  });
+
+  it("renders ShopTheRoom AFTER the product grid + pagination, not above the H1", async () => {
+    const { html } = await renderForCategory("futon-frames");
+    const ulIdx = html.indexOf("<ul");
+    const sectionIdx = html.indexOf('data-slot="cf-delight-shop-the-room"');
+    const h1Idx = html.indexOf("<h1");
+    expect(h1Idx).toBeGreaterThan(-1);
+    expect(ulIdx).toBeGreaterThan(-1);
+    expect(sectionIdx).toBeGreaterThan(-1);
+    expect(sectionIdx).toBeGreaterThan(ulIdx);
+    expect(sectionIdx).toBeGreaterThan(h1Idx);
+  });
+
+  it("does NOT render ShopTheRoom when the lookup map is empty (regression guard)", async () => {
+    const { html, spyCalls } = await renderForCategory("futon-frames", {});
+    expect(html).not.toContain('data-slot="cf-delight-shop-the-room"');
+    expect(spyCalls).toHaveLength(0);
   });
 });
