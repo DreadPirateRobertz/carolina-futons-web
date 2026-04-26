@@ -17,6 +17,7 @@ import { Search, User } from "lucide-react";
 import { AnnouncementBarCartAware } from "@/components/site/AnnouncementBarCartAware";
 import { CartTrigger } from "@/components/cart/CartTrigger";
 import { HeaderMobileMenu } from "@/components/site/HeaderMobileMenu";
+import { LivingSkyClient } from "@/components/illustrations/LivingSkyClient";
 
 const PRIMARY_NAV = [
   { label: "Futons", href: "/shop/futon-frames" },
@@ -63,13 +64,24 @@ export function Header() {
       data-slot="site-header"
       data-scrolled={scrolled ? "true" : "false"}
       className={[
-        "sticky top-0 z-40 h-cf-header w-full border-b border-cf-divider bg-gradient-to-b from-cf-header-start to-cf-header-end text-cf-ink backdrop-blur transition-shadow duration-200",
+        "sticky top-0 z-40 h-cf-header w-full overflow-hidden border-b border-cf-divider bg-gradient-to-b from-cf-header-start to-cf-header-end text-cf-ink transition-shadow duration-200",
         shadowClass,
       ]
         .filter(Boolean)
         .join(" ")}
     >
-      <AnnouncementBarCartAware />
+      {/* LivingSky backdrop — time-of-day sky fills header width at desktop.
+          SVG viewBox 1040×150 renders ≈208px tall at 1440px wide, which
+          nearly fills the 213px header. On narrow viewports the gradient
+          fallback shows below the SVG — the white veil blends both.
+          aria-hidden: purely decorative, no AT value. */}
+      <div aria-hidden="true" className="pointer-events-none absolute top-0 left-0 z-0 w-full">
+        <LivingSkyClient />
+      </div>
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-10 bg-white/40" />
+
+      <div className="relative z-20">
+        <AnnouncementBarCartAware />
 
       <div
         data-slot="site-header-main"
@@ -153,6 +165,7 @@ export function Header() {
           ))}
         </div>
       </nav>
+      </div>{/* /z-20 content wrapper */}
     </header>
   );
 }
