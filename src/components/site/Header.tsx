@@ -14,7 +14,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useReducedMotion } from "framer-motion";
 import { Search, User } from "lucide-react";
-import { AnnouncementBar } from "@/components/site/AnnouncementBar";
+import { AnnouncementBarCartAware } from "@/components/site/AnnouncementBarCartAware";
 import { CartTrigger } from "@/components/cart/CartTrigger";
 import { HeaderMobileMenu } from "@/components/site/HeaderMobileMenu";
 
@@ -69,7 +69,7 @@ export function Header() {
         .filter(Boolean)
         .join(" ")}
     >
-      <AnnouncementBar />
+      <AnnouncementBarCartAware />
 
       <div
         data-slot="site-header-main"
