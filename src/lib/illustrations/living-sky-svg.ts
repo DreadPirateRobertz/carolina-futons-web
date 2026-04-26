@@ -106,41 +106,41 @@ export const LIVING_SKY_SVG_BODY = String.raw`
 
   <!-- ── 3. Stars ────────────────────────────────────────────────────────── -->
   <g id="stars" opacity="0">
-    <circle id="star-0"  cx="48"   cy="12" r="0.9" fill="#8BAFC8"/>
-    <circle id="star-1"  cx="112"  cy="8"  r="1.1" fill="#A0C0D4"/>
-    <circle id="star-2"  cx="195"  cy="18" r="0.8" fill="#8BAFC8"/>
-    <circle id="star-3"  cx="280"  cy="6"  r="1.2" fill="#C0D4E4"/>
-    <circle id="star-4"  cx="360"  cy="14" r="0.9" fill="#8BAFC8"/>
-    <circle id="star-5"  cx="450"  cy="4"  r="1.0" fill="#A0C0D4"/>
-    <circle id="star-6"  cx="530"  cy="19" r="0.8" fill="#8BAFC8"/>
-    <circle id="star-7"  cx="610"  cy="7"  r="1.1" fill="#8BAFC8"/>
-    <circle id="star-8"  cx="820"  cy="10" r="0.9" fill="#8BAFC8"/>
-    <circle id="star-9"  cx="900"  cy="5"  r="1.2" fill="#C0D4E4"/>
-    <circle id="star-10" cx="970"  cy="16" r="0.8" fill="#8BAFC8"/>
-    <circle id="star-11" cx="770"  cy="13" r="1.0" fill="#A0C0D4"/>
-    <circle id="star-12" cx="78"   cy="5"  r="1.0" fill="#8BAFC8"/>
-    <circle id="star-13" cx="240"  cy="10" r="0.9" fill="#8BAFC8"/>
-    <circle id="star-14" cx="680"  cy="17" r="0.9" fill="#8BAFC8"/>
-    <circle id="star-15" cx="1005" cy="9"  r="1.0" fill="#A0C0D4"/>
-    <circle id="star-16" cx="155"  cy="28" r="0.7" fill="#7090A8"/>
-    <circle id="star-17" cx="380"  cy="24" r="0.8" fill="#7090A8"/>
-    <circle id="star-18" cx="475"  cy="32" r="0.7" fill="#7090A8"/>
-    <circle id="star-19" cx="850"  cy="26" r="0.8" fill="#7090A8"/>
-    <circle id="star-20" cx="720"  cy="30" r="0.7" fill="#7090A8"/>
-    <circle id="star-21" cx="640"  cy="22" r="0.9" fill="#7090A8"/>
-    <circle id="star-22" cx="22"   cy="20" r="0.8" fill="#7090A8"/>
-    <circle id="star-23" cx="310"  cy="19" r="0.7" fill="#6888A0"/>
-    <circle id="star-24" cx="492"  cy="12" r="0.8" fill="#7090A8"/>
-    <circle id="star-25" cx="558"  cy="28" r="0.6" fill="#5878A0"/>
-    <circle id="star-26" cx="740"  cy="9"  r="0.7" fill="#7090A8"/>
-    <circle id="star-27" cx="930"  cy="22" r="0.8" fill="#7090A8"/>
-    <circle id="star-28" cx="1020" cy="26" r="0.7" fill="#6888A0"/>
-    <circle id="star-29" cx="418"  cy="9"  r="0.6" fill="#5878A0"/>
-    <circle id="star-30" cx="182"  cy="14" r="0.7" fill="#7090A8"/>
-    <circle id="star-31" cx="590"  cy="14" r="0.8" fill="#8BAFC8"/>
-    <circle id="star-32" cx="330"  cy="35" r="0.7" fill="#6888A0"/>
-    <circle id="star-33" cx="700"  cy="35" r="0.6" fill="#5878A0"/>
-    <circle id="star-34" cx="870"  cy="32" r="0.7" fill="#7090A8"/>
+    <circle id="star-0"  cx="48"   cy="12" r="0.9" fill="#8BAFC8"><animate attributeName="opacity" values="0.9;0.2;0.9" dur="3.5s" begin="0s" repeatCount="indefinite"/></circle>
+    <circle id="star-1"  cx="112"  cy="8"  r="1.1" fill="#A0C0D4"><animate attributeName="opacity" values="1;0.2;1" dur="4.8s" begin="0s" repeatCount="indefinite"/></circle>
+    <circle id="star-2"  cx="195"  cy="18" r="0.8" fill="#8BAFC8"><animate attributeName="opacity" values="0.8;0.15;0.8" dur="6.2s" begin="0s" repeatCount="indefinite"/></circle>
+    <circle id="star-3"  cx="280"  cy="6"  r="1.2" fill="#C0D4E4"><animate attributeName="opacity" values="1;0.2;1" dur="7.1s" begin="0s" repeatCount="indefinite"/></circle>
+    <circle id="star-4"  cx="360"  cy="14" r="0.9" fill="#8BAFC8"><animate attributeName="opacity" values="0.9;0.2;0.9" dur="3.5s" begin="0.9s" repeatCount="indefinite"/></circle>
+    <circle id="star-5"  cx="450"  cy="4"  r="1.0" fill="#A0C0D4"><animate attributeName="opacity" values="1;0.25;1" dur="4.8s" begin="0.6s" repeatCount="indefinite"/></circle>
+    <circle id="star-6"  cx="530"  cy="19" r="0.8" fill="#8BAFC8"><animate attributeName="opacity" values="0.8;0.15;0.8" dur="6.2s" begin="0.7s" repeatCount="indefinite"/></circle>
+    <circle id="star-7"  cx="610"  cy="7"  r="1.1" fill="#8BAFC8"><animate attributeName="opacity" values="1;0.2;1" dur="7.1s" begin="0.9s" repeatCount="indefinite"/></circle>
+    <circle id="star-8"  cx="820"  cy="10" r="0.9" fill="#8BAFC8"><animate attributeName="opacity" values="0.9;0.2;0.9" dur="3.5s" begin="1.7s" repeatCount="indefinite"/></circle>
+    <circle id="star-9"  cx="900"  cy="5"  r="1.2" fill="#C0D4E4"><animate attributeName="opacity" values="1;0.2;1" dur="4.8s" begin="1.3s" repeatCount="indefinite"/></circle>
+    <circle id="star-10" cx="970"  cy="16" r="0.8" fill="#8BAFC8"><animate attributeName="opacity" values="0.8;0.15;0.8" dur="6.2s" begin="1.6s" repeatCount="indefinite"/></circle>
+    <circle id="star-11" cx="770"  cy="13" r="1.0" fill="#A0C0D4"><animate attributeName="opacity" values="1;0.25;1" dur="7.1s" begin="1.8s" repeatCount="indefinite"/></circle>
+    <circle id="star-12" cx="78"   cy="5"  r="1.0" fill="#8BAFC8"><animate attributeName="opacity" values="1;0.25;1" dur="3.5s" begin="2.6s" repeatCount="indefinite"/></circle>
+    <circle id="star-13" cx="240"  cy="10" r="0.9" fill="#8BAFC8"><animate attributeName="opacity" values="0.9;0.2;0.9" dur="4.8s" begin="2.1s" repeatCount="indefinite"/></circle>
+    <circle id="star-14" cx="680"  cy="17" r="0.9" fill="#8BAFC8"><animate attributeName="opacity" values="0.9;0.2;0.9" dur="6.2s" begin="2.5s" repeatCount="indefinite"/></circle>
+    <circle id="star-15" cx="1005" cy="9"  r="1.0" fill="#A0C0D4"><animate attributeName="opacity" values="1;0.25;1" dur="7.1s" begin="3.0s" repeatCount="indefinite"/></circle>
+    <circle id="star-16" cx="155"  cy="28" r="0.7" fill="#7090A8"><animate attributeName="opacity" values="0.75;0.1;0.75" dur="3.5s" begin="3.1s" repeatCount="indefinite"/></circle>
+    <circle id="star-17" cx="380"  cy="24" r="0.8" fill="#7090A8"><animate attributeName="opacity" values="0.8;0.15;0.8" dur="4.8s" begin="3.0s" repeatCount="indefinite"/></circle>
+    <circle id="star-18" cx="475"  cy="32" r="0.7" fill="#7090A8"><animate attributeName="opacity" values="0.75;0.1;0.75" dur="6.2s" begin="3.4s" repeatCount="indefinite"/></circle>
+    <circle id="star-19" cx="850"  cy="26" r="0.8" fill="#7090A8"><animate attributeName="opacity" values="0.8;0.15;0.8" dur="7.1s" begin="4.2s" repeatCount="indefinite"/></circle>
+    <circle id="star-20" cx="720"  cy="30" r="0.7" fill="#7090A8"><animate attributeName="opacity" values="0.75;0.1;0.75" dur="3.5s" begin="0.4s" repeatCount="indefinite"/></circle>
+    <circle id="star-21" cx="640"  cy="22" r="0.9" fill="#7090A8"><animate attributeName="opacity" values="0.9;0.2;0.9" dur="4.8s" begin="4.0s" repeatCount="indefinite"/></circle>
+    <circle id="star-22" cx="22"   cy="20" r="0.8" fill="#7090A8"><animate attributeName="opacity" values="0.8;0.15;0.8" dur="6.2s" begin="4.3s" repeatCount="indefinite"/></circle>
+    <circle id="star-23" cx="310"  cy="19" r="0.7" fill="#6888A0"><animate attributeName="opacity" values="0.75;0.1;0.75" dur="7.1s" begin="5.5s" repeatCount="indefinite"/></circle>
+    <circle id="star-24" cx="492"  cy="12" r="0.8" fill="#7090A8"><animate attributeName="opacity" values="0.8;0.15;0.8" dur="3.5s" begin="1.3s" repeatCount="indefinite"/></circle>
+    <circle id="star-25" cx="558"  cy="28" r="0.6" fill="#5878A0"><animate attributeName="opacity" values="0.7;0.1;0.7" dur="4.8s" begin="0.9s" repeatCount="indefinite"/></circle>
+    <circle id="star-26" cx="740"  cy="9"  r="0.7" fill="#7090A8"><animate attributeName="opacity" values="0.75;0.1;0.75" dur="6.2s" begin="5.2s" repeatCount="indefinite"/></circle>
+    <circle id="star-27" cx="930"  cy="22" r="0.8" fill="#7090A8"><animate attributeName="opacity" values="0.8;0.15;0.8" dur="7.1s" begin="6.3s" repeatCount="indefinite"/></circle>
+    <circle id="star-28" cx="1020" cy="26" r="0.7" fill="#6888A0"><animate attributeName="opacity" values="0.75;0.1;0.75" dur="3.5s" begin="2.2s" repeatCount="indefinite"/></circle>
+    <circle id="star-29" cx="418"  cy="9"  r="0.6" fill="#5878A0"><animate attributeName="opacity" values="0.7;0.1;0.7" dur="4.8s" begin="2.7s" repeatCount="indefinite"/></circle>
+    <circle id="star-30" cx="182"  cy="14" r="0.7" fill="#7090A8"><animate attributeName="opacity" values="0.75;0.1;0.75" dur="6.2s" begin="1.1s" repeatCount="indefinite"/></circle>
+    <circle id="star-31" cx="590"  cy="14" r="0.8" fill="#8BAFC8"><animate attributeName="opacity" values="0.8;0.15;0.8" dur="7.1s" begin="2.4s" repeatCount="indefinite"/></circle>
+    <circle id="star-32" cx="330"  cy="35" r="0.7" fill="#6888A0"><animate attributeName="opacity" values="0.75;0.1;0.75" dur="3.5s" begin="3.4s" repeatCount="indefinite"/></circle>
+    <circle id="star-33" cx="700"  cy="35" r="0.6" fill="#5878A0"><animate attributeName="opacity" values="0.7;0.1;0.7" dur="4.8s" begin="3.8s" repeatCount="indefinite"/></circle>
+    <circle id="star-34" cx="870"  cy="32" r="0.7" fill="#7090A8"><animate attributeName="opacity" values="0.75;0.1;0.75" dur="6.2s" begin="3.9s" repeatCount="indefinite"/></circle>
   </g>
 
   <!-- ── 4. Clouds ────────────────────────────────────────────────────────── -->
@@ -152,10 +152,18 @@ export const LIVING_SKY_SVG_BODY = String.raw`
           fill="#F0EDE8" opacity="0.85" filter="url(#mist-blur)"/>
     <ellipse id="cloud-secondary"
              cx="400" cy="30" rx="240" ry="10"
-             fill="#FFFFFF" opacity="0.3" filter="url(#mist-blur)"/>
+             fill="#FFFFFF" opacity="0.3" filter="url(#mist-blur)">
+      <animateTransform attributeName="transform" type="translate"
+        values="0,0; 15,0; 0,0; -10,0; 0,0" dur="45s" repeatCount="indefinite"
+        calcMode="spline" keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"/>
+    </ellipse>
     <ellipse id="cloud-wisp-2"
              cx="780" cy="22" rx="180" ry="8"
-             fill="#FFFFFF" opacity="0.2" filter="url(#mist-blur)"/>
+             fill="#FFFFFF" opacity="0.2" filter="url(#mist-blur)">
+      <animateTransform attributeName="transform" type="translate"
+        values="0,0; -12,0; 0,0; 10,0; 0,0" dur="52s" begin="8s" repeatCount="indefinite"
+        calcMode="spline" keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"/>
+    </ellipse>
   </g>
 
   <!-- ── 5. Fog ─────────────────────────────────────────────────────────── -->
@@ -336,22 +344,22 @@ export const LIVING_SKY_SVG_BODY = String.raw`
     </g>
 
     <g id="firefly-group" opacity="0">
-      <circle cx="108"  cy="117" r="1.3" fill="#C8FF3A"/>
-      <circle cx="192"  cy="111" r="1.0" fill="#C0FF32"/>
-      <circle cx="275"  cy="114" r="1.2" fill="#CCFF40"/>
-      <circle cx="352"  cy="110" r="1.1" fill="#C4FF38"/>
-      <circle cx="431"  cy="116" r="1.4" fill="#D0FF44"/>
-      <circle cx="508"  cy="112" r="1.0" fill="#C8FF3C"/>
-      <circle cx="582"  cy="118" r="1.2" fill="#CCFF40"/>
-      <circle cx="658"  cy="113" r="1.3" fill="#C0FF34"/>
-      <circle cx="736"  cy="109" r="1.1" fill="#CCFF40"/>
-      <circle cx="812"  cy="116" r="1.0" fill="#C0FF32"/>
-      <circle cx="886"  cy="110" r="1.3" fill="#C8FF3C"/>
-      <circle cx="958"  cy="114" r="1.1" fill="#C4FF38"/>
-      <circle cx="146"  cy="123" r="0.9" fill="#C0FF34"/>
-      <circle cx="476"  cy="122" r="0.9" fill="#C8FF3C"/>
-      <circle cx="726"  cy="122" r="1.0" fill="#C0FF34"/>
-      <circle cx="992"  cy="112" r="0.9" fill="#C4FF38"/>
+      <circle cx="108"  cy="117" r="1.3" fill="#C8FF3A"><animate attributeName="opacity" values="0;1;0" dur="2.1s" begin="0s" repeatCount="indefinite"/></circle>
+      <circle cx="192"  cy="111" r="1.0" fill="#C0FF32"><animate attributeName="opacity" values="0;0.9;0" dur="1.8s" begin="0.3s" repeatCount="indefinite"/></circle>
+      <circle cx="275"  cy="114" r="1.2" fill="#CCFF40"><animate attributeName="opacity" values="0;1;0" dur="2.4s" begin="0.7s" repeatCount="indefinite"/></circle>
+      <circle cx="352"  cy="110" r="1.1" fill="#C4FF38"><animate attributeName="opacity" values="0;0.95;0" dur="2.0s" begin="1.2s" repeatCount="indefinite"/></circle>
+      <circle cx="431"  cy="116" r="1.4" fill="#D0FF44"><animate attributeName="opacity" values="0;1;0" dur="2.7s" begin="0.4s" repeatCount="indefinite"/></circle>
+      <circle cx="508"  cy="112" r="1.0" fill="#C8FF3C"><animate attributeName="opacity" values="0;0.9;0" dur="1.9s" begin="1.5s" repeatCount="indefinite"/></circle>
+      <circle cx="582"  cy="118" r="1.2" fill="#CCFF40"><animate attributeName="opacity" values="0;1;0" dur="2.3s" begin="0.1s" repeatCount="indefinite"/></circle>
+      <circle cx="658"  cy="113" r="1.3" fill="#C0FF34"><animate attributeName="opacity" values="0;0.95;0" dur="2.6s" begin="0.8s" repeatCount="indefinite"/></circle>
+      <circle cx="736"  cy="109" r="1.1" fill="#CCFF40"><animate attributeName="opacity" values="0;0.95;0" dur="2.2s" begin="1.9s" repeatCount="indefinite"/></circle>
+      <circle cx="812"  cy="116" r="1.0" fill="#C0FF32"><animate attributeName="opacity" values="0;0.9;0" dur="1.8s" begin="0.5s" repeatCount="indefinite"/></circle>
+      <circle cx="886"  cy="110" r="1.3" fill="#C8FF3C"><animate attributeName="opacity" values="0;1;0" dur="2.5s" begin="1.1s" repeatCount="indefinite"/></circle>
+      <circle cx="958"  cy="114" r="1.1" fill="#C4FF38"><animate attributeName="opacity" values="0;0.95;0" dur="2.1s" begin="2.3s" repeatCount="indefinite"/></circle>
+      <circle cx="146"  cy="123" r="0.9" fill="#C0FF34"><animate attributeName="opacity" values="0;0.85;0" dur="1.9s" begin="0.6s" repeatCount="indefinite"/></circle>
+      <circle cx="476"  cy="122" r="0.9" fill="#C8FF3C"><animate attributeName="opacity" values="0;0.85;0" dur="2.4s" begin="1.7s" repeatCount="indefinite"/></circle>
+      <circle cx="726"  cy="122" r="1.0" fill="#C0FF34"><animate attributeName="opacity" values="0;0.9;0" dur="2.0s" begin="0.9s" repeatCount="indefinite"/></circle>
+      <circle cx="992"  cy="112" r="0.9" fill="#C4FF38"><animate attributeName="opacity" values="0;0.85;0" dur="1.7s" begin="1.3s" repeatCount="indefinite"/></circle>
     </g>
 
     <g id="shooting-star" opacity="0">
