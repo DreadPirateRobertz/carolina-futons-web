@@ -1,8 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
 
 import { AboutIllustrationClient } from "@/components/illustrations/AboutIllustrationClient";
 import { TeamPortrait } from "@/components/illustrations/TeamPortrait";
+import { SAFE_HEX_RE } from "@/lib/illustrations/about-illustrations-svg";
 
 const SIMPLE_SVG_BODY =
   '<title id="t1">Test scene title</title><rect x="0" y="0" width="100" height="50" fill="#B8D4E3"/>';
@@ -49,6 +50,64 @@ describe("AboutIllustrationClient", () => {
       <AboutIllustrationClient svgBody={SIMPLE_SVG_BODY} viewWidth={100} viewHeight={50} />,
     );
     expect(container.querySelector("svg")?.getAttribute("role")).toBe("img");
+  });
+
+  it("sets aria-labelledby when titleId is provided", () => {
+    const { container } = render(
+      <AboutIllustrationClient
+        svgBody={SIMPLE_SVG_BODY}
+        viewWidth={100}
+        viewHeight={50}
+        titleId="t1"
+      />,
+    );
+    expect(container.querySelector("svg")?.getAttribute("aria-labelledby")).toBe("t1");
+  });
+
+  it("omits aria-labelledby when titleId is not provided", () => {
+    const { container } = render(
+      <AboutIllustrationClient svgBody={SIMPLE_SVG_BODY} viewWidth={100} viewHeight={50} />,
+    );
+    expect(container.querySelector("svg")?.hasAttribute("aria-labelledby")).toBe(false);
+  });
+
+  it("clears the 60s interval on unmount", () => {
+    vi.useFakeTimers();
+    const clearSpy = vi.spyOn(window, "clearInterval");
+    const { unmount } = render(
+      <AboutIllustrationClient svgBody={SIMPLE_SVG_BODY} viewWidth={100} viewHeight={50} />,
+    );
+    unmount();
+    expect(clearSpy).toHaveBeenCalled();
+    clearSpy.mockRestore();
+    vi.useRealTimers();
+  });
+});
+
+describe("SAFE_HEX_RE", () => {
+  it("accepts 6-char hex colors", () => {
+    expect(SAFE_HEX_RE.test("#B8D4E3")).toBe(true);
+    expect(SAFE_HEX_RE.test("#050810")).toBe(true);
+  });
+
+  it("accepts 3-char hex shorthand", () => {
+    expect(SAFE_HEX_RE.test("#ABC")).toBe(true);
+  });
+
+  it("rejects rgba() strings that lerpColor can produce", () => {
+    expect(SAFE_HEX_RE.test("rgba(8,13,28,0.95)")).toBe(false);
+  });
+
+  it("rejects the 'transparent' keyword", () => {
+    expect(SAFE_HEX_RE.test("transparent")).toBe(false);
+  });
+
+  it("rejects hex without leading #", () => {
+    expect(SAFE_HEX_RE.test("B8D4E3")).toBe(false);
+  });
+
+  it("rejects empty string", () => {
+    expect(SAFE_HEX_RE.test("")).toBe(false);
   });
 });
 
