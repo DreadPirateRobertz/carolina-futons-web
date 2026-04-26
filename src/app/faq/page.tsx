@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CfLink } from "@/components/ui/cf-link";
 
 import { JsonLd } from "@/components/seo/JsonLd";
 import { groupFaqsByCategory, listFaqs } from "@/lib/cms/faq";
@@ -45,12 +46,7 @@ export default async function FaqPage() {
           </h1>
           <p className="text-lg leading-relaxed text-cf-muted">
             Don&rsquo;t see your question? We answer email at{" "}
-            <a
-              href="mailto:carolinafutons@gmail.com"
-              className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
-            >
-              carolinafutons@gmail.com
-            </a>{" "}
+            <CfLink href="mailto:carolinafutons@gmail.com">carolinafutons@gmail.com</CfLink>{" "}
             within one business day.
           </p>
         </header>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CtaButton } from "@/components/ui/cta-button";
 
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 import { trackCustomEvent } from "@/lib/wix/custom-events";
@@ -75,13 +76,9 @@ export default async function WinbackPage(props: {
               come see what&rsquo;s new.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/shop"
-                data-testid="winback-shop-cta"
-                className="inline-flex h-12 items-center justify-center rounded-md bg-cf-cta px-6 text-sm font-medium text-white transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
+              <CtaButton href="/shop" data-testid="winback-shop-cta">
                 Browse what&rsquo;s new
-              </Link>
+              </CtaButton>
               <Link
                 href="/visit"
                 className="inline-flex h-12 items-center justify-center rounded-md border border-cf-navy/20 px-6 text-sm font-medium text-cf-navy transition-colors hover:bg-cf-navy/5"

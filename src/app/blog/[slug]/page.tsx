@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { CfLink } from "@/components/ui/cf-link";
 import { notFound } from "next/navigation";
 
 import {
@@ -134,12 +135,7 @@ function Body({ text }: { text: string }) {
 function BackLink() {
   return (
     <p>
-      <Link
-        href="/blog"
-        className="text-sm text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
-      >
-        ← Back to the journal
-      </Link>
+      <CfLink href="/blog" className="text-sm">← Back to the journal</CfLink>
     </p>
   );
 }
