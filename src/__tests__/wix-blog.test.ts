@@ -216,3 +216,43 @@ describe("getPostBySlug", () => {
     );
   });
 });
+
+// cf-wvgk: static fallback tests — when Wix Blog returns empty, use static posts
+describe("listPosts — static fallback", () => {
+  it("falls back to static posts when Wix Blog returns empty array", async () => {
+    queryPosts.mockReturnValue(builderReturning([]));
+    const posts = await blog.listPosts();
+    expect(posts.length).toBeGreaterThan(0);
+    expect(posts.some((p) => p.slug === "futon-vs-sofa-bed")).toBe(true);
+  });
+
+  it("does not fall back when Wix Blog returns posts", async () => {
+    queryPosts.mockReturnValue(
+      builderReturning([{ _id: "x1", slug: "live-post", title: "Live" }]),
+    );
+    const posts = await blog.listPosts();
+    expect(posts.map((p) => p.slug)).toEqual(["live-post"]);
+  });
+});
+
+describe("getPostBySlug — static fallback", () => {
+  it("falls back to static post when Wix Blog throws", async () => {
+    getPostBySlug.mockRejectedValueOnce(new Error("Wix Blog not installed"));
+    const post = await blog.getPostBySlug("futon-vs-sofa-bed");
+    expect(post).not.toBeNull();
+    expect(post!.slug).toBe("futon-vs-sofa-bed");
+  });
+
+  it("falls back to static post when Wix Blog returns null", async () => {
+    getPostBySlug.mockResolvedValueOnce({ post: null });
+    const post = await blog.getPostBySlug("futon-frame-buying-guide");
+    expect(post).not.toBeNull();
+    expect(post!.slug).toBe("futon-frame-buying-guide");
+  });
+
+  it("returns null for a slug not in static posts after Wix miss", async () => {
+    getPostBySlug.mockResolvedValueOnce({ post: null });
+    const post = await blog.getPostBySlug("totally-unknown-slug");
+    expect(post).toBeNull();
+  });
+});

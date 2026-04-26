@@ -10,6 +10,11 @@
 // firstPublishedDate, minutesToRead.
 import { getWixClient } from "@/lib/wix-client";
 import { logWixFailure } from "@/lib/wix/errors";
+import {
+  getStaticPostBySlug,
+  STATIC_BLOG_POSTS,
+  type StaticBlogPost,
+} from "@/lib/blog/static-posts";
 
 export type BlogPostSummary = {
   _id: string;
@@ -45,6 +50,23 @@ function toIso(value: Date | string | null | undefined): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+function staticToSummary(p: StaticBlogPost): BlogPostSummary {
+  return {
+    _id: p.slug,
+    slug: p.slug,
+    title: p.title,
+    excerpt: p.excerpt,
+    heroImageUrl: null,
+    firstPublishedDate: p.firstPublishedDate,
+    minutesToRead: p.minutesToRead,
+  };
+}
+
+function staticToPost(p: StaticBlogPost | null | undefined): BlogPost | null {
+  if (!p) return null;
+  return { ...staticToSummary(p), contentText: p.contentText };
+}
+
 function heroUrl(hero: RawPost["heroImage"]): string | null {
   if (!hero) return null;
   if (typeof hero === "string") return hero || null;
@@ -72,9 +94,10 @@ export async function listPosts(limit = 12): Promise<BlogPostSummary[]> {
     const client = getWixClient();
     const result = await client.posts.queryPosts().limit(limit).find();
     const items = (result.items ?? []) as RawPost[];
-    return items
+    const posts = items
       .map(toSummary)
       .filter((p): p is BlogPostSummary => p !== null);
+    return posts.length > 0 ? posts : STATIC_BLOG_POSTS.map(staticToSummary);
   } catch (err) {
     await logWixFailure("wix", "listPosts", err);
     return [];
@@ -130,7 +153,7 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
       fieldsets: [...RICH_FIELDSETS],
     });
     const raw = (result?.post ?? null) as RawPost | null;
-    if (!raw) return null;
+    if (!raw) return staticToPost(getStaticPostBySlug(slug));
     const summary = toSummary(raw);
     if (!summary) return null;
     return {
@@ -139,6 +162,6 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
     };
   } catch (err) {
     await logWixFailure("wix", `getPostBySlug(${slug})`, err);
-    return null;
+    return staticToPost(getStaticPostBySlug(slug));
   }
 }
