@@ -45,6 +45,7 @@ export function HeaderMobileMenu() {
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- SSR hydration gate: one-time post-hydration mount; no cascade
     setMounted(true);
   }, []);
 
