@@ -274,4 +274,81 @@ describe("PdpInteractive (cf-3qt.2.1 + 2.2 integration)", () => {
       expect(addItemAction).toHaveBeenCalled();
     });
   });
+
+  // P0 regression: simple products (no productOptions, manageVariants=false) were
+  // incorrectly shown as OOS. findMatchingVariant returns null for empty selection,
+  // so the old `variants.length === 0` fallback always returned false for any
+  // product whose Wix payload includes the implicit single-variant record.
+  // Fix: fall back to product-level stock.inStock when productOptions is empty.
+  describe("inStock fallback for simple products (P0 cf-q9zi)", () => {
+    it("Add to Cart is enabled for a simple in-stock product with no variant options", () => {
+      render(
+        <PdpInteractive
+          productId="prod-simple"
+          productSlug="daisy-futon"
+          productName="Daisy Futon"
+          productOptions={[]}
+          variants={[
+            {
+              _id: "v-implicit",
+              choices: {},
+              variant: { priceData: { formatted: { price: "$1,299" } } },
+              stock: { inStock: true },
+            },
+          ]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$1,299"
+          fallbackPriceCents={129900}
+          stock={{ inStock: true }}
+        />,
+      );
+      const btn = screen.getByRole("button", { name: /add to cart/i });
+      expect(btn).not.toBeDisabled();
+      expect(screen.queryByText(/out of stock/i)).toBeNull();
+    });
+
+    it("Add to Cart is disabled for a simple OOS product", () => {
+      render(
+        <PdpInteractive
+          productId="prod-oos"
+          productSlug="sold-out-frame"
+          productName="Sold Out Frame"
+          productOptions={[]}
+          variants={[
+            {
+              _id: "v-implicit",
+              choices: {},
+              variant: { priceData: { formatted: { price: "$799" } } },
+              stock: { inStock: false },
+            },
+          ]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$799"
+          fallbackPriceCents={79900}
+          stock={{ inStock: false }}
+        />,
+      );
+      const btn = screen.getByRole("button", { name: /add to cart/i });
+      expect(btn).toBeDisabled();
+      expect(screen.getByRole("status")).toHaveTextContent(/out of stock/i);
+    });
+
+    it("Add to Cart is enabled when product-level stock is absent (untracked)", () => {
+      render(
+        <PdpInteractive
+          productId="prod-untracked"
+          productSlug="made-to-order"
+          productName="Made to Order"
+          productOptions={[]}
+          variants={[{ _id: "v-1", choices: {} }]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$2,000"
+          fallbackPriceCents={200000}
+          stock={null}
+        />,
+      );
+      const btn = screen.getByRole("button", { name: /add to cart/i });
+      expect(btn).not.toBeDisabled();
+    });
+  });
 });

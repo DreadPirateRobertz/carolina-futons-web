@@ -85,9 +85,16 @@ export function PdpInteractive({
   const selectedVariant = findMatchingVariant(variants, selection);
   const selectionComplete =
     productOptions.length === 0 || isSelectionComplete(productOptions, selection);
+  // Simple products (no options) have no selectable variant — Wix still stores
+  // one implicit variant but findMatchingVariant returns null for empty selection.
+  // Fall back to product-level stock for these; variant products with an
+  // incomplete selection use variants.length===0 (harmless — button is disabled
+  // for "Select options" anyway).
   const inStock = selectedVariant
     ? isVariantInStock(selectedVariant)
-    : variants.length === 0;
+    : productOptions.length === 0
+      ? stock?.inStock !== false
+      : variants.length === 0;
   const variantLabel = Object.entries(selection)
     .map(([k, v]) => `${k}: ${v}`)
     .join(", ");
