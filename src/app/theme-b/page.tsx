@@ -4,12 +4,11 @@ import { listProducts } from "@/lib/wix/products";
 import { MarugameHero } from "@/components/theme-b/MarugameHero";
 import { MarugameGrid } from "@/components/theme-b/MarugameGrid";
 
-// Theme B preview route. Not linked from the main site — access directly
-// at /theme-b for design review. All purchases and navigation still work
-// because this shares the main app layout (header, footer, PageTransition).
+// Theme B fallback preview — kept for design comparison after promotion to /.
+// The canonical version lives at /app/page.tsx. Access /theme-b directly.
 
 export const metadata: Metadata = {
-  title: "Theme B — Marugame Grid Preview",
+  title: "Theme B — Marugame Grid (preview)",
   robots: { index: false, follow: false },
 };
 
