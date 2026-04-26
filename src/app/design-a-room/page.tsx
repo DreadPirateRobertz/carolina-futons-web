@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { HeroReveal } from "@/components/motion/HeroReveal";
-import { BUSINESS } from "@/lib/business/contact-info";
+import { RoomPlannerCanvas } from "@/components/design-a-room/RoomPlannerCanvas";
 import { BotanicalDesignARoom } from "@/components/illustrations/BotanicalDesignARoom";
+import { BUSINESS } from "@/lib/business/contact-info";
+import { DESIGN_STEPS } from "@/lib/design-a-room/steps";
 
 export const metadata: Metadata = {
   title: "Design a Room — Carolina Futons",
@@ -12,21 +14,6 @@ export const metadata: Metadata = {
 };
 
 const SHOWROOM_HOURS = "Wed–Sat, 10am–5pm";
-
-const STEPS = [
-  {
-    title: "Tell us about the space",
-    body: "Bring a rough floor plan, a couple of photos, and how the room has to work day-to-day. A spare room that sleeps guests twice a year has very different priorities than a primary sitting room.",
-  },
-  {
-    title: "Pick a frame and fabric",
-    body: "We walk you through real fabric swatches and frame options — solid hardwood, metal, or a low platform — that fit the size and the traffic pattern. Our frames carry a 15-year warranty.",
-  },
-  {
-    title: "See it before you buy",
-    body: "We mock the layout in a simple plan view so you can confirm clearances, doorways, and how the mattress folds out before anything leaves the Hendersonville showroom.",
-  },
-];
 
 export default function DesignARoomPage() {
   return (
@@ -52,12 +39,31 @@ export default function DesignARoomPage() {
         </HeroReveal>
 
         <HeroReveal delay={0.08}>
-          <section className="space-y-6">
-            <h2 className="font-playfair text-2xl font-semibold tracking-tight">
+          <section className="space-y-6" aria-labelledby="planner-heading">
+            <h2
+              id="planner-heading"
+              className="font-playfair text-2xl font-semibold tracking-tight"
+            >
+              Check if it fits
+            </h2>
+            <p className="text-sm leading-relaxed text-cf-muted">
+              Enter your room dimensions and pick a futon or Murphy bed to see
+              a rough top-down layout.
+            </p>
+            <RoomPlannerCanvas />
+          </section>
+        </HeroReveal>
+
+        <HeroReveal delay={0.12}>
+          <section className="space-y-6" aria-labelledby="how-it-works">
+            <h2
+              id="how-it-works"
+              className="font-playfair text-2xl font-semibold tracking-tight"
+            >
               How it works
             </h2>
             <ol className="space-y-6">
-              {STEPS.map((step, index) => (
+              {DESIGN_STEPS.map((step, index) => (
                 <li key={step.title} className="flex gap-4">
                   <span
                     aria-hidden="true"
@@ -78,16 +84,50 @@ export default function DesignARoomPage() {
         </HeroReveal>
 
         <HeroReveal delay={0.16}>
-          <section className="space-y-6 rounded-lg border border-cf-ink/10 bg-cf-cta/5 p-6 sm:p-8">
+          <section
+            className="space-y-4 rounded-lg border border-cf-ink/10 bg-cf-cta/5 p-6 sm:p-8"
+            aria-labelledby="book-visit"
+          >
             <div className="space-y-2">
-              <h2 className="font-playfair text-2xl font-semibold tracking-tight">
-                Three ways to start
+              <h2
+                id="book-visit"
+                className="font-playfair text-2xl font-semibold tracking-tight"
+              >
+                Book a showroom visit
               </h2>
               <p className="leading-relaxed text-cf-muted">
-                The design consultation is hands-on. Pick whichever path fits
-                your week.
+                Ready to bring your measurements and see frames in person?
+                Request a slot and we&apos;ll confirm by email within one
+                business day.
               </p>
             </div>
+            <Link
+              href="/contact#appointment-form"
+              className="inline-flex h-11 items-center justify-center rounded-md bg-cf-cta px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-cf-cta/90"
+            >
+              Request an appointment
+            </Link>
+            <p className="text-xs text-cf-muted">
+              Open {SHOWROOM_HOURS}. Or call{" "}
+              <a
+                href={BUSINESS.phoneHref}
+                className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
+              >
+                {BUSINESS.phone}
+              </a>{" "}
+              to speak with someone today.
+            </p>
+          </section>
+        </HeroReveal>
+
+        <HeroReveal delay={0.20}>
+          <section className="space-y-6" aria-labelledby="three-ways">
+            <h2
+              id="three-ways"
+              className="font-playfair text-2xl font-semibold tracking-tight"
+            >
+              Other ways to start
+            </h2>
             <ul className="grid gap-4 sm:grid-cols-3">
               <li className="flex flex-col gap-2 rounded-md border border-cf-ink/10 bg-white p-4">
                 <h3 className="font-playfair text-base font-semibold tracking-tight">

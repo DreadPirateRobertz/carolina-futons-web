@@ -1,12 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { DESIGN_STEPS } from "@/lib/design-a-room/steps";
 
 import DesignARoomPage, { metadata } from "@/app/design-a-room/page";
 
-// cf-3qt.8.D: smoke test pinning the Design-a-Room page contract —
-// metadata export, h1, and real Carolina Futons contact info. No live
-// consultation tool yet, so the page CTA is phone + email + in-person
-// visit (no form).
+// cf-gl7p: Design a Room page with RoomPlannerCanvas, DESIGN_STEPS config,
+// and appointment booking link to /contact#appointment-form.
 
 describe("DesignARoomPage", () => {
   it("exports metadata with a Carolina Futons-scoped title", () => {
@@ -28,7 +27,7 @@ describe("DesignARoomPage", () => {
     render(<DesignARoomPage />);
     expect(screen.getByText(/824 Locust.*Hendersonville/i)).toBeTruthy();
     expect(screen.getAllByText(/\(828\) 252-9449/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Wed–Sat, 10am–5pm/i)).toBeTruthy();
+    expect(screen.getAllByText(/Wed–Sat, 10am–5pm/i).length).toBeGreaterThan(0);
   });
 
   it("exposes real CTA paths — phone link, email link, no form", () => {
@@ -47,7 +46,36 @@ describe("DesignARoomPage", () => {
       "mailto:carolinafutons@gmail.com",
     );
 
-    // Intentional: no live form until the backend exists.
     expect(screen.queryByRole("button", { name: /send message/i })).toBeNull();
+  });
+
+  it("renders the room planner canvas section with dimension inputs and futon selector", () => {
+    render(<DesignARoomPage />);
+    expect(screen.getByLabelText(/room width/i)).toHaveAttribute("type", "number");
+    expect(screen.getByLabelText(/room depth/i)).toHaveAttribute("type", "number");
+    const select = screen.getByLabelText(/futon.*bed size/i) as HTMLSelectElement;
+    expect(select.tagName).toBe("SELECT");
+    expect(select.options.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("renders the room planner as an img landmark with accessible label", () => {
+    render(<DesignARoomPage />);
+    expect(screen.getByRole("img", { name: /room plan view/i })).toBeInTheDocument();
+  });
+
+  it("renders a Book a showroom visit heading with link to /contact#appointment-form", () => {
+    render(<DesignARoomPage />);
+    expect(
+      screen.getByRole("heading", { name: /book a showroom visit/i }),
+    ).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: /request an appointment/i });
+    expect(link.getAttribute("href")).toBe("/contact#appointment-form");
+  });
+
+  it("renders DESIGN_STEPS titles in the How it works section", () => {
+    render(<DesignARoomPage />);
+    for (const step of DESIGN_STEPS) {
+      expect(screen.getByText(step.title)).toBeInTheDocument();
+    }
   });
 });
