@@ -13,7 +13,7 @@
 // succeeds or fails as one unit.
 import "server-only";
 
-import { getWixClient } from "@/lib/wix-client";
+import { getVisitorCartClient } from "./wix-visitor-client";
 
 // Wix Stores app id — constant, used as `catalogReference.appId` for every
 // Stores-sourced line item. This is the same across all Wix sites.
@@ -38,7 +38,7 @@ function toCatalogReference(item: LineItemInput) {
 }
 
 export async function getCurrentCart() {
-  const client = getWixClient();
+  const client = await getVisitorCartClient();
   try {
     return await client.currentCart.getCurrentCart();
   } catch (err) {
@@ -54,7 +54,7 @@ export async function addToCart(items: LineItemInput[]) {
   if (items.length === 0) {
     throw new Error("addToCart called with empty items array");
   }
-  const client = getWixClient();
+  const client = await getVisitorCartClient();
   const result = await client.currentCart.addToCurrentCart({
     lineItems: items.map((item) => ({
       catalogReference: toCatalogReference(item),
@@ -68,7 +68,7 @@ export async function removeFromCart(lineItemIds: string[]) {
   if (lineItemIds.length === 0) {
     throw new Error("removeFromCart called with empty lineItemIds array");
   }
-  const client = getWixClient();
+  const client = await getVisitorCartClient();
   const result =
     await client.currentCart.removeLineItemsFromCurrentCart(lineItemIds);
   return result.cart ?? null;
@@ -78,7 +78,7 @@ export async function updateLineItemQuantity(
   lineItemId: string,
   quantity: number,
 ) {
-  const client = getWixClient();
+  const client = await getVisitorCartClient();
   const result = await client.currentCart.updateCurrentCartLineItemQuantity([
     { _id: lineItemId, quantity },
   ]);
@@ -86,7 +86,7 @@ export async function updateLineItemQuantity(
 }
 
 export async function estimateCartTotals() {
-  const client = getWixClient();
+  const client = await getVisitorCartClient();
   return client.currentCart.estimateCurrentCartTotals();
 }
 
