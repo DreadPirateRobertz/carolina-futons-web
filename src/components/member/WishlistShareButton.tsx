@@ -10,9 +10,10 @@ import { generateShareToken } from "@/app/actions/wishlist";
 type State = "idle" | "pending" | "copied" | "error";
 
 export function WishlistShareButton({ loadFailed }: { loadFailed?: boolean }) {
-  if (loadFailed) return null;
   const [state, setState] = useState<State>("idle");
   const [, startTransition] = useTransition();
+
+  if (loadFailed) return null;
 
   function handleClick() {
     if (state === "pending" || state === "copied") return;

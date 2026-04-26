@@ -59,7 +59,7 @@ export function ProductSpinViewer({ spinImages, productName = "product" }: Props
 
   const totalFrames = spinImages.length;
 
-  // SSR-safe reduced-motion detection — also fires when OS preference changes mid-session
+  // SSR-safe reduced-motion detection — fires when OS preference changes mid-session
   useEffect(() => {
     try {
       const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
