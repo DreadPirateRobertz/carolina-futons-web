@@ -211,29 +211,31 @@ export default async function OrderConfirmationPage(props: {
         </div>
       </section>
 
-      {/* Social share */}
-      <section
-        data-testid="social-share"
-        className="mt-8 rounded-lg border border-cf-ink/10 p-5 text-center"
-      >
-        <p className="font-medium text-cf-ink">Love your new futon? Share it!</p>
-        <p className="mt-1 text-sm text-cf-muted">
-          Show us how it looks in your home — tag us and you might be featured.
-        </p>
-        <div className="mt-4 flex justify-center gap-4">
-          {SHARE_SOCIALS.map((s) => (
-            <a
-              key={s.name}
-              href={s.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-md border border-cf-ink/15 px-4 py-2 text-sm font-medium text-cf-ink hover:border-cf-cta hover:text-cf-cta"
-            >
-              {s.name}
-            </a>
-          ))}
-        </div>
-      </section>
+      {/* Social share — hidden if contact-info.ts renames/removes any platform */}
+      {SHARE_SOCIALS.length > 0 ? (
+        <section
+          data-testid="social-share"
+          className="mt-8 rounded-lg border border-cf-ink/10 p-5 text-center"
+        >
+          <p className="font-medium text-cf-ink">Love your new futon? Share it!</p>
+          <p className="mt-1 text-sm text-cf-muted">
+            Show us how it looks in your home — tag us and you might be featured.
+          </p>
+          <div className="mt-4 flex justify-center gap-4">
+            {SHARE_SOCIALS.map((s) => (
+              <a
+                key={s.name}
+                href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-md border border-cf-ink/15 px-4 py-2 text-sm font-medium text-cf-ink hover:border-cf-cta hover:text-cf-cta"
+              >
+                {s.name}
+              </a>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {/* Newsletter */}
       <section
