@@ -88,6 +88,46 @@ describe("PdpGallery", () => {
     expect(thumbs[0].getAttribute("aria-selected")).toBe("false");
   });
 
+  it("swaps main image when a thumb is clicked even when activeUrl is set (cf-t2xo)", () => {
+    // Regression: when activeUrl was set, index was re-derived from activeUrl
+    // on every render, so setSelectedIndex(next) had no visible effect.
+    render(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        activeUrl="https://img/a.jpg"
+      />,
+    );
+    const thumbs = screen.getAllByRole("tab");
+    fireEvent.click(thumbs[1]);
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    expect(main.src).toBe("https://img/b.jpg");
+    expect(thumbs[1].getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("resets to the new activeUrl when activeUrl prop changes (variant switch)", () => {
+    const { rerender } = render(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        activeUrl="https://img/a.jpg"
+      />,
+    );
+    // User clicks thumb 2
+    const thumbs = screen.getAllByRole("tab");
+    fireEvent.click(thumbs[1]);
+    expect((screen.getByTestId("pdp-main-image") as HTMLImageElement).src).toBe("https://img/b.jpg");
+    // Variant picker selects a variant whose main image is img/c.jpg
+    rerender(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        activeUrl="https://img/c.jpg"
+      />,
+    );
+    expect((screen.getByTestId("pdp-main-image") as HTMLImageElement).src).toBe("https://img/c.jpg");
+  });
+
   it("arrow-right advances to the next thumb", () => {
     render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
     const tablist = screen.getByRole("tablist");
