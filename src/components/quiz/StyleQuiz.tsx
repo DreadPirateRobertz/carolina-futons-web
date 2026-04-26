@@ -113,6 +113,10 @@ export function StyleQuiz({ initialOptions }: Props) {
       setEmailError("Please enter your email address.");
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setEmailError("Please enter a valid email address.");
+      return;
+    }
     setEmailError("");
     const partial: QuizAnswers = {
       roomType: answers.roomType,
@@ -396,7 +400,7 @@ function Results({ results, copy, headingRef }: ResultsProps) {
 
       {results.length === 0 ? (
         <div className="space-y-3 text-cf-muted">
-          <p>We couldn&rsquo;t find an exact match right now.</p>
+          <p>We could not find an exact match right now.</p>
           <Link href="/shop" className="text-cf-cta underline underline-offset-2">
             Browse our full collection
           </Link>

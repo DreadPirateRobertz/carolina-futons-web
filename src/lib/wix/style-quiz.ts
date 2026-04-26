@@ -44,7 +44,8 @@ export async function getQuizOptions(): Promise<QuizOptions | null> {
       method: "styleQuiz/getQuizOptions",
       args: [],
     });
-  } catch {
+  } catch (err) {
+    console.error("[styleQuiz] getQuizOptions failed:", err);
     return null;
   }
 }
@@ -57,7 +58,8 @@ export async function getQuizRecommendations(
       method: "styleQuiz/getQuizRecommendations",
       args: [answers],
     });
-  } catch {
+  } catch (err) {
+    console.error("[styleQuiz] getQuizRecommendations failed:", err);
     return [];
   }
 }
@@ -91,7 +93,8 @@ export async function getPersonalizedCopy(
       method: "styleQuiz/getPersonalizedCopy",
       args: [answers],
     });
-  } catch {
+  } catch (err) {
+    console.error("[styleQuiz] getPersonalizedCopy failed:", err);
     return { copy: "", profileType: "style" };
   }
 }
