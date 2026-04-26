@@ -2,6 +2,17 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 
+vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
+
+// ShopTheRoom is an async server component — stub it synchronously for tests.
+vi.mock("@/components/site/ShopTheRoom", () => ({
+  ShopTheRoom: vi.fn().mockReturnValue(
+    <section data-slot="shop-the-room" aria-label="Shop the room" />,
+  ),
+  HOME_HERO_PHOTO: { src: "", alt: "lifestyle" },
+  HOME_HOTSPOT_CONFIGS: [],
+}));
+
 // framer-motion stubs — jsdom lacks IntersectionObserver / matchMedia / RAF.
 vi.mock("framer-motion", async () => {
   const actual = await vi.importActual<typeof import("framer-motion")>("framer-motion");
@@ -50,6 +61,7 @@ vi.mock("@/lib/wix/products", () => ({
   listProductsByCollectionId: vi.fn().mockImplementation((colId: string) =>
     Promise.resolve(makeProducts(colId)),
   ),
+  getProductBySlug: vi.fn().mockResolvedValue(null),
 }));
 
 import HomePage from "@/app/page";
@@ -178,5 +190,10 @@ describe("HomePage — A+D hybrid (cf-theme-ad-grid)", () => {
   it("exposes the ad-grid data slot", async () => {
     const { container } = await renderHome();
     expect(container.querySelector("[data-slot='ad-grid']")).not.toBeNull();
+  });
+
+  it("renders the ShopTheRoom lifestyle hotspot section", async () => {
+    const { container } = await renderHome();
+    expect(container.querySelector("[data-slot='shop-the-room']")).not.toBeNull();
   });
 });

@@ -4,6 +4,11 @@ import { MrPopsHero } from "@/components/theme-a/MrPopsHero";
 import { MrPopsMarquee } from "@/components/site/MrPopsMarquee";
 import { AdGrid, type AdCategory } from "@/components/theme-ad/AdGrid";
 import {
+  ShopTheRoom,
+  HOME_HERO_PHOTO,
+  HOME_HOTSPOT_CONFIGS,
+} from "@/components/site/ShopTheRoom";
+import {
   getCollectionBySlug,
   listProductsByCollectionId,
 } from "@/lib/wix/products";
@@ -55,6 +60,10 @@ export default async function HomePage() {
       <MrPopsHero />
       <MrPopsMarquee />
       <AdGrid categories={categories} />
+      <ShopTheRoom
+        heroPhoto={HOME_HERO_PHOTO}
+        hotspotConfigs={HOME_HOTSPOT_CONFIGS}
+      />
     </>
   );
 }
