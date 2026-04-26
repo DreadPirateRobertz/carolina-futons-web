@@ -132,14 +132,15 @@ export function LivingSkyClient() {
   useEffect(() => {
     const root = containerRef.current;
     if (!root) return;
+    const svg = root.querySelector("svg") as SVGSVGElement | null;
 
     if (reduced) {
-      // Freeze on noon — matches the SVG's static default attrs so no
-      // visible mutation flashes through. Skip the interval entirely.
       applyState(root, computeLivingSky(NOON_MINUTES));
+      svg?.pauseAnimations?.();
       return;
     }
 
+    svg?.unpauseAnimations?.();
     const tick = () => applyState(root, computeLivingSky(totalMinutesNow()));
     tick();
     const id = window.setInterval(tick, TICK_INTERVAL_MS);
