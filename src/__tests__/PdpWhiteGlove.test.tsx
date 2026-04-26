@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { PdpWhiteGlove } from "@/components/product/PdpWhiteGlove";
@@ -151,7 +151,7 @@ describe("PdpWhiteGlove (zone-aware)", () => {
     );
   });
 
-  it("passes cache:'no-store' to the API call", async () => {
+  it("passes cache:'no-store' + an AbortSignal to the API call", async () => {
     fetchMock.mockResolvedValueOnce(okResponse("white-glove"));
     const user = userEvent.setup();
     render(<PdpWhiteGlove unitPriceCents={297_800} />);
@@ -160,5 +160,106 @@ describe("PdpWhiteGlove (zone-aware)", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const init = fetchMock.mock.calls[0]![1] as RequestInit;
     expect(init.cache).toBe("no-store");
+    expect(init.signal).toBeDefined();
+  });
+
+  it("trims surrounding whitespace before validating the ZIP (paste defense)", async () => {
+    // maxLength=5 prevents typed whitespace from reaching the input, but a
+    // paste-from-clipboard with surrounding spaces lands as a single
+    // change event — bypass maxLength via fireEvent.change to simulate.
+    fetchMock.mockResolvedValueOnce(okResponse("white-glove", "28739"));
+    const user = userEvent.setup();
+    render(<PdpWhiteGlove unitPriceCents={297_800} />);
+    const input = screen.getByRole("textbox", { name: /zip/i });
+    fireEvent.change(input, { target: { value: "  28739  " } });
+    await user.click(screen.getByRole("button", { name: /^check$/i }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock.mock.calls[0]![0]).toBe(
+      "/api/delivery-zone?zip=28739",
+    );
+  });
+
+  it("disables the button + shows 'Checking…' while the request is in flight", async () => {
+    let resolve: (r: Response) => void = () => {};
+    fetchMock.mockReturnValueOnce(
+      new Promise<Response>((r) => {
+        resolve = r;
+      }),
+    );
+    const user = userEvent.setup();
+    render(<PdpWhiteGlove unitPriceCents={297_800} />);
+    await user.type(screen.getByRole("textbox", { name: /zip/i }), "28739");
+    await user.click(screen.getByRole("button", { name: /^check$/i }));
+    const button = screen.getByRole("button", { name: /checking/i });
+    expect(button).toBeDisabled();
+    resolve(okResponse("white-glove"));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /^check$/i })).toBeEnabled(),
+    );
+  });
+
+  it("keeps the form interactive after a successful check so the user can re-submit a different ZIP", async () => {
+    fetchMock
+      .mockResolvedValueOnce(okResponse("white-glove", "28739"))
+      .mockResolvedValueOnce(okResponse("ltl", "30303", { min: 2, max: 3 }));
+    const user = userEvent.setup();
+    render(<PdpWhiteGlove unitPriceCents={297_800} />);
+    const input = screen.getByRole("textbox", { name: /zip/i });
+    await user.type(input, "28739");
+    await user.click(screen.getByRole("button", { name: /^check$/i }));
+    await screen.findByRole("status");
+    // Form is still mounted — re-enter and resubmit
+    await user.clear(input);
+    await user.type(input, "30303");
+    await user.click(screen.getByRole("button", { name: /^check$/i }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(
+      (await screen.findByRole("status")).textContent,
+    ).toMatch(/white-glove isn.t available at 30303/i);
+  });
+
+  it("recovers from an error when the user submits a valid ZIP next", async () => {
+    fetchMock
+      .mockRejectedValueOnce(new Error("ECONNRESET"))
+      .mockResolvedValueOnce(okResponse("white-glove", "28739"));
+    const user = userEvent.setup();
+    render(<PdpWhiteGlove unitPriceCents={297_800} />);
+    const input = screen.getByRole("textbox", { name: /zip/i });
+    await user.type(input, "28739");
+    await user.click(screen.getByRole("button", { name: /^check$/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /couldn.t check/i,
+    );
+    await user.clear(input);
+    await user.type(input, "28739");
+    await user.click(screen.getByRole("button", { name: /^check$/i }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(
+      (await screen.findByRole("status")).textContent,
+    ).toMatch(/free white-glove delivery to 28739/i);
+  });
+
+  it("surfaces a generic error when the API returns 5xx with non-JSON body", async () => {
+    fetchMock.mockResolvedValueOnce(new Response("internal", { status: 500 }));
+    const user = userEvent.setup();
+    render(<PdpWhiteGlove unitPriceCents={297_800} />);
+    await user.type(screen.getByRole("textbox", { name: /zip/i }), "28739");
+    await user.click(screen.getByRole("button", { name: /^check$/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /couldn.t check/i,
+    );
+  });
+
+  it("logs unexpected fetch failures via console.error so Sentry's global handler can pick them up", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    fetchMock.mockRejectedValueOnce(new Error("ECONNRESET"));
+    const user = userEvent.setup();
+    render(<PdpWhiteGlove unitPriceCents={297_800} />);
+    await user.type(screen.getByRole("textbox", { name: /zip/i }), "28739");
+    await user.click(screen.getByRole("button", { name: /^check$/i }));
+    await screen.findByRole("alert");
+    expect(errSpy).toHaveBeenCalled();
+    expect(errSpy.mock.calls[0]![0]).toMatch(/PdpWhiteGlove/);
+    errSpy.mockRestore();
   });
 });
