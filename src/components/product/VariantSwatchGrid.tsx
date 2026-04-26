@@ -5,11 +5,9 @@ import { useCallback, useMemo, useRef } from "react";
 
 import { cn } from "@/lib/utils";
 
-// cf-pdp-variant-swatches: visual swatch picker spike. Sibling to VariantPicker
-// — the existing radio-group implementation stays as the default; this grid is
-// a richer variant for color/finish options that benefit from a larger hit
-// target, an optional color preview, and a Framer-Motion morph between the
-// active-state ring as the user moves between swatches.
+// Visual swatch picker for color/finish options. Sibling to VariantPicker.
+// Provides a larger hit target, optional color preview, and a Framer-Motion
+// morph of the active-state ring as the user moves between swatches.
 //
 // Motion contract:
 //   - Active-ring uses a shared layoutId (`variant-swatch-active-ring-${optionName}`)
@@ -79,14 +77,11 @@ export function VariantSwatchGrid({
       switch (event.key) {
         case "ArrowRight":
         case "ArrowDown":
-          nextPos = pos === -1 ? 0 : (pos + 1) % enabledIndexes.length;
+          nextPos = (pos + 1) % enabledIndexes.length;
           break;
         case "ArrowLeft":
         case "ArrowUp":
-          nextPos =
-            pos === -1
-              ? enabledIndexes.length - 1
-              : (pos - 1 + enabledIndexes.length) % enabledIndexes.length;
+          nextPos = (pos - 1 + enabledIndexes.length) % enabledIndexes.length;
           break;
         case "Home":
           nextPos = 0;
@@ -118,7 +113,7 @@ export function VariantSwatchGrid({
         const previewUrl = choice.media?.mainMedia?.image?.url ?? null;
         return (
           <m.button
-            key={value || i}
+            key={value}
             ref={(el) => {
               buttonsRef.current[i] = el;
             }}
@@ -127,7 +122,13 @@ export function VariantSwatchGrid({
             aria-label={`${optionName}: ${value}${available ? "" : " (unavailable)"}`}
             data-selected={isSelected ? "true" : "false"}
             data-value={value}
-            tabIndex={isSelected || (!selected && i === enabledIndexes[0]) ? 0 : -1}
+            tabIndex={
+              i ===
+              (enabledIndexes.find((idx) => choices[idx].value === selected) ??
+                enabledIndexes[0])
+                ? 0
+                : -1
+            }
             disabled={!available}
             onClick={() => available && onSelect(value)}
             onKeyDown={(e) => handleKey(e, i)}
@@ -152,7 +153,7 @@ export function VariantSwatchGrid({
                 style={{ backgroundImage: `url(${previewUrl})` }}
               />
             ) : null}
-            <span>{choice.description || value || "—"}</span>
+            <span>{choice.description || value}</span>
             {isSelected ? (
               <m.span
                 aria-hidden
