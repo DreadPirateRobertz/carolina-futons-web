@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { EmptySearchIllustration } from "@/components/illustrations/EmptySearchIllustration";
 import { searchProducts } from "@/lib/wix/products";
 import { searchPosts, type BlogPostSummary } from "@/lib/wix/blog";
 
@@ -177,8 +178,9 @@ function ArticleSection({ posts }: { posts: ReadonlyArray<BlogPostSummary> }) {
 
 function NoResults({ q }: { q: string }) {
   return (
-    <section className="mt-10 max-w-2xl space-y-4" data-slot="search-no-results">
-      <p className="text-cf-ink/80">
+    <section className="mt-10 max-w-2xl space-y-6" data-slot="search-no-results">
+      <EmptySearchIllustration className="mx-auto" />
+      <p className="text-center text-cf-ink/80">
         We couldn&rsquo;t find products or articles matching{" "}
         <span className="font-medium text-cf-espresso">&ldquo;{q}&rdquo;</span>.
       </p>
