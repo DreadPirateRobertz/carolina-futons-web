@@ -79,7 +79,21 @@ function useSupportsViewTransition() {
 }
 
 export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  // Initialize from activeUrl so the default variant's image is shown first.
+  const [selectedIndex, setSelectedIndex] = useState(() => {
+    if (!activeUrl) return 0;
+    const i = images.findIndex((img) => img.url === activeUrl);
+    return i >= 0 ? i : 0;
+  });
+  // Sync selectedIndex when the variant picker changes activeUrl (new variant
+  // selected). Between variant changes, user thumb-clicks win freely.
+  // "Adjust state during render" pattern — avoids a double-render via useEffect.
+  const [prevActiveUrl, setPrevActiveUrl] = useState(activeUrl);
+  if (activeUrl !== prevActiveUrl) {
+    setPrevActiveUrl(activeUrl);
+    const newIdx = activeUrl ? images.findIndex((img) => img.url === activeUrl) : -1;
+    if (newIdx >= 0) setSelectedIndex(newIdx);
+  }
   // When non-null, the thumb at this index temporarily carries the
   // view-transition-name as the BEFORE-snapshot source. Main yields its
   // name during this window so the snapshot has no duplicate-name conflict.
@@ -117,13 +131,7 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
     );
   }
 
-  const activeIndexFromUrl = activeUrl
-    ? images.findIndex((img) => img.url === activeUrl)
-    : -1;
-  const index =
-    activeIndexFromUrl >= 0
-      ? activeIndexFromUrl
-      : Math.min(selectedIndex, images.length - 1);
+  const index = Math.min(selectedIndex, images.length - 1);
   const active = images[index];
 
   const swap = (next: number) => {
@@ -177,10 +185,10 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
     if (images.length <= 1) return;
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      swap((selectedIndex + 1) % images.length);
+      swap((index + 1) % images.length);
     } else if (event.key === "ArrowLeft") {
       event.preventDefault();
-      swap((selectedIndex - 1 + images.length) % images.length);
+      swap((index - 1 + images.length) % images.length);
     }
   };
 
