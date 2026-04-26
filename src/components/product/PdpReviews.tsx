@@ -15,11 +15,10 @@ export type PdpReviewsProps = {
 const HEADING_ID = "pdp-reviews-heading";
 const MAX_CARDS = 3;
 
-// cf-xe54 (cf-3qt.6.F.8.FU): select reviews to spotlight on the PDP. Static
-// data only — the real review service lands later. Fallback chain favors
-// honest specificity: exact productName -> inferred category -> []. The
-// previous "top-rated overall" tier was removed because it surfaced reviews
-// from unrelated categories captioned as the current product's reviews.
+// Select reviews to spotlight on the PDP. Fallback chain favors honest
+// specificity: exact productName -> inferred category -> []. The previous
+// "top-rated overall" tier was removed because it surfaced reviews from
+// unrelated categories captioned as the current product's reviews.
 export function pickPdpReviews(productName: string): readonly Review[] {
   const exact = REVIEWS.filter((r) => r.productName === productName);
   if (exact.length > 0) return exact.slice(0, MAX_CARDS);
@@ -34,8 +33,8 @@ export function pickPdpReviews(productName: string): readonly Review[] {
 }
 
 // Map a free-form Wix product name to a ReviewCategory. Keyword matching is
-// intentionally simple — phase 2 swaps this for an explicit category prop
-// once the Wix product schema carries one (cf-3qt.6.F.8 phase 2).
+// intentionally simple — an explicit category prop would be cleaner if the
+// product schema ever carries one.
 function inferReviewCategory(productName: string): ReviewCategory | null {
   const name = productName.toLowerCase();
   if (name.includes("murphy")) return "murphy-beds";
@@ -51,7 +50,7 @@ export function PdpReviews({ productSlug, productName }: PdpReviewsProps) {
   const reviews = pickPdpReviews(productName);
 
   // Aggregate is suppressed when reviews is empty so we never show a count
-  // ("42 reviews") with zero cards beneath it (cf-xe54).
+  // ("42 reviews") with zero cards beneath it.
   if (reviews.length === 0) {
     return (
       <section
