@@ -1,7 +1,3 @@
-// Theme B — Marugame Grid: typography-first hero.
-// One oversized word fills most of the viewport. Everything else whispers.
-// No client JS needed — pure server component.
-
 import type React from "react";
 
 export function MarugameHero(): React.ReactElement {
@@ -10,6 +6,12 @@ export function MarugameHero(): React.ReactElement {
       aria-label="Hero"
       className="relative flex min-h-[100svh] flex-col justify-between overflow-hidden bg-cf-cream px-6 py-10 sm:px-10"
     >
+      {/* Left vertical accent — Swiss-editorial structural anchor */}
+      <div
+        aria-hidden="true"
+        className="absolute left-6 top-10 h-[58%] w-px bg-cf-navy/[0.07] sm:left-10"
+      />
+
       {/* Top label row */}
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-medium uppercase tracking-[0.25em] text-cf-charcoal/50">
@@ -23,14 +25,15 @@ export function MarugameHero(): React.ReactElement {
       {/* Oversized word — the entire visual statement */}
       <div className="-mx-2 sm:-mx-4" aria-hidden="true">
         <p
-          className="select-none font-heading text-[clamp(88px,18vw,260px)] font-normal italic leading-none tracking-[-0.04em] text-cf-navy"
-          style={{ lineHeight: "0.9" }}
+          className="select-none font-heading text-[clamp(88px,18vw,260px)] font-normal italic tracking-[-0.04em] text-cf-navy"
+          style={{ lineHeight: "0.88" }}
         >
           SLEEP
         </p>
+        {/* WELL. indented slightly right — cascade creates the stagger */}
         <p
-          className="select-none font-heading text-[clamp(88px,18vw,260px)] font-normal italic leading-none tracking-[-0.04em] text-cf-navy/15"
-          style={{ lineHeight: "0.9" }}
+          className="select-none font-heading text-[clamp(88px,18vw,260px)] font-normal italic tracking-[-0.04em] text-cf-navy/[0.12] pl-[0.05em]"
+          style={{ lineHeight: "0.88" }}
         >
           WELL.
         </p>
@@ -38,16 +41,16 @@ export function MarugameHero(): React.ReactElement {
 
       {/* Bottom row — tagline + scroll cue */}
       <div className="flex items-end justify-between">
-        <p className="max-w-[28ch] text-sm leading-relaxed text-cf-charcoal/60">
+        <p className="max-w-[26ch] text-[13px] leading-relaxed tracking-[0.01em] text-cf-charcoal/55">
           Hardwood frames, honest mattresses, and the expertise of a family
           that&rsquo;s been doing this since 1991.
         </p>
-        <span
-          aria-hidden="true"
-          className="text-[11px] font-medium uppercase tracking-[0.25em] text-cf-charcoal/40"
-        >
-          Scroll ↓
-        </span>
+        <div aria-hidden="true" className="flex flex-col items-end gap-1.5">
+          <span className="text-[10px] font-medium uppercase tracking-[0.28em] text-cf-charcoal/35">
+            Scroll
+          </span>
+          <div className="h-5 w-px bg-cf-navy/20" />
+        </div>
       </div>
 
       {/* Thin bottom rule — visual anchor before the grid */}

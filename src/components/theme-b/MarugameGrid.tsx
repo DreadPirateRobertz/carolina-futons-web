@@ -123,7 +123,7 @@ export function MarugameGrid({
 
   return (
     <section aria-label="Products" className="px-6 py-16 sm:px-10 sm:py-20">
-      <ul className="grid grid-cols-2 gap-x-6 gap-y-16">
+      <ul className="grid grid-cols-2 gap-x-6 gap-y-16 sm:gap-x-10">
         {products.map((product, i) => (
           <GridItem
             key={product._id}
