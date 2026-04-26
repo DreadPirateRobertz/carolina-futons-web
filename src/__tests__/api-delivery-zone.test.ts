@@ -2,11 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { GET, POST } from "@/app/api/delivery-zone/route";
 
-// cf-w2my: behavioral tests for /api/delivery-zone. The handler delegates
-// classification to the pure helpers in src/lib/product/shipping-estimate
-// (already covered by their own unit suite); these tests pin down the wire
-// contract — request parsing, response shape, status codes — that the cfw
-// PdpShippingEstimate + future cart-page consumers depend on.
+// cf-w2my: behavioral tests for /api/delivery-zone. Classification logic is
+// covered helper-side in shipping-estimate.test.ts + local-zones.test.ts;
+// these tests pin down the wire contract — request parsing, response shape,
+// status codes, error vocabulary — at the route boundary.
 
 function makeGet(zip?: string | null) {
   const url = zip == null
@@ -63,6 +62,33 @@ describe("GET /api/delivery-zone", () => {
     });
   });
 
+  it("classifies a Mid-Atlantic ZIP (DC 20001) as 'mid' LTL", async () => {
+    const res = await GET(makeGet("20001"));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toMatchObject({
+      ok: true,
+      zone: "mid",
+      service: "ltl",
+      eligible: true,
+      estDays: { min: 3, max: 5 },
+      label: "LTL freight delivery",
+    });
+  });
+
+  it("classifies a West Coast ZIP (Beverly Hills 90210) as 'west' LTL", async () => {
+    const res = await GET(makeGet("90210"));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toMatchObject({
+      ok: true,
+      zone: "west",
+      service: "ltl",
+      eligible: true,
+      estDays: { min: 5, max: 7 },
+    });
+  });
+
   it("marks AK/HI as ineligible (unsupported service)", async () => {
     const res = await GET(makeGet("99701"));
     expect(res.status).toBe(200);
@@ -72,6 +98,25 @@ describe("GET /api/delivery-zone", () => {
       zone: "akhi",
       service: "unsupported",
       eligible: false,
+    });
+  });
+
+  it.each([
+    ["00601", "Puerto Rico"],
+    ["00801", "USVI"],
+    ["09001", "APO Europe"],
+    ["96201", "APO Pacific"],
+    ["34001", "APO Americas"],
+  ])("marks territory ZIP %s (%s) as ineligible", async (zip) => {
+    const res = await GET(makeGet(zip));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toMatchObject({
+      ok: true,
+      zone: "territory",
+      service: "unsupported",
+      eligible: false,
+      label: "Outside our delivery area",
     });
   });
 
@@ -107,10 +152,10 @@ describe("POST /api/delivery-zone", () => {
     expect(await res.json()).toEqual({ ok: false, error: "missing-zip" });
   });
 
-  it("returns 400 missing-zip for invalid JSON body", async () => {
+  it("returns 400 invalid-json for malformed body — distinct from missing-zip", async () => {
     const res = await POST(makePost(undefined, { rawBody: "{ not json" }));
     expect(res.status).toBe(400);
-    expect(await res.json()).toEqual({ ok: false, error: "missing-zip" });
+    expect(await res.json()).toEqual({ ok: false, error: "invalid-json" });
   });
 
   it("returns NC white-glove tier for valid in-state ZIP", async () => {
