@@ -122,8 +122,9 @@ describe("PdpInteractive (cf-3qt.2.1 + 2.2 integration)", () => {
     );
     const slot = container.querySelector('[data-slot="pdp-primary-cta"]');
     expect(slot).not.toBeNull();
-    // AddToCartButton wrapper must have flex-1 so it doesn't consume the full row
-    const atcWrapper = slot!.querySelector('div.flex-1');
+    // flex-1 makes the wrapper a flex participant; min-w-0 allows it to shrink
+    // below content width so the wishlist button shares the row on narrow viewports.
+    const atcWrapper = slot!.querySelector('div.flex-1.min-w-0');
     expect(atcWrapper).not.toBeNull();
     // Wishlist button must live inside the same slot (not pushed outside by a block div)
     const wishlistSlot = slot!.querySelector('[data-slot="pdp-wishlist"]');
@@ -293,6 +294,69 @@ describe("PdpInteractive (cf-3qt.2.1 + 2.2 integration)", () => {
       fireEvent.click(stickyButton);
       // The click fires the same server action the primary CTA uses.
       expect(addItemAction).toHaveBeenCalled();
+    });
+  });
+
+  // cf-9ujv regression: simple products (productOptions=[], manageVariants:false)
+  // were shown OOS because the inStock fallback was `variants.length === 0`, and
+  // Wix returns a non-empty default-variant array even when manageVariants:false.
+  describe("inStock fallback — simple products without options (cf-9ujv)", () => {
+    const defaultVariant: VariantInput = {
+      _id: "v-default",
+      choices: {},
+      variant: { priceData: { formatted: { price: "$899" } } },
+      stock: { inStock: true },
+      media: undefined,
+    };
+
+    it("Add to Cart is enabled for a simple in-stock product with a Wix default variant", () => {
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Cambridge Full Futon"
+          productOptions={[]}
+          variants={[defaultVariant]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$899"
+          stock={{ inStock: true }}
+        />,
+      );
+      const btn = screen.getByRole("button", { name: /add to cart/i });
+      expect(btn).not.toBeDisabled();
+      expect(screen.queryByRole("status")).toBeNull();
+    });
+
+    it("Add to Cart is disabled when product-level stock.inStock is false", () => {
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Cambridge Full Futon"
+          productOptions={[]}
+          variants={[defaultVariant]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$899"
+          stock={{ inStock: false }}
+        />,
+      );
+      const btn = screen.getByRole("button", { name: /add to cart/i });
+      expect(btn).toBeDisabled();
+      expect(screen.getByRole("status")).toHaveTextContent(/out of stock/i);
+    });
+
+    it("Add to Cart is enabled when stock prop is null (no inventory tracking)", () => {
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Cambridge Full Futon"
+          productOptions={[]}
+          variants={[defaultVariant]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$899"
+          stock={null}
+        />,
+      );
+      const btn = screen.getByRole("button", { name: /add to cart/i });
+      expect(btn).not.toBeDisabled();
     });
   });
 });
