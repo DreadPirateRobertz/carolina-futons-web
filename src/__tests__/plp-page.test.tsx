@@ -29,13 +29,15 @@ vi.mock("@/lib/shop/plp-observability", () => ({
 vi.mock("next/navigation", () => ({
   notFound: vi.fn(),
 }));
-// cf-delight Phase 4: PLP page now renders ShopTheRoom on /shop/futon-frames.
-// Stub it to skip the async product-fetch path; section's own contract
-// is covered by ShopTheRoom.test.tsx.
+// cf-delight: PLP page renders ShopTheRoom for slugs in
+// PLP_SHOP_THE_ROOM_CONFIGS. Stub the section to skip the async
+// product-fetch path (which would suspend renderToStaticMarkup) and
+// stub the lookup map empty so the standard tests don't accidentally
+// emit the section. The dedicated gating describe block below
+// re-mocks per test to flip the map and assert the conditional.
 vi.mock("@/components/site/ShopTheRoom", () => ({
   ShopTheRoom: () => null,
-  FUTON_FRAMES_PLP_HERO_PHOTO: { src: "stub", alt: "stub", width: 1, height: 1 },
-  FUTON_FRAMES_PLP_HOTSPOT_CONFIGS: [],
+  PLP_SHOP_THE_ROOM_CONFIGS: {},
 }));
 import { buildPageUrl } from "@/components/plp/PLPPagination";
 
@@ -734,91 +736,109 @@ describe("PlpPage — product card stagger (cf-plp-card-stagger)", () => {
   });
 });
 
-// ── PlpPage: cf-delight Phase 4 ShopTheRoom gating ─────────────────────────
+// ── PlpPage: cf-delight ShopTheRoom gating ─────────────────────────────────
 //
-// ShopTheRoom is mocked to a sentinel <div data-slot="cf-delight-stub" />
-// for these tests so the gating contract (only renders on /shop/futon-frames)
-// is verifiable from the rendered HTML.
+// PlpPage reads `PLP_SHOP_THE_ROOM_CONFIGS[categorySlug]` and only
+// renders the section when the lookup returns a config. These tests
+// pin the gating contract:
+//   - configured slug (futon-frames) → section renders + receives the
+//     right props (catches a future swap that points the PLP at the
+//     wrong photo or heading)
+//   - unconfigured slug (mattresses, mattresses-sale) → section absent
+//
+// We swap only the @/components/site/ShopTheRoom mock per test so the
+// other six mocks at the top of the file stay in force; only `categories`
+// + `ShopTheRoom` need to vary between the gating cases. Spy fn captures
+// the props passed at the call site so a future copy/paste regression
+// (wrong heroPhoto / headingId) fails this test.
 
 describe("PlpPage — cf-delight ShopTheRoom gating", () => {
-  beforeEach(async () => {
-    vi.resetModules();
-    vi.doMock("@/components/site/ShopTheRoom", () => ({
-      ShopTheRoom: () => null, // re-stubbed inline below per test
-      FUTON_FRAMES_PLP_HERO_PHOTO: { src: "s", alt: "s", width: 1, height: 1 },
-      FUTON_FRAMES_PLP_HOTSPOT_CONFIGS: [],
-    }));
-    const wixProducts = await vi.importActual<typeof import("@/lib/wix/products")>(
-      "@/lib/wix/products",
-    );
-    void wixProducts;
-  });
+  type SectionProps = {
+    headingId: string;
+    eyebrow: string;
+    heading: string;
+    heroPhoto: { src: string };
+    hotspotConfigs: Array<{ id: string }>;
+  };
 
-  async function renderForCategory(slug: string): Promise<string> {
+  const FUTON_CONFIG: SectionProps = {
+    headingId: "plp-futon-frames-shop-the-room-heading",
+    eyebrow: "Shop the room",
+    heading: "See the futons in a room",
+    heroPhoto: { src: "stub-futon-frames" },
+    hotspotConfigs: [{ id: "monterey-plp" }],
+  };
+
+  async function renderForCategory(
+    slug: string,
+    configMap: Record<string, SectionProps> = { "futon-frames": FUTON_CONFIG },
+  ): Promise<{ html: string; spyCalls: SectionProps[] }> {
     vi.resetModules();
-    // Minimal mock surface — same shape as the top-of-file mocks so the
-    // module loads and the page can render. Centralising in a helper
-    // avoids each gating test repeating the seven mocks.
-    vi.doMock("@sentry/nextjs", () => ({
-      captureException: vi.fn(),
-      captureMessage: vi.fn(),
-      flush: vi.fn().mockResolvedValue(true),
-    }));
-    vi.doMock("@/lib/wix-client", () => ({ getWixClient: vi.fn() }));
-    vi.doMock("@/lib/wix/products", () => ({
-      getCollectionBySlug: vi.fn().mockResolvedValue({ _id: "c1" }),
-      listProductsByCollectionId: vi.fn(),
-      listProductsOnSale: vi.fn().mockResolvedValue([]),
-    }));
-    vi.doMock("@/lib/wix/plp", () => ({
-      getCollectionPlp: vi.fn().mockResolvedValue({
-        page: { items: [], total: 0, page: 1, pageSize: 24, hasNext: false, hasPrev: false },
-        facets: { total: 0, inStock: 0, outOfStock: 0, priceBuckets: [] },
-      }),
-    }));
+    const spyCalls: SectionProps[] = [];
     vi.doMock("@/lib/shop/categories", () => ({
       SHOP_CATEGORIES: [
         { slug, name: "X", description: "", collectionSlug: slug },
       ],
       findCategory: (s: string) =>
-        s === slug ? { slug, name: "X", description: "", collectionSlug: slug } : undefined,
-    }));
-    vi.doMock("@/lib/shop/plp-observability", () => ({
-      logOverPaginatedRender: vi.fn(),
+        s === slug
+          ? { slug, name: "X", description: "", collectionSlug: slug }
+          : undefined,
     }));
     vi.doMock("@/components/site/ShopTheRoom", () => ({
-      ShopTheRoom: () => null, // sentinel via data-slot below
-      FUTON_FRAMES_PLP_HERO_PHOTO: { src: "s", alt: "s", width: 1, height: 1 },
-      FUTON_FRAMES_PLP_HOTSPOT_CONFIGS: [],
-    }));
-    // Replace the ShopTheRoom stub with a sentinel that emits a marker
-    // we can grep — done after vi.doMock so the override wins.
-    vi.doMock("@/components/site/ShopTheRoom", () => ({
-      ShopTheRoom: () => {
-        const React = require("react") as typeof import("react");
-        return React.createElement("div", {
-          "data-slot": "cf-delight-shop-the-room",
-        });
+      ShopTheRoom: (props: SectionProps) => {
+        spyCalls.push(props);
+        return (
+          <div data-slot="cf-delight-shop-the-room" data-heading-id={props.headingId} />
+        );
       },
-      FUTON_FRAMES_PLP_HERO_PHOTO: { src: "s", alt: "s", width: 1, height: 1 },
-      FUTON_FRAMES_PLP_HOTSPOT_CONFIGS: [],
+      PLP_SHOP_THE_ROOM_CONFIGS: configMap,
     }));
-
     const Page = (await import("@/app/shop/[category]/page")).default;
     const tree = (await Page({
       params: Promise.resolve({ category: slug }),
       searchParams: Promise.resolve({}),
     })) as ReactElement;
-    return renderToStaticMarkup(tree);
+    return { html: renderToStaticMarkup(tree), spyCalls };
   }
 
-  it("renders ShopTheRoom on /shop/futon-frames", async () => {
-    const html = await renderForCategory("futon-frames");
+  it("renders ShopTheRoom on /shop/futon-frames with the futon-frames PLP config", async () => {
+    const { html, spyCalls } = await renderForCategory("futon-frames");
     expect(html).toContain('data-slot="cf-delight-shop-the-room"');
+    expect(spyCalls).toHaveLength(1);
+    expect(spyCalls[0]!.headingId).toBe(
+      "plp-futon-frames-shop-the-room-heading",
+    );
+    expect(spyCalls[0]!.heading).toMatch(/see the futons/i);
+    expect(spyCalls[0]!.heroPhoto.src).toBe("stub-futon-frames");
   });
 
   it("does NOT render ShopTheRoom on /shop/mattresses (other PLPs unchanged)", async () => {
-    const html = await renderForCategory("mattresses");
+    const { html, spyCalls } = await renderForCategory("mattresses");
     expect(html).not.toContain('data-slot="cf-delight-shop-the-room"');
+    expect(spyCalls).toHaveLength(0);
+  });
+
+  it("does NOT render ShopTheRoom on /shop/mattresses-sale (virtual category)", async () => {
+    const { html, spyCalls } = await renderForCategory("mattresses-sale");
+    expect(html).not.toContain('data-slot="cf-delight-shop-the-room"');
+    expect(spyCalls).toHaveLength(0);
+  });
+
+  it("renders ShopTheRoom AFTER the product grid + pagination, not above the H1", async () => {
+    const { html } = await renderForCategory("futon-frames");
+    const ulIdx = html.indexOf("<ul");
+    const sectionIdx = html.indexOf('data-slot="cf-delight-shop-the-room"');
+    const h1Idx = html.indexOf("<h1");
+    expect(h1Idx).toBeGreaterThan(-1);
+    expect(ulIdx).toBeGreaterThan(-1);
+    expect(sectionIdx).toBeGreaterThan(-1);
+    expect(sectionIdx).toBeGreaterThan(ulIdx);
+    expect(sectionIdx).toBeGreaterThan(h1Idx);
+  });
+
+  it("does NOT render ShopTheRoom when the lookup map is empty (regression guard)", async () => {
+    const { html, spyCalls } = await renderForCategory("futon-frames", {});
+    expect(html).not.toContain('data-slot="cf-delight-shop-the-room"');
+    expect(spyCalls).toHaveLength(0);
   });
 });

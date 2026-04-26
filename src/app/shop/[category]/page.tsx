@@ -25,8 +25,7 @@ import { buildBreadcrumbSchema, resolveSiteUrl } from "@/lib/seo/json-ld";
 import { Breadcrumbs } from "@/components/site/Breadcrumbs";
 import {
   ShopTheRoom,
-  FUTON_FRAMES_PLP_HERO_PHOTO,
-  FUTON_FRAMES_PLP_HOTSPOT_CONFIGS,
+  PLP_SHOP_THE_ROOM_CONFIGS,
 } from "@/components/site/ShopTheRoom";
 
 export const dynamic = "force-dynamic";
@@ -295,19 +294,12 @@ export default async function PlpPage(props: {
         searchParams={searchParams}
       />
 
-      {/* cf-delight Phase 4: shop-the-room hotspots only on
-          /shop/futon-frames for now. Hotspot tagging is per-PLP — adding
-          to other PLPs requires picking different products + a fitting
-          hero, so each one ships in its own bead rather than auto-rolling
-          to every category. */}
-      {categorySlug === "futon-frames" ? (
-        <ShopTheRoom
-          headingId="plp-futon-frames-shop-the-room-heading"
-          eyebrow="Shop the room"
-          heading="See the futons in a room"
-          heroPhoto={FUTON_FRAMES_PLP_HERO_PHOTO}
-          hotspotConfigs={FUTON_FRAMES_PLP_HOTSPOT_CONFIGS}
-        />
+      {/* cf-delight: shop-the-room hotspots per PLP. Configured via
+          PLP_SHOP_THE_ROOM_CONFIGS (a slug → props lookup); a typo on
+          this consumer side returns undefined → no section, no crash.
+          Adding a new PLP is one entry in that map. */}
+      {PLP_SHOP_THE_ROOM_CONFIGS[categorySlug] ? (
+        <ShopTheRoom {...PLP_SHOP_THE_ROOM_CONFIGS[categorySlug]!} />
       ) : null}
     </main>
   );
