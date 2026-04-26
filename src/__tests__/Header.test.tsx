@@ -90,4 +90,26 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
     expect(header).not.toBeNull();
     expect(header?.className).toContain("h-cf-header");
   });
+
+  // cf-f0rx: LivingSky backdrop wired in header (every page)
+  it("renders the LivingSky backdrop inside the header", () => {
+    const { container } = renderHeader();
+    expect(container.querySelector('[data-slot="living-sky-svg"]')).not.toBeNull();
+  });
+
+  it("LivingSky backdrop wrapper is aria-hidden and pointer-events-none", () => {
+    const { container } = renderHeader();
+    const backdrop = container.querySelector('[data-slot="living-sky-backdrop"]');
+    expect(backdrop).not.toBeNull();
+    expect(backdrop?.getAttribute("aria-hidden")).toBe("true");
+    expect(backdrop?.className).toContain("pointer-events-none");
+  });
+
+  it("header does not have overflow-hidden (backdrop wrapper clips SVG instead)", () => {
+    const { container } = renderHeader();
+    const header = container.querySelector('header[data-slot="site-header"]');
+    expect(header?.className).not.toContain("overflow-hidden");
+    const backdrop = container.querySelector('[data-slot="living-sky-backdrop"]');
+    expect(backdrop?.className).toContain("overflow-hidden");
+  });
 });

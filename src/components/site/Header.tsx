@@ -64,108 +64,115 @@ export function Header() {
       data-slot="site-header"
       data-scrolled={scrolled ? "true" : "false"}
       className={[
-        "sticky top-0 z-40 h-cf-header w-full overflow-hidden border-b border-cf-divider bg-gradient-to-b from-cf-header-start to-cf-header-end text-cf-ink transition-shadow duration-200",
+        "sticky top-0 z-40 h-cf-header w-full border-b border-cf-divider bg-gradient-to-b from-cf-header-start to-cf-header-end text-cf-ink backdrop-blur transition-shadow duration-200",
         shadowClass,
       ]
         .filter(Boolean)
         .join(" ")}
     >
       {/* LivingSky backdrop — time-of-day sky fills header width at desktop.
-          SVG viewBox 1040×150 renders ≈208px tall at 1440px wide, which
-          nearly fills the 213px header. On narrow viewports the gradient
-          fallback shows below the SVG — the white veil blends both.
-          aria-hidden: purely decorative, no AT value. */}
-      <div aria-hidden="true" className="pointer-events-none absolute top-0 left-0 z-0 w-full">
-        <LivingSkyClient />
+          SVG viewBox 1040×150 renders ≈208px tall at 1440px wide, nearly
+          filling the 213px header. On narrow viewports the gradient fallback
+          shows below the SVG — the white veil blends both.
+          overflow-hidden is on this wrapper only, not the <header>, so
+          CMS-driven announcement bar text can grow without being clipped. */}
+      <div
+        aria-hidden="true"
+        data-slot="living-sky-backdrop"
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+      >
+        <div className="absolute top-0 left-0 z-0 w-full">
+          <LivingSkyClient />
+        </div>
+        <div className="absolute inset-0 z-10 bg-white/40" />
       </div>
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-10 bg-white/40" />
 
       <div className="relative z-20">
         <AnnouncementBarCartAware />
 
-      <div
-        data-slot="site-header-main"
-        className={[
-          "flex items-center border-b border-cf-divider/60",
-          mainRowPaddingClass,
-          mainRowTransitionClass,
-        ]
-          .filter(Boolean)
-          .join(" ")}
-      >
-        <div className="mx-auto flex w-full max-w-7xl items-center gap-8 px-4 sm:px-6 lg:px-8">
-          <Link
-            href="/"
-            className="flex items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            aria-label="Carolina Futons — home"
-          >
-            <Image
-              src="/brand/cf-logo-square.png"
-              alt=""
-              width={36}
-              height={36}
-              priority
-              className="size-9 rounded-sm"
-            />
-            <span className="font-heading text-2xl font-semibold tracking-tight text-cf-navy">
-              Carolina Futons
-            </span>
-          </Link>
+        <div
+          data-slot="site-header-main"
+          className={[
+            "flex items-center border-b border-cf-divider/60",
+            mainRowPaddingClass,
+            mainRowTransitionClass,
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
+          <div className="mx-auto flex w-full max-w-7xl items-center gap-8 px-4 sm:px-6 lg:px-8">
+            <Link
+              href="/"
+              className="flex items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              aria-label="Carolina Futons — home"
+            >
+              <Image
+                src="/brand/cf-logo-square.png"
+                alt=""
+                width={36}
+                height={36}
+                priority
+                className="size-9 rounded-sm"
+              />
+              <span className="font-heading text-2xl font-semibold tracking-tight text-cf-navy">
+                Carolina Futons
+              </span>
+            </Link>
 
-          <nav
-            aria-label="Primary"
-            className="hidden flex-1 items-center justify-center gap-6 md:flex"
-          >
-            {PRIMARY_NAV.map((item) => (
+            <nav
+              aria-label="Primary"
+              className="hidden flex-1 items-center justify-center gap-6 md:flex"
+            >
+              {PRIMARY_NAV.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="text-sm font-medium text-cf-charcoal transition-colors hover:text-cf-cta focus-visible:outline-none focus-visible:text-cf-cta"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+
+            <div className="ml-auto flex items-center gap-1">
+              <HeaderMobileMenu />
+              <Link
+                href="/search"
+                aria-label="Search"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-md text-cf-charcoal transition-colors hover:bg-cf-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Search className="size-5" aria-hidden="true" />
+              </Link>
+              <Link
+                href="/account"
+                aria-label="Account"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-md text-cf-charcoal transition-colors hover:bg-cf-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <User className="size-5" aria-hidden="true" />
+              </Link>
+              <CartTrigger />
+            </div>
+          </div>
+        </div>
+
+        <nav
+          aria-label="Secondary"
+          data-slot="site-header-sub"
+          className="hidden h-cf-header-sub items-center md:flex"
+        >
+          <div className="mx-auto flex w-full max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-8">
+            {SUB_NAV.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-sm font-medium text-cf-charcoal transition-colors hover:text-cf-cta focus-visible:outline-none focus-visible:text-cf-cta"
+                className="text-xs font-medium uppercase tracking-wider text-cf-charcoal/80 transition-colors hover:text-cf-cta focus-visible:outline-none focus-visible:text-cf-cta"
               >
                 {item.label}
               </Link>
             ))}
-          </nav>
-
-          <div className="ml-auto flex items-center gap-1">
-            <HeaderMobileMenu />
-            <Link
-              href="/search"
-              aria-label="Search"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-md text-cf-charcoal transition-colors hover:bg-cf-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <Search className="size-5" aria-hidden="true" />
-            </Link>
-            <Link
-              href="/account"
-              aria-label="Account"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-md text-cf-charcoal transition-colors hover:bg-cf-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <User className="size-5" aria-hidden="true" />
-            </Link>
-            <CartTrigger />
           </div>
-        </div>
+        </nav>
       </div>
-
-      <nav
-        aria-label="Secondary"
-        data-slot="site-header-sub"
-        className="hidden h-cf-header-sub items-center md:flex"
-      >
-        <div className="mx-auto flex w-full max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-8">
-          {SUB_NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="text-xs font-medium uppercase tracking-wider text-cf-charcoal/80 transition-colors hover:text-cf-cta focus-visible:outline-none focus-visible:text-cf-cta"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
-      </nav>
-      </div>{/* /z-20 content wrapper */}
     </header>
   );
 }
