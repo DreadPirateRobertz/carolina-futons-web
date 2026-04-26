@@ -6,15 +6,10 @@ import {
   SESSION_COOKIE_NAME,
   SESSION_COOKIE_OPTIONS,
   serializeSessionTokens,
+  safeCallbackUrl,
 } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
-
-function safeCallbackUrl(raw: string | null | undefined): string {
-  if (!raw) return "/dashboard";
-  if (!raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
-  return raw;
-}
 
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as {
@@ -87,13 +82,22 @@ export async function POST(req: NextRequest) {
 
   if (state.loginState === LoginState.FAILURE) {
     const code = (state as { errorCode?: string }).errorCode ?? "";
-    const message =
-      code === "invalidEmail"
-        ? "That email address is invalid."
-        : code === "emailAlreadyExists"
-          ? "An account with that email already exists."
-          : "Sign-up failed. Please try again.";
-    return NextResponse.json({ error: message }, { status: 409 });
+    if (code === "emailAlreadyExists") {
+      return NextResponse.json(
+        { error: "An account with that email already exists." },
+        { status: 409 },
+      );
+    }
+    if (code === "invalidEmail") {
+      return NextResponse.json(
+        { error: "That email address is invalid." },
+        { status: 422 },
+      );
+    }
+    return NextResponse.json(
+      { error: "Sign-up failed. Please try again." },
+      { status: 400 },
+    );
   }
 
   return NextResponse.json(

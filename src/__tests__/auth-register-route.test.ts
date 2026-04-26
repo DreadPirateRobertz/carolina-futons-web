@@ -175,7 +175,7 @@ describe("POST /api/auth/register", () => {
     expect(data.error).toMatch(/already exists/i);
   });
 
-  it("returns 409 with invalidEmail message on bad email format", async () => {
+  it("returns 422 with invalidEmail message on bad email format", async () => {
     mockRegister.mockResolvedValueOnce({
       loginState: LoginState.FAILURE,
       errorCode: "invalidEmail",
@@ -185,9 +185,43 @@ describe("POST /api/auth/register", () => {
       email: "notanemail",
       password: "password123",
     });
-    expect(res.status).toBe(409);
+    expect(res.status).toBe(422);
     const data = await res.json();
     expect(data.error).toMatch(/invalid/i);
+  });
+
+  it("returns 400 with generic message on unknown FAILURE error code", async () => {
+    mockRegister.mockResolvedValueOnce({
+      loginState: LoginState.FAILURE,
+      errorCode: "missingCaptchaToken",
+    });
+
+    const res = await callRegister({
+      email: "a@b.com",
+      password: "password123",
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toMatch(/please try again/i);
+  });
+
+  it("sanitises absolute http:// callbackUrl to /dashboard", async () => {
+    mockRegister.mockResolvedValueOnce({
+      loginState: LoginState.SUCCESS,
+      data: { sessionToken: "tok-abc" },
+    });
+    mockGetMemberTokensForDirectLogin.mockResolvedValueOnce({
+      accessToken: { value: "acc", expiresAt: 0 },
+      refreshToken: { value: "ref", role: 0 },
+    });
+
+    const res = await callRegister({
+      email: "a@b.com",
+      password: "password123",
+      callbackUrl: "http://evil.com/steal",
+    });
+    const data = await res.json();
+    expect(data.redirectTo).toBe("/dashboard");
   });
 
   it("returns 502 when client.auth.register throws", async () => {

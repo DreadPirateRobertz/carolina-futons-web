@@ -138,6 +138,32 @@ describe("SignUpForm", () => {
     });
   });
 
+  it("shows generic error when API returns empty body (unexpected_response path)", async () => {
+    mockFetch.mockResolvedValueOnce({
+      json: async () => ({}),
+    });
+    render(<SignUpForm />);
+    fillForm();
+    fireEvent.click(screen.getByRole("button", { name: /create account/i }));
+    await waitFor(() => {
+      expect(screen.getByRole("alert").textContent).toMatch(/please try again/i);
+    });
+  });
+
+  it("verify screen has a Back button that returns to the form", async () => {
+    mockFetch.mockResolvedValueOnce({
+      json: async () => ({ state: "email_verification_required" }),
+    });
+    render(<SignUpForm />);
+    fillForm();
+    fireEvent.click(screen.getByRole("button", { name: /create account/i }));
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /check your email/i })).toBeTruthy();
+    });
+    fireEvent.click(screen.getByRole("button", { name: /back to sign up/i }));
+    expect(screen.getByRole("heading", { name: /create an account/i })).toBeTruthy();
+  });
+
   it("disables button while loading", async () => {
     let resolve: (v: unknown) => void;
     mockFetch.mockReturnValueOnce(

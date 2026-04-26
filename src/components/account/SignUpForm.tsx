@@ -81,6 +81,13 @@ export function SignUpForm() {
             </Link>
             .
           </p>
+          <button
+            type="button"
+            onClick={() => setVerifyPending(false)}
+            className="mt-6 text-sm text-cf-cta hover:underline"
+          >
+            Back to sign up
+          </button>
         </div>
       </main>
     );

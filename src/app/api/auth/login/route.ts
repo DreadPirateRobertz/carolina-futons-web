@@ -6,6 +6,7 @@ import {
   SESSION_COOKIE_NAME,
   SESSION_COOKIE_OPTIONS,
   serializeSessionTokens,
+  safeCallbackUrl,
 } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
@@ -18,12 +19,6 @@ const ERROR_MESSAGES: Record<string, string> = {
   invalidPassword: "Email or password is incorrect.",
   resetPassword: "Please reset your password via the link we sent to your email.",
 };
-
-function safeCallbackUrl(raw: string | null | undefined): string {
-  if (!raw) return "/dashboard";
-  if (!raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
-  return raw;
-}
 
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as {
