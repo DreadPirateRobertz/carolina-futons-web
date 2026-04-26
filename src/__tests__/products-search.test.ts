@@ -24,17 +24,22 @@ const CATALOG = [
   { _id: "5", name: "Ranchero Platform Bed", slug: "ranchero-platform-bed" },
 ];
 
+let lastCatalogLimit: number | undefined;
+
 function makeClient(items = CATALOG) {
   return {
     products: {
       queryProducts: () => ({
-        limit: () => ({
-          find: async () => ({ items }),
-        }),
+        limit: (n: number) => {
+          lastCatalogLimit = n;
+          return { find: async () => ({ items }) };
+        },
       }),
     },
   };
 }
+
+beforeEach(() => { lastCatalogLimit = undefined; });
 
 describe("searchProducts — in-memory substring search", () => {
   it("matches mid-word substring (futon anywhere in name)", async () => {
@@ -96,5 +101,15 @@ describe("searchProducts — in-memory substring search", () => {
     const results = await searchProducts("monterey");
     expect(results).toHaveLength(1);
     expect(results[0]._id).toBe("4");
+  });
+
+  it("catalog fetch uses limit ≤ 100 (Wix hard cap — cf-ni0z regression)", async () => {
+    // Wix queryProducts() throws a validation error for limit > 100, which
+    // getAllProductsForSearch catches and returns [] — making all searches empty.
+    vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => makeClient() }));
+    const { searchProducts } = await import("@/lib/wix/products");
+    await searchProducts("futon");
+    expect(lastCatalogLimit).toBeDefined();
+    expect(lastCatalogLimit).toBeLessThanOrEqual(100);
   });
 });
