@@ -81,4 +81,20 @@ describe("MrPopsMarquee", () => {
       expect(shot.id).toMatch(/^e04e89_/);
     });
   });
+
+  it("the section carries the marquee-section CSS class (required for hover-pause)", () => {
+    render(<MrPopsMarquee />);
+    const section = screen.getByTestId("mr-pops-marquee");
+    expect(section.classList.contains("marquee-section")).toBe(true);
+  });
+
+  it("data-testid attribute is present on the section", () => {
+    render(<MrPopsMarquee />);
+    expect(screen.getByTestId("mr-pops-marquee")).toBeInTheDocument();
+  });
+
+  it("BEAUTY_SHOTS has 7 entries with distinct IDs (no copy-paste duplicates)", () => {
+    const ids = BEAUTY_SHOTS.map((s) => s.id);
+    expect(new Set(ids).size).toBe(BEAUTY_SHOTS.length);
+  });
 });

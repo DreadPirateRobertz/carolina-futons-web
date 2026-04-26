@@ -1,14 +1,15 @@
 // cf-delight D2 — Mr Pops image marquee.
-// Three stacked rows of beauty-shot images that auto-scroll at different
-// speeds (marquee_0/1/2 pattern from mrpops.ua). Pause-on-hover via CSS
-// .marquee-section / .marquee-track selector pair in globals.css.
+// Three stacked rows of beauty-shot images that auto-scroll at different speeds.
+// Pause-on-hover and focus-within via CSS .marquee-section selector in globals.css.
 // Reduced-motion: globals.css @media query kills animation-duration globally,
 // so no per-component guard is needed.
+
+import type React from "react";
 
 const CDN = "https://static.wixstatic.com/media";
 const CROP = "/v1/fill/w_640,h_800,al_c,q_85/file.jpg";
 
-type Shot = { id: string; alt: string; label: string };
+export type Shot = { id: string; alt: string; label: string };
 
 export const BEAUTY_SHOTS: readonly Shot[] = [
   {
@@ -48,46 +49,45 @@ export const BEAUTY_SHOTS: readonly Shot[] = [
   },
 ];
 
-// Three rows, each drawing a different subset and scrolling at a distinct speed
-// so the rows don't animate in lock-step.
-const ROWS: { indices: number[]; durationMs: number }[] = [
+// Three rows at distinct speeds (42 / 58 / 48 s) so rows never animate in lock-step.
+const ROWS: readonly { indices: readonly number[]; durationMs: number }[] = [
   { indices: [0, 1, 2, 3, 4], durationMs: 42000 },   // marquee_0
-  { indices: [2, 5, 0, 6, 3], durationMs: 58000 },   // marquee_1 — slowest, most cinematic
+  { indices: [2, 5, 0, 6, 3], durationMs: 58000 },   // marquee_1
   { indices: [4, 1, 6, 5, 2], durationMs: 48000 },   // marquee_2
-];
+] as const;
 
-function MarqueeTrack({ shots, durationMs }: { shots: Shot[]; durationMs: number }) {
+function MarqueeTrack({ shots, durationMs }: { shots: Shot[]; durationMs: number }): React.ReactElement {
   // Duplicate so translateX(-50%) loops seamlessly.
+  // mr-3 per-item (not gap-3 on the container): gap-3 would leave a half-gap
+  // discontinuity because translateX(-50%) shifts by N items + (N-0.5) gaps.
   const doubled = [...shots, ...shots];
   return (
-    <div className="overflow-hidden">
-      <ul
-        className="marquee-track flex gap-3 will-change-transform"
-        style={{ animation: `marquee-scroll ${durationMs}ms linear infinite` }}
-        aria-hidden="true"
-      >
-        {doubled.map((shot, i) => (
-          <li key={i} className="w-[200px] shrink-0 sm:w-[240px]">
-            <div className="relative aspect-[4/5] overflow-hidden rounded-xl">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`${CDN}/${shot.id}${CROP}`}
-                alt={shot.alt}
-                className="h-full w-full object-cover"
-                loading="lazy"
-              />
-              <span className="absolute bottom-2 left-2 rounded-full bg-cf-navy/70 px-2.5 py-0.5 text-[11px] font-semibold text-cf-cream backdrop-blur-sm">
-                {shot.label}
-              </span>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <ul
+      className="marquee-track flex will-change-transform"
+      style={{ animation: `marquee-scroll ${durationMs}ms linear infinite` }}
+      aria-hidden="true"
+    >
+      {doubled.map((shot, i) => (
+        <li key={i} className="mr-3 w-[200px] shrink-0 sm:w-[240px]">
+          <div className="relative aspect-[4/5] overflow-hidden rounded-xl">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`${CDN}/${shot.id}${CROP}`}
+              alt={shot.alt}
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
+            <span className="absolute bottom-2 left-2 rounded-full bg-cf-navy/70 px-2.5 py-0.5 text-[11px] font-semibold text-cf-cream backdrop-blur-sm">
+              {shot.label}
+            </span>
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
 
-export function MrPopsMarquee() {
+export function MrPopsMarquee(): React.ReactElement {
   return (
     <section
       aria-label="Furniture gallery"
@@ -98,7 +98,7 @@ export function MrPopsMarquee() {
         {ROWS.map((row, i) => (
           <MarqueeTrack
             key={i}
-            shots={row.indices.map((idx) => BEAUTY_SHOTS[idx])}
+            shots={row.indices.map((idx) => BEAUTY_SHOTS[idx]!)}
             durationMs={row.durationMs}
           />
         ))}

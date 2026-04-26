@@ -115,7 +115,7 @@ export default async function HomePage() {
             </Link>
           </div>
         </HeroReveal>
-        <ul className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul data-testid="shop-categories" className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {SHOP_CATEGORIES.map((category, i) => (
             <li key={category.slug}>
               {/* whileInView fires once (no replay on scroll-back); reduced-motion
