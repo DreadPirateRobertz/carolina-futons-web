@@ -1,16 +1,19 @@
-import Link from "next/link";
 import type { Metadata } from "next";
-import { LivingHero } from "@/components/home/LivingHero";
-import { MascotCategoryCard } from "@/components/mascot/MascotCategoryCard";
+
+import {
+  FilterFirst,
+  type ThemeDCategory,
+} from "@/components/theme-d/FilterFirst";
 import { MascotFooterDivider } from "@/components/mascot/MascotFooterDivider";
 import { EasterEggBear } from "@/components/mascot/EasterEggBear";
-import { FeaturedProducts } from "@/components/site/FeaturedProducts";
 import { StatsStrip } from "@/components/site/StatsStrip";
 import { TestimonialsStrip } from "@/components/site/TestimonialsStrip";
 import { TrustBar } from "@/components/site/TrustBar";
 import { EmailCapturePopup } from "@/components/site/EmailCapturePopup";
-import { listFeaturedProducts } from "@/lib/shop/featured";
-import { V3_PAL as c } from "@/components/mascot/MascotPalette";
+import {
+  getCollectionBySlug,
+  listProductsByCollectionId,
+} from "@/lib/wix/products";
 
 export const metadata: Metadata = {
   title: "Carolina Futons — Hardwood Frames & Mattresses | Hendersonville, NC",
@@ -18,186 +21,71 @@ export const metadata: Metadata = {
     "Family-owned since 1991. Solid hardwood futon frames, natural mattresses, Murphy beds, and platform beds. Visit our Hendersonville, NC showroom or shop online.",
 };
 
-const MASCOT_CATEGORIES = [
-  {
-    slug: "futon-frames",
-    title: "Futon Frames",
-    subtitle: "Solid hardwood",
-    animal: "bear" as const,
-    accent: "#F5C97A",
-  },
-  {
-    slug: "murphy-cabinet-beds",
-    title: "Murphy Beds",
-    subtitle: "Space-saving",
-    animal: "deer" as const,
-    accent: "#8BB5C9",
-  },
-  {
-    slug: "platform-beds",
-    title: "Platform Beds",
-    subtitle: "Low & modern",
-    animal: "fox" as const,
-    accent: "#E8845C",
-  },
-  {
-    slug: "mattresses",
-    title: "Mattresses",
-    subtitle: "Made in USA",
-    animal: "owl" as const,
-    accent: "#6B8A4A",
-  },
-];
+export const dynamic = "force-dynamic";
+
+const FONTSHARE_URL =
+  "https://api.fontshare.com/v2/css?f[]=clash-display@700&f[]=satoshi@400,500&display=swap";
+
+const FILTER_CATEGORIES = [
+  { slug: "futon-frames", collectionSlug: "futon-frames", label: "Futon Frames" },
+  { slug: "murphy-cabinet-beds", collectionSlug: "murphy-cabinet-beds", label: "Murphy Beds" },
+  { slug: "platform-beds", collectionSlug: "platform-beds", label: "Platform Beds" },
+  { slug: "mattresses", collectionSlug: "mattresses", label: "Mattresses" },
+] as const;
 
 export default async function HomePage() {
-  const featured = await listFeaturedProducts();
+  const categories = await Promise.all(
+    FILTER_CATEGORIES.map(async (cat): Promise<ThemeDCategory> => {
+      const collection = await getCollectionBySlug(cat.collectionSlug);
+      const products = collection?._id
+        ? await listProductsByCollectionId(collection._id, 24)
+        : [];
+      return { slug: cat.slug, label: cat.label, products };
+    }),
+  );
 
   return (
     <>
       <EmailCapturePopup />
 
-      {/* ── Living Hero — time-of-day cycling: dawn rays / day bear / dusk rays / night stars ── */}
-      <div className="w-full" style={{ height: "80vh", minHeight: 500, maxHeight: 900 }}>
-        <LivingHero />
-      </div>
+      {/* Fontshare font injection — hoisted to <head> by React's link promotion */}
+      <link rel="preconnect" href="https://api.fontshare.com" />
+      <link rel="stylesheet" href={FONTSHARE_URL} />
+      <style>{`
+        .theme-d-shell,
+        .theme-d-shell * {
+          --font-theme-d-heading: 'Clash Display', sans-serif;
+          --font-theme-d-body: 'Satoshi', sans-serif;
+        }
+        .theme-d-shell h1 {
+          font-family: 'Clash Display', sans-serif;
+          letter-spacing: -0.03em;
+        }
+      `}</style>
 
-      {/* ── Headline ── */}
-      <div
-        className="mx-auto w-full max-w-5xl px-6 py-16 text-center"
-        style={{ background: c.paperWarm, color: c.ink }}
-      >
-        <p
-          style={{
-            fontFamily: "var(--font-source-sans)",
-            fontSize: 11,
-            letterSpacing: ".16em",
-            textTransform: "uppercase",
-            opacity: 0.6,
-            marginBottom: 12,
-          }}
-        >
-          Handmade in the Blue Ridge
-        </p>
-        <h1
-          style={{
-            fontFamily: "var(--font-playfair)",
-            fontSize: "clamp(2.4rem, 5vw, 4rem)",
-            fontWeight: 700,
-            lineHeight: 1.1,
-            marginBottom: 20,
-          }}
-        >
-          Furniture that earns its place.
-        </h1>
-        <p
-          style={{
-            fontSize: "1.125rem",
-            lineHeight: 1.7,
-            maxWidth: 560,
-            margin: "0 auto 32px",
-            opacity: 0.8,
-          }}
-        >
-          Family-owned since 1991. Solid hardwood frames, American mattresses
-          — no veneer, no shortcuts, no commission pressure.
-        </p>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link
-            href="/shop"
-            style={{
-              display: "inline-block",
-              background: c.ink,
-              color: c.cream,
-              borderRadius: 8,
-              padding: "12px 28px",
-              fontWeight: 600,
-              fontSize: "0.9375rem",
-              textDecoration: "none",
-              letterSpacing: ".03em",
-            }}
-          >
-            Browse all furniture
-          </Link>
-          <Link
-            href="/design-a-room"
-            style={{
-              display: "inline-block",
-              background: "transparent",
-              color: c.ink,
-              border: `1.5px solid ${c.ink}`,
-              borderRadius: 8,
-              padding: "12px 28px",
-              fontWeight: 600,
-              fontSize: "0.9375rem",
-              textDecoration: "none",
-              letterSpacing: ".03em",
-              opacity: 0.75,
-            }}
-          >
-            Design a room
-          </Link>
-        </div>
-      </div>
+      <FilterFirst categories={categories} />
 
       {/* ── Trust bar ── */}
       <TrustBar />
 
-      {/* ── Category cards with hover-reveal animals ── */}
-      <div style={{ background: c.paperWarm }}>
-        <div className="mx-auto w-full max-w-5xl px-6 pb-24 pt-10">
-          <h2
-            style={{
-              fontFamily: "var(--font-playfair)",
-              fontSize: "1.75rem",
-              fontWeight: 700,
-              color: c.ink,
-              marginBottom: 24,
-            }}
-          >
-            What we make
-          </h2>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-              gap: 20,
-            }}
-          >
-            {MASCOT_CATEGORIES.map((cat) => (
-              <MascotCategoryCard
-                key={cat.slug}
-                title={cat.title}
-                subtitle={cat.subtitle}
-                animal={cat.animal}
-                accent={cat.accent}
-                href={`/shop/${cat.slug}`}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Featured products ── */}
-      <FeaturedProducts products={featured} />
-
       <StatsStrip />
-
       <TestimonialsStrip />
 
       {/* ── Value props ── */}
-      <section className="border-t border-cf-divider bg-cf-sand/40">
+      <section className="border-t border-cf-divider bg-cf-sand/30">
         <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-14 sm:grid-cols-3 sm:px-6 lg:px-8">
           {VALUE_PROPS.map((prop) => (
             <div
               key={prop.title}
-              className="rounded-lg border border-cf-divider bg-cf-cream p-6 shadow-sm"
+              className="rounded-xl border border-cf-divider bg-white p-6"
             >
-              <h3 className="font-heading text-base font-semibold text-cf-navy">
+              <h3
+                className="text-base font-semibold text-cf-espresso"
+                style={{ fontFamily: "'Clash Display', sans-serif" }}
+              >
                 {prop.title}
               </h3>
-              <p className="mt-2 text-sm text-cf-charcoal/80">
-                {prop.body}
-              </p>
+              <p className="mt-2 text-sm text-cf-charcoal/80">{prop.body}</p>
             </div>
           ))}
         </div>
