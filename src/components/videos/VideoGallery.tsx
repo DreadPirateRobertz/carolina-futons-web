@@ -74,7 +74,7 @@ export function VideoGallery({ videos }: { videos: readonly VideoEntry[] }) {
       </p>
 
       {visible.length === 0 ? (
-        <p className="mt-10 rounded-md bg-zinc-50 p-6 text-zinc-700">
+        <p className="mt-10 rounded-md bg-cf-sand/30 p-6 text-cf-charcoal">
           No videos in this category.
         </p>
       ) : (
