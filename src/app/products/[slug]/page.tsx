@@ -7,6 +7,11 @@ import { PdpInteractive } from "@/components/product/PdpInteractive";
 import type { GalleryImage } from "@/components/product/PdpGallery";
 import { PdpComfortBand } from "@/components/product/PdpComfortBand";
 import { PdpCrossSell } from "@/components/product/PdpCrossSell";
+import { PdpMattressBundle } from "@/components/product/PdpMattressBundle";
+import {
+  getMesaMattresses,
+  isFutonFrame,
+} from "@/lib/product/mattress-bundle";
 import { PdpRecentlyViewed } from "@/components/product/PdpRecentlyViewed";
 import { PdpReviews, pickPdpReviews } from "@/components/product/PdpReviews";
 import { PdpShareButtons } from "@/components/product/PdpShareButtons";
@@ -84,6 +89,7 @@ export default async function PdpPage(props: {
   const galleryImages = buildGallery(product);
   const stock = (product.stock ?? null) as StockBadgeInput | null;
   const crossSell = await getCrossSellProducts(product);
+  const mattresses = isFutonFrame(slug) ? await getMesaMattresses() : [];
 
   const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
   const canonicalUrl = `${siteUrl}/products/${slug}`;
@@ -168,6 +174,8 @@ export default async function PdpPage(props: {
           </p>
         </section>
       ) : null}
+
+      <PdpMattressBundle mattresses={mattresses} />
 
       <PdpComfortBand />
 
