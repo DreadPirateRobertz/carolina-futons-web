@@ -11,6 +11,7 @@ import { TrustBar } from "@/components/site/TrustBar";
 import { CategoryCardImage } from "@/components/site/CategoryCardImage";
 import { HeroParallax } from "@/components/site/HeroParallax";
 import { EmailCapturePopup } from "@/components/site/EmailCapturePopup";
+import { ShopTheRoom } from "@/components/site/ShopTheRoom";
 import { LivingSky } from "@/components/illustrations/LivingSky";
 
 // Per-card onset delay for the Shop-by-category cascade. 80ms is at the
@@ -84,6 +85,8 @@ export default async function HomePage() {
       <LivingSky />
 
       <TrustBar />
+
+      <ShopTheRoom />
 
       <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <HeroReveal>
