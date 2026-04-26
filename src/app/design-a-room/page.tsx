@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { HeroReveal } from "@/components/motion/HeroReveal";
+import { BUSINESS } from "@/lib/business/contact-info";
 
 export const metadata: Metadata = {
   title: "Design a Room — Carolina Futons",
@@ -9,10 +10,6 @@ export const metadata: Metadata = {
     "Work with the Carolina Futons team in Hendersonville, NC to plan a room around a futon, daybed, or Murphy bed. Free consultation, fabric samples, and 35 years of local experience.",
 };
 
-const SHOWROOM_ADDRESS = "824 Locust St, Hendersonville, NC 28792";
-const SHOWROOM_PHONE_DISPLAY = "(828) 252-9449";
-const SHOWROOM_PHONE_HREF = "tel:+18282529449";
-const SHOWROOM_EMAIL = "carolinafutons@gmail.com";
 const SHOWROOM_HOURS = "Wed–Sat, 10am–5pm";
 
 const STEPS = [
@@ -94,10 +91,10 @@ export default function DesignARoomPage() {
                   Call the showroom
                 </h3>
                 <a
-                  href={SHOWROOM_PHONE_HREF}
+                  href={BUSINESS.phoneHref}
                   className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
                 >
-                  {SHOWROOM_PHONE_DISPLAY}
+                  {BUSINESS.phone}
                 </a>
                 <p className="text-sm leading-relaxed text-cf-muted">
                   Fastest way to get on a sales associate&rsquo;s calendar.
@@ -108,10 +105,10 @@ export default function DesignARoomPage() {
                   Email a sketch
                 </h3>
                 <a
-                  href={`mailto:${SHOWROOM_EMAIL}`}
+                  href={BUSINESS.emailHref}
                   className="break-all text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
                 >
-                  {SHOWROOM_EMAIL}
+                  {BUSINESS.email}
                 </a>
                 <p className="text-sm leading-relaxed text-cf-muted">
                   Send photos, dimensions, and what the room needs to do.
@@ -122,7 +119,7 @@ export default function DesignARoomPage() {
                   Visit in person
                 </h3>
                 <address className="not-italic text-sm leading-relaxed">
-                  {SHOWROOM_ADDRESS}
+                  {BUSINESS.street}, {BUSINESS.city}, {BUSINESS.state} {BUSINESS.zip}
                   <br />
                   {SHOWROOM_HOURS}
                 </address>
@@ -153,17 +150,17 @@ export default function DesignARoomPage() {
               </Link>
               . When you&rsquo;re ready, call{" "}
               <a
-                href={SHOWROOM_PHONE_HREF}
+                href={BUSINESS.phoneHref}
                 className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
               >
-                {SHOWROOM_PHONE_DISPLAY}
+                {BUSINESS.phone}
               </a>{" "}
               or email{" "}
               <a
-                href={`mailto:${SHOWROOM_EMAIL}`}
+                href={BUSINESS.emailHref}
                 className="break-all text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
               >
-                {SHOWROOM_EMAIL}
+                {BUSINESS.email}
               </a>
               .
             </p>
