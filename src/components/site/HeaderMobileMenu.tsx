@@ -38,14 +38,15 @@ const FOCUSABLE_SELECTORS =
 
 export function HeaderMobileMenu() {
   const [open, setOpen] = useState(false);
-  // Lazy init: server renders see `false` (no document → no portal call);
-  // browser renders see `true` immediately so the drawer is in the DOM
-  // by the time anything tries to open it. Avoids the
-  // react-hooks/set-state-in-effect lint rule that fires on a
-  // useState(false)+useEffect(()=>setMounted(true)) pattern.
-  const [mounted] = useState(() => typeof document !== "undefined");
+  // False on both server and initial client render so hydration matches.
+  // Effect runs after hydration, setting mounted=true and enabling the portal.
+  const [mounted, setMounted] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Close on ESC
   useEffect(() => {
