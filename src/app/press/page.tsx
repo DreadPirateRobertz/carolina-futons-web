@@ -1,37 +1,70 @@
 import type { Metadata } from "next";
 
+import { ContactForm } from "@/components/contact/ContactForm";
+import { ContactHero } from "@/components/illustrations/ContactHero";
+import { BUSINESS } from "@/lib/business/contact-info";
+
+// cf-3qt.5.6: hero + press inquiries CTA + media-contact form. The form
+// reuses the shared sendContactForm Server Action so press inquiries land
+// in the same Velo notification + ContactSubmissions CMS pipeline as
+// general /contact submissions; the "[Press]" subject prefix in the intro
+// copy is what tells Stilgar a submission came from this page.
+
 export const metadata: Metadata = {
-  title: "Press — Carolina Futons",
+  title: "Press & Media — Carolina Futons",
   description:
-    "Press resources for Carolina Futons — a family-owned futon and natural-mattress retailer in Hendersonville, North Carolina, in business since 1991.",
+    "Press resources, story angles, and a direct line to Carolina Futons — a family-owned futon and natural-mattress retailer in Hendersonville, North Carolina, in business since 1991.",
 };
 
-const LAST_UPDATED = "April 18, 2026";
+const LAST_UPDATED = "April 25, 2026";
+
+// Exported for testability — derives a stable "X-year" claim from the
+// founding year so the copy doesn't drift on January 1st of a new year.
+export function currentYear(): number {
+  return new Date().getFullYear();
+}
 
 export default function PressPage() {
+  const yearsInBusiness = currentYear() - BUSINESS.foundedYear;
   return (
-    <main className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
-      <article className="mx-auto max-w-[65ch] space-y-8 font-source-sans text-cf-ink">
-        <header className="space-y-3">
+    <main className="w-full">
+      <section
+        aria-labelledby="press-headline"
+        className="relative overflow-hidden bg-cf-cream"
+      >
+        <ContactHero className="absolute inset-x-0 bottom-0" />
+        <div className="relative mx-auto w-full max-w-[65ch] px-4 pb-24 pt-12 sm:px-6 sm:pb-32 sm:pt-16">
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
             Press
           </p>
-          <h1 className="font-playfair text-4xl font-semibold tracking-tight sm:text-5xl">
+          <h1
+            id="press-headline"
+            className="mt-2 font-playfair text-4xl font-semibold tracking-tight text-cf-ink sm:text-5xl"
+          >
             Press &amp; Media
           </h1>
-          <p className="text-sm text-cf-muted">Last updated {LAST_UPDATED}</p>
-        </header>
+          <p className="mt-4 text-lg leading-relaxed text-cf-ink">
+            Carolina Futons is a {yearsInBusiness}-year-old family-owned
+            retailer of solid-wood futon frames and natural mattresses based
+            in Hendersonville, North Carolina. We&rsquo;ve been in the same
+            showroom since {BUSINESS.foundedYear} and back our frames with a{" "}
+            {BUSINESS.warrantyYears}-year warranty.
+          </p>
+          <p className="mt-6">
+            <a
+              href="#press-inquiries"
+              className="inline-flex h-11 items-center justify-center rounded-md bg-cf-cta px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              Press inquiries
+            </a>
+          </p>
+          <p className="mt-3 text-sm text-cf-muted">
+            Last updated {LAST_UPDATED}
+          </p>
+        </div>
+      </section>
 
-        <p className="text-lg leading-relaxed">
-          Carolina Futons is a family-owned retailer of solid-wood futon
-          frames and natural mattresses based in Hendersonville, North
-          Carolina. We&rsquo;ve been in business since 1991 and back our
-          frames with a 15-year warranty. If you&rsquo;re writing about
-          small-space furniture, sustainable home goods, or the long-running
-          independent retailers of Western North Carolina, we&rsquo;d be
-          glad to help.
-        </p>
-
+      <article className="mx-auto w-full max-w-[65ch] space-y-10 px-4 py-12 font-source-sans text-cf-ink sm:px-6 sm:py-16">
         <section className="space-y-4">
           <h2 className="font-playfair text-2xl font-semibold tracking-tight">
             About the company
@@ -66,17 +99,44 @@ export default function PressPage() {
           <p className="leading-relaxed">
             For interviews, product photography, or fact-checking, email{" "}
             <a
-              href="mailto:carolinafutons@gmail.com"
+              href={BUSINESS.emailHref}
               className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
             >
-              carolinafutons@gmail.com
+              {BUSINESS.email}
             </a>{" "}
-            with your outlet, deadline, and what you&rsquo;re working on.
-            We&rsquo;ll get back to you within one business day.
+            or call{" "}
+            <a
+              href={BUSINESS.phoneHref}
+              className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
+            >
+              {BUSINESS.phone}
+            </a>
+            . Tell us your outlet, deadline, and what you&rsquo;re working
+            on. We&rsquo;ll get back to you within one business day.
           </p>
           <p className="leading-relaxed">
-            Showroom: 824 Locust Street, Hendersonville, NC.
+            Showroom: {BUSINESS.street} Street, {BUSINESS.city},{" "}
+            {BUSINESS.state} {BUSINESS.zip}.
           </p>
+        </section>
+
+        <section
+          id="press-inquiries"
+          aria-labelledby="press-inquiries-heading"
+          className="space-y-4 scroll-mt-24"
+        >
+          <h2
+            id="press-inquiries-heading"
+            className="font-playfair text-2xl font-semibold tracking-tight"
+          >
+            Send a press inquiry
+          </h2>
+          <p className="leading-relaxed">
+            Use the form below for the fastest response. Please prefix the
+            subject line with <strong>[Press]</strong> and include your outlet
+            and deadline so we can route to the right person.
+          </p>
+          <ContactForm />
         </section>
       </article>
     </main>
