@@ -17,6 +17,7 @@ import {
   HOME_HOTSPOT_CONFIGS,
 } from "@/components/site/ShopTheRoom";
 import { LivingSky } from "@/components/illustrations/LivingSky";
+import { MrPopsMarquee } from "@/components/site/MrPopsMarquee";
 
 // Per-card onset delay for the Shop-by-category cascade. 80ms is at the
 // just-noticeable-difference threshold for sequential visual onset (enough
@@ -83,6 +84,11 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* cf-delight D2 — Mr Pops image marquee: three beauty-shot rows that
+          auto-scroll at staggered speeds. Sits between the hero and LivingSky
+          as a full-bleed visual statement before the trust/shop content. */}
+      <MrPopsMarquee />
+
       {/* cf-93rb Phase A: atmospheric Blue Ridge band between hero and the
           TrustBar — anchors the page in place (Hendersonville, NC) and
           breaks up the previously-flat cream → trust-bar transition. */}
@@ -109,7 +115,7 @@ export default async function HomePage() {
             </Link>
           </div>
         </HeroReveal>
-        <ul className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul data-testid="shop-categories" className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {SHOP_CATEGORIES.map((category, i) => (
             <li key={category.slug}>
               {/* whileInView fires once (no replay on scroll-back); reduced-motion

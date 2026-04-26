@@ -179,14 +179,14 @@ describe("HomePage", () => {
 
   it("renders an img for each category card that has an image field", async () => {
     const { container } = await renderHome();
-    const imgs = container.querySelectorAll("ul img");
+    const imgs = container.querySelectorAll("[data-testid='shop-categories'] img");
     const categoriesWithImages = SHOP_CATEGORIES.filter((c) => c.image);
     expect(imgs.length).toBe(categoriesWithImages.length);
   });
 
   it("category card images use the CDN src from SHOP_CATEGORIES", async () => {
     const { container } = await renderHome();
-    const imgs = Array.from(container.querySelectorAll("ul img"));
+    const imgs = Array.from(container.querySelectorAll("[data-testid='shop-categories'] img"));
     for (const cat of SHOP_CATEGORIES) {
       if (!cat.image) continue;
       const match = imgs.find((img) =>
