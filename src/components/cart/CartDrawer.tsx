@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Minus, Plus, ShoppingBag, X } from "lucide-react";
 
 import { useCart } from "@/components/cart/CartProvider";
+import { EmptyCartIllustration } from "@/components/illustrations/EmptyCartIllustration";
 import { formatCents } from "@/lib/cart/cart-state";
 import { trackBeginCheckout } from "@/lib/analytics/ga4-events";
 import { cn } from "@/lib/utils";
@@ -213,10 +214,11 @@ function EmptyCart({ onClose }: { onClose: () => void }) {
       data-testid="cart-empty"
       className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center"
     >
-      <ShoppingBag
-        className="size-10 text-cf-espresso/40"
-        aria-hidden="true"
-      />
+      {/* cf-93rb Phase E: brand-coherent illustration replacing the
+          generic ShoppingBag icon — Blue Ridge band + folded futon
+          frame with a cf-cta seam. Decorative, the heading carries
+          the meaning. */}
+      <EmptyCartIllustration className="max-w-[180px]" />
       <div className="space-y-1">
         <p className="font-heading text-lg font-semibold text-cf-espresso">
           Your cart is empty
