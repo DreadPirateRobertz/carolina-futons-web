@@ -1,8 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
+
+// cf-mobile-hamburger-portal (Stilgar P0, third flag): the drawer
+// render originally lived inline next to the trigger button, which
+// meant the Header's stacking context (sticky + transform on scroll-
+// shrink + the gradient backdrop) was clipping or under-layering the
+// drawer on iOS Safari at 390×844. Portaling to document.body escapes
+// every ancestor stacking context so `z-50` actually wins. The
+// `mounted` gate keeps SSR from touching `document` (which would
+// crash the App Router server pass).
 
 const PRIMARY_NAV = [
   { label: "Futons", href: "/shop/futon-frames" },
@@ -28,6 +38,12 @@ const FOCUSABLE_SELECTORS =
 
 export function HeaderMobileMenu() {
   const [open, setOpen] = useState(false);
+  // Lazy init: server renders see `false` (no document → no portal call);
+  // browser renders see `true` immediately so the drawer is in the DOM
+  // by the time anything tries to open it. Avoids the
+  // react-hooks/set-state-in-effect lint rule that fires on a
+  // useState(false)+useEffect(()=>setMounted(true)) pattern.
+  const [mounted] = useState(() => typeof document !== "undefined");
   const drawerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -114,6 +130,33 @@ export function HeaderMobileMenu() {
         )}
       </button>
 
+      {mounted &&
+        createPortal(
+          <DrawerTree
+            open={open}
+            drawerRef={drawerRef}
+            triggerRef={triggerRef}
+            onClose={() => setOpen(false)}
+          />,
+          document.body,
+        )}
+    </>
+  );
+}
+
+function DrawerTree({
+  open,
+  drawerRef,
+  triggerRef,
+  onClose,
+}: {
+  open: boolean;
+  drawerRef: React.RefObject<HTMLDivElement | null>;
+  triggerRef: React.RefObject<HTMLButtonElement | null>;
+  onClose: () => void;
+}) {
+  return (
+    <>
       {/* Backdrop */}
       {open && (
         <div
@@ -139,7 +182,7 @@ export function HeaderMobileMenu() {
         <div className="flex h-cf-header-main items-center justify-between border-b border-cf-divider/60 px-4">
           <Link
             href="/"
-            onClick={() => setOpen(false)}
+            onClick={onClose}
             className="font-heading text-xl font-semibold tracking-tight text-cf-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
           >
             Carolina Futons
@@ -148,7 +191,7 @@ export function HeaderMobileMenu() {
             type="button"
             aria-label="Close navigation menu"
             onClick={() => {
-              setOpen(false);
+              onClose();
               triggerRef.current?.focus();
             }}
             className="inline-flex h-9 w-9 items-center justify-center rounded-md text-cf-charcoal hover:bg-cf-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -164,7 +207,7 @@ export function HeaderMobileMenu() {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  onClick={() => setOpen(false)}
+                  onClick={onClose}
                   className="block rounded-md px-3 py-2.5 text-base font-medium text-cf-charcoal transition-colors hover:bg-cf-sand hover:text-cf-cta focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {item.label}
@@ -182,7 +225,7 @@ export function HeaderMobileMenu() {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  onClick={() => setOpen(false)}
+                  onClick={onClose}
                   className="block rounded-md px-3 py-2 text-sm font-medium uppercase tracking-wider text-cf-charcoal/80 transition-colors hover:bg-cf-sand hover:text-cf-cta focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {item.label}

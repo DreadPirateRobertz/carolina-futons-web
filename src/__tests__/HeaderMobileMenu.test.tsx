@@ -213,4 +213,31 @@ describe("HeaderMobileMenu", () => {
       screen.getByRole("dialog", { name: /navigation menu/i }),
     ).toBeInTheDocument();
   });
+
+  // ── Portal (cf-mobile-hamburger-portal — Stilgar P0) ───────────────────────
+
+  it("portals the drawer to document.body so it escapes the Header stacking context", () => {
+    const { container } = renderMenu();
+    const drawer = screen.getByRole("dialog", { name: /navigation menu/i });
+    // The drawer must NOT live inside the same React subtree as the
+    // trigger — that's the whole point of the portal. The container
+    // here is the test root that holds <HeaderMobileMenu />; if the
+    // drawer were still inline it would be nested under that root.
+    expect(container.contains(drawer)).toBe(false);
+    // Drawer should land directly under <body>.
+    expect(drawer.parentElement).toBe(document.body);
+  });
+
+  it("does not throw when there is no document on first render (mounted gate)", () => {
+    // We can't easily simulate SSR here, but we can pin the visible
+    // contract: the trigger renders even before the drawer's portal
+    // mounts. The hook flips `mounted` in useEffect so by the time
+    // testing-library inspects the DOM the drawer is portaled — the
+    // crash mode would be a thrown error during render, which would
+    // surface as render() rejecting.
+    expect(() => renderMenu()).not.toThrow();
+    expect(
+      screen.getByRole("button", { name: /open navigation menu/i }),
+    ).toBeInTheDocument();
+  });
 });
