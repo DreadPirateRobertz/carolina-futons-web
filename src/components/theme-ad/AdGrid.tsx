@@ -153,7 +153,14 @@ export function AdGrid({ categories }: { categories: AdCategory[] }) {
           >
             {filtered.map((product, i) => (
               <li key={product._id}>
-                <ProductCard product={product} priority={i < 4} />
+                <div className="group relative">
+                  <ProductCard product={product} priority={i < 4} />
+                  {/* Mr Pops sunrise — warm cf-cta tint rises from card bottom on hover */}
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 rounded-lg bg-gradient-to-t from-[rgba(200,118,58,0.20)] to-transparent opacity-0 transition-opacity duration-[250ms] ease-out motion-reduce:transition-none group-hover:opacity-100 group-focus-within:opacity-100"
+                  />
+                </div>
               </li>
             ))}
           </ul>

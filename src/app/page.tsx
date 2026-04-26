@@ -55,6 +55,10 @@ export default async function HomePage() {
         .ad-grid-shell button {
           font-family: 'Satoshi', var(--font-sans), sans-serif;
         }
+        /* Product card name: tighter tracking at small size for Clash Display */
+        .ad-grid-shell [data-slot="product-card"] h2 {
+          letter-spacing: -0.025em;
+        }
       `}</style>
 
       <MrPopsHero />

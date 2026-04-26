@@ -196,4 +196,13 @@ describe("HomePage — A+D hybrid (cf-theme-ad-grid)", () => {
     const { container } = await renderHome();
     expect(container.querySelector("[data-slot='shop-the-room']")).not.toBeNull();
   });
+
+  it("renders a sunrise hover overlay for each product card (Mr Pops microinteraction)", async () => {
+    const { container } = await renderHome();
+    const overlays = container.querySelectorAll(
+      ".ad-grid-shell [aria-hidden='true'].pointer-events-none.absolute",
+    );
+    // 16 products → 16 overlays
+    expect(overlays).toHaveLength(16);
+  });
 });
