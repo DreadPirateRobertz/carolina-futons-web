@@ -2,20 +2,25 @@
 
 import { useRef, useState, useSyncExternalStore } from "react";
 
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+
+function queryReducedMotion(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia(REDUCED_MOTION_QUERY).matches;
+}
+
 // Returns true when the user prefers reduced motion; updates reactively.
-// useSyncExternalStore avoids the setState-in-effect lint rule.
+// useSyncExternalStore provides a stable server snapshot (false) and avoids
+// hydration mismatches and tearing in concurrent React rendering.
 function useReducedMotion(): boolean {
   return useSyncExternalStore(
     (cb) => {
       if (typeof window === "undefined") return () => {};
-      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const mq = window.matchMedia(REDUCED_MOTION_QUERY);
       mq.addEventListener("change", cb);
       return () => mq.removeEventListener("change", cb);
     },
-    () =>
-      typeof window !== "undefined"
-        ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        : false,
+    queryReducedMotion,
     () => false,
   );
 }
@@ -77,7 +82,7 @@ export function MagneticButton({
               transition: isAtRest
                 ? "transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
                 : "transform 0.08s ease-out",
-              willChange: "transform",
+              willChange: isAtRest ? "auto" : "transform",
             }
       }
       onMouseMove={handleMouseMove}

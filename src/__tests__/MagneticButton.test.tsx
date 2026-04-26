@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { MagneticButton } from "@/components/ui/MagneticButton";
 
 // Stub matchMedia — jsdom does not implement it.
@@ -87,7 +87,7 @@ describe("MagneticButton — mouse tracking", () => {
       right: 100, bottom: 40, x: 0, y: 0, toJSON: () => ({}),
     });
 
-    // dx=200, dy=200 far exceeds maxTranslate=4 — should clamp to 4px.
+    // center=(50,20), cursor=(250,250) → dx=200, dy=230; both exceed maxTranslate=4.
     fireEvent.mouseMove(wrapper, { clientX: 250, clientY: 250 });
     expect(wrapper.style.transform).toBe("translate(4px, 4px)");
   });
@@ -128,5 +128,43 @@ describe("MagneticButton — reduced motion", () => {
 
     fireEvent.mouseMove(wrapper, { clientX: 170, clientY: 70 });
     expect(wrapper.getAttribute("style")).toBeNull();
+  });
+
+  it("removes matchMedia listener on unmount", () => {
+    const mq = stubMatchMedia(false);
+    const { unmount } = render(<MagneticButton data-testid={DID}>Click</MagneticButton>);
+    unmount();
+    expect(mq.removeEventListener).toHaveBeenCalledWith("change", expect.any(Function));
+  });
+
+  it("disables animation when OS preference changes mid-session", () => {
+    const listeners: (() => void)[] = [];
+    const mq = {
+      matches: false,
+      addEventListener: vi.fn((_: string, cb: () => void) => listeners.push(cb)),
+      removeEventListener: vi.fn(),
+    };
+    vi.stubGlobal("matchMedia", (query: string) => {
+      if (query === "(prefers-reduced-motion: reduce)") return mq;
+      return { matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    });
+
+    render(<MagneticButton data-testid={DID}>Click</MagneticButton>);
+    const wrapper = screen.getByTestId(DID);
+
+    // Initially: style attribute is present (animations enabled).
+    expect(wrapper.getAttribute("style")).not.toBeNull();
+
+    // OS switches to reduce motion — fire the change callback.
+    mq.matches = true;
+    act(() => { listeners.forEach((cb) => cb()); });
+
+    // After switching, mousemove must not apply a translate.
+    vi.spyOn(wrapper, "getBoundingClientRect").mockReturnValue({
+      left: 100, top: 50, width: 120, height: 40,
+      right: 220, bottom: 90, x: 100, y: 50, toJSON: () => ({}),
+    });
+    fireEvent.mouseMove(wrapper, { clientX: 170, clientY: 70 });
+    expect(wrapper.style.transform).toBe("");
   });
 });
