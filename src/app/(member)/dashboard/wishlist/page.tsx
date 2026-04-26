@@ -25,11 +25,17 @@ export default async function DashboardWishlistPage() {
   // an empty items[] — the empty state below covers both no-wishlist and
   // backend-down so the page never throws.
   let initialItems: WishlistResponse["items"] = [];
+  let wishlistLoadFailed = false;
   try {
     const result = (await getWishlist()) as WishlistResponse | undefined;
-    initialItems = result?.items ?? [];
+    if (result?.success === false) {
+      wishlistLoadFailed = true;
+    } else {
+      initialItems = result?.items ?? [];
+    }
   } catch (err) {
     console.error("[wishlist] getWishlist failed:", err);
+    wishlistLoadFailed = true;
   }
 
   return (
@@ -56,7 +62,7 @@ export default async function DashboardWishlistPage() {
               Items you&rsquo;ve saved from product pages.
             </p>
           </div>
-          <WishlistShareButton />
+          <WishlistShareButton loadFailed={wishlistLoadFailed} />
         </header>
 
         <WishlistList initialItems={initialItems} />

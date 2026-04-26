@@ -88,7 +88,7 @@ function SharedWishlistCard({ item }: { item: WishlistItem }) {
       <div className="p-3">
         <p className="truncate text-sm font-medium text-cf-ink">{item.name}</p>
         <p className="mt-0.5 text-sm text-cf-muted">
-          ${item.price.toFixed(2)}
+          ${(item.price ?? 0).toFixed(2)}
         </p>
         {item.productSlug ? (
           <Link

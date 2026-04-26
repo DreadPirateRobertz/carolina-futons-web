@@ -86,10 +86,18 @@ export async function isOnWishlist(productId: string) {
 
 // ── Share token (cf-u89z) ─────────────────────────────────────────
 
-// Falls back to a dev placeholder so the feature works locally without
-// secrets configured. Production MUST set WISHLIST_SHARE_SECRET.
+// Throws in production if WISHLIST_SHARE_SECRET is not set — a missing
+// secret would sign tokens with a known plaintext, undermining the HMAC.
+// Set it in Vercel env vars (see .env.example).
 function shareSecret(): string {
-  return process.env.WISHLIST_SHARE_SECRET ?? "dev-wishlist-secret-change-in-prod";
+  const s = process.env.WISHLIST_SHARE_SECRET;
+  if (!s) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("WISHLIST_SHARE_SECRET env var is required in production");
+    }
+    return "dev-wishlist-secret-change-in-prod";
+  }
+  return s;
 }
 
 export async function generateShareToken(): Promise<

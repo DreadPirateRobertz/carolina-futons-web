@@ -9,7 +9,8 @@ import { generateShareToken } from "@/app/actions/wishlist";
 
 type State = "idle" | "pending" | "copied" | "error";
 
-export function WishlistShareButton() {
+export function WishlistShareButton({ loadFailed }: { loadFailed?: boolean }) {
+  if (loadFailed) return null;
   const [state, setState] = useState<State>("idle");
   const [, startTransition] = useTransition();
 
@@ -17,19 +18,21 @@ export function WishlistShareButton() {
     if (state === "pending" || state === "copied") return;
     setState("pending");
     startTransition(async () => {
+      const resetLater = () => setTimeout(() => setState("idle"), 3000);
       try {
         const result = await generateShareToken();
         if (!result.success) {
           setState("error");
+          resetLater();
           return;
         }
         const url = `${window.location.origin}/wishlist/${result.token}`;
         await navigator.clipboard.writeText(url);
         setState("copied");
-        setTimeout(() => setState("idle"), 3000);
+        resetLater();
       } catch {
         setState("error");
-        setTimeout(() => setState("idle"), 3000);
+        resetLater();
       }
     });
   }

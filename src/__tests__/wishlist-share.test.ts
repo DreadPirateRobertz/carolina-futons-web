@@ -151,4 +151,15 @@ describe("getSharedWishlist", () => {
     const result = await getSharedWishlist(token);
     expect(result.success).toBe(false);
   });
+
+  it("returns success:true with empty items array when Velo returns no items", async () => {
+    const token = signMemberId("M-42", SECRET);
+    veloMocks.callVelo.mockResolvedValueOnce({ success: true, items: [], total: 0 });
+    const { getSharedWishlist } = await import("@/app/actions/wishlist");
+    const result = await getSharedWishlist(token);
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.items).toHaveLength(0);
+    expect(result.total).toBe(0);
+  });
 });
