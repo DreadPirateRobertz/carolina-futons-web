@@ -55,18 +55,14 @@ export function ProductSpinViewer({ spinImages, productName = "product" }: Props
   const containerRef = useRef<HTMLDivElement>(null);
   const dragStartX = useRef<number | null>(null);
   const frameAtDragStart = useRef(0);
-  // Mirrors `frame` state so non-React handlers read the current value without stale closures
-  const frameRef = useRef(0);
   const autoSpinTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const totalFrames = spinImages.length;
-  frameRef.current = frame;
 
   // SSR-safe reduced-motion detection — also fires when OS preference changes mid-session
   useEffect(() => {
     try {
       const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-      setPrefersReducedMotion(mq.matches);
       const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
       mq.addEventListener("change", handler);
       return () => mq.removeEventListener("change", handler);
@@ -130,7 +126,7 @@ export function ProductSpinViewer({ spinImages, productName = "product" }: Props
   function handleMouseDown(e: React.MouseEvent) {
     cancelAutoSpin();
     dragStartX.current = e.clientX;
-    frameAtDragStart.current = frameRef.current;
+    frameAtDragStart.current = frame;
     setIsDragging(true);
   }
 
@@ -150,7 +146,7 @@ export function ProductSpinViewer({ spinImages, productName = "product" }: Props
     if (!touch) return;
     cancelAutoSpin();
     dragStartX.current = touch.clientX;
-    frameAtDragStart.current = frameRef.current;
+    frameAtDragStart.current = frame;
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
