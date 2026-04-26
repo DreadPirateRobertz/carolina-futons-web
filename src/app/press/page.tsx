@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { ContactHero } from "@/components/illustrations/ContactHero";
 import { BUSINESS } from "@/lib/business/contact-info";
+import { MagneticButton } from "@/components/ui/MagneticButton";
 
 // cf-3qt.5.6: hero + press inquiries CTA + media-contact form. The form
 // reuses the shared sendContactForm Server Action so press inquiries land
@@ -58,12 +59,14 @@ export default function PressPage() {
             {BUSINESS.warrantyYears}-year warranty.
           </p>
           <p className="mt-6">
-            <a
-              href="#press-inquiries"
-              className="inline-flex h-11 items-center justify-center rounded-md bg-cf-cta px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              Press inquiries
-            </a>
+            <MagneticButton>
+              <a
+                href="#press-inquiries"
+                className="inline-flex h-11 items-center justify-center rounded-md bg-cf-cta px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                Press inquiries
+              </a>
+            </MagneticButton>
           </p>
           <p className="mt-3 text-sm text-cf-muted">
             Last updated {LAST_UPDATED}

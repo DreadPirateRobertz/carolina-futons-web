@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { MagneticButton } from "@/components/ui/MagneticButton";
+
 export const metadata: Metadata = {
   title: "Sustainability — Carolina Futons",
   description:
@@ -163,12 +165,14 @@ export default function SustainabilityPage() {
           responsible recycling.
         </p>
         <p className="mt-6">
-          <Link
-            href="/contact"
-            className="inline-flex h-11 items-center justify-center rounded-md bg-cf-cta px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            Ask about trade-in
-          </Link>
+          <MagneticButton>
+            <Link
+              href="/contact"
+              className="inline-flex h-11 items-center justify-center rounded-md bg-cf-cta px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              Ask about trade-in
+            </Link>
+          </MagneticButton>
         </p>
       </section>
     </main>

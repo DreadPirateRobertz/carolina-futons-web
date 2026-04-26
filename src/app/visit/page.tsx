@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { BUSINESS } from "@/lib/business/contact-info";
+import { MagneticButton } from "@/components/ui/MagneticButton";
 
 export const metadata: Metadata = {
   title: "Visit Us — Carolina Futons",
@@ -114,12 +115,14 @@ export default function VisitPage() {
         <p className="mt-2 text-cf-charcoal/80">
           Browse online first, then come in and try everything.
         </p>
-        <Link
-          href="/shop"
-          className="mt-6 inline-flex h-12 items-center justify-center rounded-md bg-cf-cta px-8 text-sm font-medium text-white shadow-sm transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        >
-          Browse all products
-        </Link>
+        <MagneticButton>
+          <Link
+            href="/shop"
+            className="mt-6 inline-flex h-12 items-center justify-center rounded-md bg-cf-cta px-8 text-sm font-medium text-white shadow-sm transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            Browse all products
+          </Link>
+        </MagneticButton>
       </div>
     </main>
   );

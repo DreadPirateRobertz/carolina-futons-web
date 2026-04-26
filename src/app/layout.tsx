@@ -33,7 +33,9 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
   subsets: ["latin"],
   display: "swap",
-  weight: ["400", "600", "700"],
+  // Load as variable font so framer-motion can animate fontVariationSettings
+  // (wght axis 400-900) for kinetic typography effects in HeroWordStagger.
+  axes: ["wght"],
 });
 
 const sourceSans = Source_Sans_3({
