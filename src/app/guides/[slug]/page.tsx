@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { HeroReveal } from "@/components/motion/HeroReveal";
 import {
-  GUIDES,
+  listGuides,
   getGuideBySlug,
   getRelatedGuides,
 } from "@/lib/discovery/guides";
@@ -12,8 +12,9 @@ import { GuideReadingProgress } from "./ReadingProgress";
 
 type RouteParams = { slug: string };
 
-export function generateStaticParams(): RouteParams[] {
-  return GUIDES.map((g) => ({ slug: g.slug }));
+export async function generateStaticParams(): Promise<RouteParams[]> {
+  const guides = await listGuides();
+  return guides.map((g) => ({ slug: g.slug }));
 }
 
 export async function generateMetadata({
