@@ -24,12 +24,25 @@ const CATALOG = [
   { _id: "5", name: "Ranchero Platform Bed", slug: "ranchero-platform-bed" },
 ];
 
-function makeClient(items = CATALOG) {
+function makePage(items = CATALOG, more: typeof CATALOG = []) {
+  const page: {
+    items: typeof CATALOG;
+    hasNext: () => boolean;
+    next: () => Promise<ReturnType<typeof makePage>>;
+  } = {
+    items,
+    hasNext: () => more.length > 0,
+    next: async () => makePage(more),
+  };
+  return page;
+}
+
+function makeClient(items = CATALOG, more: typeof CATALOG = []) {
   return {
     products: {
       queryProducts: () => ({
         limit: () => ({
-          find: async () => ({ items }),
+          find: async () => makePage(items, more),
         }),
       }),
     },
@@ -88,6 +101,15 @@ describe("searchProducts — in-memory substring search", () => {
     }));
     const { searchProducts } = await import("@/lib/wix/products");
     expect(await searchProducts("futon")).toEqual([]);
+  });
+
+  it("paginates when catalog spans multiple Wix pages (cf-ni0z regression)", async () => {
+    const page1 = [{ _id: "a", name: "Page-1 Futon", slug: "p1-futon" }];
+    const page2 = [{ _id: "b", name: "Page-2 Futon", slug: "p2-futon" }];
+    vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => makeClient(page1, page2) }));
+    const { searchProducts } = await import("@/lib/wix/products");
+    const results = await searchProducts("futon");
+    expect(results.map((p) => p._id)).toEqual(["a", "b"]);
   });
 
   it("matches a product slug-style query spanning a word boundary", async () => {
