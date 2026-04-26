@@ -50,6 +50,12 @@ updates:
       - dependency-name: "react-dom"
         update-types:
           - version-update:semver-major
+      # eslint v10 breaks eslint-plugin-react (context.getFilename removed).
+      # Hold until eslint-config-next pins a v10-compatible plugin set.
+      # See PR #21 for failure details.
+      - dependency-name: "eslint"
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: github-actions
     directory: /
