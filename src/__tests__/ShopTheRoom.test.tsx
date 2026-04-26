@@ -19,6 +19,8 @@ import {
   ABOUT_HOTSPOT_CONFIGS,
   SHOP_HERO_PHOTO,
   SHOP_HOTSPOT_CONFIGS,
+  FUTON_FRAMES_PLP_HERO_PHOTO,
+  FUTON_FRAMES_PLP_HOTSPOT_CONFIGS,
   type HotspotConfig,
 } from "@/components/site/ShopTheRoom";
 
@@ -67,6 +69,11 @@ const SURFACES = [
   { name: "home", photo: HOME_HERO_PHOTO, configs: HOME_HOTSPOT_CONFIGS },
   { name: "about", photo: ABOUT_HERO_PHOTO, configs: ABOUT_HOTSPOT_CONFIGS },
   { name: "shop", photo: SHOP_HERO_PHOTO, configs: SHOP_HOTSPOT_CONFIGS },
+  {
+    name: "plp-futon-frames",
+    photo: FUTON_FRAMES_PLP_HERO_PHOTO,
+    configs: FUTON_FRAMES_PLP_HOTSPOT_CONFIGS,
+  },
 ] as const;
 
 describe.each(SURFACES)(

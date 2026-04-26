@@ -142,6 +142,23 @@ export const SHOP_HOTSPOT_CONFIGS: ReadonlyArray<HotspotConfig> = [
   { id: "canby-shop", xPct: 70, yPct: 60, productSlug: "canby-mattress" },
 ];
 
+// /shop/futon-frames PLP. Uses the Monterey lifestyle photo
+// (HERO_SLIDES[0]) — semantically the strongest fit for a futon-frames
+// hero, and the home-page carousel is the only surface that uses
+// HERO_SLIDES; the PLP visitor isn't on home.
+export const FUTON_FRAMES_PLP_HERO_PHOTO: HeroPhoto = {
+  src: "https://static.wixstatic.com/media/e04e89_72d82110638045c39e0f6274363c15f8~mv2.jpg/v1/fill/w_1920,h_1080,q_90/file.jpg",
+  alt: "Mission-style hardwood futon set up in a sunlit living room",
+  width: 1920,
+  height: 1080,
+} as const;
+
+export const FUTON_FRAMES_PLP_HOTSPOT_CONFIGS: ReadonlyArray<HotspotConfig> = [
+  { id: "monterey-plp", xPct: 38, yPct: 70, productSlug: "monterey-futon-frame" },
+  { id: "kingston-plp", xPct: 60, yPct: 65, productSlug: "kingston-futon-frame" },
+  { id: "canby-plp", xPct: 50, yPct: 55, productSlug: "canby-mattress" },
+];
+
 // ── Component ──────────────────────────────────────────────────────────────
 
 export async function ShopTheRoom({
@@ -205,5 +222,7 @@ export const __TEST__ = {
   ABOUT_HERO_PHOTO,
   SHOP_HOTSPOT_CONFIGS,
   SHOP_HERO_PHOTO,
+  FUTON_FRAMES_PLP_HOTSPOT_CONFIGS,
+  FUTON_FRAMES_PLP_HERO_PHOTO,
   resolveHotspots,
 };

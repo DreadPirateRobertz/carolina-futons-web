@@ -29,6 +29,14 @@ vi.mock("@/lib/shop/plp-observability", () => ({
 vi.mock("next/navigation", () => ({
   notFound: vi.fn(),
 }));
+// cf-delight Phase 4: PLP page now renders ShopTheRoom on /shop/futon-frames.
+// Stub it to skip the async product-fetch path; section's own contract
+// is covered by ShopTheRoom.test.tsx.
+vi.mock("@/components/site/ShopTheRoom", () => ({
+  ShopTheRoom: () => null,
+  FUTON_FRAMES_PLP_HERO_PHOTO: { src: "stub", alt: "stub", width: 1, height: 1 },
+  FUTON_FRAMES_PLP_HOTSPOT_CONFIGS: [],
+}));
 import { buildPageUrl } from "@/components/plp/PLPPagination";
 
 // ── PLPPagination.buildPageUrl ──────────────────────────────────────────────
@@ -723,5 +731,94 @@ describe("PlpPage — product card stagger (cf-plp-card-stagger)", () => {
     expect(html).toMatch(/<li[^>]*data-slot="hero-reveal"/);
     const cardMatches = html.match(/data-slot="product-card"/g) ?? [];
     expect(cardMatches.length).toBe(3);
+  });
+});
+
+// ── PlpPage: cf-delight Phase 4 ShopTheRoom gating ─────────────────────────
+//
+// ShopTheRoom is mocked to a sentinel <div data-slot="cf-delight-stub" />
+// for these tests so the gating contract (only renders on /shop/futon-frames)
+// is verifiable from the rendered HTML.
+
+describe("PlpPage — cf-delight ShopTheRoom gating", () => {
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.doMock("@/components/site/ShopTheRoom", () => ({
+      ShopTheRoom: () => null, // re-stubbed inline below per test
+      FUTON_FRAMES_PLP_HERO_PHOTO: { src: "s", alt: "s", width: 1, height: 1 },
+      FUTON_FRAMES_PLP_HOTSPOT_CONFIGS: [],
+    }));
+    const wixProducts = await vi.importActual<typeof import("@/lib/wix/products")>(
+      "@/lib/wix/products",
+    );
+    void wixProducts;
+  });
+
+  async function renderForCategory(slug: string): Promise<string> {
+    vi.resetModules();
+    // Minimal mock surface — same shape as the top-of-file mocks so the
+    // module loads and the page can render. Centralising in a helper
+    // avoids each gating test repeating the seven mocks.
+    vi.doMock("@sentry/nextjs", () => ({
+      captureException: vi.fn(),
+      captureMessage: vi.fn(),
+      flush: vi.fn().mockResolvedValue(true),
+    }));
+    vi.doMock("@/lib/wix-client", () => ({ getWixClient: vi.fn() }));
+    vi.doMock("@/lib/wix/products", () => ({
+      getCollectionBySlug: vi.fn().mockResolvedValue({ _id: "c1" }),
+      listProductsByCollectionId: vi.fn(),
+      listProductsOnSale: vi.fn().mockResolvedValue([]),
+    }));
+    vi.doMock("@/lib/wix/plp", () => ({
+      getCollectionPlp: vi.fn().mockResolvedValue({
+        page: { items: [], total: 0, page: 1, pageSize: 24, hasNext: false, hasPrev: false },
+        facets: { total: 0, inStock: 0, outOfStock: 0, priceBuckets: [] },
+      }),
+    }));
+    vi.doMock("@/lib/shop/categories", () => ({
+      SHOP_CATEGORIES: [
+        { slug, name: "X", description: "", collectionSlug: slug },
+      ],
+      findCategory: (s: string) =>
+        s === slug ? { slug, name: "X", description: "", collectionSlug: slug } : undefined,
+    }));
+    vi.doMock("@/lib/shop/plp-observability", () => ({
+      logOverPaginatedRender: vi.fn(),
+    }));
+    vi.doMock("@/components/site/ShopTheRoom", () => ({
+      ShopTheRoom: () => null, // sentinel via data-slot below
+      FUTON_FRAMES_PLP_HERO_PHOTO: { src: "s", alt: "s", width: 1, height: 1 },
+      FUTON_FRAMES_PLP_HOTSPOT_CONFIGS: [],
+    }));
+    // Replace the ShopTheRoom stub with a sentinel that emits a marker
+    // we can grep — done after vi.doMock so the override wins.
+    vi.doMock("@/components/site/ShopTheRoom", () => ({
+      ShopTheRoom: () => {
+        const React = require("react") as typeof import("react");
+        return React.createElement("div", {
+          "data-slot": "cf-delight-shop-the-room",
+        });
+      },
+      FUTON_FRAMES_PLP_HERO_PHOTO: { src: "s", alt: "s", width: 1, height: 1 },
+      FUTON_FRAMES_PLP_HOTSPOT_CONFIGS: [],
+    }));
+
+    const Page = (await import("@/app/shop/[category]/page")).default;
+    const tree = (await Page({
+      params: Promise.resolve({ category: slug }),
+      searchParams: Promise.resolve({}),
+    })) as ReactElement;
+    return renderToStaticMarkup(tree);
+  }
+
+  it("renders ShopTheRoom on /shop/futon-frames", async () => {
+    const html = await renderForCategory("futon-frames");
+    expect(html).toContain('data-slot="cf-delight-shop-the-room"');
+  });
+
+  it("does NOT render ShopTheRoom on /shop/mattresses (other PLPs unchanged)", async () => {
+    const html = await renderForCategory("mattresses");
+    expect(html).not.toContain('data-slot="cf-delight-shop-the-room"');
   });
 });
