@@ -29,12 +29,18 @@ import {
 // validated via a shared invariant suite so adding a 4th surface only
 // needs one row in the table.
 
+// Mirror Wix's actual price formatting (thousands separator) so the test
+// fixture matches what production callers see, not a stripped-down shape.
+const usd = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
 function product(name: string, price: number) {
   return {
     name,
     priceData: {
       price,
-      formatted: { price: `$${price.toFixed(2)}` },
+      formatted: { price: usd.format(price) },
     },
   };
 }
@@ -107,11 +113,14 @@ describe("ShopTheRoom — surface differentiation", () => {
     expect(ABOUT_HERO_PHOTO.src).not.toBe(SHOP_HERO_PHOTO.src);
   });
 
-  it("HOME hero src does not duplicate the home-page first-hero (HERO_SLIDES[0])", async () => {
+  it("HOME hero src does not duplicate ANY entry in the home-page carousel (HERO_SLIDES)", async () => {
+    // Tightened from the prior single-index check (which missed Murphy
+    // duplicating HERO_SLIDES[2]). The carousel rotates through every
+    // slide; ShopTheRoom on home must not match any of them.
     const page = await import("@/app/page");
-    const firstHero = page.HERO_SLIDES[0]?.src;
-    expect(firstHero).toBeTruthy();
-    expect(HOME_HERO_PHOTO.src).not.toBe(firstHero);
+    const carouselSrcs = page.HERO_SLIDES.map((s) => s.src);
+    expect(carouselSrcs.length).toBeGreaterThan(0);
+    expect(carouselSrcs).not.toContain(HOME_HERO_PHOTO.src);
   });
 });
 
@@ -119,9 +128,10 @@ describe("ShopTheRoom (live data resolution)", () => {
   it("resolves product name + price from getProductBySlug, never lying about catalog state", async () => {
     const hotspots = await __TEST__.resolveHotspots(HOME_HOTSPOT_CONFIGS);
     expect(hotspots).toHaveLength(3);
-    const ranchero = hotspots.find((h) => h.id === "ranchero")!;
-    expect(ranchero.productName).toBe("Ranchero Murphy Cabinet Bed");
-    expect(ranchero.formattedPrice).toBe("$2978.00");
+    const monterey = hotspots.find((h) => h.id === "monterey")!;
+    expect(monterey.productName).toBe("Monterey Futon Frame");
+    // Realistic format — Wix returns thousands-separated USD strings.
+    expect(monterey.formattedPrice).toMatch(/^\$[0-9,]+\.\d{2}$/);
   });
 
   it("drops a hotspot whose slug 404s in the catalog (no broken PDP link rendered)", async () => {
@@ -133,7 +143,6 @@ describe("ShopTheRoom (live data resolution)", () => {
   });
 
   it("drops a hotspot whose product has no usable price (variant-priced products)", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     getProductBySlugMock.mockImplementation(async (slug: string) =>
       slug === "canby-mattress"
         ? { name: "Canby", priceData: { price: 0 } } // variant-priced sentinel
@@ -141,8 +150,6 @@ describe("ShopTheRoom (live data resolution)", () => {
     );
     const hotspots = await __TEST__.resolveHotspots(HOME_HOTSPOT_CONFIGS);
     expect(hotspots.find((h) => h.id === "canby")).toBeUndefined();
-    expect(warn).toHaveBeenCalled();
-    warn.mockRestore();
   });
 
   it("falls back from formatted.price to numeric price when only the latter is present", async () => {
@@ -154,6 +161,20 @@ describe("ShopTheRoom (live data resolution)", () => {
     expect(hotspots[0]?.formattedPrice).toBe("$12.50");
   });
 });
+
+describe.each(SURFACES)(
+  "ShopTheRoom — null fallback ($name surface drops to nothing if every slug 404s)",
+  ({ configs }) => {
+    it("returns null instead of an empty 'shop the room' header", async () => {
+      getProductBySlugMock.mockResolvedValue(null);
+      const ui = await ShopTheRoom({
+        heroPhoto: HOME_HERO_PHOTO,
+        hotspotConfigs: configs,
+      });
+      expect(ui).toBeNull();
+    });
+  },
+);
 
 describe("ShopTheRoom (render — home defaults)", () => {
   async function renderHome() {
@@ -174,20 +195,20 @@ describe("ShopTheRoom (render — home defaults)", () => {
   it("renders the lifestyle hero image with the configured alt", async () => {
     await renderHome();
     expect(
-      screen.getByRole("img", { name: /murphy cabinet bed/i }),
+      screen.getByRole("img", { name: /sunlit living room.*futon/i }),
     ).toBeInTheDocument();
   });
 
   it("renders one dot per resolved hotspot, named after the live catalog product", async () => {
     await renderHome();
     expect(
-      screen.getByRole("button", { name: /shop ranchero murphy cabinet bed/i }),
+      screen.getByRole("button", { name: /shop monterey futon frame/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /shop kingston futon frame/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /shop canby mattress/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /shop solstice mattress/i }),
     ).toBeInTheDocument();
   });
 

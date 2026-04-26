@@ -3,11 +3,35 @@ import { cleanup, render, screen } from "@testing-library/react";
 
 // Stub ShopTheRoom so the AboutPage smoke test doesn't need the Wix
 // product fetch wired up; the section's own contract is covered by
-// ShopTheRoom.test.tsx.
+// ShopTheRoom.test.tsx. Spy the mock so we can pin the call-site
+// contract — a future swap of ABOUT_HERO_PHOTO into a different page
+// would otherwise compile + pass tests silently.
+const stubs = vi.hoisted(() => ({
+  shopTheRoomMock: (() => {
+    // Return a function that captures call args but renders a placeholder.
+    const calls: unknown[][] = [];
+    function fn(props: unknown) {
+      calls.push([props]);
+      return null;
+    }
+    (fn as unknown as { mock: { calls: unknown[][] } }).mock = { calls };
+    (fn as unknown as { mockClear: () => void }).mockClear = () => {
+      calls.length = 0;
+    };
+    return fn;
+  })(),
+  ABOUT_HERO_PHOTO: { src: "stub-about", alt: "stub", width: 1, height: 1 },
+  ABOUT_HOTSPOT_CONFIGS: [
+    { id: "stub-about", xPct: 50, yPct: 50, productSlug: "stub" },
+  ],
+}));
 vi.mock("@/components/site/ShopTheRoom", () => ({
-  ShopTheRoom: () => <div data-slot="shop-the-room" />,
-  ABOUT_HERO_PHOTO: { src: "stub", alt: "stub", width: 1, height: 1 },
-  ABOUT_HOTSPOT_CONFIGS: [],
+  ShopTheRoom: (props: unknown) => {
+    stubs.shopTheRoomMock(props);
+    return <div data-slot="shop-the-room" />;
+  },
+  ABOUT_HERO_PHOTO: stubs.ABOUT_HERO_PHOTO,
+  ABOUT_HOTSPOT_CONFIGS: stubs.ABOUT_HOTSPOT_CONFIGS,
 }));
 
 import AboutPage, { metadata } from "./page";
@@ -21,7 +45,10 @@ async function renderAbout() {
   return render(ui);
 }
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  (stubs.shopTheRoomMock as unknown as { mockClear: () => void }).mockClear();
+});
 
 describe("AboutPage — smoke", () => {
   it("exports metadata.title containing 'About' for the /about tab/SEO", () => {
@@ -64,9 +91,34 @@ describe("AboutPage — smoke", () => {
     ).toBeInTheDocument();
   });
 
-  // cf-delight Phase 3: pin the ShopTheRoom section was wired in.
+  // cf-delight: pin the ShopTheRoom section was wired in.
   it("renders the ShopTheRoom hotspots section", async () => {
     const { container } = await renderAbout();
     expect(container.querySelector("[data-slot='shop-the-room']")).not.toBeNull();
+  });
+
+  it("passes the /about-specific photo + heading + headingId to ShopTheRoom", async () => {
+    await renderAbout();
+    const calls = (stubs.shopTheRoomMock as unknown as {
+      mock: { calls: unknown[][] };
+    }).mock.calls;
+    expect(calls).toHaveLength(1);
+    const props = calls[0]![0] as Record<string, unknown>;
+    expect(props.heroPhoto).toBe(stubs.ABOUT_HERO_PHOTO);
+    expect(props.hotspotConfigs).toBe(stubs.ABOUT_HOTSPOT_CONFIGS);
+    expect(props.headingId).toBe("about-shop-the-room-heading");
+    expect(props.heading).toMatch(/pieces in this story/i);
+  });
+
+  it("renders ShopTheRoom AFTER the article body (not above the prose)", async () => {
+    const { container } = await renderAbout();
+    const article = container.querySelector("article");
+    const shopTheRoom = container.querySelector("[data-slot='shop-the-room']");
+    expect(article).not.toBeNull();
+    expect(shopTheRoom).not.toBeNull();
+    expect(
+      article!.compareDocumentPosition(shopTheRoom!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });

@@ -1,18 +1,17 @@
+import * as Sentry from "@sentry/nextjs";
+
 import { HeroReveal } from "@/components/motion/HeroReveal";
 import { RoomHotspots, type RoomHotspot } from "@/components/room/RoomHotspots";
 import { getProductBySlug } from "@/lib/wix/products";
 
-// cf-delight Phase 2/3: configurable "Shop the room" section that wires
-// RoomHotspots into a real surface. Each surface (Home, /about, /shop)
-// supplies its own lifestyle photo + hotspot config; the section
-// resolves product name + price from Wix per slug at request time so the
-// dots can't lie about pricing or PDP availability.
+// cf-delight: configurable "Shop the room" section that wires RoomHotspots
+// into a real surface. Each surface (Home, /about, /shop) supplies its
+// own lifestyle photo + hotspot config; the section resolves product
+// name + price from Wix per slug at request time so the dots can't lie
+// about pricing or PDP availability.
 //
 // Heading + lede default to the home-page copy and can be overridden per
 // surface (e.g. /about uses "See it in a real bedroom").
-//
-// Hotspot coords are eyeballed from each photo; expect a tuning pass on
-// preview deploys. cf-delight bead tracks follow-up CMS work.
 
 export type HotspotConfig = {
   id: string;
@@ -62,14 +61,24 @@ export async function resolveHotspots(
     configs.map(async (cfg) => {
       const product = await getProductBySlug(cfg.productSlug);
       if (!product) {
-        // getProductBySlug already logs to Sentry via logWixFailure.
-        // Drop the dot so the section never points at a broken PDP.
+        // getProductBySlug only logs SDK errors via logWixFailure — a
+        // null return for a missing-or-renamed slug surfaces silently.
+        // Surface to Sentry here so a catalog rename doesn't quietly
+        // remove a dot for weeks before someone notices.
+        Sentry.captureMessage(
+          `[ShopTheRoom] dropping hotspot ${cfg.id}: getProductBySlug(${cfg.productSlug}) returned null`,
+          { level: "warning" },
+        );
         return null;
       }
       const price = formatProductPrice(product);
       if (!price) {
-        console.warn(
+        // Variant-priced products + transient Wix glitches end up here.
+        // Sentry rather than console.warn — Vercel stdout is not
+        // monitored, so a console-only drop is invisible in prod.
+        Sentry.captureMessage(
           `[ShopTheRoom] dropping hotspot ${cfg.id}: ${cfg.productSlug} has no list price`,
+          { level: "warning" },
         );
         return null;
       }
@@ -87,27 +96,29 @@ export async function resolveHotspots(
 }
 
 // ── Per-surface configs ─────────────────────────────────────────────────────
+//
+// All three photos are pulled from the SHOP_CATEGORIES card images
+// (lib/shop/categories.ts) at full lifestyle resolution. Category card
+// assets are deliberately distinct from HERO_SLIDES so the home-page
+// carousel can't re-show whichever scene the home ShopTheRoom is using
+// (caught in code review: HOME_HERO_PHOTO previously dup'd HERO_SLIDES[2]).
 
-// Home: Murphy cabinet bed scene. Avoids HERO_SLIDES[0] (Monterey) which
-// sits a viewport above in the home carousel.
 export const HOME_HERO_PHOTO: HeroPhoto = {
-  src: "https://static.wixstatic.com/media/e04e89_818d75df410a41e1a0721207333bc93d~mv2.jpg/v1/fill/w_1920,h_1080,q_90/file.jpg",
-  alt: "Murphy cabinet bed open in a home office, transforming the space",
+  src: "https://static.wixstatic.com/media/e04e89_4bea49a709a3470a8315b5acd7309b0f~mv2.jpg/v1/fill/w_1920,h_1080,q_90/file.jpg",
+  alt: "Sunlit living room with a hardwood futon frame and natural mattress",
   width: 1920,
   height: 1080,
 } as const;
 
 export const HOME_HOTSPOT_CONFIGS: ReadonlyArray<HotspotConfig> = [
-  { id: "ranchero", xPct: 50, yPct: 55, productSlug: "ranchero-murphy-cabinet-bed" },
-  { id: "canby", xPct: 50, yPct: 35, productSlug: "canby-mattress" },
-  { id: "solstice", xPct: 78, yPct: 70, productSlug: "solstice-mattress" },
+  { id: "monterey", xPct: 38, yPct: 70, productSlug: "monterey-futon-frame" },
+  { id: "kingston", xPct: 60, yPct: 65, productSlug: "kingston-futon-frame" },
+  { id: "canby", xPct: 50, yPct: 55, productSlug: "canby-mattress" },
 ];
 
-// /about: platform bed coastal bedroom (HERO_SLIDES[1]). Different scene
-// than home so the page reads as a distinct moment, not a repeat.
 export const ABOUT_HERO_PHOTO: HeroPhoto = {
-  src: "https://static.wixstatic.com/media/e04e89_b9d4cf76a1a84bf5bb4821edc53f6df2~mv2.jpg/v1/fill/w_1920,h_1080,q_90/file.jpg",
-  alt: "Natural hardwood platform bed in a coastal bedroom with morning light",
+  src: "https://static.wixstatic.com/media/e04e89_8cd0de059f244e8485a600d4783caa92~mv2.jpg/v1/fill/w_1920,h_1080,q_90/file.jpg",
+  alt: "Hardwood platform bed in a calm bedroom with natural light",
   width: 1920,
   height: 1080,
 } as const;
@@ -118,19 +129,17 @@ export const ABOUT_HOTSPOT_CONFIGS: ReadonlyArray<HotspotConfig> = [
   { id: "portofino", xPct: 50, yPct: 45, productSlug: "portofino-mattress" },
 ];
 
-// /shop: Monterey futon scene (HERO_SLIDES[0]). Safe to use here —
-// /shop has no carousel so there's no double-render risk.
 export const SHOP_HERO_PHOTO: HeroPhoto = {
-  src: "https://static.wixstatic.com/media/e04e89_72d82110638045c39e0f6274363c15f8~mv2.jpg/v1/fill/w_1920,h_1080,q_90/file.jpg",
-  alt: "Mission-style hardwood futon in a sunlit living room",
+  src: "https://static.wixstatic.com/media/e04e89_55ecd0dfe1d5498b8a3f8cb583d5089b~mv2.jpg/v1/fill/w_1920,h_1080,q_90/file.jpg",
+  alt: "Stack of natural mattresses in a bright showroom",
   width: 1920,
   height: 1080,
 } as const;
 
 export const SHOP_HOTSPOT_CONFIGS: ReadonlyArray<HotspotConfig> = [
-  { id: "monterey", xPct: 38, yPct: 70, productSlug: "monterey-futon-frame" },
-  { id: "kingston", xPct: 60, yPct: 65, productSlug: "kingston-futon-frame" },
-  { id: "canby-shop", xPct: 50, yPct: 55, productSlug: "canby-mattress" },
+  { id: "solstice", xPct: 50, yPct: 50, productSlug: "solstice-mattress" },
+  { id: "portofino-shop", xPct: 30, yPct: 60, productSlug: "portofino-mattress" },
+  { id: "canby-shop", xPct: 70, yPct: 60, productSlug: "canby-mattress" },
 ];
 
 // ── Component ──────────────────────────────────────────────────────────────
