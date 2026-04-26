@@ -5,21 +5,15 @@ const actionMocks = vi.hoisted(() => ({
   managePushPreferences: vi.fn(),
 }));
 
-vi.mock("@/app/actions/preferences", async () => {
-  const actual = await vi.importActual<
-    typeof import("@/app/actions/preferences")
-  >("@/app/actions/preferences");
-  return {
-    ...actual,
-    managePushPreferences: actionMocks.managePushPreferences,
-  };
-});
+vi.mock("@/app/actions/preferences", () => ({
+  managePushPreferences: actionMocks.managePushPreferences,
+}));
 
 import { PreferencesForm } from "@/components/member/PreferencesForm";
 import {
   DEFAULT_PREFERENCES,
   PREFERENCE_CATEGORIES,
-} from "@/app/actions/preferences";
+} from "@/app/actions/preferences-state";
 
 beforeEach(() => {
   actionMocks.managePushPreferences.mockReset();
