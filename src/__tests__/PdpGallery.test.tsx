@@ -459,3 +459,79 @@ describe("PdpGallery — image zoom lightbox (cf-nmwy)", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
+
+// cf-q9zi (QA pass): activeUrl prop lets the variant picker drive the gallery.
+// These cases are the regression target: variant selection in PdpInteractive
+// updates `activeUrl`, and the gallery must reflect the new active image even
+// when the user has also clicked a thumb manually.
+describe("PdpGallery — activeUrl variant-picker integration (cf-q9zi)", () => {
+  beforeEach(() => uninstallViewTransitionStub());
+
+  it("shows the image matching activeUrl as the main image, not the first image", () => {
+    render(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        activeUrl="https://img/b.jpg"
+      />,
+    );
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    expect(main.src).toBe("https://img/b.jpg");
+    const thumbs = screen.getAllByRole("tab");
+    expect(thumbs[1].getAttribute("aria-selected")).toBe("true");
+    expect(thumbs[0].getAttribute("aria-selected")).toBe("false");
+  });
+
+  it("updates the main image when activeUrl changes (variant re-selection)", () => {
+    const { rerender } = render(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        activeUrl="https://img/a.jpg"
+      />,
+    );
+    rerender(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        activeUrl="https://img/c.jpg"
+      />,
+    );
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    expect(main.src).toBe("https://img/c.jpg");
+  });
+
+  it("falls back to selectedIndex when activeUrl does not match any image", () => {
+    render(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        activeUrl="https://img/no-match.jpg"
+      />,
+    );
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    expect(main.src).toBe("https://img/a.jpg");
+  });
+
+  it("activeUrl from parent overrides a previous thumb click", () => {
+    const { rerender } = render(
+      <PdpGallery images={multiImages} productName="Kingston Futon" />,
+    );
+    // User clicks the third thumb
+    fireEvent.click(screen.getAllByRole("tab")[2]);
+    expect(
+      (screen.getByTestId("pdp-main-image") as HTMLImageElement).src,
+    ).toBe("https://img/c.jpg");
+    // Variant picker drives a different image via activeUrl
+    rerender(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        activeUrl="https://img/b.jpg"
+      />,
+    );
+    expect(
+      (screen.getByTestId("pdp-main-image") as HTMLImageElement).src,
+    ).toBe("https://img/b.jpg");
+  });
+});

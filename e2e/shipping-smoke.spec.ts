@@ -155,4 +155,52 @@ test.describe("shipping flow smoke — prod", () => {
     //   6. verify white-glove option for >$1500 order (do NOT submit payment)
     test.skip(true, "GAP-1: all products OOS — re-enable when Wix catalog inventory is configured on prod");
   });
+
+  // ── 6. Mixed white-glove + LTL dispatch (cf-q9zi partial-cart test) ───────
+  //
+  // Exercises the delivery-zone API with two ZIPs that resolve to different
+  // services: NC (white-glove) + west coast (LTL). Verifies both service tiers
+  // are live and distinguishable so a checkout with mixed-eligibility items
+  // would display separate dispatch methods.
+  //
+  // NOTE: A real mixed-cart browser test requires GAP-1 to be resolved first
+  // (products in stock). This API-level test confirms the backend is ready
+  // before that blocker is lifted.
+
+  test("delivery-zone: NC ZIP → white-glove tier", async ({ request }) => {
+    const base = process.env.BASE_URL ?? "https://carolina-futons-web.vercel.app";
+    const res = await request.get(`${base}/api/delivery-zone?zip=28792`);
+    expect(res.status()).toBe(200);
+    const body = await res.json() as { ok: boolean; service?: string };
+    expect(body.ok).toBe(true);
+    expect(body.service).toBe("white-glove");
+  });
+
+  test("delivery-zone: west-coast ZIP → LTL tier", async ({ request }) => {
+    const base = process.env.BASE_URL ?? "https://carolina-futons-web.vercel.app";
+    const res = await request.get(`${base}/api/delivery-zone?zip=90210`);
+    expect(res.status()).toBe(200);
+    const body = await res.json() as { ok: boolean; service?: string };
+    expect(body.ok).toBe(true);
+    expect(body.service).toBe("ltl");
+  });
+
+  test("delivery-zone: mixed-dispatch scenario — NC white-glove + west LTL are distinct services", async ({ request }) => {
+    const base = process.env.BASE_URL ?? "https://carolina-futons-web.vercel.app";
+    const [wgRes, ltlRes] = await Promise.all([
+      request.get(`${base}/api/delivery-zone?zip=28792`),
+      request.get(`${base}/api/delivery-zone?zip=90210`),
+    ]);
+    const wg = await wgRes.json() as { ok: boolean; service?: string; label?: string };
+    const ltl = await ltlRes.json() as { ok: boolean; service?: string; label?: string };
+    expect(wg.service).toBe("white-glove");
+    expect(ltl.service).toBe("ltl");
+    // Confirm labels differ so checkout can display mixed dispatch copy
+    expect(wg.label).not.toBe(ltl.label);
+    // GAP-3 (cf-q9zi): once GAP-1 is resolved, extend this test to:
+    //   1. Add a >$1500 NC-eligible product to cart
+    //   2. Add a <$1500 product to cart
+    //   3. On checkout, assert the shipping section shows both white-glove AND
+    //      freight/LTL dispatch options with separate ETAs
+  });
 });
