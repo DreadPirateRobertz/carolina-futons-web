@@ -19,6 +19,20 @@ const STATIC_PATHS = [
   "/warranty",
   "/blog",
   "/press",
+  // Header sub-nav pages — add here when a new sub-nav destination becomes a permanent 200 route.
+  "/design-a-room",
+  "/guides",
+  "/reviews",
+  "/visit",
+  // Legal/compliance pages — must appear in the sitemap regardless of traffic value.
+  "/accessibility",
+  "/privacy",
+  "/terms",
+  // High-value content pages linked from navigation.
+  "/faq",
+  "/getting-it-home",
+  "/videos",
+  "/sustainability",
 ] as const;
 
 // Pull as many products as Wix will return in one call. 1000 is the SDK hard

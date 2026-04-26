@@ -54,6 +54,17 @@ describe("sitemap()", () => {
       "/warranty",
       "/blog",
       "/press",
+      "/design-a-room",
+      "/guides",
+      "/reviews",
+      "/visit",
+      "/accessibility",
+      "/privacy",
+      "/terms",
+      "/faq",
+      "/getting-it-home",
+      "/videos",
+      "/sustainability",
     ].map((p) => `https://www.carolinafutons.com${p}`);
     for (const url of expected) {
       expect(urls).toContain(url);
