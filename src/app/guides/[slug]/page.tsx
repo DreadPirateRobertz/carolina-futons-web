@@ -65,17 +65,30 @@ export default async function GuideDetailPage({
 
           <p className="text-lg leading-relaxed">{guide.hook}</p>
 
-          <section className="space-y-4">
-            <h2 className="font-playfair text-2xl font-semibold tracking-tight">
-              Overview
-            </h2>
-            <p className="leading-relaxed">
-              This guide walks through the questions we ask customers at the
-              showroom and the tradeoffs that tend to matter most. Full
-              long-form content is being edited by the team and will land in a
-              follow-up pass.
-            </p>
-          </section>
+          {guide.sections && guide.sections.length > 0 ? (
+            <div className="space-y-8">
+              {guide.sections.map((section) => (
+                <section key={section.heading} className="space-y-4">
+                  <h2 className="font-playfair text-2xl font-semibold tracking-tight">
+                    {section.heading}
+                  </h2>
+                  <p className="leading-relaxed">{section.body}</p>
+                </section>
+              ))}
+            </div>
+          ) : (
+            <section className="space-y-4">
+              <h2 className="font-playfair text-2xl font-semibold tracking-tight">
+                Overview
+              </h2>
+              <p className="leading-relaxed">
+                This guide walks through the questions we ask customers at the
+                showroom and the tradeoffs that tend to matter most. Full
+                long-form content is being edited by the team and will land in a
+                follow-up pass.
+              </p>
+            </section>
+          )}
 
           <section className="space-y-4">
             <h2 className="font-playfair text-2xl font-semibold tracking-tight">
