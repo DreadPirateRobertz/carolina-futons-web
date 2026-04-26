@@ -212,3 +212,41 @@
     }
   }
 }
+
+/* ── View Transition API — page slide-up + price morph ────────────────────────
+   Triggered by ViewTransitionLink when navigating from PLP/home to PDP.
+   ::view-transition-new(root)   — the incoming page slides up from below
+   ::view-transition-old(root)   — the departing page fades out
+   Elements with view-transition-name (e.g. price-{slug}) morph automatically.
+   Reduced-motion: the @media block collapses both animations to opacity-only. */
+
+@keyframes cf-vt-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cf-vt-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+::view-transition-old(root) {
+  animation: cf-vt-fade-out 180ms ease-out both;
+}
+
+::view-transition-new(root) {
+  animation: cf-vt-slide-in 220ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
+}

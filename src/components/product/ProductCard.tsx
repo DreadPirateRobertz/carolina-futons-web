@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { m, useReducedMotion } from "framer-motion";
+
+import { ViewTransitionLink } from "@/components/motion/ViewTransitionLink";
 
 import { formatPlpPrice } from "@/lib/product/plp-price";
 import { getPlpCardImages } from "@/lib/product/plp-card-images";
@@ -65,7 +66,7 @@ export function ProductCard({ product }: { product: WixProduct }) {
       whileFocus={hoverVariant}
       transition={{ duration: MOTION_DURATION_SEC, ease: "easeOut" }}
     >
-      <Link href={href} className="group block focus:outline-none">
+      <ViewTransitionLink href={href} className="group block focus:outline-none">
         <div className="relative aspect-square w-full overflow-hidden rounded-t-lg bg-zinc-100">
           {primary ? (
             <>
@@ -100,12 +101,26 @@ export function ProductCard({ product }: { product: WixProduct }) {
               <span className="line-through text-zinc-400">
                 {product.priceData?.formatted?.price}
               </span>
-              <span className="font-medium text-red-600">
+              <span
+                className="font-medium text-red-600"
+                style={
+                  product.slug
+                    ? { viewTransitionName: `price-${product.slug}` }
+                    : undefined
+                }
+              >
                 {product.priceData?.formatted?.discountedPrice}
               </span>
             </div>
           ) : (
-            <p className="mt-1 text-sm text-zinc-600">
+            <p
+              className="mt-1 text-sm text-zinc-600"
+              style={
+                product.slug
+                  ? { viewTransitionName: `price-${product.slug}` }
+                  : undefined
+              }
+            >
               {formatPlpPrice(product)}
             </p>
           )}
@@ -130,7 +145,7 @@ export function ProductCard({ product }: { product: WixProduct }) {
             className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-cf-cta transition-transform duration-200 ease-out group-hover:scale-x-100 group-focus-within:scale-x-100"
           />
         ) : null}
-      </Link>
+      </ViewTransitionLink>
     </m.div>
   );
 }

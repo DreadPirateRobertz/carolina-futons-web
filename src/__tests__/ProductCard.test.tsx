@@ -12,6 +12,12 @@ vi.mock("framer-motion", async () => {
   return { ...actual, useReducedMotion: vi.fn() };
 });
 
+// ViewTransitionLink calls useRouter — stub it so unit tests don't require
+// a full App Router mount.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 const { useReducedMotion } = await import("framer-motion");
 const mockedReducedMotion = vi.mocked(useReducedMotion);
 

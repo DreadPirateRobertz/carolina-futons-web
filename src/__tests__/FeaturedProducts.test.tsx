@@ -3,6 +3,12 @@ import { render, screen, within } from "@testing-library/react";
 
 import { FeaturedProducts } from "@/components/site/FeaturedProducts";
 
+// ViewTransitionLink calls useRouter — stub it so unit tests don't require
+// a full App Router mount.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 // matchMedia stub — ProductCard (framer-motion useReducedMotion) reads it.
 beforeEach(() => {
   Object.defineProperty(window, "matchMedia", {

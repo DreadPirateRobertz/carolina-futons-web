@@ -143,6 +143,7 @@ export function PdpInteractive({
           productOptions={productOptions}
           variants={variants}
           fallbackPrice={fallbackPrice}
+          productSlug={productSlug}
           onSelectionChange={(next) => setSelection(next)}
         />
         <div ref={primaryCtaRef} data-slot="pdp-primary-cta">

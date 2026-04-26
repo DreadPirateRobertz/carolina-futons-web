@@ -18,6 +18,7 @@ export type VariantPickerProps = {
   productOptions: ReadonlyArray<ProductOptionInput>;
   variants: ReadonlyArray<VariantInput>;
   fallbackPrice: string;
+  productSlug?: string;
   onSelectionChange?: (selection: ChoiceSelection, variant: VariantInput | null) => void;
 };
 
@@ -25,6 +26,7 @@ export function VariantPicker({
   productOptions,
   variants,
   fallbackPrice,
+  productSlug,
   onSelectionChange,
 }: VariantPickerProps) {
   const [selection, setSelection] = useState<ChoiceSelection>(() =>
@@ -56,7 +58,11 @@ export function VariantPicker({
   if (productOptions.length === 0) {
     return (
       <div data-slot="variant-picker" className="space-y-4">
-        <PriceDisplay price={currentPrice} inStock={currentInStock} />
+        <PriceDisplay
+          price={currentPrice}
+          inStock={currentInStock}
+          productSlug={productSlug}
+        />
       </div>
     );
   }
@@ -72,7 +78,11 @@ export function VariantPicker({
           onSelect={selectChoice}
         />
       ))}
-      <PriceDisplay price={currentPrice} inStock={currentInStock} />
+      <PriceDisplay
+        price={currentPrice}
+        inStock={currentInStock}
+        productSlug={productSlug}
+      />
     </div>
   );
 }
@@ -80,9 +90,11 @@ export function VariantPicker({
 function PriceDisplay({
   price,
   inStock,
+  productSlug,
 }: {
   price: string;
   inStock: boolean | null;
+  productSlug?: string;
 }) {
   return (
     <div className="flex items-center gap-3" data-slot="variant-picker-price">
@@ -90,6 +102,7 @@ function PriceDisplay({
         className="text-2xl font-medium text-cf-espresso"
         aria-live="polite"
         data-testid="variant-price"
+        style={productSlug ? { viewTransitionName: `price-${productSlug}` } : undefined}
       >
         {price}
       </p>

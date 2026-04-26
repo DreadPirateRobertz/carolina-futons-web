@@ -28,6 +28,7 @@ vi.mock("@/lib/shop/plp-observability", () => ({
 }));
 vi.mock("next/navigation", () => ({
   notFound: vi.fn(),
+  useRouter: () => ({ push: vi.fn() }),
 }));
 import { buildPageUrl } from "@/components/plp/PLPPagination";
 
