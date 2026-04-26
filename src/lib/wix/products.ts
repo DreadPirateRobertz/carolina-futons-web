@@ -150,7 +150,11 @@ export async function listCollections(limit = 25) {
 // case-insensitive. The Wix queryProducts() SDK only exposes startsWith on
 // `name`, which missed mid-word substrings and was case-sensitive. With ~88
 // products the full-catalog fetch is cheap and avoids a JS SDK pagination loop.
-const SEARCH_CATALOG_LIMIT = 200;
+//
+// cf-ni0z: Wix queryProducts() hard-caps at 100 items per page. limit(200)
+// throws a validation error caught by getAllProductsForSearch() → returns []
+// → every search query returned 0 products. 100 covers the full catalog.
+const SEARCH_CATALOG_LIMIT = 100;
 
 async function getAllProductsForSearch(): Promise<WixProduct[]> {
   try {
