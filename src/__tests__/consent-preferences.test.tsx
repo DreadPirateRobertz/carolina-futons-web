@@ -140,4 +140,24 @@ describe("ConsentPreferences — interactions", () => {
     });
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
+
+  it("shows error message when setConsentMap throws", async () => {
+    actionMock.setConsentMap.mockRejectedValueOnce(new Error("network error"));
+    await renderPrefs();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /save preferences/i }));
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent(/could not save/i);
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("each switch has aria-describedby pointing to its description", async () => {
+    const { container } = await renderPrefs();
+    const switches = screen.getAllByRole("switch");
+    for (const sw of switches) {
+      const descId = sw.getAttribute("aria-describedby");
+      expect(descId).toBeTruthy();
+      expect(container.querySelector(`#${descId}`)).not.toBeNull();
+    }
+  });
 });

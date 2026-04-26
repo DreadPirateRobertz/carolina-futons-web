@@ -90,10 +90,18 @@ export function parseConsentCookieAsMap(raw: string | undefined): ConsentGrantMa
   if (!raw) return consentMapFor("denied");
   // Legacy binary.
   if (isConsentChoice(raw)) return consentMapFor(raw);
-  // Granular JSON.
+  // Granular JSON. Project onto the four known keys — never return extra
+  // cookie fields that could reach JSON.stringify in ConsentMode's inline script.
   try {
     const parsed = JSON.parse(raw) as unknown;
-    if (isConsentGrantMap(parsed)) return parsed;
+    if (isConsentGrantMap(parsed)) {
+      return {
+        analytics_storage: parsed.analytics_storage,
+        ad_storage: parsed.ad_storage,
+        ad_user_data: parsed.ad_user_data,
+        ad_personalization: parsed.ad_personalization,
+      };
+    }
   } catch {
     // fall through
   }

@@ -10,20 +10,24 @@ import {
 // dataLayer before those libraries read from it.
 //
 // cf-yt6r: parseConsentCookieAsMap handles both the legacy binary string
-// ("granted"/"denied") and the new granular JSON map, so per-signal
-// defaults are emitted correctly when the user has made a granular choice.
+// ("granted"/"denied") and the new granular JSON map. It projects onto the
+// four known keys so extra cookie fields never reach this script.
 //
-// XSS posture: interpolation is the JSON-stringified consent map, whose
-// values are constrained to "granted"|"denied". No untrusted data flows in.
+// XSS posture: map values are constrained to "granted"|"denied" by
+// parseConsentCookieAsMap's projection. Forward slashes in JSON.stringify
+// output are additionally escaped (\/) to guard against </script> injection
+// if a future code path ever widens the value surface.
 
 export async function ConsentMode() {
   const jar = await cookies();
   const map = parseConsentCookieAsMap(jar.get(CONSENT_COOKIE_NAME)?.value);
+  // Escape forward slashes so a </script> sequence can't terminate the block.
+  const safeJson = JSON.stringify(map).replace(/\//g, "\\/");
 
   const snippet =
     "window.dataLayer = window.dataLayer || [];\n" +
     "window.gtag = window.gtag || function(){dataLayer.push(arguments);};\n" +
-    `gtag('consent', 'default', ${JSON.stringify(map)});`;
+    `gtag('consent', 'default', ${safeJson});`;
 
   return (
     <script

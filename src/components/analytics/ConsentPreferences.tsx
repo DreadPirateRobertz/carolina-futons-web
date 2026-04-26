@@ -35,10 +35,12 @@ type Props = {
 export function ConsentPreferences({ initialMap }: Props) {
   const [map, setMap] = useState<ConsentGrantMap>(initialMap);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const [pending, startTransition] = useTransition();
 
   function toggle(key: keyof ConsentGrantMap) {
     setSaved(false);
+    setSaveError(false);
     setMap((prev) => ({
       ...prev,
       [key]: prev[key] === "granted" ? "denied" : "granted",
@@ -48,19 +50,25 @@ export function ConsentPreferences({ initialMap }: Props) {
   function save() {
     if (pending) return;
     startTransition(async () => {
-      const result = await setConsentMap(map);
-      if (!result.ok) return;
-      setSaved(true);
-      // Update live pixels on the current page without a reload.
-      const w = window as unknown as {
-        gtag?: (cmd: "consent", action: "update", map: Record<string, string>) => void;
-      };
-      w.gtag?.("consent", "update", map);
+      try {
+        const result = await setConsentMap(map);
+        if (!result.ok) { setSaveError(true); return; }
+        setSaved(true);
+        setSaveError(false);
+        // Update live pixels on the current page without a reload.
+        const w = window as unknown as {
+          gtag?: (cmd: "consent", action: "update", map: Record<string, string>) => void;
+        };
+        w.gtag?.("consent", "update", map);
+      } catch {
+        setSaveError(true);
+      }
     });
   }
 
   function grantAll() {
     setSaved(false);
+    setSaveError(false);
     setMap({
       analytics_storage: "granted",
       ad_storage: "granted",
@@ -71,6 +79,7 @@ export function ConsentPreferences({ initialMap }: Props) {
 
   function denyAll() {
     setSaved(false);
+    setSaveError(false);
     setMap({
       analytics_storage: "denied",
       ad_storage: "denied",
@@ -98,13 +107,13 @@ export function ConsentPreferences({ initialMap }: Props) {
           const { title, description } = SIGNAL_LABELS[key];
           const granted = map[key] === "granted";
           const switchId = `consent-${key}`;
+          const descId = `${switchId}-desc`;
           return (
             <li key={key} className="flex items-start gap-4 py-4">
               <div className="flex-1">
-                <label htmlFor={switchId} className="font-medium text-cf-ink cursor-pointer">
-                  {title}
-                </label>
-                <p className="mt-0.5 text-sm text-cf-muted">{description}</p>
+                {/* Plain text — htmlFor doesn't work for <button>, aria-label on the switch is the a11y hook */}
+                <p className="font-medium text-cf-ink">{title}</p>
+                <p id={descId} className="mt-0.5 text-sm text-cf-muted">{description}</p>
               </div>
               {/* Toggle switch */}
               <button
@@ -112,6 +121,7 @@ export function ConsentPreferences({ initialMap }: Props) {
                 role="switch"
                 aria-checked={granted}
                 aria-label={`${title}: ${granted ? "on" : "off"}`}
+                aria-describedby={descId}
                 type="button"
                 onClick={() => toggle(key)}
                 className={[
@@ -164,6 +174,15 @@ export function ConsentPreferences({ initialMap }: Props) {
             className="text-sm font-medium text-green-700"
           >
             Preferences saved.
+          </p>
+        ) : null}
+        {saveError ? (
+          <p
+            role="alert"
+            aria-live="assertive"
+            className="text-sm font-medium text-red-700"
+          >
+            Could not save preferences. Please try again.
           </p>
         ) : null}
       </div>

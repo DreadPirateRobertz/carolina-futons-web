@@ -135,6 +135,25 @@ describe("parseConsentCookieAsMap", () => {
   it("falls back to all-denied for JSON with wrong shape", () => {
     expect(parseConsentCookieAsMap(JSON.stringify({ analytics_storage: "yes" }))).toEqual(ALL_DENIED);
   });
+
+  it("strips extra keys from a tampered cookie so they never reach the inline script", () => {
+    const tampered = JSON.stringify({
+      analytics_storage: "granted",
+      ad_storage: "denied",
+      ad_user_data: "denied",
+      ad_personalization: "denied",
+      // Attacker-injected extra key.
+      x: '</script><script>alert(1)</script>',
+    });
+    const result = parseConsentCookieAsMap(tampered);
+    expect(result).toEqual({
+      analytics_storage: "granted",
+      ad_storage: "denied",
+      ad_user_data: "denied",
+      ad_personalization: "denied",
+    });
+    expect("x" in result).toBe(false);
+  });
 });
 
 describe("consentMapFor", () => {
