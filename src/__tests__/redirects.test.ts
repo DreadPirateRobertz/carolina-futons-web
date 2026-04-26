@@ -56,6 +56,8 @@ describe("next.config redirects (cf-3qt.7.1) — Wix Studio → cfw", () => {
       ["/booking-form", "/contact"],
       // White-glove.
       ["/white-glove-delivery", "/shipping"],
+      // Slug reconciliation.
+      ["/room-planner", "/design-a-room"],
     ] as const;
 
     expected.forEach(([source, destination]) => {

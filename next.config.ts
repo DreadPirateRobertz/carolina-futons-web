@@ -114,6 +114,9 @@ const nextConfig: NextConfig = {
         destination: "/shipping",
         permanent: true,
       },
+
+      // Slug reconciliation — hookup guide used /room-planner; cfw ships /design-a-room.
+      { source: "/room-planner", destination: "/design-a-room", permanent: true },
     ];
   },
 };
