@@ -11,11 +11,14 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+const metaMock = vi.hoisted(() => ({ render: vi.fn(() => null) }));
+const ga4Mock = vi.hoisted(() => ({ render: vi.fn(() => null) }));
+
 vi.mock("@/components/analytics/MetaPurchaseTracker", () => ({
-  MetaPurchaseTracker: () => null,
+  MetaPurchaseTracker: metaMock.render,
 }));
 vi.mock("@/components/analytics/Ga4PurchaseTracker", () => ({
-  Ga4PurchaseTracker: () => null,
+  Ga4PurchaseTracker: ga4Mock.render,
 }));
 vi.mock("@/components/site/NewsletterSignup", () => ({
   NewsletterSignup: () => <div data-testid="newsletter-signup" />,
@@ -68,7 +71,10 @@ const MOCK_ORDER = {
 
 beforeEach(() => {
   orderMocks.getOrder.mockReset();
-  // mockClear preserves the throw implementation; mockReset would erase it
+  orderMocks.getOrder.mockResolvedValue(MOCK_ORDER);
+  metaMock.render.mockReset().mockReturnValue(null);
+  ga4Mock.render.mockReset().mockReturnValue(null);
+  // mockClear (not mockReset) so the NEXT_REDIRECT throw implementation survives between tests
   vi.mocked(redirect).mockClear();
 });
 
@@ -92,9 +98,48 @@ describe("OrderConfirmationPage — redirects", () => {
   });
 });
 
-describe("OrderConfirmationPage — header", () => {
-  beforeEach(() => orderMocks.getOrder.mockResolvedValue(MOCK_ORDER));
+describe("OrderConfirmationPage — analytics gate", () => {
+  it("fires both trackers for a valid order", async () => {
+    await renderPage("ord-1");
+    expect(metaMock.render).toHaveBeenCalledOnce();
+    expect(ga4Mock.render).toHaveBeenCalledOnce();
+  });
 
+  it("suppresses trackers when currency is missing", async () => {
+    orderMocks.getOrder.mockResolvedValueOnce({ ...MOCK_ORDER, currency: "" });
+    await renderPage("ord-1");
+    expect(metaMock.render).not.toHaveBeenCalled();
+    expect(ga4Mock.render).not.toHaveBeenCalled();
+  });
+
+  it("suppresses trackers when total amount is zero", async () => {
+    orderMocks.getOrder.mockResolvedValueOnce({
+      ...MOCK_ORDER,
+      priceSummary: {
+        ...MOCK_ORDER.priceSummary,
+        total: { formattedAmount: "$0.00", amount: "0" },
+      },
+    });
+    await renderPage("ord-1");
+    expect(metaMock.render).not.toHaveBeenCalled();
+    expect(ga4Mock.render).not.toHaveBeenCalled();
+  });
+
+  it("suppresses trackers when total amount is non-numeric", async () => {
+    orderMocks.getOrder.mockResolvedValueOnce({
+      ...MOCK_ORDER,
+      priceSummary: {
+        ...MOCK_ORDER.priceSummary,
+        total: { formattedAmount: "", amount: "" },
+      },
+    });
+    await renderPage("ord-1");
+    expect(metaMock.render).not.toHaveBeenCalled();
+    expect(ga4Mock.render).not.toHaveBeenCalled();
+  });
+});
+
+describe("OrderConfirmationPage — header", () => {
   it("shows order confirmed badge", async () => {
     await renderPage("ord-1");
     expect(screen.getByText(/order confirmed/i)).toBeInTheDocument();
@@ -107,8 +152,6 @@ describe("OrderConfirmationPage — header", () => {
 });
 
 describe("OrderConfirmationPage — brenda message", () => {
-  beforeEach(() => orderMocks.getOrder.mockResolvedValue(MOCK_ORDER));
-
   it("renders brenda message section", async () => {
     await renderPage("ord-1");
     expect(screen.getByTestId("brenda-message")).toBeInTheDocument();
@@ -127,8 +170,6 @@ describe("OrderConfirmationPage — brenda message", () => {
 });
 
 describe("OrderConfirmationPage — delivery timeline", () => {
-  beforeEach(() => orderMocks.getOrder.mockResolvedValue(MOCK_ORDER));
-
   it("renders delivery timeline section", async () => {
     await renderPage("ord-1");
     expect(screen.getByTestId("delivery-timeline")).toBeInTheDocument();
@@ -144,8 +185,6 @@ describe("OrderConfirmationPage — delivery timeline", () => {
 });
 
 describe("OrderConfirmationPage — line items", () => {
-  beforeEach(() => orderMocks.getOrder.mockResolvedValue(MOCK_ORDER));
-
   it("shows line item name", async () => {
     await renderPage("ord-1");
     expect(screen.getByText("Mesa 1000 Futon")).toBeInTheDocument();
@@ -159,11 +198,15 @@ describe("OrderConfirmationPage — line items", () => {
 });
 
 describe("OrderConfirmationPage — totals", () => {
-  beforeEach(() => orderMocks.getOrder.mockResolvedValue(MOCK_ORDER));
-
   it("shows subtotal row", async () => {
     await renderPage("ord-1");
     expect(screen.getByText("Subtotal")).toBeInTheDocument();
+  });
+
+  it("shows tax row", async () => {
+    await renderPage("ord-1");
+    expect(screen.getByText("Tax")).toBeInTheDocument();
+    expect(screen.getByText("$47.92")).toBeInTheDocument();
   });
 
   it("shows total row", async () => {
@@ -171,11 +214,31 @@ describe("OrderConfirmationPage — totals", () => {
     expect(screen.getByText("Total")).toBeInTheDocument();
     expect(screen.getByText("$646.92")).toBeInTheDocument();
   });
+
+  it("hides tax row when tax is empty", async () => {
+    orderMocks.getOrder.mockResolvedValueOnce({
+      ...MOCK_ORDER,
+      priceSummary: { ...MOCK_ORDER.priceSummary, tax: { formattedAmount: "", amount: "0" } },
+    });
+    await renderPage("ord-1");
+    expect(screen.queryByText("Tax")).not.toBeInTheDocument();
+  });
+});
+
+describe("OrderConfirmationPage — address fallback", () => {
+  it("shows dash when shipping address is missing", async () => {
+    orderMocks.getOrder.mockResolvedValueOnce({
+      ...MOCK_ORDER,
+      shippingInfo: undefined,
+    });
+    await renderPage("ord-1");
+    // AddressBlock renders — when no address
+    const dashes = screen.getAllByText("—");
+    expect(dashes.length).toBeGreaterThanOrEqual(1);
+  });
 });
 
 describe("OrderConfirmationPage — social share", () => {
-  beforeEach(() => orderMocks.getOrder.mockResolvedValue(MOCK_ORDER));
-
   it("renders social share section", async () => {
     await renderPage("ord-1");
     expect(screen.getByTestId("social-share")).toBeInTheDocument();
@@ -189,17 +252,17 @@ describe("OrderConfirmationPage — social share", () => {
     expect(screen.queryByRole("link", { name: "TikTok" })).not.toBeInTheDocument();
   });
 
-  it("social links open in new tab with noopener", async () => {
+  it("social links open in new tab with noopener on all platforms", async () => {
     await renderPage("ord-1");
-    const fbLink = screen.getByRole("link", { name: "Facebook" });
-    expect(fbLink).toHaveAttribute("target", "_blank");
-    expect(fbLink).toHaveAttribute("rel", "noopener noreferrer");
+    for (const name of ["Facebook", "Pinterest", "Instagram"]) {
+      const link = screen.getByRole("link", { name });
+      expect(link).toHaveAttribute("target", "_blank");
+      expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    }
   });
 });
 
 describe("OrderConfirmationPage — newsletter", () => {
-  beforeEach(() => orderMocks.getOrder.mockResolvedValue(MOCK_ORDER));
-
   it("renders newsletter section", async () => {
     await renderPage("ord-1");
     expect(screen.getByTestId("newsletter-section")).toBeInTheDocument();
@@ -217,11 +280,7 @@ describe("OrderConfirmationPage — no cf-* color drift", () => {
     const { fileURLToPath } = await import("url");
     const { dirname, join } = await import("path");
     const testDir = dirname(fileURLToPath(import.meta.url));
-    const content = readFileSync(
-      join(testDir, "../app/order-confirmation/page.tsx"),
-      "utf8",
-    );
-    const zincMatches = content.match(/\bzinc-\d+\b/g);
-    expect(zincMatches).toBeNull();
+    const content = readFileSync(join(testDir, "../app/order-confirmation/page.tsx"), "utf8");
+    expect(content).not.toMatch(/\bzinc-\d+\b/);
   });
 });
