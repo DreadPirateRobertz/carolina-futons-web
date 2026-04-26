@@ -5,6 +5,7 @@ import { DEFAULT_OG_IMAGE } from "@/lib/og";
 import { Breadcrumbs } from "@/components/site/Breadcrumbs";
 import { PdpInteractive } from "@/components/product/PdpInteractive";
 import type { GalleryImage } from "@/components/product/PdpGallery";
+import { PdpComfortBand } from "@/components/product/PdpComfortBand";
 import { PdpCrossSell } from "@/components/product/PdpCrossSell";
 import { PdpRecentlyViewed } from "@/components/product/PdpRecentlyViewed";
 import { PdpReviews, pickPdpReviews } from "@/components/product/PdpReviews";
@@ -167,6 +168,8 @@ export default async function PdpPage(props: {
           </p>
         </section>
       ) : null}
+
+      <PdpComfortBand />
 
       <PdpReviews productSlug={slug} productName={product.name ?? ""} />
 

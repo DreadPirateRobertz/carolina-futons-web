@@ -1,8 +1,11 @@
 import Link from "next/link";
 
+import { NotFoundIllustration } from "@/components/illustrations/NotFoundIllustration";
+
 export default function NotFound() {
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-24 text-center">
+      <NotFoundIllustration className="mx-auto mb-6" />
       <p className="text-xs font-medium uppercase tracking-[0.18em] text-cf-cta">
         404
       </p>
