@@ -56,6 +56,40 @@ vi.mock("framer-motion", () => ({
       });
       return <div data-testid="hero-reveal">{children}</div>;
     },
+    span: ({
+      children,
+      initial,
+      whileInView,
+      viewport,
+      transition,
+      ...rest
+    }: CapturedDivProps & { children?: ReactNode }) => {
+      motionMocks.divCalls.push({
+        initial,
+        whileInView,
+        viewport,
+        transition,
+        "data-reduced-motion": (rest as Record<string, string>)["data-reduced-motion"],
+      });
+      return <span data-testid="hero-reveal">{children}</span>;
+    },
+    li: ({
+      children,
+      initial,
+      whileInView,
+      viewport,
+      transition,
+      ...rest
+    }: CapturedDivProps & { children?: ReactNode }) => {
+      motionMocks.divCalls.push({
+        initial,
+        whileInView,
+        viewport,
+        transition,
+        "data-reduced-motion": (rest as Record<string, string>)["data-reduced-motion"],
+      });
+      return <li data-testid="hero-reveal">{children}</li>;
+    },
   },
 }));
 
@@ -89,6 +123,11 @@ describe("HeroReveal — motion path (prefers-reduced-motion: no-preference)", (
   it("uses viewport once: true so the reveal does not replay on scroll-back", () => {
     render(<HeroReveal>headline</HeroReveal>);
     expect(motionMocks.divCalls[0].viewport).toMatchObject({ once: true });
+  });
+
+  it("passes once=false to viewport when once prop is false (scroll-out support)", () => {
+    render(<HeroReveal once={false}>headline</HeroReveal>);
+    expect(motionMocks.divCalls[0].viewport).toMatchObject({ once: false });
   });
 });
 

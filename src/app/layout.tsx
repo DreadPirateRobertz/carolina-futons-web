@@ -34,7 +34,7 @@ const playfair = Playfair_Display({
   subsets: ["latin"],
   display: "swap",
   // Load as variable font so framer-motion can animate fontVariationSettings
-  // (wght axis 400-900) for kinetic typography effects in HeroWordStagger.
+  // (wght axis 300-900) for kinetic typography effects in HeroWordStagger.
   axes: ["wght"],
 });
 

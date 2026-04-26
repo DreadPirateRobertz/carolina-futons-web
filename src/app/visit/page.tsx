@@ -115,10 +115,10 @@ export default function VisitPage() {
         <p className="mt-2 text-cf-charcoal/80">
           Browse online first, then come in and try everything.
         </p>
-        <MagneticButton>
+        <MagneticButton className="mt-6 text-center">
           <Link
             href="/shop"
-            className="mt-6 inline-flex h-12 items-center justify-center rounded-md bg-cf-cta px-8 text-sm font-medium text-white shadow-sm transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="inline-flex h-12 items-center justify-center rounded-md bg-cf-cta px-8 text-sm font-medium text-white shadow-sm transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             Browse all products
           </Link>

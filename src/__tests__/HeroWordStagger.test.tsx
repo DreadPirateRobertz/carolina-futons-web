@@ -28,11 +28,10 @@ vi.mock("@/components/motion/HeroReveal", () => ({
   }: {
     children: ReactNode;
     delay?: number;
-    as?: "div" | "span" | "li";
+    // HeroWordStagger must always pass as="span" — div-in-h1 breaks word flow.
+    as?: "span";
     once?: boolean;
   }) => {
-    // Assert the caller always requests an inline reveal — div-in-h1 would
-    // break inline word flow and invalidate the h1's phrasing content.
     if (as !== "span") {
       throw new Error(`HeroWordStagger must request as='span', got ${String(as)}`);
     }
@@ -197,6 +196,14 @@ describe("HeroWordStagger — oscillateWeight prop", () => {
     render(<HeroWordStagger text="hello" oscillateWeight />);
     const span = screen.getByTestId("weight-span");
     expect(span.className).toContain("inline-block");
+  });
+
+  it("combines scrollOut+oscillateWeight: once=false forwarded AND weight-spans rendered", () => {
+    render(<HeroWordStagger text="one two" oscillateWeight scrollOut />);
+    expect(screen.getAllByTestId("weight-span")).toHaveLength(2);
+    for (const call of mocks.calls) {
+      expect(call.once).toBe(false);
+    }
   });
 });
 

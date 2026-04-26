@@ -13,6 +13,18 @@ import { HeroReveal } from "@/components/motion/HeroReveal";
 // non-essential motion.
 export const WORD_STAGGER_STEP = 0.06;
 
+// wght keyframes for the oscillateWeight burst: thin → bold → medium-bold.
+// Stagger offsets keep per-word math in one place.
+const WGHT_KEYFRAMES: [string, string, string] = [
+  '"wght" 300',
+  '"wght" 900',
+  '"wght" 600',
+];
+const WGHT_DURATION = 1.2;
+// Weight burst starts 0.3s after the word's opacity/y reveal, so the reader
+// sees the word appear before the weight snaps — emphasis, not jitter.
+const WGHT_LEAD = 0.3;
+
 // Splits `text` into whitespace-delimited words and wraps each in an
 // inline HeroReveal with a cascading delay. Intended for phrasing content
 // (h1, h2) where a block-level reveal would break inline word flow.
@@ -22,10 +34,13 @@ export const WORD_STAGGER_STEP = 0.06;
 // useful for sticky-hero layouts where the headline re-enters on scroll-up.
 //
 // `oscillateWeight` (default false) adds a one-shot wght axis burst during
-// entrance: each word springs 300→900→600 over 1.2s, staggered by the same
-// stepSeconds offset. Requires the Playfair Display variable font to be loaded
-// with axes: ["wght"] in layout.tsx (already done in Phase D6). Skipped for
-// users with prefers-reduced-motion.
+// entrance: each word springs 300→900→600 over 1.2s. The weight transition
+// starts 0.3s after its word's opacity/y reveal delay, so the reader sees
+// the word appear before the weight snaps — emphasis rather than jitter.
+// Staggered using the same stepSeconds offset as the reveal delay.
+// Requires Playfair Display loaded with axes: ["wght"] in layout.tsx (Phase D6).
+// Skipped when prefers-reduced-motion is set. Defaults to no motion when the
+// hook returns null (safe side during the SSR→hydration gap, per WCAG 2.3.3).
 export function HeroWordStagger({
   text,
   stepSeconds = WORD_STAGGER_STEP,
@@ -41,9 +56,12 @@ export function HeroWordStagger({
   // No-ops when the font lacks a wght axis or prefers-reduced-motion is set.
   oscillateWeight?: boolean;
 }) {
-  const reduce = useReducedMotion() ?? false;
+  const reduce = useReducedMotion() ?? true;
   const words = text.trim().split(/\s+/).filter((w) => w.length > 0);
   if (words.length === 0) return null;
+
+  const shouldOscillate = oscillateWeight && !reduce;
+
   return (
     <>
       {words.map((word, i) => {
@@ -51,22 +69,17 @@ export function HeroWordStagger({
         return (
           <Fragment key={`${i}-${word}`}>
             <HeroReveal as="span" delay={delay} once={!scrollOut}>
-              {oscillateWeight && !reduce ? (
-                // Inner span drives the wght axis burst. `animate` fires once
-                // on mount; `delay + 0.3` lets the opacity/y reveal lead so
-                // the weight change reads as emphasis rather than jitter.
+              {shouldOscillate ? (
+                // `animate` (not whileInView) is correct here: this span mounts
+                // inside HeroReveal's whileInView gate, so it is already in the
+                // viewport when it enters the DOM. A second whileInView would
+                // require its own intersection, breaking the timed relationship.
                 <m.span
                   className="inline-block"
-                  animate={{
-                    fontVariationSettings: [
-                      '"wght" 300',
-                      '"wght" 900',
-                      '"wght" 600',
-                    ],
-                  }}
+                  animate={{ fontVariationSettings: WGHT_KEYFRAMES }}
                   transition={{
-                    duration: 1.2,
-                    delay: delay + 0.3,
+                    duration: WGHT_DURATION,
+                    delay: delay + WGHT_LEAD,
                     ease: "easeOut",
                   }}
                 >

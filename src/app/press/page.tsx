@@ -58,7 +58,7 @@ export default function PressPage() {
             showroom since {BUSINESS.foundedYear} and back our frames with a{" "}
             {BUSINESS.warrantyYears}-year warranty.
           </p>
-          <p className="mt-6">
+          <div className="mt-6">
             <MagneticButton>
               <a
                 href="#press-inquiries"
@@ -67,7 +67,7 @@ export default function PressPage() {
                 Press inquiries
               </a>
             </MagneticButton>
-          </p>
+          </div>
           <p className="mt-3 text-sm text-cf-muted">
             Last updated {LAST_UPDATED}
           </p>

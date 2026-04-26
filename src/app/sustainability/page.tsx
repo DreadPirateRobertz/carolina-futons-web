@@ -164,7 +164,7 @@ export default function SustainabilityPage() {
           store credit toward a new piece — we’ll handle the pickup and
           responsible recycling.
         </p>
-        <p className="mt-6">
+        <div className="mt-6">
           <MagneticButton>
             <Link
               href="/contact"
@@ -173,7 +173,7 @@ export default function SustainabilityPage() {
               Ask about trade-in
             </Link>
           </MagneticButton>
-        </p>
+        </div>
       </section>
     </main>
   );
