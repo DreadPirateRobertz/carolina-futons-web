@@ -60,6 +60,7 @@ export function ProductSpinViewer({ spinImages, productName = "product" }: Props
   const autoSpinTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const totalFrames = spinImages.length;
+  frameRef.current = frame;
 
   // Sync frameRef outside of render — keeps non-React handlers stale-closure free
   useLayoutEffect(() => {
@@ -70,6 +71,7 @@ export function ProductSpinViewer({ spinImages, productName = "product" }: Props
   useEffect(() => {
     try {
       const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      setPrefersReducedMotion(mq.matches);
       const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
       mq.addEventListener("change", handler);
       return () => mq.removeEventListener("change", handler);
