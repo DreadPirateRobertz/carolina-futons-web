@@ -72,9 +72,6 @@ describe("AboutPage — smoke", () => {
     expect(screen.getAllByText(new RegExp(BUSINESS.city, "i")).length).toBeGreaterThan(0);
   });
 
-  // cf-93rb A.2: hero band + milestone-strip illustrations are wired into
-  // /about. The skyline is decorative; the timeline carries the
-  // 1991→present milestone semantics and ships a meaningful alt.
   it("renders the decorative MountainSkyline header band", async () => {
     const { container } = await renderAbout();
     expect(
@@ -82,13 +79,17 @@ describe("AboutPage — smoke", () => {
     ).not.toBeNull();
   });
 
-  it("renders the BlueRidgeTimeline milestone strip with its company-history alt", async () => {
+  it("renders the ScrollStory chapter timeline replacing the static milestone strip", async () => {
+    const { container } = await renderAbout();
+    expect(container.querySelector("[data-slot='scroll-story']")).not.toBeNull();
+  });
+
+  it("ScrollStory renders all four chapters (Founding, frames, showroom, today)", async () => {
     await renderAbout();
-    expect(
-      screen.getByAltText(
-        /carolina futons company milestones from 1991 to present/i,
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/An idea from the mountains/i)).toBeInTheDocument();
+    expect(screen.getByText(/All hardwood, all American/i)).toBeInTheDocument();
+    expect(screen.getByText(/Come and sit on them/i)).toBeInTheDocument();
+    expect(screen.getByText(/Still here, still the same/i)).toBeInTheDocument();
   });
 
   // cf-delight: pin the ShopTheRoom section was wired in.
