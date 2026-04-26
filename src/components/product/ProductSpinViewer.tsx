@@ -1,0 +1,211 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+
+const AUTO_SPIN_ROTATIONS = 3;
+const AUTO_SPIN_INTERVAL_MS = 60;
+const PX_PER_FRAME = 8;
+
+// ── Pure helpers — frame math and spin sequencing ─────────────────────────────
+
+export function computeFrameIndex(
+  currentIndex: number,
+  deltaPx: number,
+  totalFrames: number,
+  pxPerFrame = PX_PER_FRAME
+): number {
+  if (totalFrames <= 0) return 0;
+  const frameDelta = Math.round(deltaPx / pxPerFrame);
+  return ((currentIndex + frameDelta) % totalFrames + totalFrames) % totalFrames;
+}
+
+export function buildAutoSpinSequence(totalFrames: number, rotations: number): number[] {
+  if (totalFrames <= 0 || rotations <= 0) return [];
+  const frames: number[] = [];
+  for (let r = 0; r < rotations; r++) {
+    for (let i = 0; i < totalFrames; i++) frames.push(i);
+  }
+  return frames;
+}
+
+export function shouldShowSpinViewer(spinImages: string[] | undefined | null): boolean {
+  return Array.isArray(spinImages) && spinImages.length >= 2;
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+type Props = {
+  spinImages: string[];
+  productName?: string;
+};
+
+export function ProductSpinViewer({ spinImages, productName = "product" }: Props) {
+  const [frame, setFrame] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  // Lazy init reads matchMedia synchronously so reduced-motion users never see even one auto-spin tick
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    } catch {
+      return false;
+    }
+  });
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dragStartX = useRef<number | null>(null);
+  const frameAtDragStart = useRef(0);
+  const autoSpinTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const totalFrames = spinImages.length;
+
+  // SSR-safe reduced-motion detection — also fires when OS preference changes mid-session
+  useEffect(() => {
+    try {
+      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+      mq.addEventListener("change", handler);
+      return () => mq.removeEventListener("change", handler);
+    } catch {
+      // matchMedia unavailable — SSR default (false) stands
+    }
+  }, []);
+
+  // Preload all frames so swaps are instant
+  useEffect(() => {
+    for (const src of spinImages) {
+      const img = new window.Image();
+      img.src = src;
+    }
+  }, [spinImages]);
+
+  // Auto-spin 3 rotations on mount; user interaction cancels it via autoSpinTimerRef
+  useEffect(() => {
+    if (prefersReducedMotion) return;
+    const sequence = buildAutoSpinSequence(totalFrames, AUTO_SPIN_ROTATIONS);
+    // Start at step 1: skip sequence[0] since we're already rendering frame 0
+    let step = 1;
+    const timer = setInterval(() => {
+      if (step >= sequence.length) {
+        clearInterval(timer);
+        autoSpinTimerRef.current = null;
+        return;
+      }
+      setFrame(sequence[step++]);
+    }, AUTO_SPIN_INTERVAL_MS);
+    autoSpinTimerRef.current = timer;
+    return () => {
+      clearInterval(timer);
+      autoSpinTimerRef.current = null;
+    };
+  }, [totalFrames, prefersReducedMotion]);
+
+  // Non-passive touchmove so we can call preventDefault and block page scroll
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onTouchMove = (e: TouchEvent) => {
+      if (dragStartX.current === null) return;
+      const touch = e.touches[0];
+      if (!touch) return;
+      e.preventDefault();
+      const delta = touch.clientX - dragStartX.current;
+      setFrame(computeFrameIndex(frameAtDragStart.current, delta, totalFrames));
+    };
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => el.removeEventListener("touchmove", onTouchMove);
+  }, [totalFrames]);
+
+  function cancelAutoSpin() {
+    if (autoSpinTimerRef.current !== null) {
+      clearInterval(autoSpinTimerRef.current);
+      autoSpinTimerRef.current = null;
+    }
+  }
+
+  function handleMouseDown(e: React.MouseEvent) {
+    cancelAutoSpin();
+    dragStartX.current = e.clientX;
+    frameAtDragStart.current = frame;
+    setIsDragging(true);
+  }
+
+  function handleMouseMove(e: React.MouseEvent) {
+    if (dragStartX.current === null) return;
+    const delta = e.clientX - dragStartX.current;
+    setFrame(computeFrameIndex(frameAtDragStart.current, delta, totalFrames));
+  }
+
+  function stopDrag() {
+    dragStartX.current = null;
+    setIsDragging(false);
+  }
+
+  function handleTouchStart(e: React.TouchEvent) {
+    const touch = e.touches[0];
+    if (!touch) return;
+    cancelAutoSpin();
+    dragStartX.current = touch.clientX;
+    frameAtDragStart.current = frame;
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "ArrowRight") {
+      cancelAutoSpin();
+      setFrame((f) => computeFrameIndex(f, PX_PER_FRAME, totalFrames));
+    } else if (e.key === "ArrowLeft") {
+      cancelAutoSpin();
+      setFrame((f) => computeFrameIndex(f, -PX_PER_FRAME, totalFrames));
+    }
+  }
+
+  // Guard against caller passing an empty array (shouldShowSpinViewer is the caller contract)
+  const currentSrc = spinImages[frame] ?? spinImages[0];
+
+  return (
+    <div
+      ref={containerRef}
+      role="slider"
+      aria-valuemin={0}
+      aria-valuemax={Math.max(0, totalFrames - 1)}
+      aria-valuenow={frame}
+      aria-valuetext={`${productName} — frame ${frame + 1} of ${totalFrames}`}
+      aria-label={`360° interactive view of ${productName}. Drag or use arrow keys to rotate.`}
+      tabIndex={0}
+      data-testid="product-spin-viewer"
+      className="relative select-none overflow-hidden rounded-lg bg-cf-sand/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      style={{ cursor: isDragging ? "grabbing" : "grab" }}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={stopDrag}
+      onMouseLeave={stopDrag}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={stopDrag}
+      onKeyDown={handleKeyDown}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={currentSrc}
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none w-full object-contain"
+        draggable={false}
+        data-testid="spin-frame-img"
+      />
+      <span
+        aria-hidden="true"
+        className="absolute left-3 top-3 rounded-full bg-cf-navy/80 px-2 py-0.5 text-xs font-semibold text-cf-cream"
+        data-testid="spin-badge"
+      >
+        360°
+      </span>
+      <span
+        aria-hidden="true"
+        className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-cf-navy/60 px-3 py-1 text-xs text-cf-cream"
+        data-testid="spin-hint"
+      >
+        Drag to rotate
+      </span>
+    </div>
+  );
+}
