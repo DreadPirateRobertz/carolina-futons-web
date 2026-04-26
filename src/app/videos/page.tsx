@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { HeroReveal } from "@/components/motion/HeroReveal";
 import { VideoGallery } from "@/components/videos/VideoGallery";
-import { getVideoCatalog } from "@/lib/videos/catalog";
+import { listVideos } from "@/lib/cms/videos";
 
 export const metadata: Metadata = {
   title: "Product Videos — Carolina Futons",
@@ -15,8 +15,8 @@ export const metadata: Metadata = {
   },
 };
 
-export default function VideosPage() {
-  const videos = getVideoCatalog();
+export default async function VideosPage() {
+  const { items: videos } = await listVideos();
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
@@ -25,7 +25,7 @@ export default function VideosPage() {
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
             Watch
           </p>
-          <h1 className="font-playfair text-4xl font-semibold tracking-tight text-cf-espresso sm:text-5xl">
+          <h1 className="font-heading text-4xl font-semibold tracking-tight text-cf-navy sm:text-5xl">
             Product Videos
           </h1>
           <p className="max-w-2xl text-lg leading-relaxed text-cf-charcoal/80">
