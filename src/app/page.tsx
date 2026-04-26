@@ -9,7 +9,7 @@ import { StatsStrip } from "@/components/site/StatsStrip";
 import { TestimonialsStrip } from "@/components/site/TestimonialsStrip";
 import { TrustBar } from "@/components/site/TrustBar";
 import { CategoryCardImage } from "@/components/site/CategoryCardImage";
-import { HeroParallax } from "@/components/site/HeroParallax";
+import { CursorDepthHero } from "@/components/site/CursorDepthHero";
 import { EmailCapturePopup } from "@/components/site/EmailCapturePopup";
 import {
   ShopTheRoom,
@@ -47,8 +47,8 @@ export default async function HomePage() {
   return (
     <>
       <EmailCapturePopup />
-      <section className="bg-cf-cream">
-        <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 md:items-center md:py-24 lg:px-8">
+      <CursorDepthHero
+        textSlot={
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-cf-cta">
               Family owned since 1991
@@ -77,11 +77,9 @@ export default async function HomePage() {
               </Link>
             </div>
           </div>
-          <HeroParallax>
-            <HeroCarousel slides={HERO_SLIDES} />
-          </HeroParallax>
-        </div>
-      </section>
+        }
+        carouselSlot={<HeroCarousel slides={HERO_SLIDES} />}
+      />
 
       {/* cf-93rb Phase A: atmospheric Blue Ridge band between hero and the
           TrustBar — anchors the page in place (Hendersonville, NC) and
