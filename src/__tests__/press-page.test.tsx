@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 
 // Stub the form action so PressPage can render server-side without exercising
@@ -7,7 +7,11 @@ vi.mock("@/app/contact/actions", () => ({
   sendContactForm: vi.fn(async () => ({ status: "idle" })),
 }));
 
-import PressPage, { metadata, currentYear } from "@/app/press/page";
+import PressPage, { metadata } from "@/app/press/page";
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe("PressPage", () => {
   it("renders the press headline as the H1", () => {
@@ -43,16 +47,19 @@ describe("PressPage", () => {
     expect(main.textContent).toMatch(/824 Locust Street/);
   });
 
-  it("exports a metadata object with title and description", () => {
+  it("exports a metadata object with title + load-bearing SEO facts in description", () => {
     expect(metadata.title).toBe("Press & Media — Carolina Futons");
-    expect(typeof metadata.description).toBe("string");
-    expect((metadata.description ?? "").length).toBeGreaterThan(0);
+    expect(metadata.description).toMatch(/Hendersonville/);
+    expect(metadata.description).toMatch(/1991/);
   });
 
-  it("renders the years-in-business claim derived from currentYear()", () => {
+  it("renders the years-in-business claim derived from real wall time", () => {
+    // Pin wall time so the assertion is a literal string, not a tautology.
+    // 2030-06-15 → 2030 - 1991 = 39 years old.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2030-06-15T12:00:00Z"));
     render(<PressPage />);
-    const expected = `${currentYear() - 1991}-year-old`;
-    expect(screen.getByRole("main").textContent).toContain(expected);
+    expect(screen.getByRole("main").textContent).toContain("39-year-old");
   });
 
   it("renders a 'Press inquiries' CTA that anchors to the form", () => {
@@ -88,5 +95,22 @@ describe("PressPage", () => {
     expect(screen.getByRole("textbox", { name: /^email$/i })).toBeTruthy();
     expect(screen.getByRole("textbox", { name: /^subject$/i })).toBeTruthy();
     expect(screen.getByRole("textbox", { name: /^message$/i })).toBeTruthy();
+  });
+
+  it("pre-fills the subject field with the [Press] routing tag", () => {
+    render(<PressPage />);
+    const subject = screen.getByRole("textbox", {
+      name: /^subject$/i,
+    }) as HTMLInputElement;
+    expect(subject.defaultValue).toBe("[Press] ");
+  });
+
+  it("renders the ContactHero illustration in the hero section", () => {
+    render(<PressPage />);
+    // ContactHero wraps an <Image> with descriptive alt text — assert via
+    // the image role so a future hero swap fails the test instead of
+    // silently dropping the visual.
+    const hero = screen.getByRole("img", { name: /blue ridge/i });
+    expect(hero).toBeTruthy();
   });
 });

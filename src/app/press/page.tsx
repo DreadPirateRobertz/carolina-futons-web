@@ -7,8 +7,10 @@ import { BUSINESS } from "@/lib/business/contact-info";
 // cf-3qt.5.6: hero + press inquiries CTA + media-contact form. The form
 // reuses the shared sendContactForm Server Action so press inquiries land
 // in the same Velo notification + ContactSubmissions CMS pipeline as
-// general /contact submissions; the "[Press]" subject prefix in the intro
-// copy is what tells Stilgar a submission came from this page.
+// general /contact submissions. ContactForm's `subjectPrefix` pre-fills
+// "[Press] " into the subject field — the resulting tag is what the team
+// filters on when triaging the queue. (Soft routing, not enforced — a
+// reporter can clear it; on the wire it's just text.)
 
 export const metadata: Metadata = {
   title: "Press & Media — Carolina Futons",
@@ -16,16 +18,21 @@ export const metadata: Metadata = {
     "Press resources, story angles, and a direct line to Carolina Futons — a family-owned futon and natural-mattress retailer in Hendersonville, North Carolina, in business since 1991.",
 };
 
+// Revalidate at most once per day so the years-in-business claim flips
+// over a Jan 1 boundary even when the page sits in static cache between
+// deploys. Anything shorter is overkill for a page this static.
+export const revalidate = 86400;
+
+// `LAST_UPDATED` is maintained by hand. Update this string whenever the
+// page copy changes meaningfully (story angles, contact info, hero) so
+// journalists know the facts are fresh. Do NOT auto-derive from build
+// time — that would tell every reporter the page changed every deploy.
 const LAST_UPDATED = "April 25, 2026";
 
-// Exported for testability — derives a stable "X-year" claim from the
-// founding year so the copy doesn't drift on January 1st of a new year.
-export function currentYear(): number {
-  return new Date().getFullYear();
-}
-
 export default function PressPage() {
-  const yearsInBusiness = currentYear() - BUSINESS.foundedYear;
+  // Re-derived per render so the lede ages itself across a Jan 1
+  // boundary; static cache is bounded by `revalidate` above.
+  const yearsInBusiness = new Date().getFullYear() - BUSINESS.foundedYear;
   return (
     <main className="w-full">
       <section
@@ -132,11 +139,11 @@ export default function PressPage() {
             Send a press inquiry
           </h2>
           <p className="leading-relaxed">
-            Use the form below for the fastest response. Please prefix the
-            subject line with <strong>[Press]</strong> and include your outlet
-            and deadline so we can route to the right person.
+            Use the form below for the fastest response. The subject is
+            pre-filled with <strong>[Press]</strong> so the team can route
+            it; please add your outlet and deadline.
           </p>
-          <ContactForm />
+          <ContactForm subjectPrefix="[Press] " />
         </section>
       </article>
     </main>
