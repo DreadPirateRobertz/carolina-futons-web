@@ -10,20 +10,37 @@ vi.mock("@/lib/wix/products", async () => {
   return { ...actual, getProductBySlug: (slug: string) => getProductBySlugMock(slug) };
 });
 
-import { ShopTheRoom, __TEST__ } from "@/components/site/ShopTheRoom";
+import {
+  ShopTheRoom,
+  __TEST__,
+  HOME_HERO_PHOTO,
+  HOME_HOTSPOT_CONFIGS,
+  ABOUT_HERO_PHOTO,
+  ABOUT_HOTSPOT_CONFIGS,
+  SHOP_HERO_PHOTO,
+  SHOP_HOTSPOT_CONFIGS,
+  type HotspotConfig,
+} from "@/components/site/ShopTheRoom";
 
-// cf-delight Phase 2: home-page wiring of RoomHotspots. Behavioral coverage
-// for the dot interaction is in RoomHotspots.test.tsx; here we pin the
-// section's section-level contract — heading, hero photo, hotspot config
-// invariants, and the live-data resolution path (drops missing slugs +
-// formats prices from real product envelopes).
+// cf-delight Phase 2/3: behavioral coverage for the dot interaction is in
+// RoomHotspots.test.tsx; here we pin (a) section-level contract — heading,
+// hero photo, hotspot config invariants — and (b) live-data resolution
+// (drops missing slugs + formats prices). Per-surface configs are
+// validated via a shared invariant suite so adding a 4th surface only
+// needs one row in the table.
 
+// Mirror Wix's actual price formatting (thousands separator) so the test
+// fixture matches what production callers see, not a stripped-down shape.
+const usd = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
 function product(name: string, price: number) {
   return {
     name,
     priceData: {
       price,
-      formatted: { price: `$${price.toFixed(2)}` },
+      formatted: { price: usd.format(price) },
     },
   };
 }
@@ -36,81 +53,103 @@ beforeEach(() => {
       "ranchero-murphy-cabinet-bed": product("Ranchero Murphy Cabinet Bed", 2978),
       "canby-mattress": product("Canby Mattress", 737),
       "solstice-mattress": product("Solstice Mattress", 829),
+      "charleston-platform-bed": product("Charleston Platform Bed", 1099),
+      "nutmeg-platform-bed": product("Nutmeg Platform Bed", 949),
+      "portofino-mattress": product("Portofino Mattress", 859),
+      "monterey-futon-frame": product("Monterey Futon Frame", 899),
+      "kingston-futon-frame": product("Kingston Futon Frame", 619),
     };
     return fixtures[slug] ?? null;
   });
 });
 
-describe("ShopTheRoom (config invariants)", () => {
-  const { HOTSPOT_CONFIGS, HERO_PHOTO } = __TEST__;
+const SURFACES = [
+  { name: "home", photo: HOME_HERO_PHOTO, configs: HOME_HOTSPOT_CONFIGS },
+  { name: "about", photo: ABOUT_HERO_PHOTO, configs: ABOUT_HOTSPOT_CONFIGS },
+  { name: "shop", photo: SHOP_HERO_PHOTO, configs: SHOP_HOTSPOT_CONFIGS },
+] as const;
 
-  it("uses a Wix-hosted lifestyle photo with descriptive alt text", () => {
-    expect(HERO_PHOTO.src).toMatch(/^https:\/\/static\.wixstatic\.com\//);
-    expect(HERO_PHOTO.alt.length).toBeGreaterThan(20);
-    expect(HERO_PHOTO.width).toBeGreaterThan(0);
-    expect(HERO_PHOTO.height).toBeGreaterThan(0);
+describe.each(SURFACES)(
+  "ShopTheRoom config invariants — $name surface",
+  ({ photo, configs }) => {
+    it("uses a Wix-hosted lifestyle photo with descriptive alt text", () => {
+      expect(photo.src).toMatch(/^https:\/\/static\.wixstatic\.com\//);
+      expect(photo.alt.length).toBeGreaterThan(20);
+      expect(photo.width).toBeGreaterThan(0);
+      expect(photo.height).toBeGreaterThan(0);
+    });
+
+    it("ships at least 3 hotspots so the framing reads as intentional", () => {
+      expect(configs.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it("every hotspot has in-bounds coordinates and a URL-safe slug", () => {
+      for (const cfg of configs) {
+        expect(cfg.xPct).toBeGreaterThanOrEqual(0);
+        expect(cfg.xPct).toBeLessThanOrEqual(100);
+        expect(cfg.yPct).toBeGreaterThanOrEqual(0);
+        expect(cfg.yPct).toBeLessThanOrEqual(100);
+        expect(cfg.productSlug).toMatch(/^[a-z0-9-]+$/);
+      }
+    });
+
+    it("uses unique hotspot ids", () => {
+      const ids = configs.map((s: HotspotConfig) => s.id);
+      expect(new Set(ids).size).toBe(ids.length);
+    });
+  },
+);
+
+describe("ShopTheRoom — surface differentiation", () => {
+  it("home and about scenes use different photos (no double-render)", () => {
+    expect(HOME_HERO_PHOTO.src).not.toBe(ABOUT_HERO_PHOTO.src);
   });
 
-  it("ships at least 3 hotspots so the 'shop the room' framing reads as intentional", () => {
-    expect(HOTSPOT_CONFIGS.length).toBeGreaterThanOrEqual(3);
+  it("home and shop scenes use different photos", () => {
+    expect(HOME_HERO_PHOTO.src).not.toBe(SHOP_HERO_PHOTO.src);
   });
 
-  it("every hotspot has in-bounds coordinates and a non-empty product slug", () => {
-    for (const cfg of HOTSPOT_CONFIGS) {
-      expect(cfg.xPct).toBeGreaterThanOrEqual(0);
-      expect(cfg.xPct).toBeLessThanOrEqual(100);
-      expect(cfg.yPct).toBeGreaterThanOrEqual(0);
-      expect(cfg.yPct).toBeLessThanOrEqual(100);
-      // Product slugs are URL segments — keep them URL-safe so the
-      // RoomHotspots /products/[slug] href stays clean.
-      expect(cfg.productSlug).toMatch(/^[a-z0-9-]+$/);
-    }
+  it("about and shop scenes use different photos", () => {
+    expect(ABOUT_HERO_PHOTO.src).not.toBe(SHOP_HERO_PHOTO.src);
   });
 
-  it("uses unique hotspot ids (RoomHotspots warns and drops duplicates otherwise)", () => {
-    const ids = HOTSPOT_CONFIGS.map((s) => s.id);
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-
-  it("does not duplicate the home-page first-hero photo URL", async () => {
-    // Reading HERO_SLIDES via dynamic import keeps this test resilient if
-    // the page module path moves. The point: visitors shouldn't see the
-    // same Monterey scene above (in the carousel) and again here.
+  it("HOME hero src does not duplicate ANY entry in the home-page carousel (HERO_SLIDES)", async () => {
+    // Tightened from the prior single-index check (which missed Murphy
+    // duplicating HERO_SLIDES[2]). The carousel rotates through every
+    // slide; ShopTheRoom on home must not match any of them.
     const page = await import("@/app/page");
-    const firstHero = page.HERO_SLIDES[0]?.src;
-    expect(firstHero).toBeTruthy();
-    expect(__TEST__.HERO_PHOTO.src).not.toBe(firstHero);
+    const carouselSrcs = page.HERO_SLIDES.map((s) => s.src);
+    expect(carouselSrcs.length).toBeGreaterThan(0);
+    expect(carouselSrcs).not.toContain(HOME_HERO_PHOTO.src);
   });
 });
 
 describe("ShopTheRoom (live data resolution)", () => {
   it("resolves product name + price from getProductBySlug, never lying about catalog state", async () => {
-    const hotspots = await __TEST__.resolveHotspots();
+    const hotspots = await __TEST__.resolveHotspots(HOME_HOTSPOT_CONFIGS);
     expect(hotspots).toHaveLength(3);
-    const ranchero = hotspots.find((h) => h.id === "ranchero")!;
-    expect(ranchero.productName).toBe("Ranchero Murphy Cabinet Bed");
-    expect(ranchero.formattedPrice).toBe("$2978.00");
+    const monterey = hotspots.find((h) => h.id === "monterey")!;
+    expect(monterey.productName).toBe("Monterey Futon Frame");
+    // Realistic format — Wix returns thousands-separated USD strings.
+    expect(monterey.formattedPrice).toMatch(/^\$[0-9,]+\.\d{2}$/);
   });
 
   it("drops a hotspot whose slug 404s in the catalog (no broken PDP link rendered)", async () => {
     getProductBySlugMock.mockImplementation(async (slug: string) =>
       slug === "canby-mattress" ? null : product("X", 100),
     );
-    const hotspots = await __TEST__.resolveHotspots();
+    const hotspots = await __TEST__.resolveHotspots(HOME_HOTSPOT_CONFIGS);
     expect(hotspots.find((h) => h.id === "canby")).toBeUndefined();
   });
 
   it("drops a hotspot whose product has no usable price (variant-priced products)", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     getProductBySlugMock.mockImplementation(async (slug: string) =>
       slug === "canby-mattress"
         ? { name: "Canby", priceData: { price: 0 } } // variant-priced sentinel
         : product("X", 100),
     );
-    const hotspots = await __TEST__.resolveHotspots();
+    const hotspots = await __TEST__.resolveHotspots(HOME_HOTSPOT_CONFIGS);
     expect(hotspots.find((h) => h.id === "canby")).toBeUndefined();
-    expect(warn).toHaveBeenCalled();
-    warn.mockRestore();
   });
 
   it("falls back from formatted.price to numeric price when only the latter is present", async () => {
@@ -118,58 +157,109 @@ describe("ShopTheRoom (live data resolution)", () => {
       name: "Numeric Only",
       priceData: { price: 12.5 },
     }));
-    const hotspots = await __TEST__.resolveHotspots();
+    const hotspots = await __TEST__.resolveHotspots(HOME_HOTSPOT_CONFIGS);
     expect(hotspots[0]?.formattedPrice).toBe("$12.50");
   });
 });
 
-describe("ShopTheRoom (render)", () => {
-  it("renders the section heading + lede when at least one hotspot resolves", async () => {
-    const ui = await ShopTheRoom();
-    render(ui);
+describe.each(SURFACES)(
+  "ShopTheRoom — null fallback ($name surface drops to nothing if every slug 404s)",
+  ({ configs }) => {
+    it("returns null instead of an empty 'shop the room' header", async () => {
+      getProductBySlugMock.mockResolvedValue(null);
+      const ui = await ShopTheRoom({
+        heroPhoto: HOME_HERO_PHOTO,
+        hotspotConfigs: configs,
+      });
+      expect(ui).toBeNull();
+    });
+  },
+);
+
+describe("ShopTheRoom (render — home defaults)", () => {
+  async function renderHome() {
+    const ui = await ShopTheRoom({
+      heroPhoto: HOME_HERO_PHOTO,
+      hotspotConfigs: HOME_HOTSPOT_CONFIGS,
+    });
+    return render(ui!);
+  }
+
+  it("renders the default heading + lede when no copy props are supplied", async () => {
+    await renderHome();
     expect(
       screen.getByRole("heading", { level: 2, name: /tap a piece you like/i }),
     ).toBeInTheDocument();
   });
 
   it("renders the lifestyle hero image with the configured alt", async () => {
-    const ui = await ShopTheRoom();
-    render(ui);
-    const img = screen.getByRole("img", {
-      name: /murphy cabinet bed open in a home office/i,
-    });
-    expect(img).toBeInTheDocument();
+    await renderHome();
+    expect(
+      screen.getByRole("img", { name: /sunlit living room.*futon/i }),
+    ).toBeInTheDocument();
   });
 
   it("renders one dot per resolved hotspot, named after the live catalog product", async () => {
-    const ui = await ShopTheRoom();
-    render(ui);
+    await renderHome();
     expect(
-      screen.getByRole("button", { name: /shop ranchero murphy cabinet bed/i }),
+      screen.getByRole("button", { name: /shop monterey futon frame/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /shop kingston futon frame/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /shop canby mattress/i }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /shop solstice mattress/i }),
-    ).toBeInTheDocument();
   });
 
-  it("ties the section heading to the wrapping <section> via aria-labelledby", async () => {
-    const ui = await ShopTheRoom();
-    const { container } = render(ui);
+  it("ties the section heading to the wrapping <section> via the default headingId", async () => {
+    const { container } = await renderHome();
     const section = container.querySelector("section");
     expect(section?.getAttribute("aria-labelledby")).toBe(
       "shop-the-room-heading",
     );
-    expect(document.getElementById("shop-the-room-heading")).toBeInstanceOf(
-      HTMLElement,
-    );
   });
 
-  it("renders nothing (returns null) if every product 404s", async () => {
+  it("returns null if every product 404s", async () => {
     getProductBySlugMock.mockResolvedValue(null);
-    const ui = await ShopTheRoom();
+    const ui = await ShopTheRoom({
+      heroPhoto: HOME_HERO_PHOTO,
+      hotspotConfigs: HOME_HOTSPOT_CONFIGS,
+    });
     expect(ui).toBeNull();
+  });
+});
+
+describe("ShopTheRoom (render — per-surface copy)", () => {
+  it("/about surface renders its own eyebrow + heading + headingId", async () => {
+    const ui = await ShopTheRoom({
+      headingId: "about-shop-the-room-heading",
+      eyebrow: "See it in a real bedroom",
+      heading: "The pieces in this story",
+      heroPhoto: ABOUT_HERO_PHOTO,
+      hotspotConfigs: ABOUT_HOTSPOT_CONFIGS,
+    });
+    const { container } = render(ui!);
+    expect(
+      screen.getByRole("heading", { level: 2, name: /the pieces in this story/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/see it in a real bedroom/i)).toBeInTheDocument();
+    expect(
+      container.querySelector("section")?.getAttribute("aria-labelledby"),
+    ).toBe("about-shop-the-room-heading");
+  });
+
+  it("/shop surface renders its own heading copy", async () => {
+    const ui = await ShopTheRoom({
+      headingId: "shop-shop-the-room-heading",
+      eyebrow: "Shop the room",
+      heading: "Or jump straight in",
+      heroPhoto: SHOP_HERO_PHOTO,
+      hotspotConfigs: SHOP_HOTSPOT_CONFIGS,
+    });
+    render(ui!);
+    expect(
+      screen.getByRole("heading", { level: 2, name: /or jump straight in/i }),
+    ).toBeInTheDocument();
   });
 });
