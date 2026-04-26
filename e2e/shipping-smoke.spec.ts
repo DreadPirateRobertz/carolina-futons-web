@@ -24,24 +24,29 @@
  */
 
 import { test, expect } from "@playwright/test";
+import * as fs from "fs";
 
 test.setTimeout(60_000);
+
+test.beforeAll(() => {
+  fs.mkdirSync("e2e-screenshots", { recursive: true });
+});
 
 test.describe("shipping flow smoke — prod", () => {
   // ── 1. PLPs load ──────────────────────────────────────────────────────────
 
   test("mattresses PLP renders product cards", async ({ page }) => {
     await page.goto("/shop/mattresses");
-    await page.waitForSelector("li", { timeout: 20_000 });
-    const count = await page.locator("ul li").count();
+    await page.waitForSelector("ul li a[href*='/products/']", { timeout: 20_000 });
+    const count = await page.locator("ul li a[href*='/products/']").count();
     expect(count).toBeGreaterThan(0);
     await page.screenshot({ path: "e2e-screenshots/01-mattresses-plp.png" });
   });
 
   test("futon frames PLP renders product cards", async ({ page }) => {
     await page.goto("/shop/futon-frames");
-    await page.waitForSelector("li", { timeout: 20_000 });
-    const count = await page.locator("ul li").count();
+    await page.waitForSelector("ul li a[href*='/products/']", { timeout: 20_000 });
+    const count = await page.locator("ul li a[href*='/products/']").count();
     expect(count).toBeGreaterThan(0);
     await page.screenshot({ path: "e2e-screenshots/02-futon-frames-plp.png" });
   });
@@ -74,7 +79,7 @@ test.describe("shipping flow smoke — prod", () => {
     await page.waitForLoadState("networkidle", { timeout: 20_000 });
 
     const whiteGloveSection = page.locator('[data-slot="pdp-white-glove"]');
-    const isVisible = await whiteGloveSection.isVisible().catch(() => false);
+    const isVisible = await whiteGloveSection.isVisible();
     console.info(`[MESA 1000] PdpWhiteGlove visible: ${isVisible} — price relative to $1,500 threshold`);
     await page.screenshot({ path: "e2e-screenshots/04-mesa-1000-white-glove.png" });
     // Documentary — passes whether visible or not
@@ -86,16 +91,16 @@ test.describe("shipping flow smoke — prod", () => {
     await page.goto("/products/ranchero-futon-frame");
     await page.waitForLoadState("networkidle", { timeout: 20_000 });
 
-    const heading = await page.getByRole("heading", { level: 1 }).textContent().catch(() => "");
+    const heading = await page.getByRole("heading", { level: 1 }).textContent();
     if (!heading) {
       console.warn("[GAP] Ranchero PDP did not load — product unavailable or slug changed");
       await page.screenshot({ path: "e2e-screenshots/05-ranchero-not-found.png" });
-      test.skip();
+      test.skip(true, "Ranchero product unavailable or slug changed");
       return;
     }
 
     const whiteGloveSection = page.locator('[data-slot="pdp-white-glove"]');
-    const isVisible = await whiteGloveSection.isVisible().catch(() => false);
+    const isVisible = await whiteGloveSection.isVisible();
 
     console.info(`[RANCHERO] PdpWhiteGlove visible: ${isVisible} (expected: true for $2,978 product)`);
     await page.screenshot({ path: "e2e-screenshots/05-ranchero-pdp.png" });
@@ -124,15 +129,15 @@ test.describe("shipping flow smoke — prod", () => {
 
     for (const slug of slugs) {
       await page.goto(`/products/${slug}`);
-      await page.waitForLoadState("load", { timeout: 20_000 });
-      // Give React a moment to hydrate the status element
-      await page.waitForTimeout(1_000);
+      await page.waitForSelector('[id*="add-to-cart-status"]', { timeout: 20_000 });
       const status =
-        (await page
-          .locator('[id*="add-to-cart-status"]')
-          .textContent()
-          .catch(() => "")) ?? "";
+        (await page.locator('[id*="add-to-cart-status"]').textContent()) ?? "";
       results.push({ slug, status });
+
+      // Soft assertion: when inventory is configured this will break — remove GAP-1 skip above
+      expect.soft(results[results.length - 1].status, `${slug} OOS gate`).not.toMatch(
+        /out of stock/i,
+      );
     }
 
     console.info("[CART AUDIT]", JSON.stringify(results));
@@ -146,13 +151,13 @@ test.describe("shipping flow smoke — prod", () => {
           "or run smoke test against a deployment with live Wix catalog data.",
       );
     }
-    // Pass — this test documents the state, not gates on it
+    // Hard pass — this test documents the state, soft assertions above gate when fixed
     expect(results.length).toBeGreaterThan(0);
   });
 
   // ── 5. Checkout redirect — skip until cart works ──────────────────────────
 
-  test("checkout redirect: skipped until GAP-1 (all OOS) is resolved", async () => {
+  test("checkout redirect: skipped until GAP-1 (all OOS) is resolved", () => {
     // This test intentionally skips until products have inventory on prod.
     // When inventory is configured, remove the skip and implement the full flow:
     //   1. navigate to PDP, select variant, click Add to Cart
@@ -161,10 +166,6 @@ test.describe("shipping flow smoke — prod", () => {
     //   4. on Wix checkout, verify shipping address form present
     //   5. verify UPS rate options present
     //   6. verify white-glove option for >$1500 order (do NOT submit payment)
-    console.warn(
-      "[SKIP cf-kcnu] Checkout flow test skipped — all products OOS (GAP-1). " +
-        "Re-enable when Wix catalog inventory is configured on prod.",
-    );
-    test.skip();
+    test.skip(true, "GAP-1: all products OOS — re-enable when Wix catalog inventory is configured on prod");
   });
 });
