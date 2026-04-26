@@ -30,8 +30,14 @@ function renderPage() {
   return render(<AccountPage />);
 }
 
-function getSignInButton() {
-  return screen.getByRole("button", { name: /sign in with wix/i });
+function getSubmitButton() {
+  return screen.getByRole("button", { name: /sign in/i });
+}
+
+function fillAndSubmit(email = "test@example.com", password = "secret") {
+  fireEvent.change(screen.getByLabelText(/email/i), { target: { value: email } });
+  fireEvent.change(screen.getByLabelText(/password/i), { target: { value: password } });
+  fireEvent.submit(screen.getByRole("button", { name: /sign in/i }).closest("form")!);
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -61,9 +67,15 @@ describe("AccountPage — rendering", () => {
     expect(screen.getByRole("heading", { name: /sign in/i })).toBeInTheDocument();
   });
 
-  it("renders sign-in button enabled by default", () => {
+  it("renders email and password inputs", () => {
     renderPage();
-    expect(getSignInButton()).not.toBeDisabled();
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+  });
+
+  it("renders submit button enabled by default", () => {
+    renderPage();
+    expect(getSubmitButton()).not.toBeDisabled();
   });
 
   it("renders link to dashboard for already-signed-in users", () => {
@@ -81,32 +93,45 @@ describe("AccountPage — rendering", () => {
 });
 
 describe("AccountPage — sign-in success", () => {
-  it("redirects to authUrl on successful fetch", async () => {
+  it("redirects to redirectTo on successful login", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ authUrl: "https://auth.wix.com/oauth" }),
+        json: async () => ({ ok: true, redirectTo: "/dashboard" }),
       }),
     );
     renderPage();
-    fireEvent.click(getSignInButton());
+    fillAndSubmit();
     await waitFor(() => {
-      expect(window.location.href).toBe("https://auth.wix.com/oauth");
+      expect(window.location.href).toBe("/dashboard");
     });
   });
 
-  it("button shows 'Redirecting…' while loading", async () => {
+  it("posts to /api/auth/login with email, password, and callbackUrl", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      json: async () => ({ ok: true, redirectTo: "/dashboard" }),
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+    renderPage();
+    fillAndSubmit("user@test.com", "hunter2");
+    await waitFor(() => expect(window.location.href).toBe("/dashboard"));
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("/api/auth/login");
+    const sent = JSON.parse(init.body as string) as { email: string; password: string };
+    expect(sent.email).toBe("user@test.com");
+    expect(sent.password).toBe("hunter2");
+  });
+
+  it("button shows 'Signing in…' while loading", async () => {
     let resolveFetch!: (v: unknown) => void;
     vi.stubGlobal(
       "fetch",
       vi.fn().mockReturnValue(new Promise((r) => (resolveFetch = r))),
     );
     renderPage();
-    fireEvent.click(getSignInButton());
-    expect(screen.getByRole("button", { name: /redirecting/i })).toBeInTheDocument();
-    // resolve to avoid unhandled rejection
-    act(() => resolveFetch({ ok: false, status: 500, json: async () => ({}) }));
+    fillAndSubmit();
+    expect(screen.getByRole("button", { name: /signing in/i })).toBeInTheDocument();
+    act(() => resolveFetch({ json: async () => ({ error: "fail" }) }));
   });
 
   it("button is disabled during loading", async () => {
@@ -116,158 +141,134 @@ describe("AccountPage — sign-in success", () => {
       vi.fn().mockReturnValue(new Promise((r) => (resolveFetch = r))),
     );
     renderPage();
-    fireEvent.click(getSignInButton());
-    expect(screen.getByRole("button")).toBeDisabled();
-    act(() => resolveFetch({ ok: false, status: 500, json: async () => ({}) }));
+    fillAndSubmit();
+    // During loading the button text is "Signing in…" — not "Sign in"
+    expect(screen.getByRole("button", { name: /signing in/i })).toBeDisabled();
+    act(() => resolveFetch({ json: async () => ({ error: "fail" }) }));
   });
 });
 
 describe("AccountPage — sign-in failure", () => {
-  it("shows error alert on non-ok HTTP response", async () => {
+  it("shows error from API response body", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({ ok: false, status: 503, json: async () => ({}) }),
+      vi.fn().mockResolvedValue({
+        json: async () => ({ error: "Email or password is incorrect." }),
+      }),
     );
     renderPage();
-    fireEvent.click(getSignInButton());
+    fillAndSubmit();
     await waitFor(() => {
       expect(screen.getByRole("alert")).toBeInTheDocument();
     });
-    expect(screen.getByRole("alert").textContent).toMatch(/try again/i);
+    expect(screen.getByRole("alert").textContent).toMatch(/email or password/i);
   });
 
-  it("re-enables button after fetch failure", async () => {
+  it("re-enables submit button after failure", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({ ok: false, status: 503, json: async () => ({}) }),
+      vi.fn().mockResolvedValue({
+        json: async () => ({ error: "fail" }),
+      }),
     );
     renderPage();
-    fireEvent.click(getSignInButton());
+    fillAndSubmit();
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /sign in/i })).not.toBeDisabled();
+      expect(getSubmitButton()).not.toBeDisabled();
     });
   });
 
   it("shows error alert on network error (fetch throws)", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
     renderPage();
-    fireEvent.click(getSignInButton());
+    fillAndSubmit();
     await waitFor(() => {
       expect(screen.getByRole("alert")).toBeInTheDocument();
     });
   });
 
-  it("shows error alert when authUrl is missing from response", async () => {
+  it("does NOT navigate on error response", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ authUrl: undefined }),
+        json: async () => ({ error: "Email or password is incorrect." }),
       }),
     );
     renderPage();
-    fireEvent.click(getSignInButton());
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toBeInTheDocument();
-    });
-    expect(window.location.href).toBe("");
-  });
-
-  it("does NOT navigate when authUrl is empty string", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ authUrl: "" }),
-      }),
-    );
-    renderPage();
-    fireEvent.click(getSignInButton());
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toBeInTheDocument();
-    });
-    expect(window.location.href).toBe("");
-  });
-
-  it("does NOT navigate when authUrl is null (cf-3qt.8.A.F1 guard)", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ authUrl: null }),
-      }),
-    );
-    renderPage();
-    fireEvent.click(getSignInButton());
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toBeInTheDocument();
-    });
-    expect(window.location.href).toBe("");
-  });
-
-  it("does NOT navigate when authUrl is a non-string type (cf-3qt.8.A.F1 guard)", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ authUrl: 42 }),
-      }),
-    );
-    renderPage();
-    fireEvent.click(getSignInButton());
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toBeInTheDocument();
-    });
+    fillAndSubmit();
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
     expect(window.location.href).toBe("");
   });
 });
 
-// cf-3qt.8.A.F1: every catch path must surface to devtools / Sentry. A bare
-// catch that discards the error blocks Sentry's global handler; these tests
-// lock in that every failure-path invokes console.error with the thrown value.
-describe("AccountPage — catch-path logging (cf-3qt.8.A.F1)", () => {
+describe("AccountPage — email verification pending", () => {
+  it("shows verification screen when API returns email_verification_required", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => ({ state: "email_verification_required" }),
+      }),
+    );
+    renderPage();
+    fillAndSubmit("pending@example.com");
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /check your email/i })).toBeInTheDocument();
+    });
+    expect(screen.getByText(/pending@example.com/)).toBeInTheDocument();
+  });
+
+  it("shows 'Back to sign in' link on verification screen", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => ({ state: "email_verification_required" }),
+      }),
+    );
+    renderPage();
+    fillAndSubmit();
+    await waitFor(() => expect(screen.getByRole("heading", { name: /check your email/i })).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: /back to sign in/i })).toBeInTheDocument();
+  });
+
+  it("returns to sign-in form when 'Back to sign in' is clicked", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => ({ state: "email_verification_required" }),
+      }),
+    );
+    renderPage();
+    fillAndSubmit();
+    await waitFor(() => expect(screen.getByRole("heading", { name: /check your email/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /back to sign in/i }));
+    expect(screen.getByRole("heading", { name: /^sign in$/i })).toBeInTheDocument();
+  });
+});
+
+// Lock in that every failure-path invokes console.error so errors surface
+// to devtools / Sentry's global error handler.
+describe("AccountPage — catch-path logging", () => {
   it("console.errors the network failure in catch", async () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     const thrown = new Error("network down");
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(thrown));
     renderPage();
-    fireEvent.click(getSignInButton());
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toBeInTheDocument();
-    });
+    fillAndSubmit();
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
     expect(spy).toHaveBeenCalled();
     const args = spy.mock.calls[spy.mock.calls.length - 1];
     expect(args.some((a) => a === thrown)).toBe(true);
   });
 
-  it("console.errors on non-ok HTTP response", async () => {
+  it("console.errors on unexpected response shape", async () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({ ok: false, status: 503, json: async () => ({}) }),
+      vi.fn().mockResolvedValue({ json: async () => ({ unexpected: true }) }),
     );
     renderPage();
-    fireEvent.click(getSignInButton());
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toBeInTheDocument();
-    });
-    expect(spy).toHaveBeenCalled();
-  });
-
-  it("console.errors on invalid authUrl shape", async () => {
-    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ authUrl: null }),
-      }),
-    );
-    renderPage();
-    fireEvent.click(getSignInButton());
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toBeInTheDocument();
-    });
+    fillAndSubmit();
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
     expect(spy).toHaveBeenCalled();
   });
 });

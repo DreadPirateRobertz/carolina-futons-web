@@ -7,42 +7,74 @@ import Link from "next/link";
 // itself can be a server component and export `metadata` (Next.js app-router
 // disallows metadata exports from `"use client"` modules — cf-3qt.8.A.F1).
 export function AccountSignIn() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [verifyPending, setVerifyPending] = useState(false);
 
-  async function handleSignIn() {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/auth/session", {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // callbackUrl is the post-login destination (stored as originalUri in
-        // the API route), NOT the OAuth callback URL — that is always
-        // /api/auth/session.
-        body: JSON.stringify({ callbackUrl: "/dashboard" }),
+        body: JSON.stringify({ email, password, callbackUrl: "/dashboard" }),
       });
-      if (!res.ok) {
-        throw new Error(`auth_init_failed: HTTP ${res.status}`);
+      const data = (await res.json()) as {
+        ok?: boolean;
+        redirectTo?: string;
+        error?: string;
+        state?: string;
+      };
+
+      if (data.state === "email_verification_required") {
+        // Account requires email verification before first sign-in. The
+        // member's registered email will have a verification link from Wix.
+        setVerifyPending(true);
+        setLoading(false);
+        return;
       }
-      const data = (await res.json()) as { authUrl?: unknown };
-      // Runtime null/type guard — protects against the API returning an
-      // unexpected shape (missing authUrl, empty string, non-string). Without
-      // this, `window.location.href = undefined` coerces to "/undefined" and
-      // the user lands on a silently-broken page with no error feedback.
-      if (typeof data.authUrl !== "string" || data.authUrl === "") {
-        throw new Error("auth_init_failed: missing or empty authUrl");
+      if (data.error) {
+        setError(data.error);
+        setLoading(false);
+        return;
       }
-      window.location.href = data.authUrl;
+      if (data.ok && typeof data.redirectTo === "string") {
+        window.location.href = data.redirectTo;
+        return;
+      }
+      throw new Error("unexpected_response");
     } catch (err) {
-      // Surface the cause to devtools + (in prod) the global error handler.
-      // Silent catch would hide network failures, non-JSON 500 bodies, and
-      // bad authUrl shapes — all of which need to reach Sentry via the global
-      // error handler in src/instrumentation-client.ts.
-      console.error("[AccountSignIn] sign-in init failed", err);
-      setError("Could not start sign-in. Please try again.");
+      console.error("[AccountSignIn] login failed", err);
+      setError("Sign-in failed. Please try again.");
       setLoading(false);
     }
+  }
+
+  if (verifyPending) {
+    return (
+      <main className="flex min-h-[60vh] items-center justify-center px-4 py-16">
+        <div className="w-full max-w-sm text-center">
+          <h1 className="font-heading text-3xl font-bold tracking-tight text-cf-navy">
+            Check your email
+          </h1>
+          <p className="mt-4 text-sm text-cf-charcoal/80">
+            We sent a verification link to <strong>{email}</strong>. Click it to
+            activate your account, then return here to sign in.
+          </p>
+          <button
+            type="button"
+            onClick={() => setVerifyPending(false)}
+            className="mt-6 text-sm text-cf-cta hover:underline"
+          >
+            Back to sign in
+          </button>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -55,22 +87,59 @@ export function AccountSignIn() {
           Access your orders, wishlist, and account settings.
         </p>
 
-        <div className="mt-8 space-y-3">
-          <button
-            type="button"
-            onClick={handleSignIn}
-            disabled={loading}
-            className="inline-flex w-full h-12 items-center justify-center rounded-md bg-cf-cta px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {loading ? "Redirecting…" : "Sign in with Wix"}
-          </button>
+        <form onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-cf-charcoal"
+            >
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-cf-charcoal/20 bg-white px-3 py-2 text-sm text-cf-espresso placeholder-cf-charcoal/40 shadow-sm focus:border-cf-cta focus:outline-none focus:ring-1 focus:ring-cf-cta"
+              placeholder="you@example.com"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-cf-charcoal"
+            >
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-cf-charcoal/20 bg-white px-3 py-2 text-sm text-cf-espresso placeholder-cf-charcoal/40 shadow-sm focus:border-cf-cta focus:outline-none focus:ring-1 focus:ring-cf-cta"
+              placeholder="••••••••"
+            />
+          </div>
 
           {error && (
             <p role="alert" className="text-sm text-red-600">
               {error}
             </p>
           )}
-        </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="inline-flex w-full h-12 items-center justify-center rounded-md bg-cf-cta px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {loading ? "Signing in…" : "Sign in"}
+          </button>
+        </form>
 
         <p className="mt-6 text-center text-xs text-cf-charcoal/60">
           Already signed in?{" "}
