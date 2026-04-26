@@ -85,9 +85,16 @@ export function PdpInteractive({
   const selectedVariant = findMatchingVariant(variants, selection);
   const selectionComplete =
     productOptions.length === 0 || isSelectionComplete(productOptions, selection);
+  // Simple products (productOptions=[]) return no selectable variant — Wix
+  // stores one implicit variant but findMatchingVariant returns null for an
+  // empty selection. Read product-level stock.inStock for these; for variant
+  // products with an incomplete selection fall back to false (button is
+  // disabled for "Select options" anyway, so the OOS label never shows).
   const inStock = selectedVariant
     ? isVariantInStock(selectedVariant)
-    : variants.length === 0;
+    : productOptions.length === 0
+      ? stock?.inStock !== false
+      : false;
   const variantLabel = Object.entries(selection)
     .map(([k, v]) => `${k}: ${v}`)
     .join(", ");
@@ -148,7 +155,7 @@ export function PdpInteractive({
           onSelectionChange={(next) => setSelection(next)}
         />
         <div ref={primaryCtaRef} data-slot="pdp-primary-cta" className="flex flex-wrap items-center gap-3">
-          <AddToCartButton {...addToCartProps} />
+          <AddToCartButton {...addToCartProps} className="flex-1 min-w-0" />
           <PdpWishlistButton
             productId={productId}
             productName={productName}
