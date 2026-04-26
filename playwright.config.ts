@@ -1,5 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const BASE_URL = process.env.BASE_URL ?? "http://localhost:3000";
+const isProd = BASE_URL !== "http://localhost:3000";
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -8,7 +11,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: BASE_URL,
     trace: "on-first-retry",
   },
   projects: [
@@ -17,9 +20,14 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
-    command: "npm run dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
-  },
+  // Skip local webServer when pointing at an external URL (prod/staging)
+  ...(isProd
+    ? {}
+    : {
+        webServer: {
+          command: "npm run dev",
+          url: "http://localhost:3000",
+          reuseExistingServer: !process.env.CI,
+        },
+      }),
 });
