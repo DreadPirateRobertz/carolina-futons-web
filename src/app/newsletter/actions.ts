@@ -4,24 +4,18 @@ import {
   coerceNewsletterRequest,
   hasNewsletterErrors,
   validateNewsletterRequest,
-  type NewsletterErrors,
 } from "@/lib/newsletter/newsletter-schema";
 import { upsertSubscriber } from "@/lib/newsletter/newsletter-store";
+import type { NewsletterActionState } from "@/app/newsletter/newsletter-state";
 
 // cf-newsletter-footer: Server Action for the footer signup.
 // Designed for `useActionState`: the form binds this and renders directly
 // off { status, errors?, alreadySubscribed?, storeError? }. Store errors
 // are logged server-side and surfaced as a friendly message — the user
 // never sees a raw stack trace.
-
-export type NewsletterActionState =
-  | { status: "idle" }
-  | { status: "error"; errors: NewsletterErrors; storeError?: string }
-  | { status: "success"; alreadySubscribed: boolean };
-
-export const initialNewsletterActionState: NewsletterActionState = {
-  status: "idle",
-};
+// `NewsletterActionState` + `initialNewsletterActionState` live in
+// `./newsletter-state` because `"use server"` modules may only export
+// async functions.
 
 export async function subscribeToNewsletter(
   _prev: NewsletterActionState | null,
