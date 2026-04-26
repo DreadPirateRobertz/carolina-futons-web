@@ -40,7 +40,7 @@ function GridItem({
   const prefersReducedMotion = useReducedMotion() ?? false;
 
   const images = getPlpCardImages(product);
-  const src = images.primary?.url ?? "";
+  const src = images.primary ?? "";
   const price = formatPlpPrice(product);
   const href = `/products/${product.slug ?? ""}`;
 
