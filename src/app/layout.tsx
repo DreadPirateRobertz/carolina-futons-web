@@ -70,6 +70,12 @@ export const metadata: Metadata = {
   verification: resolveVerification(),
 };
 
+// Hardcoded literal — no user input reaches this string. Safe to inline.
+const THEME_INIT_SCRIPT =
+  "(function(){try{var s=localStorage.getItem('cf-theme');" +
+  "var d=s==='dark'||(s===null&&window.matchMedia('(prefers-color-scheme: dark)').matches);" +
+  "if(d)document.documentElement.classList.add('dark');}catch(e){}})();";
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -82,9 +88,15 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${playfair.variable} ${sourceSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
+        {/* Theme init — runs synchronously before first paint to prevent flash.
+            Reads localStorage 'cf-theme'; falls back to prefers-color-scheme.
+            Content is a hardcoded literal with no user input. */}
+        {/* eslint-disable-next-line react/no-danger */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         {/* Consent Mode v2 default — MUST emit before any pixel script.
             head + beforeInteractive ensures gtag('consent','default',...)
             is on the dataLayer before GA4/Meta/Pinterest/TikTok read it. */}
