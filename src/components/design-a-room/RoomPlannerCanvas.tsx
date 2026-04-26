@@ -2,13 +2,22 @@
 
 import { useState } from "react";
 
-import { FUTON_OPTIONS, type FutonOption } from "@/lib/design-a-room/steps";
+import {
+  DEFAULT_FUTON_IDX,
+  FUTON_OPTIONS,
+  type FutonOption,
+} from "@/lib/design-a-room/steps";
 
 const CANVAS_W = 400;
 const CANVAS_H = 320;
 const PADDING = 24;
+const ROOM_MIN = 6;
+const ROOM_MAX = 30;
+const ROOM_DEFAULT_W = 12;
+const ROOM_DEFAULT_D = 10;
 
 function toScale(roomFt: number, canvasPx: number): number {
+  if (roomFt <= 0) return 0;
   return (canvasPx - PADDING * 2) / (roomFt * 12);
 }
 
@@ -16,27 +25,34 @@ function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
 }
 
+function parseRoomFt(raw: string, fallback: number): number {
+  const n = parseFloat(raw);
+  return Number.isFinite(n) ? clamp(n, ROOM_MIN, ROOM_MAX) : fallback;
+}
+
 export function RoomPlannerCanvas() {
-  const [roomW, setRoomW] = useState(12);
-  const [roomD, setRoomD] = useState(10);
-  const [selectedIdx, setSelectedIdx] = useState(1);
+  const [roomWStr, setRoomWStr] = useState(String(ROOM_DEFAULT_W));
+  const [roomDStr, setRoomDStr] = useState(String(ROOM_DEFAULT_D));
+  const [selectedIdx, setSelectedIdx] = useState(DEFAULT_FUTON_IDX);
 
-  const futon: FutonOption = FUTON_OPTIONS[selectedIdx] ?? FUTON_OPTIONS[1]!;
+  const roomW = parseRoomFt(roomWStr, ROOM_DEFAULT_W);
+  const roomD = parseRoomFt(roomDStr, ROOM_DEFAULT_D);
+  const futon: FutonOption = FUTON_OPTIONS[selectedIdx] ?? FUTON_OPTIONS[DEFAULT_FUTON_IDX]!;
 
-  const scaleX = toScale(roomW, CANVAS_W);
-  const scaleY = toScale(roomD, CANVAS_H);
-  const scale = Math.min(scaleX, scaleY);
+  const scale = Math.min(toScale(roomW, CANVAS_W), toScale(roomD, CANVAS_H));
 
-  const roomPxW = clamp(roomW * 12 * scale, 1, CANVAS_W - PADDING * 2);
-  const roomPxD = clamp(roomD * 12 * scale, 1, CANVAS_H - PADDING * 2);
-
+  const roomPxW = roomW * 12 * scale;
+  const roomPxD = roomD * 12 * scale;
   const roomX = (CANVAS_W - roomPxW) / 2;
   const roomY = (CANVAS_H - roomPxD) / 2;
 
-  const futonPxW = clamp(futon.widthIn * scale, 1, roomPxW - 2);
-  const futonPxD = clamp(futon.depthIn * scale, 1, roomPxD - 2);
+  const futonPxW = clamp(futon.widthIn * scale, 1, Math.max(1, roomPxW - 2));
+  const futonPxD = clamp(futon.depthIn * scale, 1, Math.max(1, roomPxD - 2));
 
   const fits = futon.widthIn <= roomW * 12 && futon.depthIn <= roomD * 12;
+
+  const inputClass =
+    "mt-1 rounded-md border border-cf-divider bg-white px-3 py-2 text-sm shadow-sm focus:border-cf-cta focus:outline-none focus:ring-1 focus:ring-cf-cta";
 
   return (
     <div className="space-y-4">
@@ -45,22 +61,30 @@ export function RoomPlannerCanvas() {
           Room width (ft)
           <input
             type="number"
-            min={6}
-            max={30}
-            value={roomW}
-            onChange={(e) => setRoomW(clamp(Number(e.target.value), 6, 30))}
-            className="mt-1 rounded-md border border-cf-divider bg-white px-3 py-2 text-sm shadow-sm focus:border-cf-cta focus:outline-none focus:ring-1 focus:ring-cf-cta"
+            min={ROOM_MIN}
+            max={ROOM_MAX}
+            value={roomWStr}
+            onChange={(e) => setRoomWStr(e.target.value)}
+            onBlur={(e) => {
+              const n = parseRoomFt(e.target.value, ROOM_DEFAULT_W);
+              setRoomWStr(String(n));
+            }}
+            className={inputClass}
           />
         </label>
         <label className="flex flex-col gap-1 text-sm font-medium text-cf-ink">
           Room depth (ft)
           <input
             type="number"
-            min={6}
-            max={30}
-            value={roomD}
-            onChange={(e) => setRoomD(clamp(Number(e.target.value), 6, 30))}
-            className="mt-1 rounded-md border border-cf-divider bg-white px-3 py-2 text-sm shadow-sm focus:border-cf-cta focus:outline-none focus:ring-1 focus:ring-cf-cta"
+            min={ROOM_MIN}
+            max={ROOM_MAX}
+            value={roomDStr}
+            onChange={(e) => setRoomDStr(e.target.value)}
+            onBlur={(e) => {
+              const n = parseRoomFt(e.target.value, ROOM_DEFAULT_D);
+              setRoomDStr(String(n));
+            }}
+            className={inputClass}
           />
         </label>
         <label className="flex flex-col gap-1 text-sm font-medium text-cf-ink">
@@ -68,7 +92,7 @@ export function RoomPlannerCanvas() {
           <select
             value={selectedIdx}
             onChange={(e) => setSelectedIdx(Number(e.target.value))}
-            className="mt-1 rounded-md border border-cf-divider bg-white px-3 py-2 text-sm shadow-sm focus:border-cf-cta focus:outline-none focus:ring-1 focus:ring-cf-cta"
+            className={inputClass}
           >
             {FUTON_OPTIONS.map((opt, i) => (
               <option key={opt.label} value={i}>
@@ -90,7 +114,6 @@ export function RoomPlannerCanvas() {
           className="block"
           aria-hidden="true"
         >
-          {/* room outline */}
           <rect
             x={roomX}
             y={roomY}
@@ -101,7 +124,6 @@ export function RoomPlannerCanvas() {
             stroke="#d4c5ad"
             strokeWidth={1.5}
           />
-          {/* room label */}
           <text
             x={CANVAS_W / 2}
             y={roomY - 6}
@@ -111,7 +133,6 @@ export function RoomPlannerCanvas() {
           >
             {roomW} ft × {roomD} ft
           </text>
-          {/* futon */}
           <rect
             x={roomX + 1}
             y={roomY + 1}
@@ -122,7 +143,6 @@ export function RoomPlannerCanvas() {
             stroke={fits ? "#4a7d94" : "#e84000"}
             strokeWidth={1.5}
           />
-          {/* futon label */}
           {futonPxW > 36 && futonPxD > 16 ? (
             <text
               x={roomX + 1 + futonPxW / 2}
@@ -131,7 +151,7 @@ export function RoomPlannerCanvas() {
               fontSize={9}
               fill={fits ? "#2c5c70" : "#8b2000"}
             >
-              {futon.label.split("(")[0]?.trim()}
+              {futon.shortLabel}
             </text>
           ) : null}
         </svg>
@@ -144,9 +164,8 @@ export function RoomPlannerCanvas() {
         </p>
       ) : (
         <p className="text-xs text-cf-muted">
-          Blue rectangle shows the footprint of the selected piece inside your
-          room. Dimensions are approximate — allow clearance for doors and
-          traffic paths.
+          Blue rectangle shows the sleeping/open footprint of the selected piece.
+          Dimensions are approximate — allow clearance for doors and traffic paths.
         </p>
       )}
     </div>

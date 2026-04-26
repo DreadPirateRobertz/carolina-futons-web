@@ -20,14 +20,18 @@ export const DESIGN_STEPS: readonly DesignStep[] = [
 
 export type FutonOption = {
   label: string;
+  shortLabel: string;
   widthIn: number;
   depthIn: number;
 };
 
+// Dimensions are sleeping/open footprint (worst-case floor clearance for room planning).
 export const FUTON_OPTIONS: readonly FutonOption[] = [
-  { label: 'Twin futon (38" × 75")', widthIn: 38, depthIn: 32 },
-  { label: 'Full futon (54" × 75")', widthIn: 54, depthIn: 32 },
-  { label: 'Queen futon (60" × 80")', widthIn: 60, depthIn: 35 },
-  { label: 'Full murphy bed (56" × 83")', widthIn: 56, depthIn: 14 },
-  { label: 'Queen murphy bed (64" × 87")', widthIn: 64, depthIn: 14 },
+  { label: 'Twin futon (38" × 75")', shortLabel: "Twin futon", widthIn: 38, depthIn: 75 },
+  { label: 'Full futon (54" × 75")', shortLabel: "Full futon", widthIn: 54, depthIn: 75 },
+  { label: 'Queen futon (60" × 80")', shortLabel: "Queen futon", widthIn: 60, depthIn: 80 },
+  { label: 'Full murphy bed (56" × 83")', shortLabel: "Full murphy", widthIn: 56, depthIn: 83 },
+  { label: 'Queen murphy bed (64" × 87")', shortLabel: "Queen murphy", widthIn: 64, depthIn: 87 },
 ];
+
+export const DEFAULT_FUTON_IDX = 1;
