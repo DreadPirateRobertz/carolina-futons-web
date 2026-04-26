@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 
 import { BlueRidgeTimeline } from "@/components/illustrations/BlueRidgeTimeline";
 import { MountainSkyline } from "@/components/illustrations/MountainSkyline";
+import {
+  ShopTheRoom,
+  ABOUT_HERO_PHOTO,
+  ABOUT_HOTSPOT_CONFIGS,
+} from "@/components/site/ShopTheRoom";
 import { BUSINESS } from "@/lib/business/contact-info";
 
 export const metadata: Metadata = {
@@ -10,7 +15,7 @@ export const metadata: Metadata = {
     "Family-owned since 1991, Carolina Futons has helped Hendersonville, NC customers find American-made frames and mattresses that last.",
 };
 
-export default function AboutPage() {
+export default async function AboutPage() {
   return (
     <main className="w-full">
       {/* cf-93rb A.2: full-bleed Blue Ridge skyline above the page header
@@ -119,6 +124,17 @@ export default function AboutPage() {
         </section>
         </article>
       </div>
+
+      {/* cf-delight Phase 3: shop-the-room hotspots over a coastal-bedroom
+          platform-bed photo, anchoring the brand-history prose with a
+          tangible "this is what we make" moment before the user leaves. */}
+      <ShopTheRoom
+        headingId="about-shop-the-room-heading"
+        eyebrow="See it in a real bedroom"
+        heading="The pieces in this story"
+        heroPhoto={ABOUT_HERO_PHOTO}
+        hotspotConfigs={ABOUT_HOTSPOT_CONFIGS}
+      />
     </main>
   );
 }

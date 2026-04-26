@@ -27,6 +27,10 @@ vi.mock("@/components/site/TrustBar", () => ({
 // marker still proves the section was wired in.
 vi.mock("@/components/site/ShopTheRoom", () => ({
   ShopTheRoom: () => <div data-slot="shop-the-room" />,
+  // The page imports the per-surface config alongside the component so
+  // the mock has to surface them too.
+  HOME_HERO_PHOTO: { src: "stub", alt: "stub", width: 1, height: 1 },
+  HOME_HOTSPOT_CONFIGS: [],
 }));
 vi.mock("@/components/site/FeaturedProducts", () => ({
   FeaturedProducts: ({ products }: { products: unknown[] }) =>
