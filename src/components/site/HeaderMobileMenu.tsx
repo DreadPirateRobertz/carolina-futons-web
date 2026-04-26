@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
@@ -36,18 +36,16 @@ const SUB_NAV = [
 const FOCUSABLE_SELECTORS =
   'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+// Returns false on the server, true on the client — no setState in an effect.
+const emptySubscribe = () => () => {};
+
 export function HeaderMobileMenu() {
   const [open, setOpen] = useState(false);
-  // False on both server and initial client render so hydration matches.
-  // Effect runs after hydration, setting mounted=true and enabling the portal.
-  const [mounted, setMounted] = useState(false);
+  // useSyncExternalStore: false on SSR, true after hydration — avoids the
+  // setState-in-effect pattern that triggers the react-compiler lint rule.
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- SSR hydration gate: one-time post-hydration mount; no cascade
-    setMounted(true);
-  }, []);
 
   // Close on ESC
   useEffect(() => {

@@ -95,7 +95,7 @@ describe("StyleQuiz — step progression", () => {
     fireEvent.click(screen.getByRole("button", { name: /living room/i }));
     fireEvent.click(screen.getByRole("button", { name: /primarily sitting/i }));
     const calls = eventMocks.trackCustomEvent.mock.calls.filter(
-      (args) => args[0] === "quiz_started",
+      (args) => (args as unknown[])[0] === "quiz_started",
     );
     expect(calls).toHaveLength(1);
   });
