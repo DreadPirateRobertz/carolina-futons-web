@@ -535,3 +535,34 @@ describe("PdpGallery — activeUrl variant-picker integration (cf-q9zi)", () => 
     ).toBe("https://img/b.jpg");
   });
 });
+
+describe("PdpGallery — image comparison (cf-delight #10)", () => {
+  it("shows a Compare button when there are ≥2 images", () => {
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    expect(screen.getByTestId("pdp-compare-toggle")).toBeInTheDocument();
+    expect(screen.getByLabelText(/compare two angles/i)).toBeInTheDocument();
+  });
+
+  it("clicking Compare replaces the main image with the comparison view", () => {
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    expect(screen.queryByTestId("pdp-image-comparison")).toBeNull();
+    fireEvent.click(screen.getByTestId("pdp-compare-toggle"));
+    expect(screen.getByTestId("pdp-image-comparison")).toBeInTheDocument();
+    expect(screen.queryByTestId("pdp-main-image-zoom-trigger")).toBeNull();
+  });
+
+  it("clicking Compare again (or closing) restores the normal gallery", () => {
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    fireEvent.click(screen.getByTestId("pdp-compare-toggle"));
+    expect(screen.getByTestId("pdp-image-comparison")).toBeInTheDocument();
+    // Close via the comparison close button
+    fireEvent.click(screen.getByRole("button", { name: /close comparison/i }));
+    expect(screen.queryByTestId("pdp-image-comparison")).toBeNull();
+    expect(screen.getByTestId("pdp-main-image-zoom-trigger")).toBeInTheDocument();
+  });
+
+  it("does not show Compare button for a single-image gallery", () => {
+    render(<PdpGallery images={[multiImages[0]!]} productName="Kingston Futon" />);
+    expect(screen.queryByTestId("pdp-compare-toggle")).toBeNull();
+  });
+});
