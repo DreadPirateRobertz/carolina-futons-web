@@ -50,7 +50,15 @@ function SubmitButton() {
   );
 }
 
-export function ContactForm() {
+export type ContactFormProps = {
+  // Pre-fills the subject field on the initial render (e.g. "[Press] " on
+  // /press) so a routing tag is present even if the visitor doesn't type
+  // it. The user can still edit/clear it before submitting. Not enforced
+  // server-side — this is a defaults UX nudge, not access control.
+  subjectPrefix?: string;
+};
+
+export function ContactForm({ subjectPrefix }: ContactFormProps = {}) {
   const [state, formAction] = useActionState(
     sendContactForm,
     initialContactActionState,
@@ -162,7 +170,7 @@ export function ContactForm() {
           id={subjectId}
           name="subject"
           type="text"
-          defaultValue={values.subject}
+          defaultValue={values.subject || subjectPrefix || ""}
           className={inputClass}
           aria-invalid={errors.subject ? true : undefined}
           aria-describedby={errors.subject ? `${subjectId}-error` : undefined}
