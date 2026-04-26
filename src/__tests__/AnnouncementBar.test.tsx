@@ -1,44 +1,113 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { useEffect } from "react";
 
 import { AnnouncementBar } from "@/components/site/AnnouncementBar";
+import { CartProvider, useCart } from "@/components/cart/CartProvider";
+import type { CartLineItem } from "@/lib/cart/cart-state";
+import { FREE_SHIPPING_THRESHOLD_CENTS } from "@/lib/shipping/thresholds";
 
-describe("AnnouncementBar (cf-3qt.1 Phase 1)", () => {
-  it("renders default free-delivery message when no props provided", () => {
-    render(<AnnouncementBar />);
+function Seed({ lines }: { lines: ReadonlyArray<CartLineItem> }) {
+  const { addLine } = useCart();
+  useEffect(() => {
+    lines.forEach(addLine);
+  }, [lines, addLine]);
+  return null;
+}
+
+function renderBar(
+  lines: ReadonlyArray<CartLineItem> = [],
+  props: React.ComponentProps<typeof AnnouncementBar> = {},
+) {
+  return render(
+    <CartProvider>
+      <Seed lines={lines} />
+      <AnnouncementBar {...props} />
+    </CartProvider>,
+  );
+}
+
+const makeItem = (
+  id: string,
+  unitPriceCents: number,
+  quantity = 1,
+): CartLineItem => ({
+  id,
+  productId: id,
+  productName: "Test Product",
+  unitPriceCents,
+  quantity,
+  imageSrc: "",
+  imageAlt: "",
+  slug: id,
+});
+
+describe("AnnouncementBar — cart-driven copy (cf-t31z)", () => {
+  it("shows default promo when cart is empty", () => {
+    renderBar();
     expect(
-      screen.getByText(/free white-glove delivery/i)
+      screen.getByText("Free white-glove delivery on orders over $1,500"),
     ).toBeInTheDocument();
   });
 
-  it("renders custom message when provided", () => {
-    render(<AnnouncementBar message="Spring sale — 20% off" />);
-    expect(screen.getByText(/spring sale/i)).toBeInTheDocument();
+  it("shows '$X away' copy when cart subtotal is below threshold", () => {
+    // $500 item → $1,000 gap remaining
+    renderBar([makeItem("a", 50_000)]);
+    expect(screen.getByText(/away from free delivery/)).toBeInTheDocument();
+    expect(screen.getByText(/\$1,000/)).toBeInTheDocument();
   });
 
-  it("renders a CTA link when both ctaLabel and ctaHref are present", () => {
-    render(
-      <AnnouncementBar
-        message="Free shipping this week"
-        ctaLabel="Shop now"
-        ctaHref="/sale"
-      />
-    );
-    expect(screen.getByRole("link", { name: /shop now/i })).toHaveAttribute(
+  it("shows qualify copy when subtotal exactly hits threshold", () => {
+    renderBar([makeItem("a", FREE_SHIPPING_THRESHOLD_CENTS)]);
+    expect(
+      screen.getByText("You qualify for free delivery!"),
+    ).toBeInTheDocument();
+  });
+
+  it("shows qualify copy when subtotal exceeds threshold", () => {
+    renderBar([makeItem("a", FREE_SHIPPING_THRESHOLD_CENTS + 1)]);
+    expect(
+      screen.getByText("You qualify for free delivery!"),
+    ).toBeInTheDocument();
+  });
+
+  it("reflects quantity — 2× $500 item = $1,000, $500 gap remaining", () => {
+    renderBar([makeItem("a", 50_000, 2)]);
+    expect(screen.getByText(/away from free delivery/)).toBeInTheDocument();
+    expect(screen.getByText(/\$500/)).toBeInTheDocument();
+  });
+});
+
+describe("AnnouncementBar — message prop override", () => {
+  it("renders the explicit message verbatim regardless of cart state", () => {
+    renderBar([makeItem("a", FREE_SHIPPING_THRESHOLD_CENTS + 1)], {
+      message: "Summer sale — 20% off all frames",
+    });
+    expect(
+      screen.getByText("Summer sale — 20% off all frames"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/qualify|away from free/),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders a CTA link when ctaLabel + ctaHref are provided", () => {
+    renderBar([], { message: "Sale", ctaLabel: "Shop now", ctaHref: "/shop" });
+    expect(screen.getByRole("link", { name: "Shop now" })).toHaveAttribute(
       "href",
-      "/sale"
+      "/shop",
     );
   });
 
   it("does not render a CTA when href is missing", () => {
-    render(<AnnouncementBar message="Hi" ctaLabel="Shop" />);
+    renderBar([], { message: "Hi", ctaLabel: "Shop" });
     expect(screen.queryByRole("link")).toBeNull();
   });
 
   it("exposes itself as an accessible region", () => {
-    render(<AnnouncementBar />);
+    renderBar();
     expect(
-      screen.getByRole("region", { name: /site announcement/i })
+      screen.getByRole("region", { name: /site announcement/i }),
     ).toBeInTheDocument();
   });
 });
