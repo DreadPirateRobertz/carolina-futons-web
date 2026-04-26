@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 vi.mock("@/lib/analytics/ga4-events", () => ({
@@ -28,6 +28,7 @@ vi.mock("next/link", () => ({
 
 import { useCart } from "@/components/cart/CartProvider";
 import { useSearchParams } from "next/navigation";
+import { trackBeginCheckout } from "@/lib/analytics/ga4-events";
 import CartPage from "@/app/cart/page";
 import type { CartLineItem } from "@/lib/cart/cart-state";
 
@@ -67,6 +68,10 @@ function mockSearchParams(params: Record<string, string> = {}) {
 }
 
 describe("CartPage", () => {
+  beforeEach(() => {
+    (trackBeginCheckout as ReturnType<typeof vi.fn>).mockReset();
+  });
+
   it("shows empty state when cart has no lines", () => {
     mockCart([]);
     mockSearchParams();
@@ -140,6 +145,26 @@ describe("CartPage", () => {
     mockSearchParams();
     render(<CartPage />);
     expect(screen.getByTestId("proceed-to-checkout")).toHaveAttribute("href", "/checkout");
+  });
+
+  it("clicks proceed-to-checkout fires trackBeginCheckout with correct item payload", () => {
+    mockCart([LINE]);
+    mockSearchParams();
+    render(<CartPage />);
+    fireEvent.click(screen.getByTestId("proceed-to-checkout"));
+    expect(trackBeginCheckout).toHaveBeenCalledOnce();
+    const [items, value] = (trackBeginCheckout as ReturnType<typeof vi.fn>).mock.calls[0]!;
+    expect(items).toEqual([
+      {
+        item_id: "prod-1",
+        item_name: "Kingston Futon Frame",
+        item_variant: "Size: Full",
+        price: 799,        // unitPriceCents 79900 / 100
+        quantity: 2,
+      },
+    ]);
+    // subtotalCents = 79900 * 2 = 159800 → 1598.00
+    expect(value).toBeCloseTo(1598, 2);
   });
 
   it("product name is a link when productUrl is set", () => {
