@@ -202,7 +202,11 @@ function CartPageContent() {
             Shipping and taxes calculated at checkout.
           </p>
 
-          <Link
+          {/* Plain <a> — not <Link> — so the browser makes a full navigation
+              request. The /checkout route handler returns a 307 to the Wix
+              payment page; Next.js <Link> does SPA-style fetch and won't
+              follow that external redirect. */}
+          <a
             href="/checkout"
             data-testid="proceed-to-checkout"
             onClick={() => {
@@ -217,14 +221,14 @@ function CartPageContent() {
                   })),
                   subtotalCents / 100,
                 );
-              } catch {
-                // GA4 failures must not block navigation
+              } catch (e) {
+                console.error("[cart] trackBeginCheckout failed", e);
               }
             }}
             className="mt-5 flex h-12 w-full items-center justify-center rounded-md bg-cf-cta text-sm font-medium text-white transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
           >
             Proceed to checkout
-          </Link>
+          </a>
 
           <Link
             href="/shop"

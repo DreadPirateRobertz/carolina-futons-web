@@ -2,9 +2,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
 const initCheckoutMock = vi.fn();
+const logWixFailureMock = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("@/lib/wix/checkout", () => ({
   initCheckout: initCheckoutMock,
+}));
+
+vi.mock("@/lib/wix/errors", () => ({
+  logWixFailure: logWixFailureMock,
 }));
 
 // Hoist module import so the mock above is applied before the route module
@@ -13,6 +18,8 @@ let GET: (req: NextRequest) => Promise<Response>;
 beforeEach(async () => {
   vi.resetModules();
   initCheckoutMock.mockReset();
+  logWixFailureMock.mockReset();
+  logWixFailureMock.mockResolvedValue(undefined);
   ({ GET } = await import("@/app/checkout/route"));
 });
 
@@ -37,6 +44,7 @@ describe("GET /checkout route", () => {
     const [callbacks] = initCheckoutMock.mock.calls[0]!;
     expect(callbacks.thankYouPageUrl).toContain("/order-confirmation");
     expect(callbacks.cartPageUrl).toContain("/cart");
+    expect(callbacks.postFlowUrl).toContain("/");
   });
 
   it("redirects to /cart?checkout_error=1 when initCheckout throws", async () => {
