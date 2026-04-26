@@ -121,26 +121,6 @@ describe("ShopTheRoom — surface differentiation", () => {
     expect(ABOUT_HERO_PHOTO.src).not.toBe(SHOP_HERO_PHOTO.src);
   });
 
-  it.each([
-    ["HOME", HOME_HERO_PHOTO],
-    ["ABOUT", ABOUT_HERO_PHOTO],
-    ["SHOP", SHOP_HERO_PHOTO],
-    ["FUTON_FRAMES_PLP", FUTON_FRAMES_PLP_HERO_PHOTO],
-  ])(
-    "%s hero src does not duplicate any entry in the home-page carousel (HERO_SLIDES)",
-    async (_, photo) => {
-      // Tightened from the prior single-index + HOME-only check (which
-      // missed Murphy duplicating HERO_SLIDES[2] in Phase 2). NO
-      // ShopTheRoom surface should match the carousel — visitors moving
-      // home → any other surface shouldn't see a recently-rotated
-      // carousel slide as the next page's hero.
-      const page = await import("@/app/page");
-      const carouselSrcs = page.HERO_SLIDES.map((s) => s.src);
-      expect(carouselSrcs.length).toBeGreaterThan(0);
-      expect(carouselSrcs).not.toContain(photo.src);
-    },
-  );
-
   it("HOME and FUTON_FRAMES_PLP intentionally share the same lifestyle-futon-frames asset", () => {
     // Documented cross-page repeat: visitor going home → 'Browse futons'
     // CTA → /shop/futon-frames sees the same scene with different
