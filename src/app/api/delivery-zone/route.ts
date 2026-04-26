@@ -20,27 +20,14 @@ import {
   getShippingZone,
   isEligible,
   isValidZip,
-  type EstDays,
   type ShippingService,
-  type ShippingZone,
 } from "@/lib/product/shipping-estimate";
+import type {
+  DeliveryZoneError,
+  DeliveryZoneOk,
+} from "@/lib/shipping/delivery-zone-types";
 
 export const dynamic = "force-dynamic";
-
-type DeliveryZoneOk = {
-  ok: true;
-  zip: string;
-  zone: ShippingZone;
-  eligible: boolean;
-  service: ShippingService;
-  estDays: EstDays;
-  label: string;
-};
-
-type DeliveryZoneError = {
-  ok: false;
-  error: "missing-zip" | "invalid-zip" | "invalid-json";
-};
 
 const SERVICE_LABEL: Record<ShippingService, string> = {
   "white-glove": "Free white-glove delivery",
