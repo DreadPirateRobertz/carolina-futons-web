@@ -30,6 +30,15 @@ function CartPageContent() {
         <h1 className="font-heading text-3xl font-semibold tracking-tight text-cf-espresso">
           Your cart
         </h1>
+        {checkoutError ? (
+          <p
+            role="alert"
+            data-testid="checkout-error-banner"
+            className="mt-4 rounded-md border border-cf-error/30 bg-cf-error/10 px-4 py-3 text-sm text-cf-error"
+          >
+            Something went wrong starting checkout — please try again.
+          </p>
+        ) : null}
         <p className="mt-4 text-cf-charcoal/70">Your cart is empty.</p>
         <Link
           href="/shop"

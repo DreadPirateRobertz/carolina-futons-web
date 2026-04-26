@@ -3,7 +3,9 @@ import path from "node:path";
 
 const nextConfig: NextConfig = {
   turbopack: {
-    root: path.join(__dirname),
+    // node_modules is a symlink to the main worktree — set root to / so
+    // Turbopack can follow the symlink across /private/tmp.
+    root: "/",
   },
   images: {
     // cf-93rb Phase A: the brand illustrations under /public/illustrations

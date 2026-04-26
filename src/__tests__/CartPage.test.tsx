@@ -78,6 +78,14 @@ describe("CartPage", () => {
     );
   });
 
+  it("shows checkout error banner in empty-cart state when checkout_error=1", () => {
+    mockCart([]);
+    mockSearchParams({ checkout_error: "1" });
+    render(<CartPage />);
+    expect(screen.getByTestId("checkout-error-banner")).toBeInTheDocument();
+    expect(screen.getByText(/your cart is empty/i)).toBeInTheDocument();
+  });
+
   it("renders line items and subtotal when cart has items", () => {
     mockCart([LINE]);
     mockSearchParams();
