@@ -14,6 +14,7 @@ import {
   buildOrganizationSchema,
   resolveSiteUrl,
 } from "@/lib/seo/json-ld";
+import { resolveVerification } from "@/lib/seo/webmaster-verification";
 import { RouteProgressBar } from "@/components/site/RouteProgressBar";
 import { BackToTop } from "@/components/site/BackToTop";
 import { TikTokPixel } from "@/components/analytics/TikTokPixel";
@@ -59,6 +60,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
   },
+  verification: resolveVerification(),
 };
 
 export default function RootLayout({
