@@ -2,6 +2,8 @@
 
 import { getMemberSession, withMember } from "@/lib/auth/member";
 import { callVelo } from "@/lib/wix/velo-client";
+import { signMemberId, verifyShareToken } from "@/lib/wishlist/share-token";
+import type { WishlistResponse } from "@/lib/wishlist/wishlist-types";
 
 const w = (method: string) => `wishlistService/${method}`;
 
@@ -80,4 +82,40 @@ export async function isOnWishlist(productId: string) {
       accessToken: m.accessToken,
     }),
   );
+}
+
+// ── Share token (cf-u89z) ─────────────────────────────────────────
+
+// Falls back to a dev placeholder so the feature works locally without
+// secrets configured. Production MUST set WISHLIST_SHARE_SECRET.
+function shareSecret(): string {
+  return process.env.WISHLIST_SHARE_SECRET ?? "dev-wishlist-secret-change-in-prod";
+}
+
+export async function generateShareToken(): Promise<
+  { success: true; token: string } | { success: false }
+> {
+  const session = await getMemberSession();
+  if (!session?.memberId) return { success: false };
+  const token = signMemberId(session.memberId, shareSecret());
+  return { success: true, token };
+}
+
+export async function getSharedWishlist(token: string): Promise<
+  { success: true; items: WishlistResponse["items"]; total: number } | { success: false }
+> {
+  const memberId = verifyShareToken(token, shareSecret());
+  if (!memberId) return { success: false };
+  try {
+    const result = (await callVelo({
+      method: w("getWishlistByMemberId"),
+      args: [memberId],
+      // No accessToken — getWishlistByMemberId uses Permissions.Anyone
+    })) as WishlistResponse | undefined;
+    if (!result?.success) return { success: false };
+    return { success: true, items: result.items, total: result.total };
+  } catch (err) {
+    console.error("[wishlist] getSharedWishlist failed:", err);
+    return { success: false };
+  }
 }

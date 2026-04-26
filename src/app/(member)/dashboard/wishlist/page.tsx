@@ -1,5 +1,6 @@
 import { DashboardShell } from "@/components/member/DashboardShell";
 import { WishlistList } from "@/components/member/WishlistList";
+import { WishlistShareButton } from "@/components/member/WishlistShareButton";
 import { getWishlist } from "@/app/actions/wishlist";
 import { getMemberSession } from "@/lib/auth/member";
 import { getWixClientWithTokens } from "@/lib/wix-client";
@@ -43,16 +44,19 @@ export default async function DashboardWishlistPage() {
         data-slot="dashboard-wishlist"
         className="space-y-6"
       >
-        <header>
-          <h2
-            id="dashboard-wishlist-heading"
-            className="font-heading text-xl font-semibold text-cf-ink"
-          >
-            Your wishlist
-          </h2>
-          <p className="mt-1 text-sm text-cf-muted">
-            Items you&rsquo;ve saved from product pages.
-          </p>
+        <header className="flex items-start justify-between gap-4">
+          <div>
+            <h2
+              id="dashboard-wishlist-heading"
+              className="font-heading text-xl font-semibold text-cf-ink"
+            >
+              Your wishlist
+            </h2>
+            <p className="mt-1 text-sm text-cf-muted">
+              Items you&rsquo;ve saved from product pages.
+            </p>
+          </div>
+          <WishlistShareButton />
         </header>
 
         <WishlistList initialItems={initialItems} />
