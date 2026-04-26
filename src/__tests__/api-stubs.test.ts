@@ -15,11 +15,7 @@ const stubRoutes: Array<{
     methods: ["POST"],
     load: () => import("@/app/api/newsletter/route"),
   },
-  {
-    path: "/api/delivery-zone",
-    methods: ["GET", "POST"],
-    load: () => import("@/app/api/delivery-zone/route"),
-  },
+  // cf-w2my: /api/delivery-zone now implemented; covered by api-delivery-zone.test.ts
   {
     path: "/api/cart",
     methods: ["GET", "POST", "DELETE"],
