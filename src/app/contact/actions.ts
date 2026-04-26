@@ -173,12 +173,11 @@ function validateAppointment(req: AppointmentRequest): AppointmentErrors {
     errors.appointmentDate = "Please select a date.";
   } else {
     const d = new Date(req.appointmentDate + "T00:00:00");
-    const day = d.getDay(); // 0=Sun, 3=Wed, 4=Thu, 5=Fri, 6=Sat
-    if (![3, 4, 5, 6].includes(day)) {
-      errors.appointmentDate = "We're open Wednesday through Saturday.";
-    }
+    const day = d.getDay(); // 1=Mon…6=Sat, 0=Sun; open days are 3–6
     if (d < new Date(new Date().toDateString())) {
       errors.appointmentDate = "Please choose a future date.";
+    } else if (![3, 4, 5, 6].includes(day)) {
+      errors.appointmentDate = "We're open Wednesday through Saturday.";
     }
   }
   if (!APPOINTMENT_TIMES[req.appointmentTime]) {
@@ -236,8 +235,8 @@ export async function bookAppointment(
     await transport.sendMail({
       from: `"Carolina Futons Website" <${env.user}>`,
       to: BUSINESS.email,
-      replyTo: `"${req.appointmentName}" <${req.appointmentEmail}>`,
-      subject: `[Appointment] ${req.appointmentDate} at ${APPOINTMENT_TIMES[req.appointmentTime]}`,
+      replyTo: { name: req.appointmentName, address: req.appointmentEmail },
+      subject: `[Appointment] ${req.appointmentDate} at ${APPOINTMENT_TIMES[req.appointmentTime] ?? req.appointmentTime}`,
       text: buildAppointmentBody(req),
     });
   } catch (err) {
@@ -253,6 +252,6 @@ export async function bookAppointment(
   return {
     status: "success",
     date: req.appointmentDate,
-    time: APPOINTMENT_TIMES[req.appointmentTime],
+    time: APPOINTMENT_TIMES[req.appointmentTime] ?? req.appointmentTime,
   };
 }
