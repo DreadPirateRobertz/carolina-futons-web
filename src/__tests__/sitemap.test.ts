@@ -135,13 +135,22 @@ describe("sitemap()", () => {
     expect(entries.every((e) => !/[^:]\/\//.test(e.url))).toBe(true);
   });
 
-  it("falls back to the production origin when NEXT_PUBLIC_SITE_URL is unset", async () => {
+  it("falls back to VERCEL_URL (deployment domain) when NEXT_PUBLIC_SITE_URL is unset (cf-izyc)", async () => {
     delete process.env.NEXT_PUBLIC_SITE_URL;
+    process.env.VERCEL_URL = "cfw-abc123.vercel.app";
     const entries = await sitemap();
     expect(
-      entries.every((e) =>
-        e.url.startsWith("https://www.carolinafutons.com"),
-      ),
+      entries.every((e) => e.url.startsWith("https://cfw-abc123.vercel.app")),
+    ).toBe(true);
+    delete process.env.VERCEL_URL;
+  });
+
+  it("falls back to localhost when neither NEXT_PUBLIC_SITE_URL nor VERCEL_URL is set", async () => {
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    delete process.env.VERCEL_URL;
+    const entries = await sitemap();
+    expect(
+      entries.every((e) => e.url.startsWith("http://localhost:3000")),
     ).toBe(true);
   });
 });

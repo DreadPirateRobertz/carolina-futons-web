@@ -41,9 +41,16 @@ const STATIC_PATHS = [
 const PRODUCT_SITEMAP_LIMIT = 1000;
 
 export function resolveSiteBase(): string {
-  const raw =
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.carolinafutons.com";
-  return raw.replace(/\/+$/, "");
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/+$/, "");
+  }
+  // VERCEL_URL is auto-injected on every deployment (no protocol prefix).
+  // Using it as fallback avoids robots.txt + sitemap.xml pointing to the old
+  // Wix domain before NEXT_PUBLIC_SITE_URL is wired up in Vercel env vars.
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return "http://localhost:3000";
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
