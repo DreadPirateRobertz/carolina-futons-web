@@ -1,38 +1,18 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-// cf-contact-form: Server Action + nodemailer transport. The action owns
-// validation (shared with the client), env-driven SMTP transport creation,
-// and the success/error shape the form renders from `useActionState`.
+// cf-3qt.4.6: Server Action now hands off to /_functions/contactSubmissions
+// instead of nodemailer. The action keeps validation (shared with the
+// client) and translates Velo HTTP responses into the ContactActionState
+// shape that `useActionState` renders from.
 
-type SendMail = (opts: unknown) => Promise<{ accepted: string[] }>;
-type MailMocks = {
-  sendMail: ReturnType<typeof vi.fn<SendMail>>;
-  createTransport: ReturnType<
-    typeof vi.fn<(opts: unknown) => { sendMail: SendMail }>
-  >;
-};
-const mailMocks: MailMocks = vi.hoisted(() => ({
-  sendMail: vi.fn<SendMail>(),
-  createTransport: vi.fn<(opts: unknown) => { sendMail: SendMail }>(),
-}));
+import { sendContactForm } from "@/app/contact/actions";
 
-vi.mock("nodemailer", () => ({
-  default: { createTransport: mailMocks.createTransport },
-  createTransport: mailMocks.createTransport,
-}));
+// Endpoint mirrors the WIX_VELO_SITE_URL default in src/lib/env.ts; if that
+// default ever changes, this constant must move with it.
+const ENDPOINT =
+  "https://www.carolinafutons.com/_functions/contactSubmissions";
 
-beforeEach(() => {
-  mailMocks.sendMail.mockReset();
-  mailMocks.sendMail.mockResolvedValue({ accepted: ["carolinafutons@gmail.com"] });
-  mailMocks.createTransport.mockReset();
-  mailMocks.createTransport.mockImplementation(() => ({
-    sendMail: mailMocks.sendMail,
-  }));
-  process.env.SMTP_HOST = "smtp.example.com";
-  process.env.SMTP_PORT = "587";
-  process.env.SMTP_USER = "mailer@example.com";
-  process.env.SMTP_PASS = "hunter2";
-});
+let fetchMock: ReturnType<typeof vi.fn>;
 
 function fd(fields: Record<string, string>): FormData {
   const data = new FormData();
@@ -47,89 +27,180 @@ const VALID = {
   message: "Hi — do you ship to Asheville? Thanks.",
 };
 
-describe("sendContactForm — validation", () => {
+beforeEach(() => {
+  fetchMock = vi.fn();
+  vi.stubGlobal("fetch", fetchMock);
+  vi.spyOn(console, "error").mockImplementation(() => {});
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+
+describe("sendContactForm — validation (no network)", () => {
   it("returns field errors when required fields are missing", async () => {
-    const { sendContactForm } = await import("@/app/contact/actions");
-    const result = await sendContactForm(null, fd({ name: "", email: "", subject: "", message: "" }));
+    const result = await sendContactForm(
+      null,
+      fd({ name: "", email: "", subject: "", message: "" }),
+    );
     expect(result.status).toBe("error");
     if (result.status !== "error") return;
     expect(result.errors.name).toBeTruthy();
     expect(result.errors.email).toBeTruthy();
     expect(result.errors.subject).toBeTruthy();
     expect(result.errors.message).toBeTruthy();
-    expect(mailMocks.sendMail).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("returns email-shape error for malformed email", async () => {
-    const { sendContactForm } = await import("@/app/contact/actions");
-    const result = await sendContactForm(null, fd({ ...VALID, email: "not-an-email" }));
+    const result = await sendContactForm(
+      null,
+      fd({ ...VALID, email: "not-an-email" }),
+    );
     expect(result.status).toBe("error");
     if (result.status !== "error") return;
     expect(result.errors.email).toBeTruthy();
-    expect(mailMocks.sendMail).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("returns message-length error for too-short messages", async () => {
-    const { sendContactForm } = await import("@/app/contact/actions");
     const result = await sendContactForm(null, fd({ ...VALID, message: "hi" }));
     expect(result.status).toBe("error");
     if (result.status !== "error") return;
     expect(result.errors.message).toBeTruthy();
-    expect(mailMocks.sendMail).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 
-describe("sendContactForm — nodemailer transport", () => {
-  it("invokes transport.sendMail with to=BUSINESS.email and the user's fields in the body", async () => {
-    const { sendContactForm } = await import("@/app/contact/actions");
+describe("sendContactForm — Velo handoff", () => {
+  function ok(body: object = { success: true }) {
+    return new Response(JSON.stringify(body), { status: 200 });
+  }
+
+  it("POSTs the validated request as JSON with no-store + content-type", async () => {
+    fetchMock.mockResolvedValueOnce(ok());
     const result = await sendContactForm(null, fd(VALID));
     expect(result.status).toBe("success");
-    expect(mailMocks.sendMail).toHaveBeenCalledTimes(1);
-    const call = mailMocks.sendMail.mock.calls[0]![0] as {
-      to: string;
-      replyTo: string;
-      subject: string;
-      text: string;
-    };
-    expect(call.to).toBe("carolinafutons@gmail.com");
-    expect(call.replyTo).toContain("jane@example.com");
-    expect(call.subject).toContain("Monterey");
-    expect(call.text).toContain("Jane Customer");
-    expect(call.text).toContain("jane@example.com");
-    expect(call.text).toContain("Asheville");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0]! as [string, RequestInit];
+    expect(url).toBe(ENDPOINT);
+    expect(init.method).toBe("POST");
+    expect(init.cache).toBe("no-store");
+    expect((init.headers as Record<string, string>)["content-type"]).toBe(
+      "application/json",
+    );
+    expect(init.signal).toBeDefined();
+    const body = JSON.parse(init.body as string);
+    // coerceContactRequest drops empty phone; only the populated fields ship
+    expect(body).toEqual({
+      name: VALID.name,
+      email: VALID.email,
+      subject: VALID.subject,
+      message: VALID.message,
+    });
   });
 
-  it("builds the transport from SMTP_* env vars", async () => {
-    const { sendContactForm } = await import("@/app/contact/actions");
-    await sendContactForm(null, fd(VALID));
-    expect(mailMocks.createTransport).toHaveBeenCalledTimes(1);
-    const cfg = mailMocks.createTransport.mock.calls[0]![0] as {
-      host: string;
-      port: number;
-      auth: { user: string; pass: string };
-    };
-    expect(cfg.host).toBe("smtp.example.com");
-    expect(cfg.port).toBe(587);
-    expect(cfg.auth.user).toBe("mailer@example.com");
-    expect(cfg.auth.pass).toBe("hunter2");
+  it("forwards optional phone field when provided", async () => {
+    fetchMock.mockResolvedValueOnce(ok());
+    await sendContactForm(null, fd({ ...VALID, phone: "828-555-0100" }));
+    const init = fetchMock.mock.calls[0]![1] as RequestInit;
+    const body = JSON.parse(init.body as string);
+    expect(body.phone).toBe("828-555-0100");
   });
 
-  it("returns a transport error when sendMail throws", async () => {
-    mailMocks.sendMail.mockRejectedValueOnce(new Error("ECONNREFUSED"));
-    const { sendContactForm } = await import("@/app/contact/actions");
+  it("returns success with no body parse on a 204 No Content", async () => {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
+    const result = await sendContactForm(null, fd(VALID));
+    expect(result.status).toBe("success");
+  });
+
+  it("returns generic transportError + echoes values when fetch rejects", async () => {
+    fetchMock.mockRejectedValueOnce(new Error("ECONNRESET"));
+    const result = await sendContactForm(null, fd(VALID));
+    expect(result.status).toBe("error");
+    if (result.status !== "error") return;
+    expect(result.transportError).toBeTruthy();
+    expect(result.values.email).toBe(VALID.email);
+    expect(result.values.message).toBe(VALID.message);
+  });
+
+  it("returns generic transportError when fetch times out (AbortError)", async () => {
+    fetchMock.mockRejectedValueOnce(
+      Object.assign(new Error("The operation was aborted."), {
+        name: "AbortError",
+      }),
+    );
     const result = await sendContactForm(null, fd(VALID));
     expect(result.status).toBe("error");
     if (result.status !== "error") return;
     expect(result.transportError).toBeTruthy();
   });
 
-  it("returns a configuration error when SMTP env vars are missing", async () => {
-    delete process.env.SMTP_HOST;
-    const { sendContactForm } = await import("@/app/contact/actions");
+  it("returns rate-limit copy + echoes values when Velo responds 429", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ success: false, error: "Too many requests…" }),
+        { status: 429 },
+      ),
+    );
+    const result = await sendContactForm(null, fd(VALID));
+    expect(result.status).toBe("error");
+    if (result.status !== "error") return;
+    expect(result.transportError).toMatch(/few minutes/i);
+    expect(result.values.email).toBe(VALID.email);
+  });
+
+  it("surfaces Velo-supplied error message + echoes values on 400", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ success: false, error: "Invalid email format" }),
+        { status: 400 },
+      ),
+    );
+    const result = await sendContactForm(null, fd(VALID));
+    expect(result.status).toBe("error");
+    if (result.status !== "error") return;
+    expect(result.transportError).toBe("Invalid email format");
+    expect(result.values.email).toBe(VALID.email);
+  });
+
+  it("surfaces Velo error on 500 (non-rate-limit infra failure)", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ success: false, error: "Internal server error" }),
+        { status: 500 },
+      ),
+    );
+    const result = await sendContactForm(null, fd(VALID));
+    expect(result.status).toBe("error");
+    if (result.status !== "error") return;
+    expect(result.transportError).toBe("Internal server error");
+    expect(result.values.email).toBe(VALID.email);
+  });
+
+  it("falls back to generic copy + echoes values when Velo body is unparseable", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response("{ broken", { status: 502 }),
+    );
     const result = await sendContactForm(null, fd(VALID));
     expect(result.status).toBe("error");
     if (result.status !== "error") return;
     expect(result.transportError).toBeTruthy();
-    expect(mailMocks.sendMail).not.toHaveBeenCalled();
+    expect(result.transportError).not.toMatch(/broken/i);
+    expect(result.values.email).toBe(VALID.email);
+  });
+
+  it("truncates pathologically-long Velo error strings", async () => {
+    const longError = "A".repeat(2000);
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ success: false, error: longError }), {
+        status: 400,
+      }),
+    );
+    const result = await sendContactForm(null, fd(VALID));
+    expect(result.status).toBe("error");
+    if (result.status !== "error") return;
+    expect(result.transportError!.length).toBeLessThanOrEqual(200);
   });
 });
