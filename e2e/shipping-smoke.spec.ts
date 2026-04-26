@@ -14,9 +14,12 @@
  *   ✓ PDP pages load with correct headings and prices
  *   ✓ PdpShippingEstimate ZIP widget present on all PDPs
  *   ✗ GAP-1: ALL products "Out of stock" on Vercel deployment — cart disabled
- *   ✗ GAP-2: Ranchero ($2,978) PdpWhiteGlove NOT showing — fallbackPriceCents
- *            resolves below $1,500 threshold on this product (likely 0 or
- *            minimum-variant price from Wix catalog)
+ *   ✓ PdpWhiteGlove present + ZIP check working on >$1500 products (Ranchero, Daisy)
+ *   ✓ /api/delivery-zone live: NC→white-glove 1-2d, west→LTL 5-7d
+ *   ✓ Cart drawer opens; empty-cart state renders correctly
+ *   ✗ GAP-1: ALL products "Out of stock" on Vercel deployment — cart disabled
+ *   ✗ GAP-2: RESOLVED — prior smoke used wrong slug (ranchero-futon-frame 404);
+ *            correct slug is ranchero-murphy-cabinet-bed; white-glove works correctly
  *   ✗ GAP-3: Cannot test cart→checkout path until GAP-1 is resolved
  *
  * To run locally against the dev server (with real Wix creds):
@@ -85,37 +88,21 @@ test.describe("shipping flow smoke — prod", () => {
     // Documentary — passes whether visible or not
   });
 
-  test("Ranchero ($2978): PdpWhiteGlove NOT shown — GAP-2 (fallbackPriceCents bug)", async ({
+  test("Ranchero ($2978): PdpWhiteGlove present — GAP-2 resolved (correct slug is ranchero-murphy-cabinet-bed)", async ({
     page,
   }) => {
-    await page.goto("/products/ranchero-futon-frame");
+    // GAP-2 from initial smoke was a wrong slug — ranchero is a Murphy Bed, not a futon frame.
+    // /products/ranchero-futon-frame → 404; correct: /products/ranchero-murphy-cabinet-bed
+    await page.goto("/products/ranchero-murphy-cabinet-bed");
     await page.waitForLoadState("networkidle", { timeout: 20_000 });
 
-    const heading = await page.getByRole("heading", { level: 1 }).textContent();
-    if (!heading) {
-      console.warn("[GAP] Ranchero PDP did not load — product unavailable or slug changed");
-      await page.screenshot({ path: "e2e-screenshots/05-ranchero-not-found.png" });
-      test.skip(true, "Ranchero product unavailable or slug changed");
-      return;
-    }
+    const h1 = page.getByRole("heading", { level: 1 });
+    await expect(h1).toBeVisible({ timeout: 10_000 });
 
     const whiteGloveSection = page.locator('[data-slot="pdp-white-glove"]');
-    const isVisible = await whiteGloveSection.isVisible();
+    await expect(whiteGloveSection).toBeVisible();
 
-    console.info(`[RANCHERO] PdpWhiteGlove visible: ${isVisible} (expected: true for $2,978 product)`);
     await page.screenshot({ path: "e2e-screenshots/05-ranchero-pdp.png" });
-
-    if (!isVisible) {
-      console.warn(
-        "[GAP-2 cf-kcnu] Ranchero ($2,978) PdpWhiteGlove NOT showing. " +
-          "Root cause: fallbackPriceCents resolves below $1,500 on this product. " +
-          "Likely cause: product has no base price — Wix returns 0 or minimum-variant price " +
-          "for variant-only products. Fix: use max variant price or price-range ceiling " +
-          "as the fallbackPriceCents when the product has no single base price.",
-      );
-    }
-    // Pass regardless — this documents the gap, not gates on it
-    expect(heading.length).toBeGreaterThan(0);
   });
 
   // ── 4. Cart flow: all products OOS on Vercel — document GAP-1 ────────────
