@@ -22,6 +22,12 @@ vi.mock("@/components/site/HeroParallax", () => ({
 vi.mock("@/components/site/TrustBar", () => ({
   TrustBar: () => <div data-slot="trust-bar" />,
 }));
+// Stub ShopTheRoom so HomePage tests don't need to mock getProductBySlug —
+// the section's own contract is covered by ShopTheRoom.test.tsx. The slot
+// marker still proves the section was wired in.
+vi.mock("@/components/site/ShopTheRoom", () => ({
+  ShopTheRoom: () => <div data-slot="shop-the-room" />,
+}));
 vi.mock("@/components/site/FeaturedProducts", () => ({
   FeaturedProducts: ({ products }: { products: unknown[] }) =>
     products.length > 0 ? (
@@ -140,6 +146,29 @@ describe("HomePage", () => {
     ).toBeTruthy();
     expect(
       trustBar!.compareDocumentPosition(shopByCategory) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("places the ShopTheRoom section between the TrustBar and Shop by category", async () => {
+    // cf-delight Phase 2: pin section ordering so a future agent can't
+    // silently drop the wiring or move it above the trust bar.
+    const { container } = await renderHome();
+    const trustBar = container.querySelector('[data-slot="trust-bar"]');
+    const shopTheRoom = container.querySelector(
+      '[data-slot="shop-the-room"]',
+    );
+    const shopByCategory = screen.getByRole("heading", {
+      level: 2,
+      name: /shop by category/i,
+    });
+    expect(shopTheRoom).not.toBeNull();
+    expect(
+      trustBar!.compareDocumentPosition(shopTheRoom!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      shopTheRoom!.compareDocumentPosition(shopByCategory) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });

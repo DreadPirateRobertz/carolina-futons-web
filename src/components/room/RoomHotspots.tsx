@@ -105,7 +105,11 @@ export function RoomHotspots({
   className,
 }: RoomHotspotsProps) {
   const [openId, setOpenId] = useState<string | null>(null);
-  const reduce = useReducedMotion() ?? false;
+  // a11y default: when the prefers-reduced-motion media query hasn't
+  // resolved yet (SSR + first paint), assume the user wants reduced
+  // motion. Better to drop the pulse for a frame than to flash motion
+  // at someone who explicitly opted out.
+  const reduce = useReducedMotion() ?? true;
 
   const seen = new Set<string>();
   const valid = hotspots.filter((s) => isValidHotspot(s, seen));
