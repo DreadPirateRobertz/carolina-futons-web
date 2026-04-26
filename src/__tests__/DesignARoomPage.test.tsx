@@ -26,7 +26,7 @@ describe("DesignARoomPage", () => {
 
   it("renders the Hendersonville showroom address, phone, and hours", () => {
     render(<DesignARoomPage />);
-    expect(screen.getByText(/824 Locust St/i)).toBeTruthy();
+    expect(screen.getByText(/824 Locust.*Hendersonville/i)).toBeTruthy();
     expect(screen.getAllByText(/\(828\) 252-9449/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Wed–Sat, 10am–5pm/i)).toBeTruthy();
   });

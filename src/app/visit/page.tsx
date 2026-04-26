@@ -1,31 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { BUSINESS } from "@/lib/business/contact-info";
+
 export const metadata: Metadata = {
   title: "Visit Us — Carolina Futons",
   description:
     "Visit the Carolina Futons showroom in Hendersonville, NC. Try every futon, mattress, and Murphy bed before you buy.",
 };
 
-// Single source of truth for showroom details — update here to propagate to all copy, links, and map embed.
-const STORE = {
-  name: "Carolina Futons",
-  address: "824 Locust St",
-  city: "Hendersonville",
-  state: "NC",
-  zip: "28792",
-  phone: "(828) 252-9449",
-  email: "carolinafutons@gmail.com",
-  hours: [
-    { days: "Monday – Tuesday", hours: "Closed" },
-    { days: "Wednesday – Saturday", hours: "10 am – 5 pm" },
-    { days: "Sunday", hours: "Closed" },
-  ],
-} as const;
+const STORE_HOURS = [
+  { days: "Monday – Tuesday", hours: "Closed" },
+  { days: "Wednesday – Saturday", hours: "10 am – 5 pm" },
+  { days: "Sunday", hours: "Closed" },
+] as const;
 
 export default function VisitPage() {
-  const fullAddress = `${STORE.address}, ${STORE.city}, ${STORE.state} ${STORE.zip}`;
-  const mapsHref = `https://maps.google.com/?q=${encodeURIComponent(`${STORE.name} ${fullAddress}`)}`;
+  const fullAddress = `${BUSINESS.street}, ${BUSINESS.city}, ${BUSINESS.state} ${BUSINESS.zip}`;
+  const mapsHref = `https://maps.google.com/?q=${encodeURIComponent(`${BUSINESS.name} ${fullAddress}`)}`;
+
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
@@ -48,26 +41,26 @@ export default function VisitPage() {
             Location
           </h2>
           <address className="mt-4 not-italic text-cf-charcoal/80">
-            <p className="font-medium text-cf-ink">{STORE.name}</p>
-            <p>{STORE.address}</p>
+            <p className="font-medium text-cf-ink">{BUSINESS.name}</p>
+            <p>{BUSINESS.street}</p>
             <p>
-              {STORE.city}, {STORE.state} {STORE.zip}
+              {BUSINESS.city}, {BUSINESS.state} {BUSINESS.zip}
             </p>
           </address>
           <div className="mt-4 space-y-1 text-sm text-cf-charcoal/80">
             <p>
               <span className="font-medium text-cf-ink">Phone: </span>
               <a
-                href={`tel:${STORE.phone.replace(/\D/g, "")}`}
+                href={BUSINESS.phoneHref}
                 className="hover:underline"
               >
-                {STORE.phone}
+                {BUSINESS.phone}
               </a>
             </p>
             <p>
               <span className="font-medium text-cf-ink">Email: </span>
-              <a href={`mailto:${STORE.email}`} className="hover:underline">
-                {STORE.email}
+              <a href={BUSINESS.emailHref} className="hover:underline">
+                {BUSINESS.email}
               </a>
             </p>
           </div>
@@ -90,7 +83,7 @@ export default function VisitPage() {
             Store Hours
           </h2>
           <dl className="mt-4 space-y-2">
-            {STORE.hours.map(({ days, hours }) => (
+            {STORE_HOURS.map(({ days, hours }) => (
               <div key={days} className="flex justify-between text-sm">
                 <dt className="font-medium text-cf-ink">{days}</dt>
                 <dd className="text-cf-charcoal/80">{hours}</dd>
@@ -103,7 +96,7 @@ export default function VisitPage() {
       {/* Map embed */}
       <div className="mt-12 overflow-hidden rounded-lg border border-cf-divider">
         <iframe
-          title={`Map showing ${STORE.name} location`}
+          title={`Map showing ${BUSINESS.name} location`}
           src={`https://maps.google.com/maps?q=${encodeURIComponent(fullAddress)}&output=embed`}
           width="100%"
           height="380"
