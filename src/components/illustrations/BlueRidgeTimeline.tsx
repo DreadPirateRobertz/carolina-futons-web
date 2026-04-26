@@ -1,38 +1,29 @@
-import Image from "next/image";
+import { AboutIllustrationClient } from "@/components/illustrations/AboutIllustrationClient";
+import { TIMELINE_SVG_BODY } from "@/lib/illustrations/about-illustrations-svg";
 
-// cf-93rb Phase A. Wide editorial illustration for /about — Carolina
-// Futons milestones (1991, 2005, 2015, present) as glowing waypoints
-// across a layered Blue Ridge scene. Source SVG (1200×400) carries a
-// descriptive <title> so screen-reader users get the company history
-// summary. Default alt mirrors the source title.
+// cf-about-illus: Blue Ridge Timeline scene (1200×400). Four milestone
+// waypoints (1991, 2005, 2015, present) as glowing dots on a dashed trail
+// across layered ridges.  Upgraded from static next/image to inline SVG so
+// the LivingSky time-of-day overlay applies at runtime.
+// The <title> embedded in TIMELINE_SVG_BODY provides the accessible name.
 
-const SVG_WIDTH = 1200;
-const SVG_HEIGHT = 400;
+const VIEW_WIDTH = 1200;
+const VIEW_HEIGHT = 400;
 
 export type BlueRidgeTimelineProps = {
-  alt?: string;
   className?: string;
 };
 
-const DEFAULT_ALT =
-  "Blue Ridge timeline illustration — Carolina Futons company milestones from 1991 to present";
-
-export function BlueRidgeTimeline({
-  alt = DEFAULT_ALT,
-  className,
-}: BlueRidgeTimelineProps) {
+export function BlueRidgeTimeline({ className }: BlueRidgeTimelineProps) {
   return (
     <div
       data-slot="blue-ridge-timeline"
       className={`pointer-events-none w-full select-none leading-none ${className ?? ""}`.trim()}
     >
-      <Image
-        src="/illustrations/blue-ridge-timeline.svg"
-        alt={alt}
-        width={SVG_WIDTH}
-        height={SVG_HEIGHT}
-        className="h-auto w-full"
-        priority={false}
+      <AboutIllustrationClient
+        svgBody={TIMELINE_SVG_BODY}
+        viewWidth={VIEW_WIDTH}
+        viewHeight={VIEW_HEIGHT}
       />
     </div>
   );

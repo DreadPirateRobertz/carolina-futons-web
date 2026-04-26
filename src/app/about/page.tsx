@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { MountainSkyline } from "@/components/illustrations/MountainSkyline";
+import { TeamPortrait } from "@/components/illustrations/TeamPortrait";
 import {
   ShopTheRoom,
   ABOUT_HERO_PHOTO,
@@ -103,6 +104,9 @@ export default async function AboutPage() {
             fastest way to reach any of us is the contact details above
             — we answer our own email.
           </p>
+          {/* cf-about-illus: team portrait — rustic-frame illustration with
+              LivingSky time-of-day sky overlay. */}
+          <TeamPortrait />
         </section>
         </article>
       </div>

@@ -79,17 +79,18 @@ describe("MountainSkyline", () => {
 });
 
 describe("BlueRidgeTimeline", () => {
-  it("renders the company-history alt by default", () => {
-    render(<BlueRidgeTimeline />);
-    const img = screen.getByAltText(
-      /carolina futons company milestones from 1991 to present/i,
-    );
-    expect(srcOf(img as HTMLElement)).toContain("blue-ridge-timeline.svg");
+  // cf-about-illus: upgraded from static next/image to inline SVG with
+  // LivingSky overlay.  The <title> inside the SVG body provides the
+  // accessible name; there is no longer an <img> element.
+  it("renders the data-slot wrapper", () => {
+    const { container } = render(<BlueRidgeTimeline />);
+    expect(container.querySelector("[data-slot='blue-ridge-timeline']")).not.toBeNull();
   });
 
-  it("accepts a custom alt", () => {
-    render(<BlueRidgeTimeline alt="About-page hero" />);
-    expect(screen.getByAltText("About-page hero")).toBeInTheDocument();
+  it("inlines an SVG with the company-history title for AT users", () => {
+    const { container } = render(<BlueRidgeTimeline />);
+    expect(container.querySelector("svg")).not.toBeNull();
+    expect(container.innerHTML).toContain("Carolina Futons company milestones");
   });
 });
 
