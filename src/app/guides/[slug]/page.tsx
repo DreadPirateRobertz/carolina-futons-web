@@ -3,11 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { HeroReveal } from "@/components/motion/HeroReveal";
-import {
-  listGuides,
-  getGuideBySlug,
-  getRelatedGuides,
-} from "@/lib/discovery/guides";
+import { listGuides } from "@/lib/discovery/guides";
 import { GuideReadingProgress } from "./ReadingProgress";
 
 type RouteParams = { slug: string };
@@ -23,7 +19,7 @@ export async function generateMetadata({
   params: Promise<RouteParams>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const guide = getGuideBySlug(slug);
+  const guide = (await listGuides()).find((g) => g.slug === slug);
   if (!guide) {
     return { title: "Guide not found — Carolina Futons" };
   }
@@ -39,11 +35,12 @@ export default async function GuideDetailPage({
   params: Promise<RouteParams>;
 }) {
   const { slug } = await params;
-  const guide = getGuideBySlug(slug);
+  const allGuides = await listGuides();
+  const guide = allGuides.find((g) => g.slug === slug);
   if (!guide) {
     notFound();
   }
-  const related = getRelatedGuides(guide.slug);
+  const related = allGuides.filter((g) => g.slug !== slug).slice(0, 3);
 
   return (
     <>
