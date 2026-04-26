@@ -17,6 +17,7 @@ import {
   HOME_HOTSPOT_CONFIGS,
 } from "@/components/site/ShopTheRoom";
 import { LivingSky } from "@/components/illustrations/LivingSky";
+import { MagneticButton } from "@/components/ui/MagneticButton";
 
 // Per-card onset delay for the Shop-by-category cascade. 80ms is at the
 // just-noticeable-difference threshold for sequential visual onset (enough
@@ -63,12 +64,14 @@ export default async function HomePage() {
               </p>
             </HeroReveal>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/shop"
-                className="inline-flex h-12 items-center justify-center rounded-md bg-cf-cta px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                Shop everything
-              </Link>
+              <MagneticButton>
+                <Link
+                  href="/shop"
+                  className="inline-flex h-12 items-center justify-center rounded-md bg-cf-cta px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  Shop everything
+                </Link>
+              </MagneticButton>
               <Link
                 href="/shop/futon-frames"
                 className="inline-flex h-12 items-center justify-center rounded-md border border-cf-navy px-6 text-sm font-medium text-cf-navy transition-colors hover:bg-cf-navy hover:text-cf-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"

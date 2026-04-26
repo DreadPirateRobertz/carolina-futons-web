@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { MagneticButton } from "@/components/ui/MagneticButton";
 
 import { FeaturedProducts } from "@/components/site/FeaturedProducts";
 import { LivingSky } from "@/components/illustrations/LivingSky";
@@ -65,12 +66,14 @@ export default async function SpringSalePage() {
               orders over $1,500.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/shop/mattresses-sale"
-                className="inline-flex h-12 items-center justify-center rounded-md bg-cf-cta px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                Shop the sale
-              </Link>
+              <MagneticButton>
+                <Link
+                  href="/shop/mattresses-sale"
+                  className="inline-flex h-12 items-center justify-center rounded-md bg-cf-cta px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  Shop the sale
+                </Link>
+              </MagneticButton>
               <Link
                 href="/shop/mattresses"
                 className="inline-flex h-12 items-center justify-center rounded-md border border-cf-navy px-6 text-sm font-medium text-cf-navy transition-colors hover:bg-cf-navy hover:text-cf-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
