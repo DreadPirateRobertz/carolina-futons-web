@@ -38,16 +38,14 @@ const FOCUSABLE_SELECTORS =
 
 export function HeaderMobileMenu() {
   const [open, setOpen] = useState(false);
-  // `mounted` flips true after first client render so the portal call
-  // never executes during SSR. Trigger button stays in the SSR tree
-  // (it's the visible chrome); only the drawer + backdrop portal.
-  const [mounted, setMounted] = useState(false);
+  // Lazy init: server renders see `false` (no document → no portal call);
+  // browser renders see `true` immediately so the drawer is in the DOM
+  // by the time anything tries to open it. Avoids the
+  // react-hooks/set-state-in-effect lint rule that fires on a
+  // useState(false)+useEffect(()=>setMounted(true)) pattern.
+  const [mounted] = useState(() => typeof document !== "undefined");
   const drawerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Close on ESC
   useEffect(() => {
