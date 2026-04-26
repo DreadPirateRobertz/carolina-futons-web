@@ -203,8 +203,8 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
     <div data-slot="pdp-gallery" className="space-y-3">
       {compareOpen && images.length >= 2 ? (
         <PdpImageComparison
-          before={images[0]!}
-          after={images[1]!}
+          before={{ url: resolvedSrc(images[0]!.url), alt: images[0]!.alt }}
+          after={{ url: resolvedSrc(images[1]!.url), alt: images[1]!.alt }}
           productName={productName}
           onClose={() => setCompareOpen(false)}
         />
@@ -270,7 +270,7 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
               </button>
             );
           })}
-          {images.length >= 2 ? (
+          {images.length > 1 ? (
             <button
               type="button"
               aria-pressed={compareOpen}

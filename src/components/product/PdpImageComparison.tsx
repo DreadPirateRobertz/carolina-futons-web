@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "framer-motion";
 
 import type { GalleryImage } from "./PdpGallery";
 
@@ -20,7 +19,6 @@ export function PdpImageComparison({
   productName,
   onClose,
 }: PdpImageComparisonProps) {
-  const reduce = useReducedMotion();
   const [splitPct, setSplitPct] = useState(50);
   const containerRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -34,7 +32,11 @@ export function PdpImageComparison({
 
   const onPointerDown = (e: React.PointerEvent) => {
     dragging.current = true;
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      // Detach race or unsupported browser — drag still works via mousemove
+    }
     updateFromClientX(e.clientX);
   };
 
@@ -67,11 +69,6 @@ export function PdpImageComparison({
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  // For reduced-motion: skip the smooth CSS transition on split position
-  const transitionStyle = reduce
-    ? {}
-    : { transition: "clip-path 0s" }; // already instant — keep consistent
-
   return (
     <div
       data-testid="pdp-image-comparison"
@@ -84,16 +81,14 @@ export function PdpImageComparison({
         alt={after.alt ?? `${productName} — angle 2`}
         className="absolute inset-0 h-full w-full object-cover"
         draggable={false}
+        onError={(e) => console.warn("[PdpImageComparison] after image failed:", (e.target as HTMLImageElement).src)}
       />
 
       {/* "before" image — clipped to the left portion */}
       <div
         ref={containerRef}
         className="absolute inset-0"
-        style={{
-          clipPath: `inset(0 ${100 - splitPct}% 0 0)`,
-          ...transitionStyle,
-        }}
+        style={{ clipPath: `inset(0 ${100 - splitPct}% 0 0)` }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -101,6 +96,7 @@ export function PdpImageComparison({
           alt={before.alt ?? `${productName} — angle 1`}
           className="h-full w-full object-cover"
           draggable={false}
+          onError={(e) => console.warn("[PdpImageComparison] before image failed:", (e.target as HTMLImageElement).src)}
         />
       </div>
 
@@ -117,7 +113,7 @@ export function PdpImageComparison({
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onKeyDown={onKeyDown}
-        style={{ left: `calc(${splitPct}% - ${HANDLE_W / 2}px)` }}
+        style={{ left: `calc(${splitPct}% - ${HANDLE_W / 2}px)`, width: HANDLE_W }}
         className="absolute inset-y-0 z-10 flex cursor-col-resize touch-none items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
       >
         <div
