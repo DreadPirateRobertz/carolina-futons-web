@@ -36,6 +36,8 @@ vi.mock("react-dom", async () => {
 
 vi.mock("@/app/newsletter/actions", () => ({
   subscribeToNewsletter: vi.fn(async () => ({ status: "idle" })),
+}));
+vi.mock("@/app/newsletter/newsletter-state", () => ({
   initialNewsletterActionState: { status: "idle" },
 }));
 

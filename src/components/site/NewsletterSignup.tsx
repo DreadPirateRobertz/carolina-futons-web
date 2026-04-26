@@ -3,11 +3,11 @@
 import { useActionState, useId } from "react";
 import { useFormStatus } from "react-dom";
 
+import { subscribeToNewsletter } from "@/app/newsletter/actions";
 import {
-  subscribeToNewsletter,
   initialNewsletterActionState,
   type NewsletterActionState,
-} from "@/app/newsletter/actions";
+} from "@/app/newsletter/newsletter-state";
 
 // cf-newsletter-footer: slim footer signup. Uses a Server Action via
 // useActionState so the form works without JS (progressive enhancement)
