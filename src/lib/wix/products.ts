@@ -145,30 +145,38 @@ export async function listCollections(limit = 25) {
   }
 }
 
-// cf-3qt.5.4: case-insensitive name prefix match for /search. Empty/whitespace
-// q returns []; the page handles the guided empty state. Wix Stores
-// queryProducts() builder only supports startsWith on `name` — substring
-// `contains` is not exposed in this SDK, so the search is prefix-only for now.
-// Limit is small — /search is dual-source (products + posts) and we don't
-// paginate yet.
+// cf-346v: fetch full catalog and filter in-memory so substring queries like
+// "futon" or "monterey" match anywhere in the product name, and matching is
+// case-insensitive. The Wix queryProducts() SDK only exposes startsWith on
+// `name`, which missed mid-word substrings and was case-sensitive. With ~88
+// products the full-catalog fetch is cheap and avoids a JS SDK pagination loop.
+const SEARCH_CATALOG_LIMIT = 200;
+
+async function getAllProductsForSearch(): Promise<WixProduct[]> {
+  try {
+    const client = getWixClient();
+    const result = await client.products
+      .queryProducts()
+      .limit(SEARCH_CATALOG_LIMIT)
+      .find();
+    return result.items;
+  } catch (err) {
+    await logWixFailure("wix", "getAllProductsForSearch", err);
+    return [];
+  }
+}
+
 export async function searchProducts(
   q: string,
   limit = 12,
 ): Promise<WixProduct[]> {
   const trimmed = q.trim();
   if (!trimmed) return [];
-  try {
-    const client = getWixClient();
-    const result = await client.products
-      .queryProducts()
-      .startsWith("name", trimmed)
-      .limit(limit)
-      .find();
-    return result.items;
-  } catch (err) {
-    await logWixFailure("wix", `searchProducts(${trimmed})`, err);
-    return [];
-  }
+  const lower = trimmed.toLowerCase();
+  const all = await getAllProductsForSearch();
+  return all
+    .filter((p) => (p.name ?? "").toLowerCase().includes(lower))
+    .slice(0, limit);
 }
 
 export type WixProduct = NonNullable<
