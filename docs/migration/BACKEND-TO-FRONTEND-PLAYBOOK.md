@@ -37,7 +37,7 @@ Blog posts live entirely in the **Wix Dashboard → Blog → Posts**. No code ch
 - Add, edit, or publish a post in the Wix Dashboard.
 - The storefront at `/blog` and `/blog/[slug]` caches for **5 minutes** (`revalidate = 300`).
 - After publishing, the post appears within one cache window (≤5 min).
-- To force-refresh immediately: trigger a webhook from Wix → the `/api/revalidate` endpoint (see Part 3).
+- The blog data fetching layer (`src/lib/wix/blog.ts`) does not currently use tagged `fetch` calls, so the `/api/revalidate` webhook cannot bust the blog cache early. The 5-minute window is the minimum publish lag.
 
 ---
 
@@ -47,9 +47,7 @@ FAQ items come from the **Wix CMS collection `"FAQ"`** (`src/lib/cms/faq.ts`, li
 
 1. In the Wix Dashboard, go to **CMS → FAQ collection → + New item**.
 2. Fill in `question`, `answer`, and `category` fields.
-3. The `/faq` page will show the new item within one cache window.
-
-The FAQ page uses `force-dynamic` — it re-fetches on every request. Changes appear on next page load.
+3. Merge and deploy. The `/faq` page is statically generated — it reads the collection at build time and does not refresh until a new deploy.
 
 ---
 
@@ -97,7 +95,7 @@ The popup fires once per browser session (the localStorage key persists across p
 
 **File:** `src/components/cart/CartDrawer.tsx`
 
-Triggered programmatically via `openCart()` from `useCart()` (see `src/components/cart/CartProvider.tsx`). The `addToCart` Server Action calls `openCart()` after a successful add. To open the cart drawer from a new place:
+Triggered via `openCart()` from `useCart()` (see `src/components/cart/CartProvider.tsx`). The `addToCart` Server Action itself cannot call `openCart()` — Server Actions run on the server and cannot touch client-side React state. Instead, `AddToCartButton.tsx` (a client component) calls `openCart()` after the Server Action promise resolves. To open the cart drawer from a new place:
 
 ```typescript
 import { useCart } from "@/components/cart/CartProvider";
@@ -159,7 +157,7 @@ The simplest case. The parent component holds a `useState` boolean; the child re
 
 ### Pattern 2 — localStorage flags
 
-Used by the email popup and other once-per-session UI. The flag is a **presence check** (any non-null value = dismissed).
+Used by the email popup and other persistent-dismiss UI. The flag is a **presence check** (any non-null value = dismissed). Note: `localStorage` persists across browser sessions (it is not cleared on tab close). A page reload is also required after clearing the key — an in-memory `useRef` guard prevents the popup from firing twice within the same React tree lifetime.
 
 | Action | Code |
 |---|---|
@@ -249,7 +247,7 @@ Then pass the field value as a prop to the Client Component responsible for the 
 | Add a FAQ entry | Wix Dashboard → CMS → FAQ collection |
 | Edit press copy | `src/app/press/page.tsx` → deploy |
 | Add/edit a product | Wix Dashboard → Stores → Products |
-| Suppress the email popup | Clear `localStorage["cf-email-popup-dismissed"]` |
+| Suppress the email popup (dev/QA) | Clear `localStorage["cf-email-popup-dismissed"]` to re-enable; set it to `"1"` to permanently suppress |
 | Open cart drawer | Call `openCart()` from `useCart()` hook |
 | Open image lightbox | Set `open={true}` on `<PdpImageLightbox>` |
 | Add a new modal | `useState` in parent → pass `open`/`onClose` props |
@@ -257,3 +255,4 @@ Then pass the field value as a prop to the Client Component responsible for the 
 | Trigger UI from URL | `useSearchParams()` in client component |
 | Bust page cache from mutation | `revalidatePath()` or `revalidateTag()` in Server Action |
 | Auto-bust on Wix content change | Configure Wix webhook → `/api/revalidate` |
+| Toggle UI on/off from CMS | Add boolean field to Wix collection, read in Server Component, pass as prop |
