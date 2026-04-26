@@ -24,17 +24,11 @@ export function MarugameHero(): React.ReactElement {
 
       {/* Oversized word — the entire visual statement */}
       <div className="-mx-2 sm:-mx-4" aria-hidden="true">
-        <p
-          className="select-none font-heading text-[clamp(88px,18vw,260px)] font-normal italic tracking-[-0.04em] text-cf-navy"
-          style={{ lineHeight: "0.88" }}
-        >
+        <p className="select-none font-heading text-[clamp(88px,18vw,260px)] font-normal italic leading-[0.88] tracking-[-0.04em] text-cf-navy">
           SLEEP
         </p>
-        {/* WELL. indented slightly right — cascade creates the stagger */}
-        <p
-          className="select-none font-heading text-[clamp(88px,18vw,260px)] font-normal italic tracking-[-0.04em] text-cf-navy/[0.12] pl-[0.05em]"
-          style={{ lineHeight: "0.88" }}
-        >
+        {/* WELL. offset right via pl-[0.05em] — visual stagger between the two headline lines */}
+        <p className="select-none pl-[0.05em] font-heading text-[clamp(88px,18vw,260px)] font-normal italic leading-[0.88] tracking-[-0.04em] text-cf-navy/[0.12]">
           WELL.
         </p>
       </div>
