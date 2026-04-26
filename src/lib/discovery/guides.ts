@@ -77,24 +77,128 @@ export const GUIDES: readonly GuideSummary[] = [
     title: "Murphy bed sizing",
     hook: "Clearances, mattress depths, and the wall build-out you actually need.",
     readingTimeMin: 6,
+    sections: [
+      {
+        heading: "Cabinet bed vs wall-mount murphy bed",
+        body: "Most of what people picture as a \"murphy bed\" — the kind that swings down from a wall-mounted cabinet — requires studs, wall anchors, and often a contractor. Cabinet beds are a different animal: they're freestanding furniture that looks like a dresser or chest when closed and unfolds into a queen mattress when you need it. No wall mounting, no tools beyond the assembly kit, and you can move them if you rearrange the room. For most homeowners and renters, a cabinet bed is the more practical buy. For this guide, we'll address both, since the sizing logic differs.",
+      },
+      {
+        heading: "Floor space when the bed is open",
+        body: "A queen cabinet bed needs approximately 90 inches of floor space in front of the cabinet when fully extended. The cabinet itself is typically 65–72 inches wide and 18–24 inches deep (closed). Measure from the back wall to 90 inches outward before you buy — in a 12-foot room you'll have comfortable clearance; in a 10-foot room the bed will nearly span the depth of the room. For a traditional wall-mount murphy bed, the calculation is similar: the bed's own length (80 inches for a queen) plus a few inches of clearance beyond the foot of the bed. Neither style allows other furniture in the opening zone while the bed is in use.",
+      },
+      {
+        heading: "The mattress you can't swap",
+        body: "Cabinet beds use a proprietary bi-fold mattress that folds with the mechanism. You cannot use a standard mattress — it won't fold and will jam or damage the mechanism. The included mattress from most manufacturers (Night & Day Furniture, which we carry) is either a 4-inch or 6-inch memory foam bi-fold. The 4-inch is comfortable for occasional guests; the 6-inch is meaningfully better for anyone sleeping on it multiple nights in a row or for side sleepers. Both feel slightly firmer than a flat equivalent because of the center fold seam, which softens with use after 10–15 nights.",
+      },
+      {
+        heading: "Cabinet dimensions to plan around",
+        body: "A standard queen cabinet bed closes to roughly 65–72 inches wide, 75–84 inches tall, and 18–24 inches deep. Think of it as a large armoire or dresser from a clearance standpoint. The cabinet top is flat and rated for 50–75 lbs on most models — many customers use it as a TV stand or bookshelf when the bed is stored. The side clearance you need is 18 inches on each side of the open bed for nightstand access; the bed itself will be at standard queen width (60 inches) when open, centered in the cabinet opening.",
+      },
+      {
+        heading: "Wall-mount murphy bed build-out depth",
+        body: "A traditional wall-mount murphy bed requires a wall unit that projects 12–18 inches from the wall surface when the bed is stored. The unit needs to be anchored to studs — standard drywall alone won't hold a 200+ lb bed. Most installations require a contractor or a confident DIYer with stud-finding tools and experience with lag bolts. The finished cabinet face is typically flush when the bed is up, creating a clean room appearance. Factor in the cost of installation ($300–$800 from a handyman, $1,000+ from a dedicated installer) when comparing total cost to a cabinet bed.",
+      },
+      {
+        heading: "Which size: full vs queen",
+        body: "Queen is the standard choice for guest rooms where two adults might sleep. The queen sleeping surface is 60 × 80 inches, and the cabinet is 8–10 inches wider than a full equivalent. If the room is genuinely tight — under 11 feet of usable width — consider a full (54 × 75 inches). The size difference is most important when two adults are sleeping simultaneously; a single guest on either size will sleep fine. Taller guests (over 6 feet) will appreciate the 5 extra inches of length a queen provides.",
+      },
+    ],
   },
   {
     slug: "platform-bed-vs-futon",
     title: "Platform bed vs futon",
     hook: "When a daybed or platform frame beats a folding futon, and vice versa.",
     readingTimeMin: 5,
+    sections: [
+      {
+        heading: "The core question",
+        body: "A futon and a platform bed are both good furniture. The wrong choice isn't usually a mistake in quality — it's a mistake in function. The key variable is whether you need a sofa during the day. If you do, a futon earns its footprint by doing two jobs. If you just need a bed — in a dedicated bedroom, with other seating elsewhere in the home — a platform bed is the better piece. It supports more mattress types, sits at a better height for most sleepers, and doesn't require you to fold and unfold anything.",
+      },
+      {
+        heading: "Where futons win",
+        body: "Futons have one structural advantage that platform beds can't match: they convert. A queen futon in sofa position is a comfortable two-person couch. At night it unfolds into a full sleeping surface. For studios, guest rooms that also serve as offices, or any room that needs to function as both a living space and a bedroom, the futon is often the only furniture choice that doesn't require square footage for two separate pieces. Wall hugger frames — which slide forward when converted rather than tipping backward — are particularly good at making this conversion work in tight rooms.",
+      },
+      {
+        heading: "Where platform beds win",
+        body: "Platform beds support a much wider range of mattresses. If you want a quality foam, latex, or hybrid mattress — the kinds that sleep significantly better than most futon mattresses — a platform bed is the right frame. The sleeping surface height is also typically better: a platform frame plus an 8–10 inch mattress lands at 24–28 inches, which is easier to get in and out of than a futon frame, which sits lower. Platform beds with built-in storage drawers also eliminate the need for a separate dresser, which is useful in small bedrooms where every inch counts.",
+      },
+      {
+        heading: "Mattress quality: the real difference",
+        body: "The best futon mattresses — cotton-hybrid innerspring, 8–10 inches — sleep better than most people expect. But the best platform bed mattresses sleep better still, because they don't need to fold. A standard mattress can use coil configurations, foam densities, and construction techniques that folding mattresses can't accommodate. If primary nightly sleeping comfort is the priority and you have dedicated seating elsewhere, a platform bed with a quality mattress will outperform any futon setup at the same price point.",
+      },
+      {
+        heading: "Longevity and care",
+        body: "Both are durable if well-made. Solid hardwood platform beds and futon frames from manufacturers like Night & Day carry 10–15 year warranties and hold up well to years of use. The difference is that a futon mattress takes more mechanical wear — it's repeatedly folded — and typically lasts 8–12 years, slightly less than a standard mattress on a platform bed with comparable care. Both benefit from rotating the mattress periodically and keeping a cover on the mattress to protect the fill.",
+      },
+    ],
   },
   {
     slug: "room-layout-for-small-spaces",
     title: "Room layout for small spaces",
     hook: "Getting a guest room and a home office out of the same 10×12.",
     readingTimeMin: 8,
+    sections: [
+      {
+        heading: "The 10×12 room and what it can hold",
+        body: "A 10×12 room — 120 square feet — is about as small as a dual-purpose room gets before it stops functioning for either purpose. The math is tight but workable. A queen murphy cabinet bed in closed position takes roughly 72 × 24 inches of floor footprint. That leaves you a 10-foot wall with 9+ feet of usable depth on either side of the cabinet. A desk, an office chair, and basic storage fit in that space without blocking the bed's opening zone. The rule: the opening zone (90 inches in front of the cabinet, 60 inches wide for a queen) can't have furniture that can't move. Everything else can fill in around it.",
+      },
+      {
+        heading: "The murphy cabinet bed as the anchor piece",
+        body: "In a 10×12 dual-purpose room, the murphy cabinet bed goes on the longest available wall, centered or offset toward a corner depending on window placement. When closed, it looks like a large dresser and doesn't signal \"bedroom\" at all — important for a room that also functions as a workspace. The cabinet top can hold a lamp, books, or a small TV. On the days guests aren't visiting (most days), you have an office. The bed comes out in under 30 seconds. If a cabinet bed is outside the budget, a futon against the opposite wall also works — guests can see it, but it reads as a couch until folded out.",
+      },
+      {
+        heading: "Desk and chair clearance",
+        body: "A standard desk is 48–60 inches wide and 24–30 inches deep. An office chair with a person in it extends 20–24 inches behind the desk front. That means desk + chair requires roughly 50 inches of depth from the wall. In a 10-foot room, that leaves 70 inches between the chair and the opposite wall — comfortable walking clearance. The desk should not be positioned in the bed's opening zone. The typical layout: desk on the wall perpendicular to or opposite the murphy cabinet, so the chair faces away from the cabinet and the opening zone stays clear.",
+      },
+      {
+        heading: "Seating that doesn't compete for space",
+        body: "A studio apartment challenge: the room that has the bed also usually needs to function as somewhere to sit during the day. For a dedicated home office / guest room, this is less critical — the desk chair is the primary daytime seat, and guests use it during their stay. If you want casual seating, a small armchair (28–32 inches wide, 32–34 inches deep) tucked in a corner is more space-efficient than a loveseat. Avoid placing it in front of the murphy cabinet. A futon in sofa position can serve as guest room seating during the day if the murphy bed option is outside the budget.",
+      },
+      {
+        heading: "Light and visual scale",
+        body: "Small rooms feel larger with consistent, uncluttered surfaces. Furniture that matches in finish or tone reduces visual noise. In a 10×12 room with mixed hardwood tones — a walnut-finish murphy cabinet next to an espresso desk — the eye reads two different pieces and the room feels smaller. Choose one finish family and stick to it. Floating shelves over the desk keep floor space clear and scale better than a bookcase. If there's a window, arrange furniture so the walking path toward it is clear — the eye naturally follows the light and the room feels deeper.",
+      },
+      {
+        heading: "Studio apartments: different math",
+        body: "A studio under 400 square feet usually can't afford a dedicated zone for a murphy cabinet — it occupies a significant portion of one wall. The classic studio solution is a queen futon against one wall: by day it's the primary sofa, by night it's the bed. This works because the futon's footprint in sofa position (roughly 79 inches wide × 38 inches deep) is the same zone it occupies as a bed. No furniture needs to move for conversion. The key trade-off: you can't have other furniture immediately adjacent to the futon because you need clearance on both sides to unfold it. That missing adjacency can feel constraining in very small studios.",
+      },
+      {
+        heading: "The one thing most people get wrong",
+        body: "Most small space layout mistakes aren't about square footage — they're about walking paths. People place furniture in ways that minimize visual dead space but create awkward routes through the room. The minimum comfortable walking path is 36 inches; 24 inches is technically passable but feels cramped. Before you finalize furniture placement, walk the path from the door to the desk, from the desk to the bed, and from the bed to the closet or bathroom. If any path is under 24 inches, something needs to move. A room you navigate comfortably every day feels much larger than a room that forces you to turn sideways.",
+      },
+    ],
   },
   {
     slug: "mattress-firmness-guide",
     title: "Mattress firmness guide",
     hook: "What soft, medium, and firm actually mean across our mattress lineup.",
     readingTimeMin: 5,
+    sections: [
+      {
+        heading: "Why firmness labels are unreliable",
+        body: "Soft, medium, and firm are not standardized terms. What one manufacturer calls firm, another calls medium-firm. The same mattress can feel different to a 130-pound person than to a 220-pound person — heavier sleepers compress the top layers faster and effectively experience a firmer feel. This guide focuses on what to actually test for rather than what the tag says, and on how our specific mattresses perform in practice.",
+      },
+      {
+        heading: "How to think about firmness",
+        body: "Firmness interacts with your body in two zones: the pressure zone (shoulders and hips, where you need give so you don't wake up sore) and the support zone (lower back, which needs a surface that doesn't let your midsection sink out of alignment). A mattress that's too soft lets everything sink — pressure relief but poor spinal support. Too firm and you get support but pressure points at the shoulders and hips keep you from sleeping deeply. The right firmness for you is the one that allows your spine to sit in its natural curve while you're lying on your side or back. For most people, that's medium or medium-firm.",
+      },
+      {
+        heading: "Firmness by sleep position",
+        body: "Side sleepers need more pressure relief at the shoulder and hip — lean toward medium or soft. The wider the shoulder-to-hip ratio, the more give you need in those zones. Back sleepers need a surface firm enough that the lower back isn't bowing — medium-firm works for most. Stomach sleepers (we don't recommend it, but many people do it) need a firmer surface so the midsection doesn't sink into a lower back arch — firm is usually the right call. If you switch positions during the night, medium is almost always the lowest-risk choice.",
+      },
+      {
+        heading: "Futon mattress firmness: what's different",
+        body: "Futon mattresses start firmer than conventional mattresses and soften over the first few weeks of use as the fill breaks in. A new cotton-batting futon mattress will feel noticeably harder than its eventual feel — this surprises people who test one in the showroom and then find it more comfortable six weeks after delivery. If you're testing a floor model that's been used for months, you're experiencing a broken-in feel. An equivalent new mattress will be firmer. Inner-spring futon mattresses start closer to their final feel because the coils compress more predictably than batting.",
+      },
+      {
+        heading: "Weight and firmness",
+        body: "The same mattress feels different depending on body weight. Under 130 pounds: medium and firm mattresses may feel harder than the label implies; lean toward medium or soft. 130–200 pounds: medium is usually the right starting point; medium-firm if you sleep on your back. Over 200 pounds: medium mattresses can feel soft and lose support faster — start with medium-firm or firm. Couples with a significant weight difference (40+ pounds) sometimes find it worth considering a split firmness setup, though this isn't available in all mattress formats.",
+      },
+      {
+        heading: "Testing before you buy",
+        body: "The most reliable firmness test is lying on the mattress in your actual sleep position for at least 10 minutes. Five minutes isn't enough for your muscles to relax and let your body settle into the surface. When you get up, check: does your lower back feel strained? Do your shoulders feel like they had enough give? If you're ordering without testing, medium is the lowest-risk choice for the majority of sleepers. We're happy to talk through your specific situation by phone at (828) 252-9449 during showroom hours, or stop by the store in Hendersonville and try before you decide.",
+      },
+    ],
   },
   {
     slug: "warranty-and-care",
