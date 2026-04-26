@@ -164,24 +164,32 @@ export function CartDrawer() {
                 <p className="mt-1 text-xs text-cf-espresso/60">
                   Shipping and taxes calculated at checkout.
                 </p>
-                <Link
+                {/* Plain <a> — not <Link> — so the browser makes a full
+                    navigation request that properly follows the 307 to the
+                    Wix-hosted payment page. Next.js <Link> does SPA-style
+                    fetch and won't follow an external redirect. */}
+                <a
                   href="/checkout"
                   onClick={(e) => {
                     if (isModifiedClick(e)) return;
                     // cf-rfb6: GA4 begin_checkout fires at the moment of
-                    // checkout intent — clicking through to /checkout —
-                    // mirroring how Wix Studio's built-in GA4 wires the
-                    // "Initiate Checkout" event. No-ops if gtag is unset.
-                    trackBeginCheckout(
-                      state.lines.map((line) => ({
-                        item_id: line.productId,
-                        item_name: line.productName,
-                        item_variant: line.variantLabel,
-                        price: line.unitPriceCents / 100,
-                        quantity: line.quantity,
-                      })),
-                      subtotalCents / 100,
-                    );
+                    // checkout intent — clicking through to /checkout.
+                    // No-ops if gtag is unset; wrapped so GA4 errors
+                    // never block navigation.
+                    try {
+                      trackBeginCheckout(
+                        state.lines.map((line) => ({
+                          item_id: line.productId,
+                          item_name: line.productName,
+                          item_variant: line.variantLabel,
+                          price: line.unitPriceCents / 100,
+                          quantity: line.quantity,
+                        })),
+                        subtotalCents / 100,
+                      );
+                    } catch (e) {
+                      console.error("[cart-drawer] trackBeginCheckout failed", e);
+                    }
                     setOpen(false);
                   }}
                   data-testid="cart-checkout-cta"
@@ -191,7 +199,7 @@ export function CartDrawer() {
                   )}
                 >
                   Go to checkout
-                </Link>
+                </a>
               </footer>
             </>
           )}
