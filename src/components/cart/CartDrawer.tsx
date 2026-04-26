@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Minus, Plus, ShoppingBag, X } from "lucide-react";
 
 import { useCart } from "@/components/cart/CartProvider";
+import { CartIllustration } from "@/components/illustrations/CartIllustration";
 import { EmptyCartIllustration } from "@/components/illustrations/EmptyCartIllustration";
 import { formatCents } from "@/lib/cart/cart-state";
 import { trackBeginCheckout } from "@/lib/analytics/ga4-events";
@@ -73,6 +74,7 @@ export function CartDrawer() {
             <EmptyCart onClose={() => setOpen(false)} />
           ) : (
             <>
+              <CartIllustration className="w-full shrink-0" />
               <ul
                 data-slot="cart-lines"
                 className="flex-1 divide-y divide-cf-divider overflow-y-auto px-5"
