@@ -21,6 +21,13 @@ import { TikTokPixel } from "@/components/analytics/TikTokPixel";
 import { PinterestTag } from "@/components/analytics/PinterestTag";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
 import { GA4Tag } from "@/components/analytics/GA4Tag";
+import { ConsentMode } from "@/components/analytics/ConsentMode";
+import { ConsentBanner } from "@/components/analytics/ConsentBanner";
+import { cookies } from "next/headers";
+import {
+  CONSENT_COOKIE_NAME,
+  parseConsentCookie,
+} from "@/lib/consent/consent-state";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -63,17 +70,26 @@ export const metadata: Metadata = {
   verification: resolveVerification(),
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+  const consentChoice = parseConsentCookie(
+    (await cookies()).get(CONSENT_COOKIE_NAME)?.value,
+  );
   return (
     <html
       lang="en"
       className={`${playfair.variable} ${sourceSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        {/* Consent Mode v2 default — MUST emit before any pixel script.
+            head + beforeInteractive ensures gtag('consent','default',...)
+            is on the dataLayer before GA4/Meta/Pinterest/TikTok read it. */}
+        <ConsentMode />
+      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <JsonLd
           id="jsonld-org"
@@ -102,6 +118,7 @@ export default function RootLayout({
         <TikTokPixel />
         <PinterestTag />
         <MetaPixel />
+        <ConsentBanner initialChoice={consentChoice} />
       </body>
     </html>
   );
