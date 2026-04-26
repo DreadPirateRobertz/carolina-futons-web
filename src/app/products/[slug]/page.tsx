@@ -85,6 +85,10 @@ export default async function PdpPage(props: {
   // render "$0.00" before a variant is picked.
   const fallbackPrice = formatPlpPrice(product);
   const fallbackPriceCents = toCents(product.priceData?.price);
+  // manageVariants products have priceData.price = 0; use priceRange.maxValue so
+  // the white-glove widget renders for high-price variant products (cf-kcnu GAP-2).
+  const whiteGlovePriceCents =
+    fallbackPriceCents > 0 ? fallbackPriceCents : toCents(product.priceRange?.maxValue);
   const descriptionText = stripHtml(product.description ?? "");
   const productOptions = (product.productOptions ?? []) as ProductOptionInput[];
   const variants = (product.variants ?? []) as VariantInput[];
@@ -169,6 +173,7 @@ export default async function PdpPage(props: {
           fallbackImageUrl={mainUrl}
           fallbackPrice={fallbackPrice}
           fallbackPriceCents={fallbackPriceCents}
+          whiteGlovePriceCents={whiteGlovePriceCents}
           galleryImages={galleryImages}
           stock={stock}
           fabricSwatches={fabricSwatches}
