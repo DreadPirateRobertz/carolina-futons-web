@@ -1,14 +1,28 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 
 import { useCart } from "@/components/cart/CartProvider";
 import { formatCents } from "@/lib/cart/cart-state";
 import { trackBeginCheckout } from "@/lib/analytics/ga4-events";
 
+// useSearchParams() requires a Suspense boundary in Next.js App Router.
+// CartPageContent holds the real UI; CartPage wraps it in Suspense.
 export default function CartPage() {
+  return (
+    <Suspense>
+      <CartPageContent />
+    </Suspense>
+  );
+}
+
+function CartPageContent() {
   const { state, itemCount, subtotalCents, removeLine, setQuantity } = useCart();
+  const searchParams = useSearchParams();
+  const checkoutError = searchParams.get("checkout_error") === "1";
 
   if (state.lines.length === 0) {
     return (
@@ -35,6 +49,16 @@ export default function CartPage() {
           {itemCount} {itemCount === 1 ? "item" : "items"}
         </span>
       </h1>
+
+      {checkoutError ? (
+        <p
+          role="alert"
+          data-testid="checkout-error-banner"
+          className="mt-4 rounded-md border border-cf-error/30 bg-cf-error/10 px-4 py-3 text-sm text-cf-error"
+        >
+          Something went wrong starting checkout — please try again.
+        </p>
+      ) : null}
 
       <div className="mt-8 grid gap-10 lg:grid-cols-[1fr,320px]">
         {/* Line items */}
@@ -173,16 +197,20 @@ export default function CartPage() {
             href="/checkout"
             data-testid="proceed-to-checkout"
             onClick={() => {
-              trackBeginCheckout(
-                state.lines.map((line) => ({
-                  item_id: line.productId,
-                  item_name: line.productName,
-                  item_variant: line.variantLabel,
-                  price: line.unitPriceCents / 100,
-                  quantity: line.quantity,
-                })),
-                subtotalCents / 100,
-              );
+              try {
+                trackBeginCheckout(
+                  state.lines.map((line) => ({
+                    item_id: line.productId,
+                    item_name: line.productName,
+                    item_variant: line.variantLabel,
+                    price: line.unitPriceCents / 100,
+                    quantity: line.quantity,
+                  })),
+                  subtotalCents / 100,
+                );
+              } catch {
+                // GA4 failures must not block navigation
+              }
             }}
             className="mt-5 flex h-12 w-full items-center justify-center rounded-md bg-cf-cta text-sm font-medium text-white transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
           >
