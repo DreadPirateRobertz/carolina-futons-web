@@ -122,8 +122,9 @@ describe("PdpInteractive (cf-3qt.2.1 + 2.2 integration)", () => {
     );
     const slot = container.querySelector('[data-slot="pdp-primary-cta"]');
     expect(slot).not.toBeNull();
-    // AddToCartButton wrapper must have flex-1 so it doesn't consume the full row
-    const atcWrapper = slot!.querySelector('div.flex-1');
+    // flex-1 makes the wrapper a flex participant; min-w-0 allows it to shrink
+    // below content width so the wishlist button shares the row on narrow viewports.
+    const atcWrapper = slot!.querySelector('div.flex-1.min-w-0');
     expect(atcWrapper).not.toBeNull();
     // Wishlist button must live inside the same slot (not pushed outside by a block div)
     const wishlistSlot = slot!.querySelector('[data-slot="pdp-wishlist"]');
