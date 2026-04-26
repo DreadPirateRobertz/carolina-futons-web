@@ -17,6 +17,7 @@ import {
   HOME_HOTSPOT_CONFIGS,
 } from "@/components/site/ShopTheRoom";
 import { LivingSky } from "@/components/illustrations/LivingSky";
+import { MrPopsMarquee } from "@/components/site/MrPopsMarquee";
 
 // Per-card onset delay for the Shop-by-category cascade. 80ms is at the
 // just-noticeable-difference threshold for sequential visual onset (enough
@@ -82,6 +83,11 @@ export default async function HomePage() {
           </HeroParallax>
         </div>
       </section>
+
+      {/* cf-delight D2 — Mr Pops image marquee: three beauty-shot rows that
+          auto-scroll at staggered speeds. Sits between the hero and LivingSky
+          as a full-bleed visual statement before the trust/shop content. */}
+      <MrPopsMarquee />
 
       {/* cf-93rb Phase A: atmospheric Blue Ridge band between hero and the
           TrustBar — anchors the page in place (Hendersonville, NC) and

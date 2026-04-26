@@ -186,6 +186,17 @@
   --sidebar-ring: oklch(0.62 0.06 232 / 0.5);
 }
 
+/* cf-delight D2 — Mr Pops marquee keyframe. The marquee track duplicates its
+   item list so translateX(-50%) loops seamlessly back to the start. */
+@keyframes marquee-scroll {
+  to { transform: translateX(-50%); }
+}
+
+/* Pause all tracks when hovering the marquee section */
+.marquee-section:hover .marquee-track {
+  animation-play-state: paused;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
