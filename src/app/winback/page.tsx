@@ -46,8 +46,8 @@ export default async function WinbackPage(props: {
   const searchParams = await props.searchParams;
   const utm = pickUtmParams(searchParams);
 
-  // Fire-and-forget: tracking failure must never block the landing render.
-  // trackCustomEvent already swallows errors and logs server-side.
+  // Awaited so the event is logged within the request lifetime; errors are
+  // swallowed inside trackCustomEvent and never surface to the caller.
   await trackCustomEvent("winback_landing_view", {
     source: "winback",
     ...utm,
