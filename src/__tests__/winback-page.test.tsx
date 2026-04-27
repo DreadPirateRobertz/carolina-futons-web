@@ -120,6 +120,14 @@ describe("WinbackPage — UTM tracking", () => {
     );
   });
 
+  it("drops UTM values that are empty strings", async () => {
+    await renderPage({ utm_source: "" });
+    expect(trackMocks.trackCustomEvent).toHaveBeenCalledWith(
+      "winback_landing_view",
+      { source: "winback" },
+    );
+  });
+
   it("still renders the page when tracking returns success:false", async () => {
     trackMocks.trackCustomEvent.mockResolvedValueOnce({ success: false });
     await renderPage({ utm_source: "email" });

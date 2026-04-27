@@ -53,7 +53,9 @@ describe("trackCustomEvent", () => {
     const { trackCustomEvent } = await import("@/lib/wix/custom-events");
     const result = await trackCustomEvent("winback_landing_view");
     expect(result).toEqual({ success: false });
-    expect(errSpy).toHaveBeenCalled();
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("HTTP 500"),
+    );
     errSpy.mockRestore();
   });
 
