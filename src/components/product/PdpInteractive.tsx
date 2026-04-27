@@ -172,7 +172,7 @@ export function PdpInteractive({
           />
         ) : null}
         <div ref={primaryCtaRef} data-slot="pdp-primary-cta" className="flex flex-wrap items-center gap-3">
-          <AddToCartButton {...addToCartProps} />
+          <AddToCartButton {...addToCartProps} className="flex-1 min-w-0" />
           <PdpWishlistButton
             productId={productId}
             productName={productName}
