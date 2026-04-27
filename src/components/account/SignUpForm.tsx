@@ -3,22 +3,31 @@
 import { useState } from "react";
 import Link from "next/link";
 
-// Client-only sign-in widget. Extracted from the `/account` page so the page
-// itself can be a server component and export `metadata` (Next.js app-router
-// disallows metadata exports from `"use client"` modules — cf-3qt.8.A.F1).
-export function AccountSignIn() {
+export function SignUpForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verifyPending, setVerifyPending] = useState(false);
+  const [signInRequired, setSignInRequired] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+
+    if (password !== confirm) {
+      setError("Passwords do not match.");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+
+    setLoading(true);
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, callbackUrl: "/dashboard" }),
@@ -31,9 +40,12 @@ export function AccountSignIn() {
       };
 
       if (data.state === "email_verification_required") {
-        // Account requires email verification before first sign-in. The
-        // member's registered email will have a verification link from Wix.
         setVerifyPending(true);
+        setLoading(false);
+        return;
+      }
+      if (data.state === "registered_sign_in_required") {
+        setSignInRequired(true);
         setLoading(false);
         return;
       }
@@ -48,8 +60,8 @@ export function AccountSignIn() {
       }
       throw new Error("unexpected_response");
     } catch (err) {
-      console.error("[AccountSignIn] login failed", err);
-      setError("Sign-in failed. Please try again.");
+      console.error("[SignUpForm] register failed", err);
+      setError("Sign-up failed. Please try again.");
       setLoading(false);
     }
   }
@@ -63,15 +75,38 @@ export function AccountSignIn() {
           </h1>
           <p className="mt-4 text-sm text-cf-charcoal/80">
             We sent a verification link to <strong>{email}</strong>. Click it to
-            activate your account, then return here to sign in.
+            activate your account, then{" "}
+            <Link href="/account" className="text-cf-cta hover:underline">
+              sign in
+            </Link>
+            .
           </p>
           <button
             type="button"
             onClick={() => setVerifyPending(false)}
             className="mt-6 text-sm text-cf-cta hover:underline"
           >
-            Back to sign in
+            Back to sign up
           </button>
+        </div>
+      </main>
+    );
+  }
+
+  if (signInRequired) {
+    return (
+      <main className="flex min-h-[60vh] items-center justify-center px-4 py-16">
+        <div className="w-full max-w-sm text-center">
+          <h1 className="font-heading text-3xl font-bold tracking-tight text-cf-navy">
+            Account created
+          </h1>
+          <p className="mt-4 text-sm text-cf-charcoal/80">
+            Your account is ready.{" "}
+            <Link href="/account" className="text-cf-cta hover:underline">
+              Sign in
+            </Link>{" "}
+            to continue.
+          </p>
         </div>
       </main>
     );
@@ -81,10 +116,10 @@ export function AccountSignIn() {
     <main className="flex min-h-[60vh] items-center justify-center px-4 py-16">
       <div className="w-full max-w-sm">
         <h1 className="font-heading text-3xl font-bold tracking-tight text-cf-navy">
-          Sign in
+          Create an account
         </h1>
         <p className="mt-3 text-sm text-cf-charcoal/80">
-          Access your orders, wishlist, and account settings.
+          Save your wishlist, track orders, and manage preferences.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4" noValidate>
@@ -117,10 +152,30 @@ export function AccountSignIn() {
             <input
               id="password"
               type="password"
-              autoComplete="current-password"
+              autoComplete="new-password"
               required
+              minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-cf-charcoal/20 bg-white px-3 py-2 text-sm text-cf-espresso placeholder-cf-charcoal/40 shadow-sm focus:border-cf-cta focus:outline-none focus:ring-1 focus:ring-cf-cta"
+              placeholder="8+ characters"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="confirm-password"
+              className="block text-sm font-medium text-cf-charcoal"
+            >
+              Confirm password
+            </label>
+            <input
+              id="confirm-password"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
               className="mt-1 block w-full rounded-md border border-cf-charcoal/20 bg-white px-3 py-2 text-sm text-cf-espresso placeholder-cf-charcoal/40 shadow-sm focus:border-cf-cta focus:outline-none focus:ring-1 focus:ring-cf-cta"
               placeholder="••••••••"
             />
@@ -137,20 +192,14 @@ export function AccountSignIn() {
             disabled={loading}
             className="inline-flex w-full h-12 items-center justify-center rounded-md bg-cf-cta px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {loading ? "Signing in…" : "Sign in"}
+            {loading ? "Creating account…" : "Create account"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-xs text-cf-charcoal/60">
-          Already signed in?{" "}
-          <Link href="/dashboard" className="text-cf-cta hover:underline">
-            Go to your dashboard
-          </Link>
-        </p>
-        <p className="mt-2 text-center text-xs text-cf-charcoal/60">
-          Don&apos;t have an account?{" "}
-          <Link href="/signup" className="text-cf-cta hover:underline">
-            Create one
+          Already have an account?{" "}
+          <Link href="/account" className="text-cf-cta hover:underline">
+            Sign in
           </Link>
         </p>
       </div>

@@ -11,15 +11,6 @@ import {
 
 export const dynamic = "force-dynamic";
 
-// Maps Wix SDK error codes to user-facing messages. Kept generic to avoid
-// leaking whether an email exists — "invalidEmail" and "invalidPassword"
-// both surface as the same message to the user.
-const ERROR_MESSAGES: Record<string, string> = {
-  invalidEmail: "Email or password is incorrect.",
-  invalidPassword: "Email or password is incorrect.",
-  resetPassword: "Please reset your password via the link we sent to your email.",
-};
-
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as {
     email?: string;
@@ -42,10 +33,10 @@ export async function POST(req: NextRequest) {
 
   let state;
   try {
-    state = await client.auth.login({ email, password });
+    state = await client.auth.register({ email, password });
   } catch {
     return NextResponse.json(
-      { error: "Sign-in failed. Please try again." },
+      { error: "Sign-up failed. Please try again." },
       { status: 502 },
     );
   }
@@ -57,9 +48,11 @@ export async function POST(req: NextRequest) {
         (state as { data: { sessionToken: string } }).data.sessionToken,
       );
     } catch {
+      // Registration succeeded but session exchange failed. Ask the user to
+      // sign in — the wixMembers_onMemberCreated hook has already fired.
       return NextResponse.json(
-        { error: "Sign-in failed. Please try again." },
-        { status: 502 },
+        { state: "registered_sign_in_required" },
+        { status: 200 },
       );
     }
     const jar = await cookies();
@@ -89,14 +82,26 @@ export async function POST(req: NextRequest) {
 
   if (state.loginState === LoginState.FAILURE) {
     const code = (state as { errorCode?: string }).errorCode ?? "";
-    const message =
-      ERROR_MESSAGES[code] ?? "Sign-in failed. Please try again.";
-    return NextResponse.json({ error: message }, { status: 401 });
+    if (code === "emailAlreadyExists") {
+      return NextResponse.json(
+        { error: "An account with that email already exists." },
+        { status: 409 },
+      );
+    }
+    if (code === "invalidEmail") {
+      return NextResponse.json(
+        { error: "That email address is invalid." },
+        { status: 422 },
+      );
+    }
+    return NextResponse.json(
+      { error: "Sign-up failed. Please try again." },
+      { status: 400 },
+    );
   }
 
-  // SILENT_CAPTCHA_REQUIRED / USER_CAPTCHA_REQUIRED / other unexpected states
   return NextResponse.json(
-    { error: "Sign-in failed. Please try again." },
+    { error: "Sign-up failed. Please try again." },
     { status: 400 },
   );
 }

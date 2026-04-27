@@ -24,6 +24,12 @@ export function serializeSessionTokens(tokens: Tokens): string {
   return JSON.stringify(tokens);
 }
 
+export function safeCallbackUrl(raw: string | null | undefined): string {
+  if (!raw) return "/dashboard";
+  if (!raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
+  return raw;
+}
+
 function isTokensShape(value: unknown): value is Tokens {
   if (typeof value !== "object" || value === null) return false;
   const v = value as Record<string, unknown>;
