@@ -51,7 +51,7 @@ export default function ReturnsPage() {
             Returns
           </h1>
           <p className="text-lg leading-relaxed text-cf-muted">
-            We stand behind what we sell. If something isn't right, here's how
+            We stand behind what we sell. If something isn&apos;t right, here&apos;s how
             to make it right.
           </p>
         </header>
@@ -65,8 +65,8 @@ export default function ReturnsPage() {
           </h2>
           <p className="leading-relaxed">
             Most items are returnable within 30 days of delivery in like-new
-            condition. "Like-new" means unused, undamaged, and in the original
-            packaging. Before you ship anything back, contact us — we'll
+            condition. &ldquo;Like-new&rdquo; means unused, undamaged, and in the original
+            packaging. Before you ship anything back, contact us — we&apos;ll
             confirm the return is eligible and issue a return authorization.
             Unauthorized returns may be refused at our discretion.
           </p>
@@ -82,7 +82,7 @@ export default function ReturnsPage() {
           <p className="leading-relaxed">
             Frames and accessories incur a 15% restocking fee. Mattresses
             incur a 25% restocking fee because we cannot resell them as new
-            once they've left our facility.
+            once they&apos;ve left our facility.
           </p>
           <p className="leading-relaxed">
             You are responsible for return shipping costs unless the return is
@@ -104,7 +104,7 @@ export default function ReturnsPage() {
             configurations are final sale. We review each custom order with you
             before production begins — that confirmation is your opportunity to
             catch any errors. If a custom piece arrives with a manufacturing
-            defect, contact us and we'll repair or replace it under the{" "}
+            defect, contact us and we&apos;ll repair or replace it under the{" "}
             <a
               href="/warranty"
               className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
@@ -133,13 +133,13 @@ export default function ReturnsPage() {
             >
               {BUSINESS.email}
             </a>{" "}
-            within 48 hours. We'll file the freight claim on your behalf and get
+            within 48 hours. We&apos;ll file the freight claim on your behalf and get
             a replacement moving as quickly as possible.
           </p>
           <p className="leading-relaxed">
             If you sign the delivery receipt without noting damage, it becomes
             very difficult to file a carrier claim later. When in doubt, note
-            "subject to inspection" before signing.
+            &ldquo;subject to inspection&rdquo; before signing.
           </p>
         </section>
 
@@ -182,7 +182,7 @@ export default function ReturnsPage() {
             >
               {BUSINESS.email}
             </a>{" "}
-            with your order number and what you'd like to return. We'll confirm
+            with your order number and what you&apos;d like to return. We&apos;ll confirm
             eligibility, issue a return authorization, and walk you through the
             rest. Also see our{" "}
             <a

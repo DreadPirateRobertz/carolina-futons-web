@@ -51,7 +51,7 @@ export default function ShippingPage() {
             Shipping
           </h1>
           <p className="text-lg leading-relaxed text-cf-muted">
-            We've been shipping futons since {BUSINESS.foundedYear}. Here's
+            We&apos;ve been shipping futons since {BUSINESS.foundedYear}. Here&apos;s
             what to expect from order confirmation to delivery.
           </p>
         </header>
@@ -72,8 +72,8 @@ export default function ShippingPage() {
           </p>
           <p className="leading-relaxed">
             If your item is needed by a specific date, call us before ordering.
-            We'll check current stock levels and give you a realistic estimate —
-            not a promise we can't keep.
+            We&apos;ll check current stock levels and give you a realistic estimate —
+            not a promise we can&apos;t keep.
           </p>
         </section>
 
@@ -109,7 +109,7 @@ export default function ShippingPage() {
           <ul className="ml-4 space-y-2 leading-relaxed">
             <li>
               <strong>Room-of-choice</strong> — the crew brings the item inside
-              and places it where you'd like, including up one flight of stairs.
+              and places it where you&apos;d like, including up one flight of stairs.
             </li>
             <li>
               <strong>White-glove</strong> — room-of-choice plus unboxing,
@@ -119,7 +119,7 @@ export default function ShippingPage() {
           </ul>
           <p className="leading-relaxed">
             Both options appear at checkout for eligible products and ZIP codes.
-            If you don't see them, call us — availability depends on your
+            If you don&apos;t see them, call us — availability depends on your
             location and the carrier serving your area.
           </p>
         </section>
@@ -138,9 +138,9 @@ export default function ShippingPage() {
             choice and can handle stairs. Assembly is available on request.
           </p>
           <p className="leading-relaxed">
-            You're also welcome to pick up at the showroom at {BUSINESS.street}.
-            We'll have your order staged and ready, and we'll help you load.
-            Bring a truck or trailer for frames — most futon frames don't fit in
+            You&apos;re also welcome to pick up at the showroom at {BUSINESS.street}.
+            We&apos;ll have your order staged and ready, and we&apos;ll help you load.
+            Bring a truck or trailer for frames — most futon frames don&apos;t fit in
             a sedan even disassembled.
           </p>
         </section>

@@ -50,7 +50,7 @@ export default function WarrantyPage() {
             {BUSINESS.warrantyYears}-year warranty
           </h1>
           <p className="text-lg leading-relaxed text-cf-muted">
-            We've been building futons since {BUSINESS.foundedYear}. Our frames
+            We&apos;ve been building futons since {BUSINESS.foundedYear}. Our frames
             are backed by a {BUSINESS.warrantyYears}-year warranty against
             manufacturing defects — the longest in the business.
           </p>
@@ -67,15 +67,15 @@ export default function WarrantyPage() {
             The {BUSINESS.warrantyYears}-year warranty covers manufacturing
             defects in frames under normal residential use — cracked joints,
             failed hardware, delaminated panels, or latch mechanisms that stop
-            working. We'll repair the frame, send replacement parts, or in cases
+            working. We&apos;ll repair the frame, send replacement parts, or in cases
             where neither is practical, replace the piece.
           </p>
           <p className="leading-relaxed">
-            "Manufacturing defect" means something failed because of how it was
+            &ldquo;Manufacturing defect&rdquo; means something failed because of how it was
             built, not because of how it was used. A joint that lets go at the
             glue line is a defect. A frame that breaks because it was used as a
-            step stool is not. If you're not sure which side of the line your
-            situation falls on, send us photos — we'll tell you straight.
+            step stool is not. If you&apos;re not sure which side of the line your
+            situation falls on, send us photos — we&apos;ll tell you straight.
           </p>
         </section>
 
@@ -87,9 +87,9 @@ export default function WarrantyPage() {
             Mattresses and covers
           </h2>
           <p className="leading-relaxed">
-            Mattresses carry the manufacturer's warranty from the original
+            Mattresses carry the manufacturer&apos;s warranty from the original
             maker, which varies by model — typically ten years on our premium
-            innerspring and foam lines. If you have a mattress issue, we'll
+            innerspring and foam lines. If you have a mattress issue, we&apos;ll
             connect you directly with the manufacturer and advocate on your
             behalf.
           </p>
@@ -112,7 +112,7 @@ export default function WarrantyPage() {
             <li>Normal wear — scuffs, scratches, surface checking in solid wood</li>
             <li>Fabric fading or pilling on covers</li>
             <li>Commercial or rental-property use</li>
-            <li>Damage from moving, improper assembly, or modifications we didn't make</li>
+            <li>Damage from moving, improper assembly, or modifications we didn&apos;t make</li>
             <li>
               Aesthetic variations in solid wood — grain pattern, color, and
               knot character are features of natural wood, not defects
@@ -129,9 +129,9 @@ export default function WarrantyPage() {
           </h2>
           <p className="leading-relaxed">
             The warranty applies to the original purchaser and is not
-            transferable. Please hold onto your order confirmation — it's the
+            transferable. Please hold onto your order confirmation — it&apos;s the
             proof of purchase we need to honor a claim. We can often look up
-            orders by name and date if you've lost the email.
+            orders by name and date if you&apos;ve lost the email.
           </p>
         </section>
 
@@ -168,7 +168,7 @@ export default function WarrantyPage() {
               {BUSINESS.email}
             </a>{" "}
             with your order number, a description of the issue, and photos if
-            you can. We'll respond within one business day and walk you through
+            you can. We&apos;ll respond within one business day and walk you through
             the next step. You can also reach us by phone at{" "}
             <a
               href={BUSINESS.phoneHref}
