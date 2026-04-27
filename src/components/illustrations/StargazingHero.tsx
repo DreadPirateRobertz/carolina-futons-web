@@ -31,6 +31,7 @@ export function StargazingHero() {
 
   useEffect(() => {
     const mq = window.matchMedia(REDUCE_MOTION_QUERY);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot client-only seed for SSR media-query fallback
     setReduceMotion(mq.matches);
     const onChange = () => setReduceMotion(mq.matches);
     mq.addEventListener?.("change", onChange);
