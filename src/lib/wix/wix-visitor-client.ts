@@ -37,13 +37,14 @@ export async function getVisitorCartClient() {
         maxAge: VISITOR_SESSION_MAX_AGE,
       });
     } catch (err) {
-      // Next.js throws when jar.set() is called from an RSC render context
-      // ("Cookies can only be modified in a Server Action or Route Handler").
-      // That's expected and safe to swallow — the returned client still carries
-      // valid tokens for this request. Any other error is unexpected and should
-      // surface so serialization bugs don't silently prevent cookie persistence.
+      // Next.js throws "Cookies can only be modified in a Server Action or
+      // Route Handler" from RSC render context. This is expected — the client
+      // still has valid tokens for this request but the session won't persist.
+      // All other errors are unexpected (serialization bugs, corrupt jar).
       const msg = err instanceof Error ? err.message : "";
-      if (!msg.includes("Cookies can only be modified")) {
+      if (msg.includes("Cookies can only be modified")) {
+        console.warn("[wix-visitor-client] jar.set skipped (RSC context) — session will not persist");
+      } else {
         console.error("[wix-visitor-client] unexpected jar.set failure:", err);
       }
     }

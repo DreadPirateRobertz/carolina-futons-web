@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { hydrateCartAction } from "@/app/actions/cart";
 import { useCart } from "@/components/cart/CartProvider";
@@ -13,6 +13,7 @@ import { useCart } from "@/components/cart/CartProvider";
 export function CartHydrator() {
   const { dispatch } = useCart();
   const hydrated = useRef(false);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
     if (hydrated.current) return;
@@ -22,12 +23,24 @@ export function CartHydrator() {
       .then((result) => {
         if (result.ok) {
           dispatch({ type: "hydrate", lines: result.lines });
+        } else {
+          console.error("[CartHydrator] hydrateCartAction failed:", result.error);
+          setLoadFailed(true);
         }
       })
-      .catch(() => {
-        // network/transport failure — leave CartProvider in its current state
+      .catch((err) => {
+        console.error("[CartHydrator] hydrateCartAction transport error:", err);
+        setLoadFailed(true);
       });
   }, [dispatch]);
+
+  if (loadFailed) {
+    return (
+      <p role="alert" aria-live="assertive" className="sr-only">
+        Your cart could not be loaded. Please refresh the page.
+      </p>
+    );
+  }
 
   return null;
 }
