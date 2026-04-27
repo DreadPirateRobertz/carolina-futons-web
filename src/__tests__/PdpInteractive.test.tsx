@@ -275,6 +275,71 @@ describe("PdpInteractive (cf-3qt.2.1 + 2.2 integration)", () => {
     });
   });
 
+  describe("fabricSwatches prop", () => {
+    it("renders fabric swatches section when swatches are provided", () => {
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Classic Futon"
+          productOptions={[]}
+          variants={[]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$799"
+          fabricSwatches={[
+            { _id: "s1", swatchName: "Ivory", colorFamily: "Neutral" },
+            { _id: "s2", swatchName: "Navy", colorFamily: "Blue" },
+          ]}
+        />,
+      );
+      expect(screen.getByRole("heading", { name: /available fabrics/i })).toBeInTheDocument();
+    });
+
+    it("does not render fabric swatches section when prop is omitted", () => {
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Classic Futon"
+          productOptions={[]}
+          variants={[]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$799"
+        />,
+      );
+      expect(screen.queryByRole("heading", { name: /available fabrics/i })).toBeNull();
+    });
+
+    it("does not render fabric swatches section when prop is empty array", () => {
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Classic Futon"
+          productOptions={[]}
+          variants={[]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$799"
+          fabricSwatches={[]}
+        />,
+      );
+      expect(screen.queryByRole("heading", { name: /available fabrics/i })).toBeNull();
+    });
+
+    it("renders error message when fabricSwatchError=true and no swatches", () => {
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Classic Futon"
+          productOptions={[]}
+          variants={[]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$799"
+          fabricSwatches={[]}
+          fabricSwatchError={true}
+        />,
+      );
+      expect(screen.getByText(/temporarily unavailable/i)).toBeInTheDocument();
+    });
+  });
+
   // P0 regression: simple products (no productOptions, manageVariants=false) were
   // incorrectly shown as OOS. findMatchingVariant returns null for empty selection,
   // so the old `variants.length === 0` fallback always returned false for any

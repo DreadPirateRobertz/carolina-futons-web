@@ -10,10 +10,12 @@ import { PdpGallery, type GalleryImage } from "@/components/product/PdpGallery";
 import { PdpShippingEstimate } from "@/components/product/PdpShippingEstimate";
 import { PdpStickyCta } from "@/components/product/PdpStickyCta";
 import { PdpStockBadge } from "@/components/product/PdpStockBadge";
+import { PdpFabricSwatches } from "@/components/product/PdpFabricSwatches";
 import { PdpWhiteGlove } from "@/components/product/PdpWhiteGlove";
 import { PdpWishlistButton } from "@/components/product/PdpWishlistButton";
 import { VariantPicker } from "@/components/product/VariantPicker";
 import type { StockBadgeInput } from "@/lib/product/stock-badge-state";
+import type { SwatchItem } from "@/lib/swatch-request/swatch-request-schema";
 import {
   findMatchingVariant,
   getSelectedImageUrl,
@@ -26,6 +28,19 @@ import {
   type VariantInput,
 } from "@/lib/product/variant-selection";
 
+function resolveInStock(
+  selectedVariant: ReturnType<typeof findMatchingVariant>,
+  productOptions: ReadonlyArray<ProductOptionInput>,
+  stock: StockBadgeInput | null | undefined,
+): boolean {
+  if (selectedVariant) return isVariantInStock(selectedVariant);
+  // Simple product (no options) — fall back to product-level stock.
+  if (productOptions.length === 0) return stock?.inStock !== false;
+  // Variant product with incomplete selection — disabled independently via
+  // !selectionComplete so this value is never used to block a purchase.
+  return false;
+}
+
 export type PdpInteractiveProps = {
   productId: string;
   productSlug: string;
@@ -37,6 +52,8 @@ export type PdpInteractiveProps = {
   fallbackPriceCents: number;
   galleryImages?: ReadonlyArray<GalleryImage>;
   stock?: StockBadgeInput | null;
+  fabricSwatches?: SwatchItem[];
+  fabricSwatchError?: boolean;
 };
 
 export function PdpInteractive({
@@ -50,6 +67,8 @@ export function PdpInteractive({
   fallbackPriceCents,
   galleryImages,
   stock,
+  fabricSwatches,
+  fabricSwatchError,
 }: PdpInteractiveProps) {
   // Intentional duplication: VariantPicker also seeds from initialSelection() and holds its own
   // selection state for price/stock display. The two stay in sync via onSelectionChange. If
@@ -85,16 +104,7 @@ export function PdpInteractive({
   const selectedVariant = findMatchingVariant(variants, selection);
   const selectionComplete =
     productOptions.length === 0 || isSelectionComplete(productOptions, selection);
-  // Simple products (no options) have no selectable variant — Wix still stores
-  // one implicit variant but findMatchingVariant returns null for empty selection.
-  // Fall back to product-level stock for these; variant products with an
-  // incomplete selection use variants.length===0 (harmless — button is disabled
-  // for "Select options" anyway).
-  const inStock = selectedVariant
-    ? isVariantInStock(selectedVariant)
-    : productOptions.length === 0
-      ? stock?.inStock !== false
-      : variants.length === 0;
+  const inStock = resolveInStock(selectedVariant, productOptions, stock);
   const variantLabel = Object.entries(selection)
     .map(([k, v]) => `${k}: ${v}`)
     .join(", ");
@@ -154,6 +164,13 @@ export function PdpInteractive({
           fallbackPrice={fallbackPrice}
           onSelectionChange={(next) => setSelection(next)}
         />
+        {(fabricSwatches && fabricSwatches.length > 0) || fabricSwatchError ? (
+          <PdpFabricSwatches
+            swatches={fabricSwatches ?? []}
+            productSlug={productSlug}
+            error={fabricSwatchError}
+          />
+        ) : null}
         <div ref={primaryCtaRef} data-slot="pdp-primary-cta" className="flex flex-wrap items-center gap-3">
           <AddToCartButton {...addToCartProps} />
           <PdpWishlistButton
