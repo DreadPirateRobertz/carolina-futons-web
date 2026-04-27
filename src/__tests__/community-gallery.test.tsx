@@ -7,11 +7,21 @@ vi.mock("@sentry/nextjs", () => ({
 }));
 
 vi.mock("next/image", () => ({
-  default: (props: Record<string, unknown>) => {
-    const { src, alt, width, height, ...rest } = props;
+  default: ({
+    src,
+    alt,
+    width,
+    height,
+    ...rest
+  }: {
+    src: string;
+    alt: string;
+    width: number;
+    height: number;
+  } & React.ImgHTMLAttributes<HTMLImageElement>) => (
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src as string} alt={alt as string} width={width as number} height={height as number} {...rest} />;
-  },
+    <img src={src} alt={alt} width={width} height={height} {...rest} />
+  ),
 }));
 
 vi.mock("next/link", () => ({
@@ -22,7 +32,11 @@ vi.mock("next/link", () => ({
   }: React.AnchorHTMLAttributes<HTMLAnchorElement> & {
     href: string;
     children: React.ReactNode;
-  }) => <a href={href} {...rest}>{children}</a>,
+  }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
 }));
 
 const listPhotosMock = vi.fn();
@@ -61,7 +75,7 @@ const SEED_PHOTOS = [
 
 beforeEach(() => {
   listPhotosMock.mockReset();
-  listPhotosMock.mockResolvedValue(SEED_PHOTOS);
+  listPhotosMock.mockResolvedValue({ photos: SEED_PHOTOS });
 });
 
 describe("CommunityGalleryPage — metadata", () => {
@@ -79,9 +93,7 @@ describe("CommunityGalleryPage — render", () => {
   it("renders the h1 heading", async () => {
     const ui = await CommunityGalleryPage();
     render(ui);
-    expect(
-      screen.getByRole("heading", { level: 1 }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
   });
 
   it("renders a grid when photos are returned", async () => {
@@ -93,15 +105,13 @@ describe("CommunityGalleryPage — render", () => {
   it("renders one img per photo", async () => {
     const ui = await CommunityGalleryPage();
     render(ui);
-    const images = screen.getAllByRole("img");
-    expect(images).toHaveLength(SEED_PHOTOS.length);
+    expect(screen.getAllByRole("img")).toHaveLength(SEED_PHOTOS.length);
   });
 
   it("each image src matches the photo URL", async () => {
     const ui = await CommunityGalleryPage();
     render(ui);
-    const images = screen.getAllByRole("img");
-    const srcs = images.map((img) => img.getAttribute("src"));
+    const srcs = screen.getAllByRole("img").map((img) => img.getAttribute("src"));
     for (const photo of SEED_PHOTOS) {
       expect(srcs).toContain(photo.image);
     }
@@ -110,8 +120,9 @@ describe("CommunityGalleryPage — render", () => {
   it("links photo with a productSlug to /products/{slug}", async () => {
     const ui = await CommunityGalleryPage();
     render(ui);
-    const productLinks = screen.getAllByTestId("product-link");
-    const slugs = productLinks.map((l) => l.getAttribute("href"));
+    const slugs = screen
+      .getAllByTestId("product-link")
+      .map((l) => l.getAttribute("href"));
     expect(slugs).toContain("/products/mesa-1000");
     expect(slugs).toContain("/products/olympus-full");
   });
@@ -120,14 +131,13 @@ describe("CommunityGalleryPage — render", () => {
     const ui = await CommunityGalleryPage();
     render(ui);
     // p1 + p2 have slugs; p3 does not
-    const productLinks = screen.getAllByTestId("product-link");
-    expect(productLinks.length).toBe(2);
+    expect(screen.getAllByTestId("product-link")).toHaveLength(2);
   });
 });
 
 describe("CommunityGalleryPage — empty state", () => {
   it("shows the empty-state message when no photos are returned", async () => {
-    listPhotosMock.mockResolvedValueOnce([]);
+    listPhotosMock.mockResolvedValueOnce({ photos: [] });
     const ui = await CommunityGalleryPage();
     render(ui);
     expect(screen.queryByTestId("community-gallery-grid")).not.toBeInTheDocument();
@@ -135,7 +145,26 @@ describe("CommunityGalleryPage — empty state", () => {
   });
 });
 
-describe("listCommunityPhotos lib — called correctly", () => {
+describe("CommunityGalleryPage — error state", () => {
+  it("shows error message (not empty-state copy) when lib returns error", async () => {
+    listPhotosMock.mockResolvedValueOnce({ photos: [], error: "wix_sdk" });
+    const ui = await CommunityGalleryPage();
+    render(ui);
+    expect(screen.queryByTestId("community-gallery-grid")).not.toBeInTheDocument();
+    expect(screen.queryByText(/photos coming soon/i)).not.toBeInTheDocument();
+    expect(screen.getByTestId("gallery-error")).toBeInTheDocument();
+    expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
+  });
+
+  it("h1 still renders even when lib returns error", async () => {
+    listPhotosMock.mockResolvedValueOnce({ photos: [], error: "wix_sdk" });
+    const ui = await CommunityGalleryPage();
+    render(ui);
+    expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
+  });
+});
+
+describe("CommunityGalleryPage — lib integration", () => {
   it("calls listCommunityPhotos on render", async () => {
     const ui = await CommunityGalleryPage();
     render(ui);
