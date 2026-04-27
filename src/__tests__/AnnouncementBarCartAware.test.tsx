@@ -173,4 +173,67 @@ describe("AnnouncementBarCartAware", () => {
     const region = screen.getByRole("region", { name: /site announcement/i });
     expect(region.textContent).toMatch(/you qualify/i);
   });
+
+  it("does not advance before one full interval elapses", () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderWithCart(0);
+    act(() => vi.advanceTimersByTime(ROTATION_INTERVAL_MS - 1));
+    const region = screen.getByRole("region", { name: /site announcement/i });
+    expect(region.textContent).toBe(ROTATION_MESSAGES[0]);
+  });
+
+  it("resets index to 0 when cart is cleared after mid-sequence items were present", () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+
+    type Phase = "empty" | "seeded" | "cleared";
+    function PhasedCartController({ phase }: { phase: Phase }) {
+      const { addLine, clear } = useCart();
+      useEffect(() => {
+        if (phase === "seeded") {
+          addLine({
+            id: "ctrl",
+            productId: "ctrl-product",
+            productName: "Ctrl Item",
+            unitPriceCents: 50_000,
+            formattedUnitPrice: "",
+            quantity: 1,
+          });
+        } else if (phase === "cleared") {
+          clear();
+        }
+      }, [phase, addLine, clear]);
+      return null;
+    }
+
+    const { rerender } = render(
+      <CartProvider>
+        <PhasedCartController phase="empty" />
+        <AnnouncementBarCartAware />
+      </CartProvider>,
+    );
+
+    // Advance rotation to index 2
+    act(() => vi.advanceTimersByTime(ROTATION_INTERVAL_MS * 2));
+
+    // Add items — setIndex(0) should fire, rotation stops
+    rerender(
+      <CartProvider>
+        <PhasedCartController phase="seeded" />
+        <AnnouncementBarCartAware />
+      </CartProvider>,
+    );
+    act(() => {}); // flush effects
+
+    // Clear the cart — rotation should restart from index 0
+    rerender(
+      <CartProvider>
+        <PhasedCartController phase="cleared" />
+        <AnnouncementBarCartAware />
+      </CartProvider>,
+    );
+    act(() => {}); // flush effects
+
+    const region = screen.getByRole("region", { name: /site announcement/i });
+    expect(region.textContent).toBe(ROTATION_MESSAGES[0]);
+  });
 });

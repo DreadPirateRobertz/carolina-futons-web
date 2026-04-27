@@ -39,7 +39,10 @@ export function AnnouncementBarCartAware() {
   // Clears the interval immediately when the cart has items so the
   // cart-aware copy takes over without waiting for the next tick.
   useEffect(() => {
-    if (subtotalCents > 0) return;
+    if (subtotalCents > 0) {
+      setIndex(0);
+      return;
+    }
     const id = setInterval(
       () => setIndex((i) => (i + 1) % ROTATION_MESSAGES.length),
       ROTATION_INTERVAL_MS,
