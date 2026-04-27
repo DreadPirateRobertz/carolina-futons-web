@@ -1,7 +1,9 @@
 "use server";
 
+import nodemailer from "nodemailer";
 import * as Sentry from "@sentry/nextjs";
 import { optionalEnv } from "@/lib/env";
+import { BUSINESS } from "@/lib/business/contact-info";
 import {
   coerceContactRequest,
   hasContactErrors,
@@ -195,6 +197,15 @@ function buildAppointmentBody(req: AppointmentRequest): string {
     `Requested date: ${req.appointmentDate}\n` +
     `Requested time: ${timeLabel}\n`
   );
+}
+
+function readEnv(): { host: string; port: number; user: string; pass: string } | null {
+  const host = process.env.SMTP_HOST;
+  const portStr = process.env.SMTP_PORT;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  if (!host || !portStr || !user || !pass) return null;
+  return { host, port: Number(portStr), user, pass };
 }
 
 export async function bookAppointment(
