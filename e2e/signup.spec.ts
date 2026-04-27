@@ -22,7 +22,8 @@ test.describe("/signup page — UI smoke (no live Wix creds needed)", () => {
     await page.getByLabel(/^password$/i).fill("password123");
     await page.getByLabel(/confirm password/i).fill("different");
     await page.getByRole("button", { name: /create account/i }).click();
-    await expect(page.getByRole("alert")).toContainText(/do not match/i);
+    // Scope to the form — the ConsentBanner also uses role="alert" globally.
+    await expect(page.locator("form").getByRole("alert")).toContainText(/do not match/i);
   });
 
   test("shows password-too-short error without making a network request", async ({ page }) => {
@@ -31,7 +32,7 @@ test.describe("/signup page — UI smoke (no live Wix creds needed)", () => {
     await page.getByLabel(/^password$/i).fill("short");
     await page.getByLabel(/confirm password/i).fill("short");
     await page.getByRole("button", { name: /create account/i }).click();
-    await expect(page.getByRole("alert")).toContainText(/8 characters/i);
+    await expect(page.locator("form").getByRole("alert")).toContainText(/8 characters/i);
   });
 
   test("submit button is disabled and shows loading text while request is in flight", async ({
