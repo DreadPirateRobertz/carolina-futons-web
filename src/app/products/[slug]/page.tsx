@@ -93,9 +93,11 @@ export default async function PdpPage(props: {
   const crossSell = await getCrossSellProducts(product);
   const mattresses = isFutonFrame(slug) ? await getMesaMattresses() : [];
   let fabricSwatches: SwatchItem[] = [];
+  let fabricSwatchError = false;
   try {
     fabricSwatches = await listFabricSwatches();
   } catch (err) {
+    fabricSwatchError = true;
     await logWixFailure("pdp-fabricSwatches", "listFabricSwatches", err);
   }
 
@@ -170,6 +172,7 @@ export default async function PdpPage(props: {
           galleryImages={galleryImages}
           stock={stock}
           fabricSwatches={fabricSwatches}
+          fabricSwatchError={fabricSwatchError}
         />
       </div>
 

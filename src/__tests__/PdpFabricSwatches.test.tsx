@@ -78,13 +78,18 @@ describe("PdpFabricSwatches — swatch grid", () => {
     expect(screen.getByText("Parchment")).toBeTruthy();
   });
 
-  it("sets backgroundColor on color chips when colorHex is present", () => {
-    const { container } = render(
-      <PdpFabricSwatches swatches={THREE_NEUTRALS} productSlug="p" />,
-    );
-    const chips = container.querySelectorAll("[aria-hidden='true']");
-    expect(chips[0].getAttribute("style")).toContain("background-color: rgb");
-    expect(chips[2].getAttribute("style")).toBeNull();
+  it("sets backgroundColor on color chip when colorHex is present", () => {
+    render(<PdpFabricSwatches swatches={THREE_NEUTRALS} productSlug="p" />);
+    const ivoryItem = screen.getByText("Ivory").closest("li")!;
+    const ivoryChip = ivoryItem.querySelector("[aria-hidden='true']");
+    expect(ivoryChip?.getAttribute("style")).toContain("background-color");
+  });
+
+  it("omits style on color chip when colorHex is absent", () => {
+    render(<PdpFabricSwatches swatches={THREE_NEUTRALS} productSlug="p" />);
+    const parchmentItem = screen.getByText("Parchment").closest("li")!;
+    const parchmentChip = parchmentItem.querySelector("[aria-hidden='true']");
+    expect(parchmentChip?.getAttribute("style")).toBeNull();
   });
 });
 
@@ -201,11 +206,73 @@ describe("PdpFabricSwatches — show all / pagination", () => {
   it("clicking All also resets showAll", () => {
     const swatches = make13();
     render(<PdpFabricSwatches swatches={swatches} productSlug="p" />);
-    // Filter to a small family first
     fireEvent.click(screen.getByRole("button", { name: "Blue" }));
-    // Then back to All — toggle should reappear (not in expanded state)
     fireEvent.click(screen.getByRole("button", { name: "All" }));
     expect(screen.getAllByRole("listitem")).toHaveLength(12);
     expect(screen.getByRole("button", { name: /show all 13 fabrics/i })).toBeTruthy();
+  });
+
+  it("active family filter with > 12 members shows pagination toggle", () => {
+    // Build 14 Blue swatches + a few others so Blue alone exceeds INITIAL_VISIBLE
+    const manyBlue: SwatchItem[] = Array.from({ length: 14 }, (_, i) =>
+      swatch(`b${i}`, `Blue ${i}`, "Blue"),
+    );
+    const swatches = [...manyBlue, swatch("r1", "Red 1", "Red")];
+    render(<PdpFabricSwatches swatches={swatches} productSlug="p" />);
+    fireEvent.click(screen.getByRole("button", { name: "Blue" }));
+    expect(screen.getAllByRole("listitem")).toHaveLength(12);
+    expect(screen.getByRole("button", { name: /show all 14 fabrics/i })).toBeTruthy();
+  });
+});
+
+describe("PdpFabricSwatches — swatches without colorFamily", () => {
+  const withOrphans = [
+    swatch("n1", "Navy", "Blue"),
+    swatch("r1", "Ruby", "Red"),
+    swatch("o1", "Mystery"), // no colorFamily
+    swatch("o2", "Unknown"), // no colorFamily
+  ];
+
+  it("orphan swatches appear under All filter", () => {
+    render(<PdpFabricSwatches swatches={withOrphans} productSlug="p" />);
+    expect(screen.getByText("Mystery")).toBeTruthy();
+    expect(screen.getByText("Unknown")).toBeTruthy();
+  });
+
+  it("orphan swatches are hidden under a specific family filter", () => {
+    render(<PdpFabricSwatches swatches={withOrphans} productSlug="p" />);
+    fireEvent.click(screen.getByRole("button", { name: "Blue" }));
+    expect(screen.getByText("Navy")).toBeTruthy();
+    expect(screen.queryByText("Mystery")).toBeNull();
+    expect(screen.queryByText("Unknown")).toBeNull();
+  });
+
+  it("orphan swatches do not create family filter buttons", () => {
+    render(<PdpFabricSwatches swatches={withOrphans} productSlug="p" />);
+    // Only "Blue" should appear as a family button (not undefined/null)
+    expect(screen.queryByRole("button", { name: "undefined" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Blue" })).toBeTruthy();
+  });
+});
+
+describe("PdpFabricSwatches — error state", () => {
+  it("renders error message when error=true and swatches is empty", () => {
+    render(<PdpFabricSwatches swatches={[]} productSlug="p" error={true} />);
+    expect(screen.getByText(/temporarily unavailable/i)).toBeTruthy();
+  });
+
+  it("returns null when error is absent and swatches is empty", () => {
+    const { container } = render(
+      <PdpFabricSwatches swatches={[]} productSlug="p" />,
+    );
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("renders swatches normally when error=true but swatches are present", () => {
+    render(
+      <PdpFabricSwatches swatches={THREE_NEUTRALS} productSlug="p" error={true} />,
+    );
+    expect(screen.getByRole("heading", { name: /available fabrics/i })).toBeTruthy();
+    expect(screen.queryByText(/temporarily unavailable/i)).toBeNull();
   });
 });

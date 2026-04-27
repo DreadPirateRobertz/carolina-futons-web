@@ -9,9 +9,10 @@ const INITIAL_VISIBLE = 12;
 type Props = {
   swatches: SwatchItem[];
   productSlug: string;
+  error?: boolean;
 };
 
-export function PdpFabricSwatches({ swatches, productSlug }: Props) {
+export function PdpFabricSwatches({ swatches, productSlug, error }: Props) {
   const [activeFamily, setActiveFamily] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
 
@@ -33,7 +34,11 @@ export function PdpFabricSwatches({ swatches, productSlug }: Props) {
 
   const visible = showAll ? filtered : filtered.slice(0, INITIAL_VISIBLE);
 
-  if (swatches.length === 0) return null;
+  if (swatches.length === 0) {
+    return error ? (
+      <p className="text-sm text-cf-muted">Fabric options temporarily unavailable.</p>
+    ) : null;
+  }
 
   return (
     <section
