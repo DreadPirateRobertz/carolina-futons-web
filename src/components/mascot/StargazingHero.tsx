@@ -3,7 +3,7 @@
 // Night hero: bear lying on a Blue Ridge hill, milky way, stars, fireflies, moon.
 // Ported from design-harvest/v3-heroes.jsx HeroStargaze + v3-02-stargazing.svg.
 
-import { useRef } from "react";
+import { useMemo } from "react";
 
 const SKY = {
   sky0: "#0E1838",
@@ -92,10 +92,10 @@ export function StargazingHero({
   time?: number;
   reduceMotion?: boolean;
 } = {}) {
-  const stars = useRef<StarDef[] | null>(null);
-  const fireflies = useRef<FireflyDef[] | null>(null);
-  if (!stars.current) stars.current = buildStars();
-  if (!fireflies.current) fireflies.current = buildFireflies();
+  // useMemo lazily seeds these once per mount and is safe during render
+  // (useRef writes during render trip react-hooks/no-ref-in-render).
+  const stars = useMemo<StarDef[]>(() => buildStars(), []);
+  const fireflies = useMemo<FireflyDef[]>(() => buildFireflies(), []);
 
   // When reduce-motion is on, freeze t at 0 — fireflies sit at their static
   // positions, shooting star is hidden, sky is still painted in full color.
@@ -147,7 +147,7 @@ export function StargazingHero({
 
       {/* Stars */}
       <g>
-        {stars.current.map((s, i) => (
+        {stars.map((s, i) => (
           <circle
             key={i}
             cx={s.x}
@@ -221,7 +221,7 @@ export function StargazingHero({
       <BearLying py={700} />
 
       {/* Fireflies */}
-      {fireflies.current.map((f, i) => {
+      {fireflies.map((f, i) => {
         const fx = f.cx + Math.sin(t * f.sp + f.ph) * 22;
         const fy = f.cy + Math.cos(t * f.sp * 0.8 + f.ph) * 14;
         const a = 0.5 + 0.5 * Math.sin(t * 3 + f.ph);
