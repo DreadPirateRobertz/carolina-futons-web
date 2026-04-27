@@ -38,16 +38,44 @@ export type QuizRecommendation = {
   reason: string;
 };
 
+// Static options — identical to the Velo backend getQuizOptions webMethod.
+// Served from this constant instead of a Velo RPC call because:
+// (1) The data never changes at runtime (no DB queries in the backend).
+// (2) webMethod endpoints are not exposed as HTTP functions and therefore
+//     unreachable from the cfw Next.js app via /_functions/.
+const STATIC_QUIZ_OPTIONS: QuizOptions = {
+  roomTypes: [
+    { value: "living-room", label: "Living Room", icon: "sofa" },
+    { value: "guest-room",  label: "Guest Room",  icon: "bed" },
+    { value: "dorm",        label: "Dorm / Small Space", icon: "apartment" },
+    { value: "office",      label: "Home Office", icon: "desk" },
+    { value: "bedroom",     label: "Bedroom",     icon: "moon" },
+  ],
+  primaryUses: [
+    { value: "sitting",  label: "Primarily Sitting",  description: "Couch by day" },
+    { value: "sleeping", label: "Primarily Sleeping", description: "Bed by night" },
+    { value: "both",     label: "Both Equally",       description: "Versatile day and night" },
+  ],
+  stylePreferences: [
+    { value: "modern",  label: "Modern / Contemporary", description: "Clean lines, minimal design" },
+    { value: "rustic",  label: "Rustic / Natural",      description: "Warm wood, handcrafted feel" },
+    { value: "classic", label: "Classic / Traditional", description: "Timeless elegance" },
+  ],
+  sizeOptions: [
+    { value: "twin",  label: "Twin",  description: "Great for one person" },
+    { value: "full",  label: "Full",  description: "Our most popular size" },
+    { value: "queen", label: "Queen", description: "Maximum comfort" },
+  ],
+  budgetRanges: [
+    { value: "under-500",  label: "Under $500",      description: "Budget-friendly options" },
+    { value: "500-1000",   label: "$500 - $1,000",   description: "Our sweet spot" },
+    { value: "1000-2000",  label: "$1,000 - $2,000", description: "Premium selections" },
+    { value: "over-2000",  label: "Over $2,000",     description: "Top of the line" },
+  ],
+};
+
 export async function getQuizOptions(): Promise<QuizOptions | null> {
-  try {
-    return await callVelo<QuizOptions>({
-      method: "styleQuiz/getQuizOptions",
-      args: [],
-    });
-  } catch (err) {
-    console.error("[styleQuiz] getQuizOptions failed:", err);
-    return null;
-  }
+  return STATIC_QUIZ_OPTIONS;
 }
 
 export async function getQuizRecommendations(

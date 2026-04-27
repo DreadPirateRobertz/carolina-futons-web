@@ -17,25 +17,28 @@ beforeEach(() => {
 });
 
 describe("getQuizOptions", () => {
-  it("calls styleQuiz/getQuizOptions with empty args", async () => {
-    const mock = { roomTypes: [], primaryUses: [], stylePreferences: [], sizeOptions: [], budgetRanges: [] };
-    veloMocks.callVelo.mockResolvedValueOnce(mock);
+  // cf-gnli: getQuizOptions now returns a local static constant instead of
+  // calling Velo (the webMethod is not exposed as an HTTP function and was
+  // always returning null in production). Velo is still used for
+  // getQuizRecommendations which requires a real product DB query.
+  it("returns all five option categories", async () => {
     const { getQuizOptions } = await import("@/lib/wix/style-quiz");
     const result = await getQuizOptions();
-    expect(result).toEqual(mock);
-    expect(veloMocks.callVelo).toHaveBeenCalledWith({
-      method: "styleQuiz/getQuizOptions",
-      args: [],
-    });
+    expect(result).not.toBeNull();
+    expect(result?.roomTypes.length).toBeGreaterThan(0);
+    expect(result?.primaryUses.length).toBeGreaterThan(0);
+    expect(result?.stylePreferences.length).toBeGreaterThan(0);
+    expect(result?.sizeOptions.length).toBeGreaterThan(0);
+    expect(result?.budgetRanges.length).toBeGreaterThan(0);
   });
 
-  it("returns null on error without rethrowing", async () => {
-    veloMocks.callVelo.mockRejectedValueOnce(new Error("network error"));
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+  it("returns options with required value+label shape", async () => {
     const { getQuizOptions } = await import("@/lib/wix/style-quiz");
     const result = await getQuizOptions();
-    expect(result).toBeNull();
-    errSpy.mockRestore();
+    for (const opt of result?.roomTypes ?? []) {
+      expect(typeof opt.value).toBe("string");
+      expect(typeof opt.label).toBe("string");
+    }
   });
 });
 
