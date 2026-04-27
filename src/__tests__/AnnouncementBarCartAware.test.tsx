@@ -1,17 +1,19 @@
 import { useEffect } from "react";
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { act, render, screen } from "@testing-library/react";
 
 import { CartProvider, useCart } from "@/components/cart/CartProvider";
 import {
   AnnouncementBarCartAware,
   announcementMessage,
   FREE_DELIVERY_THRESHOLD_CENTS,
+  ROTATION_MESSAGES,
+  ROTATION_INTERVAL_MS,
 } from "@/components/site/AnnouncementBarCartAware";
 
-// Pure-function tests pin the message-derivation logic without needing
-// the React tree or CartProvider. The integration test below verifies
-// the wrapper actually reads from useCart and forwards to AnnouncementBar.
+afterEach(() => vi.useRealTimers());
+
+// ── announcementMessage (pure function) ────────────────────────────
 
 describe("announcementMessage", () => {
   it("returns the static prompt when the cart is empty", () => {
@@ -21,20 +23,16 @@ describe("announcementMessage", () => {
   });
 
   it("returns the static prompt for a negative subtotal (defensive)", () => {
-    // Should never happen in practice, but guard against bad reducer state
-    // surfacing as a "$X away from free delivery" with a negative remainder.
     expect(announcementMessage(-5000)).toMatch(/free white-glove delivery on/i);
   });
 
   it("returns progress copy when the subtotal is below the threshold", () => {
-    // $499 spent → $1,001.00 remaining
     expect(announcementMessage(49_900)).toBe(
       "You're $1,001.00 away from free white-glove delivery",
     );
   });
 
   it("rounds the remainder to a sensible currency string", () => {
-    // $1,499.99 spent → $0.01 remaining
     expect(announcementMessage(149_999)).toBe(
       "You're $0.01 away from free white-glove delivery",
     );
@@ -53,9 +51,27 @@ describe("announcementMessage", () => {
   });
 });
 
-// Tiny test helper that seeds the cart by dispatching add actions through
-// the live reducer. useEffect (not render-body) so we don't dispatch state
-// updates during render.
+// ── ROTATION_MESSAGES ──────────────────────────────────────────────
+
+describe("ROTATION_MESSAGES", () => {
+  it("contains exactly 5 messages", () => {
+    expect(ROTATION_MESSAGES).toHaveLength(5);
+  });
+
+  it("starts with the free-delivery static prompt", () => {
+    expect(ROTATION_MESSAGES[0]).toMatch(/free white-glove delivery/i);
+  });
+
+  it("every message is a non-empty string", () => {
+    for (const msg of ROTATION_MESSAGES) {
+      expect(typeof msg).toBe("string");
+      expect(msg.length).toBeGreaterThan(5);
+    }
+  });
+});
+
+// ── test helpers ───────────────────────────────────────────────────
+
 function CartSeeder({ unitPriceCents }: { unitPriceCents: number }) {
   const { addLine } = useCart();
   useEffect(() => {
@@ -82,6 +98,8 @@ function renderWithCart(unitPriceCents = 0) {
   );
 }
 
+// ── AnnouncementBarCartAware — static cart states ──────────────────
+
 describe("AnnouncementBarCartAware", () => {
   it("renders the static prompt when the cart is empty", () => {
     renderWithCart(0);
@@ -101,5 +119,121 @@ describe("AnnouncementBarCartAware", () => {
     renderWithCart(FREE_DELIVERY_THRESHOLD_CENTS);
     const region = screen.getByRole("region", { name: /site announcement/i });
     expect(region.textContent).toMatch(/you qualify/i);
+  });
+
+  // ── rotation behaviour ───────────────────────────────────────────
+
+  it("starts on the first rotation message", () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderWithCart(0);
+    const region = screen.getByRole("region", { name: /site announcement/i });
+    expect(region.textContent).toBe(ROTATION_MESSAGES[0]);
+  });
+
+  it("advances to the next message after one interval", () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderWithCart(0);
+    act(() => vi.advanceTimersByTime(ROTATION_INTERVAL_MS));
+    const region = screen.getByRole("region", { name: /site announcement/i });
+    expect(region.textContent).toBe(ROTATION_MESSAGES[1]);
+  });
+
+  it("cycles through all 5 messages and wraps back to the first", () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderWithCart(0);
+    const region = screen.getByRole("region", { name: /site announcement/i });
+
+    for (let i = 0; i < ROTATION_MESSAGES.length; i++) {
+      expect(region.textContent).toBe(ROTATION_MESSAGES[i]);
+      act(() => vi.advanceTimersByTime(ROTATION_INTERVAL_MS));
+    }
+    // After a full cycle it wraps back to index 0
+    expect(region.textContent).toBe(ROTATION_MESSAGES[0]);
+  });
+
+  it("stops rotating and shows cart copy when items are added", () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+
+    // Start with non-empty cart — rotation should not run
+    renderWithCart(50_000);
+    act(() => vi.advanceTimersByTime(ROTATION_INTERVAL_MS * 3));
+
+    const region = screen.getByRole("region", { name: /site announcement/i });
+    expect(region.textContent).toBe(
+      "You're $1,000.00 away from free white-glove delivery",
+    );
+  });
+
+  it("does not advance index when cart is non-empty", () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderWithCart(FREE_DELIVERY_THRESHOLD_CENTS + 1);
+
+    act(() => vi.advanceTimersByTime(ROTATION_INTERVAL_MS * 10));
+
+    const region = screen.getByRole("region", { name: /site announcement/i });
+    expect(region.textContent).toMatch(/you qualify/i);
+  });
+
+  it("does not advance before one full interval elapses", () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderWithCart(0);
+    act(() => vi.advanceTimersByTime(ROTATION_INTERVAL_MS - 1));
+    const region = screen.getByRole("region", { name: /site announcement/i });
+    expect(region.textContent).toBe(ROTATION_MESSAGES[0]);
+  });
+
+  it("resets index to 0 when cart is cleared after mid-sequence items were present", () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+
+    type Phase = "empty" | "seeded" | "cleared";
+    function PhasedCartController({ phase }: { phase: Phase }) {
+      const { addLine, clear } = useCart();
+      useEffect(() => {
+        if (phase === "seeded") {
+          addLine({
+            id: "ctrl",
+            productId: "ctrl-product",
+            productName: "Ctrl Item",
+            unitPriceCents: 50_000,
+            formattedUnitPrice: "",
+            quantity: 1,
+          });
+        } else if (phase === "cleared") {
+          clear();
+        }
+      }, [phase, addLine, clear]);
+      return null;
+    }
+
+    const { rerender } = render(
+      <CartProvider>
+        <PhasedCartController phase="empty" />
+        <AnnouncementBarCartAware />
+      </CartProvider>,
+    );
+
+    // Advance rotation to index 2
+    act(() => vi.advanceTimersByTime(ROTATION_INTERVAL_MS * 2));
+
+    // Add items — setIndex(0) should fire, rotation stops
+    rerender(
+      <CartProvider>
+        <PhasedCartController phase="seeded" />
+        <AnnouncementBarCartAware />
+      </CartProvider>,
+    );
+    act(() => {}); // flush effects
+
+    // Clear the cart — rotation should restart from index 0
+    rerender(
+      <CartProvider>
+        <PhasedCartController phase="cleared" />
+        <AnnouncementBarCartAware />
+      </CartProvider>,
+    );
+    act(() => {}); // flush effects
+
+    const region = screen.getByRole("region", { name: /site announcement/i });
+    expect(region.textContent).toBe(ROTATION_MESSAGES[0]);
   });
 });

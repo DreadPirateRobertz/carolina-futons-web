@@ -22,7 +22,7 @@ export function AnnouncementBar({
       className="flex h-[60px] items-center justify-center bg-cf-navy px-4 text-center text-sm font-medium text-cf-cream"
     >
       <p className="inline-flex items-center gap-2">
-        <span>{message}</span>
+        <span aria-live="polite" aria-atomic="true">{message}</span>
         {ctaLabel && ctaHref ? (
           <a
             href={ctaHref}
