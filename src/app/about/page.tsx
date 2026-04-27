@@ -59,7 +59,7 @@ export default async function AboutPage() {
             <p className="leading-relaxed">
               A futon is a bed that also earns its keep as a sofa, so the
               decision should feel as considered as any other major
-              purchase. We'd rather help one customer choose the right
+              purchase. We&apos;d rather help one customer choose the right
               frame than ship two of the wrong one.
             </p>
           </section>
