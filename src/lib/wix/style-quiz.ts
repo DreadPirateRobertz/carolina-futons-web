@@ -38,11 +38,12 @@ export type QuizRecommendation = {
   reason: string;
 };
 
-// Static options — identical to the Velo backend getQuizOptions webMethod.
-// Served from this constant instead of a Velo RPC call because:
-// (1) The data never changes at runtime (no DB queries in the backend).
-// (2) webMethod endpoints are not exposed as HTTP functions and therefore
-//     unreachable from the cfw Next.js app via /_functions/.
+// Canonical quiz option data — served from this constant instead of Velo.
+// Velo webMethods are only callable from within the Wix site runtime; the
+// Next.js host cannot reach them (different runtime, no shared RPC bridge).
+// The data is fully static (no DB queries in the Velo source), so this
+// constant IS the source of truth. If options ever need to be dynamic,
+// expose them via a Velo HTTP function in http-functions.js instead.
 const STATIC_QUIZ_OPTIONS: QuizOptions = {
   roomTypes: [
     { value: "living-room", label: "Living Room", icon: "sofa" },

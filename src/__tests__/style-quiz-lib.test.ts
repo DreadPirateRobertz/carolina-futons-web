@@ -18,26 +18,40 @@ beforeEach(() => {
 
 describe("getQuizOptions", () => {
   // cf-gnli: getQuizOptions now returns a local static constant instead of
-  // calling Velo (the webMethod is not exposed as an HTTP function and was
-  // always returning null in production). Velo is still used for
-  // getQuizRecommendations which requires a real product DB query.
-  it("returns all five option categories", async () => {
+  // a Velo RPC call. Velo webMethods are only callable from within the Wix
+  // site runtime; the Next.js host cannot reach them, so the call always
+  // returned null in production. Velo is still used for getQuizRecommendations
+  // which requires a real wix-data product query.
+  it("returns a non-null result with all five option categories", async () => {
     const { getQuizOptions } = await import("@/lib/wix/style-quiz");
     const result = await getQuizOptions();
     expect(result).not.toBeNull();
-    expect(result?.roomTypes.length).toBeGreaterThan(0);
-    expect(result?.primaryUses.length).toBeGreaterThan(0);
-    expect(result?.stylePreferences.length).toBeGreaterThan(0);
-    expect(result?.sizeOptions.length).toBeGreaterThan(0);
-    expect(result?.budgetRanges.length).toBeGreaterThan(0);
+    // Use non-null assertion — if null slips back in, the assertions below
+    // must catch it rather than silently passing via optional chaining.
+    const opts = result!;
+    expect(opts.roomTypes).toHaveLength(5);
+    expect(opts.primaryUses).toHaveLength(3);
+    expect(opts.stylePreferences).toHaveLength(3);
+    expect(opts.sizeOptions).toHaveLength(3);
+    expect(opts.budgetRanges).toHaveLength(4);
   });
 
-  it("returns options with required value+label shape", async () => {
+  it("every option in every category has a value and label string", async () => {
     const { getQuizOptions } = await import("@/lib/wix/style-quiz");
     const result = await getQuizOptions();
-    for (const opt of result?.roomTypes ?? []) {
+    const opts = result!;
+    const allOpts = [
+      ...opts.roomTypes,
+      ...opts.primaryUses,
+      ...opts.stylePreferences,
+      ...opts.sizeOptions,
+      ...opts.budgetRanges,
+    ];
+    for (const opt of allOpts) {
       expect(typeof opt.value).toBe("string");
+      expect(opt.value.length).toBeGreaterThan(0);
       expect(typeof opt.label).toBe("string");
+      expect(opt.label.length).toBeGreaterThan(0);
     }
   });
 });
