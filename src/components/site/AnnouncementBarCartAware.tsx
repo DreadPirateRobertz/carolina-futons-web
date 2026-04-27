@@ -38,8 +38,11 @@ export function AnnouncementBarCartAware() {
   // Rotate through ROTATION_MESSAGES when the cart is empty.
   // Clears the interval immediately when the cart has items so the
   // cart-aware copy takes over without waiting for the next tick.
+  // setIndex(0) on cart-fill is intentional — bounded by subtotalCents
+  // 0→positive transition, not a cascading-render hazard.
   useEffect(() => {
     if (subtotalCents > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- bounded reset on cart fill
       setIndex(0);
       return;
     }
