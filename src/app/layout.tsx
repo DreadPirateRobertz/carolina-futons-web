@@ -17,6 +17,7 @@ import {
 } from "@/lib/seo/json-ld";
 import { resolveVerification } from "@/lib/seo/webmaster-verification";
 import { RouteProgressBar } from "@/components/site/RouteProgressBar";
+import { SaleLightbox } from "@/components/site/SaleLightbox";
 import { BackToTop } from "@/components/site/BackToTop";
 import { TikTokPixel } from "@/components/analytics/TikTokPixel";
 import { PinterestTag } from "@/components/analytics/PinterestTag";
@@ -122,6 +123,7 @@ export default async function RootLayout({
             <Footer />
             <CartDrawer />
             <BackToTop />
+            <SaleLightbox />
           </CartProvider>
         </MotionProvider>
         <GA4Tag />
