@@ -93,14 +93,12 @@ describe("getVisitorCartClient", () => {
     expect(mockJar.set).not.toHaveBeenCalled();
   });
 
-  it("falls back to bare anonymous client when generateVisitorTokens throws", async () => {
+  it("throws when generateVisitorTokens fails (lets callers decide redirect-with-error)", async () => {
     mockAnonClient.auth.generateVisitorTokens.mockRejectedValue(
       new Error("network timeout"),
     );
 
-    const client = await getVisitorCartClient();
-
-    expect(client).toBe(mockAnonClient);
+    await expect(getVisitorCartClient()).rejects.toThrow("network timeout");
     expect(mockJar.set).not.toHaveBeenCalled();
   });
 
@@ -122,5 +120,18 @@ describe("getVisitorCartClient", () => {
 
     expect(mockAnonClient.auth.generateVisitorTokens).toHaveBeenCalledOnce();
     expect(mockJar.set).toHaveBeenCalledOnce();
+  });
+
+  it("warns when session cookie is present but parseSessionCookie returns null", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    mockJar.get.mockReturnValue({ value: "corrupt-value" });
+    (parseSessionCookie as ReturnType<typeof vi.fn>).mockReturnValue(null);
+
+    await getVisitorCartClient();
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("unparseable"),
+    );
+    warnSpy.mockRestore();
   });
 });

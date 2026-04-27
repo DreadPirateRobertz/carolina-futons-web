@@ -25,7 +25,11 @@ const VISITOR_SESSION_MAX_AGE = 30 * 24 * 60 * 60; // 30 days
 
 export async function getVisitorCartClient() {
   const jar = await cookies();
-  const existing = parseSessionCookie(jar.get(SESSION_COOKIE_NAME)?.value);
+  const rawCookie = jar.get(SESSION_COOKIE_NAME)?.value;
+  const existing = parseSessionCookie(rawCookie);
+  if (rawCookie && !existing) {
+    console.warn("[wix-visitor-client] session cookie present but unparseable — generating fresh visitor identity");
+  }
   if (existing) return getWixClientWithTokens(existing);
 
   try {
@@ -51,6 +55,6 @@ export async function getVisitorCartClient() {
     return getWixClientWithTokens(tokens);
   } catch (err) {
     console.error("[wix-visitor-client] generateVisitorTokens failed:", err);
-    return getWixClientWithTokens();
+    throw err;
   }
 }
