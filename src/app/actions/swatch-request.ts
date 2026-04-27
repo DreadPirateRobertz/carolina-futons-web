@@ -10,11 +10,14 @@ import {
   type SwatchItem,
 } from "@/lib/swatch-request/swatch-request-schema";
 import type { SwatchRequestActionState } from "@/app/swatch-request/swatch-request-state";
+import type { SwatchContactInfo } from "@/lib/swatch-request/swatch-request-schema";
 
 const TRANSPORT_ERROR_GENERIC =
   "We couldn't submit that — please try again in a moment.";
 const TRANSPORT_ERROR_RATE_LIMIT =
   "We've received a few requests from this address — please try again in a few minutes.";
+const TRANSPORT_ERROR_CAPTCHA_NETWORK =
+  "We couldn't verify your request right now — please try again in a moment.";
 const VELO_ERROR_MAX_LEN = 200;
 const FETCH_TIMEOUT_MS = 10_000;
 const TURNSTILE_VERIFY_URL =
@@ -22,9 +25,33 @@ const TURNSTILE_VERIFY_URL =
 
 type VeloResponse = { success: boolean; requestId?: string; error?: string };
 
-async function verifyTurnstile(token: string): Promise<boolean> {
+export type SwatchListResult = {
+  items: SwatchItem[];
+  // Set when the CMS read failed — page can show a distinct error banner
+  // rather than the same "no swatches" message used for an empty catalogue.
+  error?: boolean;
+};
+
+function transportFailure(
+  values: SwatchContactInfo,
+  selectedIds: string[],
+  transportError: string,
+): SwatchRequestActionState {
+  return { status: "error", errors: {}, transportError, values, selectedIds };
+}
+
+// Returns { networkError: true } on fetch/timeout failures so callers can
+// distinguish "Cloudflare couldn't be reached" from "token rejected".
+async function verifyTurnstile(
+  token: string,
+): Promise<{ ok: boolean; networkError?: boolean }> {
   const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) return true; // dev: skip when key not configured
+  if (!secret) {
+    // Secret not configured — bypass verification. Ensure TURNSTILE_SECRET_KEY
+    // is set in production; this path should not be reachable in prod.
+    console.warn("[swatch-request] TURNSTILE_SECRET_KEY not set — skipping CAPTCHA verification");
+    return { ok: true };
+  }
   try {
     const res = await fetch(TURNSTILE_VERIFY_URL, {
       method: "POST",
@@ -33,29 +60,31 @@ async function verifyTurnstile(token: string): Promise<boolean> {
       signal: AbortSignal.timeout(5_000),
     });
     const data = (await res.json()) as { success: boolean };
-    return data.success === true;
+    return { ok: data.success === true };
   } catch (err) {
     console.error("[swatch-request] Turnstile verify failed:", err);
-    return false;
+    return { ok: false, networkError: true };
   }
 }
 
-export async function listSwatchesAction(): Promise<SwatchItem[]> {
+export async function listSwatchesAction(): Promise<SwatchListResult> {
   try {
     const items = await listCollectionItems<
       SwatchItem & { sortOrder?: number }
     >("FabricSwatches", 100);
-    return items
-      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-      .map(({ _id, swatchName, colorFamily, colorHex }) => ({
-        _id: _id ?? "",
-        swatchName: swatchName ?? "",
-        colorFamily,
-        colorHex,
-      }));
+    return {
+      items: items
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+        .map(({ _id, swatchName, colorFamily, colorHex }) => ({
+          _id: _id ?? "",
+          swatchName: swatchName ?? "",
+          colorFamily,
+          colorHex,
+        })),
+    };
   } catch (err) {
     console.error("[swatch-request] listSwatchesAction failed:", err);
-    return [];
+    return { items: [], error: true };
   }
 }
 
@@ -63,10 +92,9 @@ export async function submitSwatchRequestAction(
   _prev: SwatchRequestActionState | null,
   formData: FormData,
 ): Promise<SwatchRequestActionState> {
-  // Extract selected swatch IDs (multi-value field)
   const selectedIds = formData.getAll("swatchIds").map(String);
 
-  const contactRaw: Record<string, unknown> = {
+  const contactInfo = coerceSwatchContactInfo({
     firstName: formData.get("firstName"),
     lastName: formData.get("lastName"),
     email: formData.get("email"),
@@ -76,8 +104,7 @@ export async function submitSwatchRequestAction(
     city: formData.get("city"),
     state: formData.get("state"),
     zip: formData.get("zip"),
-  };
-  const contactInfo = coerceSwatchContactInfo(contactRaw);
+  });
 
   const swatchError = validateSwatchIds(selectedIds);
   const contactErrors = validateSwatchContactInfo(contactInfo);
@@ -96,28 +123,22 @@ export async function submitSwatchRequestAction(
     };
   }
 
-  // Verify Turnstile CAPTCHA
+  // Gate on TURNSTILE_SECRET_KEY (server secret) — not the public site key —
+  // so the CAPTCHA check can never be bypassed by a build missing the public
+  // env var while the secret is correctly deployed.
   const turnstileToken = formData.get("cf-turnstile-response");
-  if (typeof turnstileToken === "string" && turnstileToken) {
-    const ok = await verifyTurnstile(turnstileToken);
-    if (!ok) {
-      return {
-        status: "error",
-        errors: {},
-        transportError: "Please complete the CAPTCHA.",
-        values: contactInfo,
-        selectedIds,
-      };
+  if (process.env.TURNSTILE_SECRET_KEY) {
+    if (typeof turnstileToken !== "string" || !turnstileToken) {
+      return transportFailure(contactInfo, selectedIds, "Please complete the CAPTCHA.");
     }
-  } else if (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) {
-    // Site key configured but token missing — block submission
-    return {
-      status: "error",
-      errors: {},
-      transportError: "Please complete the CAPTCHA.",
-      values: contactInfo,
-      selectedIds,
-    };
+    const { ok, networkError } = await verifyTurnstile(turnstileToken);
+    if (!ok) {
+      return transportFailure(
+        contactInfo,
+        selectedIds,
+        networkError ? TRANSPORT_ERROR_CAPTCHA_NETWORK : "Please complete the CAPTCHA.",
+      );
+    }
   }
 
   const productSlug = formData.get("productSlug");
@@ -130,17 +151,7 @@ export async function submitSwatchRequestAction(
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         swatchIds: selectedIds,
-        contactInfo: {
-          firstName: contactInfo.firstName,
-          lastName: contactInfo.lastName,
-          email: contactInfo.email,
-          phone: contactInfo.phone,
-          address1: contactInfo.address1,
-          address2: contactInfo.address2,
-          city: contactInfo.city,
-          state: contactInfo.state,
-          zip: contactInfo.zip,
-        },
+        contactInfo,
         productSlug: typeof productSlug === "string" ? productSlug : undefined,
       }),
       cache: "no-store",
@@ -148,13 +159,7 @@ export async function submitSwatchRequestAction(
     });
   } catch (err) {
     console.error("[swatch-request] fetch to Velo failed:", err);
-    return {
-      status: "error",
-      errors: {},
-      transportError: TRANSPORT_ERROR_GENERIC,
-      values: contactInfo,
-      selectedIds,
-    };
+    return transportFailure(contactInfo, selectedIds, TRANSPORT_ERROR_GENERIC);
   }
 
   if (res.ok) {
@@ -162,13 +167,7 @@ export async function submitSwatchRequestAction(
   }
 
   if (res.status === 429) {
-    return {
-      status: "error",
-      errors: {},
-      transportError: TRANSPORT_ERROR_RATE_LIMIT,
-      values: contactInfo,
-      selectedIds,
-    };
+    return transportFailure(contactInfo, selectedIds, TRANSPORT_ERROR_RATE_LIMIT);
   }
 
   let veloError: string | undefined;
@@ -185,11 +184,9 @@ export async function submitSwatchRequestAction(
     res.status,
     veloError,
   );
-  return {
-    status: "error",
-    errors: {},
-    transportError: veloError ?? TRANSPORT_ERROR_GENERIC,
-    values: contactInfo,
+  return transportFailure(
+    contactInfo,
     selectedIds,
-  };
+    veloError ?? TRANSPORT_ERROR_GENERIC,
+  );
 }

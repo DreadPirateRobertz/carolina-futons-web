@@ -167,18 +167,36 @@ describe("listSwatchesAction", () => {
       "@/app/actions/swatch-request"
     );
     const result = await listSwatchesAction();
-    expect(result[0].swatchName).toBe("Cream");
-    expect(result[1].swatchName).toBe("Navy");
+    expect(result.error).toBeUndefined();
+    expect(result.items[0].swatchName).toBe("Cream");
+    expect(result.items[1].swatchName).toBe("Navy");
     expect(mockListCollectionItems).toHaveBeenCalledWith("FabricSwatches", 100);
   });
 
-  it("returns empty array on CMS error", async () => {
+  it("returns error:true on CMS failure", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     mockListCollectionItems.mockRejectedValueOnce(new Error("wix down"));
     const { listSwatchesAction } = await import(
       "@/app/actions/swatch-request"
     );
     const result = await listSwatchesAction();
-    expect(result).toEqual([]);
+    expect(result.items).toEqual([]);
+    expect(result.error).toBe(true);
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+
+  it("sorts items without sortOrder using 0 as default", async () => {
+    mockListCollectionItems.mockResolvedValueOnce([
+      { _id: "s1", swatchName: "A" },
+      { _id: "s2", swatchName: "B", sortOrder: 1 },
+    ]);
+    const { listSwatchesAction } = await import(
+      "@/app/actions/swatch-request"
+    );
+    const result = await listSwatchesAction();
+    // Both without sortOrder (0) and with sortOrder (1) — A comes first
+    expect(result.items[0].swatchName).toBe("A");
   });
 });
 
@@ -215,6 +233,12 @@ describe("submitSwatchRequestAction", () => {
     vi.resetAllMocks();
     delete process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
     delete process.env.TURNSTILE_SECRET_KEY;
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("returns validation error when no swatches selected", async () => {
@@ -351,8 +375,8 @@ describe("submitSwatchRequestAction", () => {
     }
   });
 
-  it("blocks submission when turnstile site key set but token missing", async () => {
-    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = "test-site-key";
+  it("blocks submission when secret key set but token missing", async () => {
+    process.env.TURNSTILE_SECRET_KEY = "secret-key";
     const { submitSwatchRequestAction } = await import(
       "@/app/actions/swatch-request"
     );
@@ -364,7 +388,47 @@ describe("submitSwatchRequestAction", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it("skips Turnstile when secret key not configured (dev mode)", async () => {
+  it("blocks submission when token present but Cloudflare rejects it", async () => {
+    process.env.TURNSTILE_SECRET_KEY = "secret-key";
+    // First fetch is Turnstile verify (returns failure), Velo fetch should never fire
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: false }),
+    } as Response);
+    const fd = makeFormData();
+    fd.set("cf-turnstile-response", "bad-token");
+    const { submitSwatchRequestAction } = await import(
+      "@/app/actions/swatch-request"
+    );
+    const result = await submitSwatchRequestAction(null, fd);
+    expect(result.status).toBe("error");
+    if (result.status === "error") {
+      expect(result.transportError).toMatch(/captcha/i);
+    }
+    // Velo fetch should NOT have been called
+    const veloCalls = mockFetch.mock.calls.filter(([url]: [string]) =>
+      String(url).includes("sampleRequests"),
+    );
+    expect(veloCalls).toHaveLength(0);
+  });
+
+  it("returns network-error copy when Turnstile verify fetch throws", async () => {
+    process.env.TURNSTILE_SECRET_KEY = "secret-key";
+    mockFetch.mockRejectedValueOnce(new Error("network down"));
+    const fd = makeFormData();
+    fd.set("cf-turnstile-response", "some-token");
+    const { submitSwatchRequestAction } = await import(
+      "@/app/actions/swatch-request"
+    );
+    const result = await submitSwatchRequestAction(null, fd);
+    expect(result.status).toBe("error");
+    if (result.status === "error") {
+      expect(result.transportError).toMatch(/couldn't verify/i);
+    }
+  });
+
+  it("skips Turnstile when secret key not configured", async () => {
     mockFetch.mockResolvedValueOnce({ ok: true, status: 200 } as Response);
     const fd = makeFormData();
     fd.set("cf-turnstile-response", "some-token");
@@ -372,8 +436,49 @@ describe("submitSwatchRequestAction", () => {
       "@/app/actions/swatch-request"
     );
     const result = await submitSwatchRequestAction(null, fd);
-    // No TURNSTILE_SECRET_KEY set — verify call is skipped, fetch to Velo proceeds
+    // No TURNSTILE_SECRET_KEY set — bypass, fetch to Velo proceeds
     expect(result.status).toBe("success");
+  });
+
+  it("returns both swatch and contact errors simultaneously", async () => {
+    const { submitSwatchRequestAction } = await import(
+      "@/app/actions/swatch-request"
+    );
+    const fd = makeFormData({ swatchIds: [], email: "" });
+    const result = await submitSwatchRequestAction(null, fd);
+    expect(result.status).toBe("error");
+    if (result.status === "error") {
+      expect(result.errors.swatchIds).toBeTruthy();
+      expect(result.errors.contact?.email).toBeTruthy();
+    }
+  });
+
+  it("treats whitespace-only required fields as empty", async () => {
+    const { submitSwatchRequestAction } = await import(
+      "@/app/actions/swatch-request"
+    );
+    const fd = makeFormData({ firstName: "   " });
+    const result = await submitSwatchRequestAction(null, fd);
+    expect(result.status).toBe("error");
+    if (result.status === "error") {
+      expect(result.errors.contact?.firstName).toBeTruthy();
+    }
+  });
+
+  it("falls back to generic error when Velo error body is not JSON", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: async () => { throw new Error("not json"); },
+    } as unknown as Response);
+    const { submitSwatchRequestAction } = await import(
+      "@/app/actions/swatch-request"
+    );
+    const result = await submitSwatchRequestAction(null, makeFormData());
+    expect(result.status).toBe("error");
+    if (result.status === "error") {
+      expect(result.transportError).toMatch(/couldn't submit/i);
+    }
   });
 
   it("includes productSlug in payload when provided", async () => {

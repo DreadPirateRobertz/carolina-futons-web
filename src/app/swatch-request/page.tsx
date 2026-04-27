@@ -16,7 +16,7 @@ export default async function SwatchRequestPage({
 }) {
   const params = await searchParams;
   const productSlug = typeof params.product === "string" ? params.product : undefined;
-  const swatches = await listSwatchesAction();
+  const { items: swatches, error: swatchLoadError } = await listSwatchesAction();
 
   return (
     <main className="w-full">
@@ -35,6 +35,12 @@ export default async function SwatchRequestPage({
               color in your own lighting — completely free.
             </p>
           </header>
+
+          {swatchLoadError && (
+            <p role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              We couldn&apos;t load our fabric options right now. Please try again in a moment.
+            </p>
+          )}
 
           <SwatchRequestForm swatches={swatches} productSlug={productSlug} />
         </article>
