@@ -65,7 +65,7 @@ export function Header() {
       data-slot="site-header"
       data-scrolled={scrolled ? "true" : "false"}
       className={[
-        "sticky top-0 z-40 h-cf-header w-full border-b border-cf-divider bg-gradient-to-b from-cf-header-start to-cf-header-end text-cf-ink backdrop-blur transition-shadow duration-200",
+        "sticky top-0 z-40 h-cf-header w-full border-b border-cf-divider bg-cf-cream text-cf-ink transition-shadow duration-200",
         shadowClass,
       ]
         .filter(Boolean)
@@ -73,10 +73,12 @@ export function Header() {
     >
       {/* LivingSky backdrop — time-of-day sky fills header width at desktop.
           SVG viewBox 1040×150 renders ≈208px tall at 1440px wide, nearly
-          filling the 213px header. On narrow viewports the gradient fallback
-          shows below the SVG — the white veil blends both.
+          filling the 213px header. On narrow viewports bg-cf-cream on the
+          header element shows as the fallback.
           overflow-hidden is on this wrapper only, not the <header>, so
-          CMS-driven announcement bar text can grow without being clipped. */}
+          CMS-driven announcement bar text can grow without being clipped.
+          Veil reduced to white/10 so sky colours remain vibrant while still
+          smoothing the narrow-viewport edge where the SVG ends. */}
       <div
         aria-hidden="true"
         data-slot="living-sky-backdrop"
@@ -85,7 +87,7 @@ export function Header() {
         <div className="absolute top-0 left-0 z-0 w-full">
           <LivingSkyClient />
         </div>
-        <div className="absolute inset-0 z-10 bg-white/40" />
+        <div className="absolute inset-0 z-10 bg-white/10" />
       </div>
 
       <div className="relative z-20">

@@ -84,6 +84,28 @@ export const LIVING_SKY_SVG_BODY = String.raw`
       <stop offset="0%"   stop-color="#FFFDE8" stop-opacity="0"/>
       <stop offset="100%" stop-color="#FFFDE8" stop-opacity="0.9"/>
     </linearGradient>
+
+    <style>
+      @keyframes ls-twinkle {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.60; }
+      }
+      @keyframes ls-firefly {
+        0%, 100% { opacity: 0.08; }
+        50%       { opacity: 1; }
+      }
+      #stars circle { animation: ls-twinkle 2s ease-in-out infinite; }
+      #stars circle:nth-child(3n)   { animation-duration: 1.7s; animation-delay: -0.4s; }
+      #stars circle:nth-child(3n+1) { animation-duration: 2.4s; animation-delay: -1.1s; }
+      #stars circle:nth-child(3n+2) { animation-duration: 3.1s; animation-delay: -2.3s; }
+      #firefly-group circle { animation: ls-firefly 2.2s ease-in-out infinite; }
+      #firefly-group circle:nth-child(3n)   { animation-duration: 1.8s; animation-delay: -0.3s; }
+      #firefly-group circle:nth-child(3n+1) { animation-duration: 2.6s; animation-delay: -1.2s; }
+      #firefly-group circle:nth-child(3n+2) { animation-duration: 1.9s; animation-delay: -0.7s; }
+      @media (prefers-reduced-motion: reduce) {
+        #stars circle, #firefly-group circle { animation: none; }
+      }
+    </style>
   </defs>
 
   <!-- ── 1. Sky backdrop ──────────────────────────────────────────────────── -->
