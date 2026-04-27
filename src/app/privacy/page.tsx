@@ -1,4 +1,11 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+
+import { ConsentPreferences } from "@/components/analytics/ConsentPreferences";
+import {
+  CONSENT_COOKIE_NAME,
+  parseConsentCookieAsMap,
+} from "@/lib/consent/consent-state";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — Carolina Futons",
@@ -8,7 +15,10 @@ export const metadata: Metadata = {
 
 const LAST_UPDATED = "April 18, 2026";
 
-export default function PrivacyPolicyPage() {
+export default async function PrivacyPolicyPage() {
+  const jar = await cookies();
+  const initialMap = parseConsentCookieAsMap(jar.get(CONSENT_COOKIE_NAME)?.value);
+
   return (
     <main className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
       <article className="mx-auto max-w-[65ch] space-y-8 font-source-sans text-cf-ink">
@@ -21,6 +31,9 @@ export default function PrivacyPolicyPage() {
           </h1>
           <p className="text-sm text-cf-muted">Last updated {LAST_UPDATED}</p>
         </header>
+
+        {/* cf-yt6r: per-signal consent toggles — lets users fine-tune after the initial banner */}
+        <ConsentPreferences initialMap={initialMap} />
 
         <p className="text-lg leading-relaxed">
           Carolina Futons is a family-owned retailer based in Hendersonville,

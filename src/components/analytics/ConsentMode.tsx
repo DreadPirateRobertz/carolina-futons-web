@@ -2,36 +2,32 @@ import { cookies } from "next/headers";
 
 import {
   CONSENT_COOKIE_NAME,
-  consentMapFor,
-  parseConsentCookie,
+  parseConsentCookieAsMap,
 } from "@/lib/consent/consent-state";
 
 // cf-zhkr: Google Consent Mode v2 default snippet. MUST render BEFORE any
 // gtag/fbq/pintrk/ttq script tag so the default consent state is on the
 // dataLayer before those libraries read from it.
 //
-// In the app router there is no _document, so next/script's
-// beforeInteractive strategy is unsupported (it only runs from
-// pages/_document). The official guidance is to render a plain inline
-// <script> tag inside <head> for the rare cases (consent, polyfills) that
-// genuinely need to run before hydration. That's what we do here.
+// cf-yt6r: parseConsentCookieAsMap handles both the legacy binary string
+// ("granted"/"denied") and the new granular JSON map. It projects onto the
+// four known keys so extra cookie fields never reach this script.
 //
-// XSS posture: the only interpolation into the inline snippet is the
-// JSON-stringified consent map, whose values are constrained to the
-// literal strings "granted" | "denied" by the consentMapFor() return
-// type. No untrusted data flows in, so dangerouslySetInnerHTML is safe.
-// Worst case (cookie tampering): the snippet emits a literal "denied"
-// payload — same as the default-deny posture.
+// XSS posture: map values are constrained to "granted"|"denied" by
+// parseConsentCookieAsMap's projection. Forward slashes in JSON.stringify
+// output are additionally escaped (\/) to guard against </script> injection
+// if a future code path ever widens the value surface.
 
 export async function ConsentMode() {
   const jar = await cookies();
-  const choice = parseConsentCookie(jar.get(CONSENT_COOKIE_NAME)?.value);
-  const map = consentMapFor(choice);
+  const map = parseConsentCookieAsMap(jar.get(CONSENT_COOKIE_NAME)?.value);
+  // Escape forward slashes so a </script> sequence can't terminate the block.
+  const safeJson = JSON.stringify(map).replace(/\//g, "\\/");
 
   const snippet =
     "window.dataLayer = window.dataLayer || [];\n" +
     "window.gtag = window.gtag || function(){dataLayer.push(arguments);};\n" +
-    `gtag('consent', 'default', ${JSON.stringify(map)});`;
+    `gtag('consent', 'default', ${safeJson});`;
 
   return (
     <script
