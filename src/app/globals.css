@@ -185,6 +185,19 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.62 0.06 232 / 0.5);
 
+  /* CF brand tokens — flipped for dark surfaces (cf-uyeq).
+     Light-mode values are dark-on-light; dark-mode values flip to
+     light-on-dark so text-cf-ink / text-cf-charcoal / text-cf-espresso
+     meet WCAG AA (≥4.5:1) against the dark background. */
+  --cf-ink:      #e8eef4;   /* primary text on dark — off-white blue-gray */
+  --cf-charcoal: #e2eaf0;   /* body text on dark */
+  --cf-espresso: #f0e4d4;   /* heading accent on dark — warm off-white */
+  --cf-sand:     #1e2a3a;   /* page bg on dark (matches --background) */
+  --cf-cream:    #263545;   /* card surface on dark */
+  --cf-divider:  oklch(1 0 0 / 12%);  /* hairline on dark */
+  --cf-header-start: #1a2535;
+  --cf-header-end:   #1e2a3a;
+
   /* Marugame typography — dark-surface anti-aliasing (cf-b3ai).
      Subpixel rendering strokes appear heavier on dark; antialiased
      keeps Clash Display / Satoshi weight true to the light-mode design.

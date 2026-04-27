@@ -70,3 +70,26 @@ describe("globals.css — accessibility", () => {
     expect(css).toMatch(/@media\s*\(\s*prefers-reduced-motion:\s*reduce\s*\)/);
   });
 });
+
+describe("globals.css — dark mode CF brand token overrides (cf-uyeq)", () => {
+  // Guards that the .dark block flips text-color tokens to light values so
+  // text-cf-ink / text-cf-charcoal / text-cf-espresso pass WCAG AA contrast
+  // against the dark --background. The regex anchors to the .dark block by
+  // requiring the token to appear after the literal ".dark {" string.
+  function inDarkBlock(token: string, value: string) {
+    const darkSection = css.slice(css.indexOf(".dark {"));
+    return new RegExp(`${token}:\\s*${value}`).test(darkSection);
+  }
+
+  it("overrides --cf-ink to a light value in .dark", () => {
+    expect(inDarkBlock("--cf-ink", "#e8eef4")).toBe(true);
+  });
+
+  it("overrides --cf-charcoal to a light value in .dark", () => {
+    expect(inDarkBlock("--cf-charcoal", "#e2eaf0")).toBe(true);
+  });
+
+  it("overrides --cf-espresso to a warm-light value in .dark", () => {
+    expect(inDarkBlock("--cf-espresso", "#f0e4d4")).toBe(true);
+  });
+});
