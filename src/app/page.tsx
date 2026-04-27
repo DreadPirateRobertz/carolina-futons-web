@@ -1,5 +1,7 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 
+import { LivingHero } from "@/components/home/LivingHero";
 import {
   FilterFirst,
   type ThemeDCategory,
@@ -10,6 +12,7 @@ import { StatsStrip } from "@/components/site/StatsStrip";
 import { TestimonialsStrip } from "@/components/site/TestimonialsStrip";
 import { TrustBar } from "@/components/site/TrustBar";
 import { EmailCapturePopup } from "@/components/site/EmailCapturePopup";
+import { V3_PAL as c } from "@/components/mascot/MascotPalette";
 import {
   getCollectionBySlug,
   listProductsByCollectionId,
@@ -23,6 +26,8 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
+// Clash Display loaded here so it scopes to the filter-first section only
+// and doesn't affect the global layout font stack.
 const FONTSHARE_URL =
   "https://api.fontshare.com/v2/css?f[]=clash-display@700&f[]=satoshi@400,500&display=swap";
 
@@ -48,21 +53,92 @@ export default async function HomePage() {
     <>
       <EmailCapturePopup />
 
-      {/* Fontshare font injection — hoisted to <head> by React's link promotion */}
+      {/* ── Living Hero — time-of-day cycling: dawn rays / day bear / dusk rays / night stars ── */}
+      <div className="w-full" style={{ height: "80vh", minHeight: 500, maxHeight: 900 }}>
+        <LivingHero />
+      </div>
+
+      {/* ── Headline + CTA ── */}
+      <div
+        className="mx-auto w-full max-w-5xl px-6 py-16 text-center"
+        style={{ background: c.paperWarm, color: c.ink }}
+      >
+        <p
+          style={{
+            fontFamily: "var(--font-source-sans)",
+            fontSize: 11,
+            letterSpacing: ".16em",
+            textTransform: "uppercase",
+            opacity: 0.6,
+            marginBottom: 12,
+          }}
+        >
+          Handmade in the Blue Ridge
+        </p>
+        <h1
+          style={{
+            fontFamily: "var(--font-playfair)",
+            fontSize: "clamp(2.4rem, 5vw, 4rem)",
+            fontWeight: 700,
+            lineHeight: 1.1,
+            marginBottom: 20,
+          }}
+        >
+          Furniture that earns its place.
+        </h1>
+        <p
+          style={{
+            fontSize: "1.125rem",
+            lineHeight: 1.7,
+            maxWidth: 560,
+            margin: "0 auto 32px",
+            opacity: 0.8,
+          }}
+        >
+          Family-owned since 1991. Solid hardwood frames, American mattresses
+          — no veneer, no shortcuts, no commission pressure.
+        </p>
+        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+          <Link
+            href="/shop"
+            style={{
+              display: "inline-block",
+              background: c.ink,
+              color: c.cream,
+              borderRadius: 8,
+              padding: "12px 28px",
+              fontWeight: 600,
+              fontSize: "0.9375rem",
+              textDecoration: "none",
+              letterSpacing: ".03em",
+            }}
+          >
+            Browse all furniture
+          </Link>
+          <Link
+            href="/design-a-room"
+            style={{
+              display: "inline-block",
+              background: "transparent",
+              color: c.ink,
+              border: `1.5px solid ${c.ink}`,
+              borderRadius: 8,
+              padding: "12px 28px",
+              fontWeight: 600,
+              fontSize: "0.9375rem",
+              textDecoration: "none",
+              letterSpacing: ".03em",
+              opacity: 0.75,
+            }}
+          >
+            Design a room
+          </Link>
+        </div>
+      </div>
+
+      {/* ── Filter-first product browser (Theme D) ── */}
       <link rel="preconnect" href="https://api.fontshare.com" />
       <link rel="stylesheet" href={FONTSHARE_URL} />
-      <style>{`
-        .theme-d-shell,
-        .theme-d-shell * {
-          --font-theme-d-heading: 'Clash Display', sans-serif;
-          --font-theme-d-body: 'Satoshi', sans-serif;
-        }
-        .theme-d-shell h1 {
-          font-family: 'Clash Display', sans-serif;
-          letter-spacing: -0.03em;
-        }
-      `}</style>
-
       <FilterFirst categories={categories} />
 
       {/* ── Trust bar ── */}
@@ -72,20 +148,19 @@ export default async function HomePage() {
       <TestimonialsStrip />
 
       {/* ── Value props ── */}
-      <section className="border-t border-cf-divider bg-cf-sand/30">
+      <section className="border-t border-cf-divider bg-cf-sand/40">
         <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-14 sm:grid-cols-3 sm:px-6 lg:px-8">
           {VALUE_PROPS.map((prop) => (
             <div
               key={prop.title}
-              className="rounded-xl border border-cf-divider bg-white p-6"
+              className="rounded-lg border border-cf-divider bg-cf-cream p-6 shadow-sm"
             >
-              <h3
-                className="text-base font-semibold text-cf-espresso"
-                style={{ fontFamily: "'Clash Display', sans-serif" }}
-              >
+              <h3 className="font-heading text-base font-semibold text-cf-navy">
                 {prop.title}
               </h3>
-              <p className="mt-2 text-sm text-cf-charcoal/80">{prop.body}</p>
+              <p className="mt-2 text-sm text-cf-charcoal/80">
+                {prop.body}
+              </p>
             </div>
           ))}
         </div>
