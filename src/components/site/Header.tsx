@@ -18,6 +18,7 @@ import { AnnouncementBarCartAware } from "@/components/site/AnnouncementBarCartA
 import { CartTrigger } from "@/components/cart/CartTrigger";
 import { HeaderMobileMenu } from "@/components/site/HeaderMobileMenu";
 import { LivingSkyClient } from "@/components/illustrations/LivingSkyClient";
+import { ThemeToggle } from "@/components/site/ThemeToggle";
 
 const PRIMARY_NAV = [
   { label: "Futons", href: "/shop/futon-frames" },
@@ -136,6 +137,7 @@ export function Header() {
 
             <div className="ml-auto flex items-center gap-1">
               <HeaderMobileMenu />
+              <ThemeToggle />
               <Link
                 href="/search"
                 aria-label="Search"
