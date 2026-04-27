@@ -46,7 +46,9 @@ describe("ReturnsPage — rendering", () => {
   it("surfaces the store phone + email as contact links", () => {
     render(<ReturnsPage />);
     expect(screen.getByRole("link", { name: BUSINESS.phone })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: BUSINESS.email })).toBeInTheDocument();
+    // The page has multiple email links (damaged-on-arrival + start-a-return sections)
+    const emailLinks = screen.getAllByRole("link", { name: BUSINESS.email });
+    expect(emailLinks.length).toBeGreaterThanOrEqual(1);
   });
 
   it("constrains body copy to the 65ch measure", () => {
