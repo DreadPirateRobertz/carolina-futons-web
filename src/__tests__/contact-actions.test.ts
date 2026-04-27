@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-// cf-3qt.4.6: Server Action now hands off to /_functions/contactSubmissions
-// instead of nodemailer. The action keeps validation (shared with the
-// client) and translates Velo HTTP responses into the ContactActionState
-// shape that `useActionState` renders from.
+vi.mock("@sentry/nextjs", () => ({
+  captureException: vi.fn(),
+}));
 
 import { sendContactForm } from "@/app/contact/actions";
 
@@ -202,5 +201,116 @@ describe("sendContactForm — Velo handoff", () => {
     expect(result.status).toBe("error");
     if (result.status !== "error") return;
     expect(result.transportError!.length).toBeLessThanOrEqual(200);
+  });
+
+  it("forwards sizeOfInterest in Velo POST body when provided", async () => {
+    fetchMock.mockResolvedValueOnce(ok());
+    await sendContactForm(null, fd({ ...VALID, sizeOfInterest: "queen" }));
+    const init = fetchMock.mock.calls[0]![1] as RequestInit;
+    const body = JSON.parse(init.body as string);
+    expect(body.sizeOfInterest).toBe("queen");
+  });
+
+  it("omits sizeOfInterest from Velo POST body when not provided", async () => {
+    fetchMock.mockResolvedValueOnce(ok());
+    await sendContactForm(null, fd(VALID));
+    const init = fetchMock.mock.calls[0]![1] as RequestInit;
+    const body = JSON.parse(init.body as string);
+    expect(body.sizeOfInterest).toBeUndefined();
+  });
+});
+
+describe("sendContactForm — Turnstile CAPTCHA", () => {
+  function ok(body: object = { success: true }) {
+    return new Response(JSON.stringify(body), { status: 200 });
+  }
+
+  function turnstileOk() {
+    return new Response(JSON.stringify({ success: true }), { status: 200 });
+  }
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("bypasses CAPTCHA in dev/test when TURNSTILE_SECRET_KEY is absent", async () => {
+    // No secret set — test env is not production, so fetch proceeds normally
+    fetchMock.mockResolvedValueOnce(ok());
+    const result = await sendContactForm(null, fd(VALID));
+    expect(result.status).toBe("success");
+    // Only one fetch call (Velo), no Turnstile verify call
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(
+      (fetchMock.mock.calls[0]! as [string])[0],
+    ).toContain("contactSubmissions");
+  });
+
+  it("hard-fails in production when TURNSTILE_SECRET_KEY is absent", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const result = await sendContactForm(null, fd(VALID));
+    expect(result.status).toBe("error");
+    if (result.status !== "error") return;
+    expect(result.transportError).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("blocks submission when token is missing and secret is set", async () => {
+    vi.stubEnv("TURNSTILE_SECRET_KEY", "secret-key");
+    const result = await sendContactForm(null, fd(VALID));
+    expect(result.status).toBe("error");
+    if (result.status !== "error") return;
+    expect(result.transportError).toMatch(/captcha/i);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("blocks submission when Turnstile token is rejected", async () => {
+    vi.stubEnv("TURNSTILE_SECRET_KEY", "secret-key");
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ success: false }), { status: 200 }),
+    );
+    const result = await sendContactForm(
+      null,
+      fd({ ...VALID, "cf-turnstile-response": "bad-token" }),
+    );
+    expect(result.status).toBe("error");
+    if (result.status !== "error") return;
+    expect(result.transportError).toMatch(/captcha/i);
+    // Velo fetch should not be called after CAPTCHA failure
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(
+      (fetchMock.mock.calls[0]! as [string])[0],
+    ).toContain("turnstile");
+  });
+
+  it("returns network-error copy when Turnstile verify throws", async () => {
+    vi.stubEnv("TURNSTILE_SECRET_KEY", "secret-key");
+    fetchMock.mockRejectedValueOnce(new Error("network down"));
+    const result = await sendContactForm(
+      null,
+      fd({ ...VALID, "cf-turnstile-response": "some-token" }),
+    );
+    expect(result.status).toBe("error");
+    if (result.status !== "error") return;
+    expect(result.transportError).toMatch(/verify your request/i);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("proceeds to Velo after valid Turnstile token", async () => {
+    vi.stubEnv("TURNSTILE_SECRET_KEY", "secret-key");
+    fetchMock
+      .mockResolvedValueOnce(turnstileOk())
+      .mockResolvedValueOnce(ok());
+    const result = await sendContactForm(
+      null,
+      fd({ ...VALID, "cf-turnstile-response": "valid-token" }),
+    );
+    expect(result.status).toBe("success");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(
+      (fetchMock.mock.calls[0]! as [string])[0],
+    ).toContain("turnstile");
+    expect(
+      (fetchMock.mock.calls[1]! as [string])[0],
+    ).toContain("contactSubmissions");
   });
 });

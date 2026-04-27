@@ -2,12 +2,15 @@
 // and the client form can share the same rules — one source of truth for
 // error copy + field names means the two can never drift.
 
+export type BedSize = "twin" | "full" | "queen" | "king";
+
 export type ContactRequest = {
   name: string;
   email: string;
   phone?: string;
   subject: string;
   message: string;
+  sizeOfInterest?: BedSize;
 };
 
 export type ContactErrors = Partial<Record<keyof ContactRequest, string>>;
@@ -17,6 +20,7 @@ const MIN_MESSAGE = 10;
 const MAX_MESSAGE = 2000;
 const MAX_SUBJECT = 120;
 const MAX_NAME = 80;
+const BED_SIZES: string[] = ["twin", "full", "queen", "king"];
 
 function str(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -24,12 +28,14 @@ function str(value: unknown): string {
 
 export function coerceContactRequest(input: unknown): ContactRequest {
   const obj = (input ?? {}) as Record<string, unknown>;
+  const rawSize = str(obj.sizeOfInterest).toLowerCase();
   return {
     name: str(obj.name),
     email: str(obj.email),
     phone: str(obj.phone) || undefined,
     subject: str(obj.subject),
     message: str(obj.message),
+    sizeOfInterest: BED_SIZES.includes(rawSize) ? (rawSize as BedSize) : undefined,
   };
 }
 
