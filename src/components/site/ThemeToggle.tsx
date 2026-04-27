@@ -1,15 +1,12 @@
 "use client";
 
-import { useCallback } from "react";
 import { Sun, Moon } from "lucide-react";
-
-// Must match the key used in THEME_INIT_SCRIPT in src/app/layout.tsx
-const STORAGE_KEY = "cf-theme";
+import { STORAGE_KEY } from "@/lib/themeInitScript";
 
 // CSS-driven icon visibility (via .dark on <html>) means the correct icon is
 // always visible immediately — no JS state needed, no SSR flash.
 export function ThemeToggle() {
-  const toggle = useCallback(() => {
+  function toggle() {
     const next = !document.documentElement.classList.contains("dark");
     document.documentElement.classList.toggle("dark", next);
     try {
@@ -17,7 +14,7 @@ export function ThemeToggle() {
     } catch {
       // localStorage unavailable (private browsing / quota) — DOM state still updated
     }
-  }, []);
+  }
 
   return (
     <button

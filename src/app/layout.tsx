@@ -28,6 +28,7 @@ import {
   CONSENT_COOKIE_NAME,
   parseConsentCookie,
 } from "@/lib/consent/consent-state";
+import { THEME_INIT_SCRIPT } from "@/lib/themeInitScript";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -70,11 +71,6 @@ export const metadata: Metadata = {
   verification: resolveVerification(),
 };
 
-// Hardcoded literal — no user input reaches this string. Safe to inline.
-const THEME_INIT_SCRIPT =
-  "(function(){try{var s=localStorage.getItem('cf-theme');" +
-  "var d=s==='dark'||(s===null&&window.matchMedia('(prefers-color-scheme: dark)').matches);" +
-  "if(d)document.documentElement.classList.add('dark');}catch(e){}})();";
 
 export default async function RootLayout({
   children,

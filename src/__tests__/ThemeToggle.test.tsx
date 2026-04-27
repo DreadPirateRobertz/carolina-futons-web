@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ThemeToggle } from "@/components/site/ThemeToggle";
+import {
+  STORAGE_KEY,
+  THEME_INIT_SCRIPT,
+  applyInitialTheme,
+} from "@/lib/themeInitScript";
 
 // ── matchMedia stub ───────────────────────────────────────────────────────────
 function stubMatchMedia(prefersDark: boolean) {
@@ -24,6 +29,7 @@ function stubStorage(stored: string | null) {
 beforeEach(() => {
   document.documentElement.classList.remove("dark");
   stubMatchMedia(false);
+  vi.spyOn(Storage.prototype, "setItem");
 });
 
 afterEach(() => {
@@ -43,7 +49,6 @@ describe("ThemeToggle", () => {
   });
 
   it("clicking from light mode adds .dark class to <html>", () => {
-    document.documentElement.classList.remove("dark");
     render(<ThemeToggle />);
     fireEvent.click(screen.getByRole("button"));
     expect(document.documentElement.classList.contains("dark")).toBe(true);
@@ -57,34 +62,28 @@ describe("ThemeToggle", () => {
   });
 
   it("persists 'dark' to localStorage on switch-to-dark", () => {
-    vi.spyOn(Storage.prototype, "setItem");
-    document.documentElement.classList.remove("dark");
     render(<ThemeToggle />);
     fireEvent.click(screen.getByRole("button"));
-    expect(localStorage.setItem).toHaveBeenCalledWith("cf-theme", "dark");
+    expect(localStorage.setItem).toHaveBeenCalledWith(STORAGE_KEY, "dark");
   });
 
   it("persists 'light' to localStorage on switch-to-light", () => {
-    vi.spyOn(Storage.prototype, "setItem");
     document.documentElement.classList.add("dark");
     render(<ThemeToggle />);
     fireEvent.click(screen.getByRole("button"));
-    expect(localStorage.setItem).toHaveBeenCalledWith("cf-theme", "light");
+    expect(localStorage.setItem).toHaveBeenCalledWith(STORAGE_KEY, "light");
   });
 
   it("still toggles .dark class when localStorage.setItem throws", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new DOMException("QuotaExceededError");
     });
-    document.documentElement.classList.remove("dark");
     render(<ThemeToggle />);
     fireEvent.click(screen.getByRole("button"));
-    // DOM class is updated despite storage failure
     expect(document.documentElement.classList.contains("dark")).toBe(true);
   });
 
   it("renders without error before and after interaction (pre-mount stable)", () => {
-    // CSS-driven icons: no JS state → no SSR flicker, no pre-mount blank state
     render(<ThemeToggle />);
     expect(screen.getByRole("button")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button"));
@@ -92,51 +91,39 @@ describe("ThemeToggle", () => {
   });
 });
 
-// ── Theme init script logic (tested directly) ─────────────────────────────────
+// ── Theme init script logic ───────────────────────────────────────────────────
 
 describe("theme init script behaviour", () => {
-  // Mirror of THEME_INIT_SCRIPT in src/app/layout.tsx.
-  // Keep in sync manually — if production logic drifts, these tests pass
-  // but the actual init script behaviour may differ.
-  function runInitScript() {
-    try {
-      const s = localStorage.getItem("cf-theme");
-      const d =
-        s === "dark" ||
-        (s === null && window.matchMedia("(prefers-color-scheme: dark)").matches);
-      if (d) document.documentElement.classList.add("dark");
-    } catch {}
-  }
-
-  beforeEach(() => {
-    document.documentElement.classList.remove("dark");
+  it("THEME_INIT_SCRIPT embeds the correct storage key", () => {
+    // Guards against STORAGE_KEY and the inline script drifting apart.
+    expect(THEME_INIT_SCRIPT).toContain(`'${STORAGE_KEY}'`);
   });
 
   it("sets .dark when localStorage is 'dark'", () => {
     stubMatchMedia(false);
     stubStorage("dark");
-    runInitScript();
+    applyInitialTheme();
     expect(document.documentElement.classList.contains("dark")).toBe(true);
   });
 
   it("does not set .dark when localStorage is 'light' (overrides OS preference)", () => {
     stubMatchMedia(true);
     stubStorage("light");
-    runInitScript();
+    applyInitialTheme();
     expect(document.documentElement.classList.contains("dark")).toBe(false);
   });
 
   it("falls back to prefers-color-scheme: dark when no stored preference", () => {
     stubMatchMedia(true);
     stubStorage(null);
-    runInitScript();
+    applyInitialTheme();
     expect(document.documentElement.classList.contains("dark")).toBe(true);
   });
 
   it("falls back to light when OS is light and no stored preference", () => {
     stubMatchMedia(false);
     stubStorage(null);
-    runInitScript();
+    applyInitialTheme();
     expect(document.documentElement.classList.contains("dark")).toBe(false);
   });
 });
