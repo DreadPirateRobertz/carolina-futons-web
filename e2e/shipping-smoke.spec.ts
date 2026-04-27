@@ -35,7 +35,12 @@ test.beforeAll(() => {
   fs.mkdirSync("e2e-screenshots", { recursive: true });
 });
 
+// Skip entire suite when not pointed at a real deployment — these tests
+// require live Wix inventory data that the CI dev server doesn't have.
+const isProdRun = !!process.env.BASE_URL && process.env.BASE_URL !== "http://localhost:3000";
+
 test.describe("shipping flow smoke — prod", () => {
+  test.skip(!isProdRun, "requires BASE_URL pointing at a live deployment (e.g. BASE_URL=https://carolina-futons-web.vercel.app)");
   // ── 1. PLPs load ──────────────────────────────────────────────────────────
 
   test("mattresses PLP renders product cards", async ({ page }) => {
