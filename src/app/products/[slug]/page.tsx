@@ -89,7 +89,8 @@ export default async function PdpPage(props: {
   const galleryImages = buildGallery(product);
   const stock = (product.stock ?? null) as StockBadgeInput | null;
   const crossSell = await getCrossSellProducts(product);
-  const mattresses = isFutonFrame(slug) ? await getMesaMattresses() : [];
+  const mattressResult = isFutonFrame(slug) ? await getMesaMattresses() : { items: [] };
+  const mattresses = mattressResult.items;
 
   const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
   const canonicalUrl = `${siteUrl}/products/${slug}`;
