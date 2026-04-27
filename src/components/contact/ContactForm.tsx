@@ -8,12 +8,20 @@ import {
   initialContactActionState,
   type ContactActionState,
 } from "@/app/contact/contact-state";
-import type { ContactErrors, ContactRequest } from "@/lib/contact/contact-schema";
+import type { BedSize, ContactErrors, ContactRequest } from "@/lib/contact/contact-schema";
+import { TurnstileWidget } from "@/components/captcha/TurnstileWidget";
 
 // cf-contact-form: thin client wrapper around the `sendContactForm` Server
 // Action. Validation lives server-side (shared schema is the source of
 // truth); on error we echo values + per-field errors back through
 // useActionState so the user never loses what they typed.
+
+const BED_SIZES: { value: BedSize; label: string }[] = [
+  { value: "twin", label: "Twin" },
+  { value: "full", label: "Full" },
+  { value: "queen", label: "Queen" },
+  { value: "king", label: "King" },
+];
 
 const EMPTY_VALUES: ContactRequest = {
   name: "",
@@ -21,6 +29,7 @@ const EMPTY_VALUES: ContactRequest = {
   phone: "",
   subject: "",
   message: "",
+  sizeOfInterest: undefined,
 };
 
 function errorsFrom(state: ContactActionState): ContactErrors {
@@ -162,6 +171,27 @@ export function ContactForm({ subjectPrefix }: ContactFormProps = {}) {
         />
       </div>
 
+      <fieldset>
+        <legend className={labelClass}>
+          Bed size of interest{" "}
+          <span className="font-normal text-cf-muted">(optional)</span>
+        </legend>
+        <div className="mt-2 flex flex-wrap gap-4">
+          {BED_SIZES.map(({ value, label }) => (
+            <label key={value} className="flex cursor-pointer items-center gap-1.5 text-sm">
+              <input
+                type="radio"
+                name="sizeOfInterest"
+                value={value}
+                defaultChecked={values.sizeOfInterest === value}
+                className="h-4 w-4 border-cf-divider text-cf-cta focus:ring-cf-cta"
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
       <div>
         <label htmlFor={subjectId} className={labelClass}>
           Subject
@@ -203,6 +233,8 @@ export function ContactForm({ subjectPrefix }: ContactFormProps = {}) {
           </p>
         ) : null}
       </div>
+
+      <TurnstileWidget />
 
       {transportError ? (
         <p role="alert" className="text-sm text-red-700">

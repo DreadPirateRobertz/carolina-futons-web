@@ -3,6 +3,7 @@ import {
   coerceContactRequest,
   hasContactErrors,
   validateContactRequest,
+  type BedSize,
 } from "@/lib/contact/contact-schema";
 
 describe("coerceContactRequest", () => {
@@ -39,6 +40,32 @@ describe("coerceContactRequest", () => {
 
   it("drops non-string phone to undefined rather than stringifying", () => {
     expect(coerceContactRequest({ phone: 1234567890 }).phone).toBeUndefined();
+  });
+
+  it("accepts valid bed sizes and normalises to lowercase", () => {
+    for (const size of ["twin", "full", "queen", "king"] as BedSize[]) {
+      expect(coerceContactRequest({ sizeOfInterest: size }).sizeOfInterest).toBe(size);
+      expect(
+        coerceContactRequest({ sizeOfInterest: size.toUpperCase() }).sizeOfInterest,
+      ).toBe(size);
+    }
+  });
+
+  it("drops unknown sizeOfInterest values to undefined", () => {
+    expect(
+      coerceContactRequest({ sizeOfInterest: "california-king" }).sizeOfInterest,
+    ).toBeUndefined();
+    expect(
+      coerceContactRequest({ sizeOfInterest: "" }).sizeOfInterest,
+    ).toBeUndefined();
+    expect(
+      coerceContactRequest({ sizeOfInterest: 99 }).sizeOfInterest,
+    ).toBeUndefined();
+  });
+
+  it("omits sizeOfInterest when not provided", () => {
+    const r = coerceContactRequest({ name: "X", email: "x@x.com" });
+    expect(r.sizeOfInterest).toBeUndefined();
   });
 });
 

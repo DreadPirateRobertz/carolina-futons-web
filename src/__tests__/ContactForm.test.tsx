@@ -43,6 +43,9 @@ vi.mock("@/app/contact/actions", () => ({
 vi.mock("@/app/contact/contact-state", () => ({
   initialContactActionState: { status: "idle" },
 }));
+vi.mock("next/script", () => ({
+  default: () => null,
+}));
 
 import { ContactForm } from "@/components/contact/ContactForm";
 
@@ -144,5 +147,47 @@ describe("ContactForm — pending state", () => {
     render(<ContactForm />);
     const button = screen.getByRole("button", { name: /sending/i });
     expect(button).toBeDisabled();
+  });
+});
+
+describe("ContactForm — size radio group", () => {
+  it("renders all four bed-size radio options", () => {
+    render(<ContactForm />);
+    expect(screen.getByRole("radio", { name: /twin/i })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /full/i })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /queen/i })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /king/i })).toBeInTheDocument();
+  });
+
+  it("all radios share the sizeOfInterest name so only one can be selected", () => {
+    render(<ContactForm />);
+    const radios = screen.getAllByRole("radio");
+    const names = radios.map((r) => r.getAttribute("name"));
+    expect(new Set(names)).toEqual(new Set(["sizeOfInterest"]));
+  });
+
+  it("pre-checks the echoed sizeOfInterest value on error echo-back", () => {
+    reactMocks.state = {
+      status: "error",
+      errors: {},
+      values: {
+        name: "Jane",
+        email: "jane@example.com",
+        subject: "S",
+        message: "Some message here",
+        sizeOfInterest: "queen",
+      },
+    };
+    render(<ContactForm />);
+    expect(screen.getByRole("radio", { name: /queen/i })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /twin/i })).not.toBeChecked();
+  });
+
+  it("no radio is pre-checked on a fresh idle state", () => {
+    render(<ContactForm />);
+    const radios = screen.getAllByRole("radio");
+    expect(radios.every((r) => !(r as HTMLInputElement).defaultChecked)).toBe(
+      true,
+    );
   });
 });
