@@ -90,3 +90,47 @@ describe("ShopIndex — smoke", () => {
     ).toBeTruthy();
   });
 });
+
+describe("ShopIndex — dark mode (cf-b3ai)", () => {
+  it("carries dark:text-zinc-100 on the Shop H1", async () => {
+    const { container } = await renderShop();
+    const h1 = container.querySelector("h1");
+    expect(h1?.className).toContain("dark:text-zinc-100");
+  });
+
+  it("carries dark:border-zinc-700 and dark:hover:border-zinc-500 on each category card", async () => {
+    const { container } = await renderShop();
+    const cards = container.querySelectorAll("ul > li");
+    expect(cards.length).toBeGreaterThan(0);
+    for (const card of cards) {
+      expect(card.className).toContain("dark:border-zinc-700");
+      expect(card.className).toContain("dark:hover:border-zinc-500");
+    }
+  });
+
+  it("carries dark:focus-within:border-zinc-500 on each category card for keyboard nav", async () => {
+    const { container } = await renderShop();
+    const cards = container.querySelectorAll("ul > li");
+    for (const card of cards) {
+      expect(card.className).toContain("dark:focus-within:border-zinc-500");
+    }
+  });
+
+  it("carries dark:text-zinc-100 on category name headings", async () => {
+    const { container } = await renderShop();
+    const headings = container.querySelectorAll("ul li h2");
+    expect(headings.length).toBeGreaterThan(0);
+    for (const h of headings) {
+      expect(h.className).toContain("dark:text-zinc-100");
+    }
+  });
+
+  it("carries dark:text-zinc-400 on category description paragraphs", async () => {
+    const { container } = await renderShop();
+    const descs = container.querySelectorAll("ul li p");
+    expect(descs.length).toBeGreaterThan(0);
+    for (const p of descs) {
+      expect(p.className).toContain("dark:text-zinc-400");
+    }
+  });
+});

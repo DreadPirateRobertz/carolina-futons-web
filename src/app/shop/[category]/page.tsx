@@ -211,10 +211,10 @@ export default async function PlpPage(props: {
       />
 
       <header className="mt-4">
-        <h1 className="text-3xl font-semibold tracking-tight">
+        <h1 className="text-3xl font-semibold tracking-tight dark:text-zinc-100">
           {category.name}
         </h1>
-        <p className="mt-2 text-zinc-600">{category.description}</p>
+        <p className="mt-2 text-zinc-600 dark:text-zinc-400">{category.description}</p>
       </header>
 
       <div className="mt-6">
@@ -246,24 +246,24 @@ export default async function PlpPage(props: {
       {readerFailed ? (
         <p
           role="alert"
-          className="mt-10 rounded-md border border-amber-200 bg-amber-50 p-6 text-amber-900"
+          className="mt-10 rounded-md border border-amber-200 bg-amber-50 p-6 text-amber-900 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-300"
         >
           We&rsquo;re having trouble loading products right now. Please refresh
           in a moment or{" "}
-          <Link href="/contact" className="underline">
+          <Link href="/contact" className="underline dark:text-amber-200 dark:hover:text-amber-100">
             contact us
           </Link>{" "}
           if the problem persists.
         </p>
       ) : overPaginated ? (
-        <p className="mt-10 rounded-md bg-zinc-50 p-6 text-zinc-700">
+        <p className="mt-10 rounded-md border border-zinc-100 bg-zinc-50 p-6 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
           No more products on page {pageNum}.{" "}
-          <Link href={backToPageOneHref} className="underline">
+          <Link href={backToPageOneHref} className="underline dark:text-zinc-100">
             Back to page 1
           </Link>
         </p>
       ) : page.items.length === 0 ? (
-        <p className="mt-10 rounded-md bg-zinc-50 p-6 text-zinc-700">
+        <p className="mt-10 rounded-md border border-zinc-100 bg-zinc-50 p-6 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
           {facets.total === 0
             ? (category.emptyStateCopy ??
               "No products found in this collection yet.")
