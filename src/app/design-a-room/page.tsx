@@ -33,8 +33,7 @@ export default function DesignARoomPage() {
     <main className="w-full">
       {/* cf-pgec: v2 Botanical room-scene header illustration */}
       <BotanicalDesignARoom className="max-h-72" />
-      <div className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
-      <article className="mx-auto max-w-[65ch] space-y-24 font-source-sans text-cf-ink">
+      <article className="mx-auto max-w-[65ch] space-y-24 px-4 py-12 font-source-sans text-cf-ink sm:px-6 sm:py-16">
         <HeroReveal>
           <header className="space-y-3">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
@@ -171,7 +170,6 @@ export default function DesignARoomPage() {
           </section>
         </HeroReveal>
       </article>
-      </div>
     </main>
   );
 }

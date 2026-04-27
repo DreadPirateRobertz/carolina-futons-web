@@ -51,6 +51,8 @@ export const SEASONS: Record<Season, SeasonPalette> = {
 
 export function getCurrentSeason(): Season {
   const m = new Date().getMonth();
+  // getMonth() is always 0–11 per spec, but guard against any future env weirdness
+  if (!Number.isInteger(m) || m < 0 || m > 11) return "summer";
   if (m >= 2 && m <= 4) return "spring";
   if (m >= 5 && m <= 7) return "summer";
   if (m >= 8 && m <= 10) return "fall";

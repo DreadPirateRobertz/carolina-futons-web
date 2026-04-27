@@ -18,8 +18,7 @@ export default function GuidesIndexPage() {
     <main className="w-full">
       {/* cf-pgec: v2 Botanical open-book header illustration */}
       <BotanicalGuides className="max-h-64" />
-      <div className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
-      <div className="mx-auto max-w-6xl space-y-12 font-source-sans text-cf-ink">
+      <div className="mx-auto max-w-6xl space-y-12 px-4 py-12 font-source-sans text-cf-ink sm:px-6 sm:py-16">
         <HeroReveal>
           <header className="mx-auto max-w-[65ch] space-y-3">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
@@ -61,7 +60,6 @@ export default function GuidesIndexPage() {
             </li>
           ))}
         </ul>
-      </div>
       </div>
     </main>
   );

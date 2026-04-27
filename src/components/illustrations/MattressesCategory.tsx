@@ -1,11 +1,12 @@
 import { SEASONS, getCurrentSeason, PaperGrain, Sprig } from "./botanical";
 import type { Season } from "./botanical";
 
-type Props = { season?: Season; className?: string };
+type Props = { season?: Season; className?: string; instanceKey?: string };
 
-export function MattressesCategory({ season, className }: Props) {
+export function MattressesCategory({ season, className, instanceKey = "" }: Props) {
   const s = season ?? getCurrentSeason();
   const c = SEASONS[s];
+  const filterId = `b-mat${instanceKey ? `-${instanceKey}` : ""}-${s}`;
   return (
     <svg
       viewBox="0 0 800 600"
@@ -16,7 +17,7 @@ export function MattressesCategory({ season, className }: Props) {
       aria-hidden="true"
     >
       <defs>
-        <PaperGrain id={`b-mat-${s}`} />
+        <PaperGrain id={filterId} />
       </defs>
       <rect width="800" height="600" fill={c.paper} />
       <circle cx="400" cy="240" r="60" fill="none" stroke={c.ink} strokeWidth="1.4" />
@@ -91,7 +92,7 @@ export function MattressesCategory({ season, className }: Props) {
       <rect
         width="800"
         height="600"
-        filter={`url(#b-mat-${s}-paper)`}
+        filter={`url(#${filterId}-paper)`}
         opacity="0.5"
         style={{ mixBlendMode: "multiply" }}
       />

@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render } from "@testing-library/react";
+import { SHOP_CATEGORIES } from "@/lib/shop/categories";
 
 import { BotanicalMountainSkyline } from "@/components/illustrations/BotanicalMountainSkyline";
 import { BotanicalTimeline } from "@/components/illustrations/BotanicalTimeline";
@@ -20,6 +21,30 @@ const ALL_SEASONS: Season[] = ["spring", "summer", "fall", "winter"];
 describe("getCurrentSeason", () => {
   it("returns one of the four valid seasons", () => {
     expect(ALL_SEASONS).toContain(getCurrentSeason());
+  });
+
+  describe("month boundaries", () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    const cases: Array<[number, Season]> = [
+      [0, "winter"],
+      [1, "winter"],
+      [2, "spring"],
+      [4, "spring"],
+      [5, "summer"],
+      [7, "summer"],
+      [8, "fall"],
+      [10, "fall"],
+      [11, "winter"],
+    ];
+
+    for (const [month, expected] of cases) {
+      it(`month ${month} → ${expected}`, () => {
+        vi.setSystemTime(new Date(2024, month, 15));
+        expect(getCurrentSeason()).toBe(expected);
+      });
+    }
   });
 });
 
@@ -111,4 +136,39 @@ describe("Spot illustrations — smoke (all seasons)", () => {
       }
     });
   }
+});
+
+describe("MattressesCategory — instanceKey deduplication", () => {
+  it("different instanceKeys produce distinct filter IDs", () => {
+    const { container: c1 } = render(
+      <MattressesCategory season="summer" instanceKey="mattresses" />,
+    );
+    const { container: c2 } = render(
+      <MattressesCategory season="summer" instanceKey="mattresses-sale" />,
+    );
+    const id1 = c1.querySelector("filter")?.id;
+    const id2 = c2.querySelector("filter")?.id;
+    expect(id1).toBeTruthy();
+    expect(id2).toBeTruthy();
+    expect(id1).not.toBe(id2);
+  });
+});
+
+describe("CATEGORY_ILLUSTRATION coverage", () => {
+  const ILLUSTRATED_SLUGS = new Set([
+    "futon-frames",
+    "murphy-cabinet-beds",
+    "platform-beds",
+    "mattresses",
+    "mattresses-sale",
+  ]);
+
+  it("every SHOP_CATEGORY slug has an assigned illustration", () => {
+    for (const cat of SHOP_CATEGORIES) {
+      expect(
+        ILLUSTRATED_SLUGS.has(cat.slug),
+        `${cat.slug} is missing from CATEGORY_ILLUSTRATION`,
+      ).toBe(true);
+    }
+  });
 });

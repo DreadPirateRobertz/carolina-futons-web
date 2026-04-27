@@ -1,7 +1,7 @@
 import { SEASONS, getCurrentSeason, PaperGrain, Sprig } from "./botanical";
 import type { Season } from "./botanical";
 
-type Props = { season?: Season; className?: string };
+type Props = { season?: Season; className?: string; instanceKey?: string };
 
 export function MurphyCategory({ season, className }: Props) {
   const s = season ?? getCurrentSeason();

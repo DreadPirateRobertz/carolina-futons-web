@@ -15,7 +15,7 @@ import type { ComponentType } from "react";
 import type { Season } from "@/components/illustrations/botanical";
 import { getCurrentSeason } from "@/components/illustrations/botanical";
 
-type CategoryIllus = ComponentType<{ season?: Season; className?: string }>;
+type CategoryIllus = ComponentType<{ season?: Season; className?: string; instanceKey?: string }>;
 
 const CATEGORY_ILLUSTRATION: Record<string, CategoryIllus> = {
   "futon-frames": FutonsCategory,
@@ -54,7 +54,7 @@ export default async function ShopIndex() {
               >
                 {Illus && (
                   <div className="aspect-[4/3] w-full overflow-hidden bg-zinc-50 dark:bg-zinc-800">
-                    <Illus season={season} />
+                    <Illus season={season} instanceKey={category.slug} />
                   </div>
                 )}
                 <Link

@@ -1,6 +1,7 @@
 import { SEASONS, PaperGrain } from "./botanical";
 
 export function BotanicalFooterDivider({ className }: { className?: string }) {
+  // Always summer palette per design spec — footer reads "warm" year-round
   const c = SEASONS.summer;
   return (
     <svg

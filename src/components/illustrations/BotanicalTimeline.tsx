@@ -24,6 +24,7 @@ export function BotanicalTimeline({ season, className }: Props) {
       preserveAspectRatio="xMidYMid meet"
       style={{ display: "block", width: "100%", height: "100%" }}
       className={className}
+      role="img"
       aria-label="Carolina Futons milestones: opened 1991, showroom expansion 2005, hardwood-only commitment 2015, today 35 years"
     >
       <defs>
