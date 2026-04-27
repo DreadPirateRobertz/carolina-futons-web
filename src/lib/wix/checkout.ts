@@ -11,7 +11,7 @@
 // the checkoutId without the redirect URL in this migration shape.
 import "server-only";
 
-import { getWixClient } from "@/lib/wix-client";
+import { getVisitorCartClient } from "./wix-visitor-client";
 
 export type CheckoutCallbacks = {
   thankYouPageUrl: string;
@@ -20,7 +20,7 @@ export type CheckoutCallbacks = {
 };
 
 export async function createCheckout() {
-  const client = getWixClient();
+  const client = await getVisitorCartClient();
   const result = await client.currentCart.createCheckoutFromCurrentCart({
     channelType: "WEB",
   });
@@ -31,7 +31,7 @@ export async function createCheckout() {
 }
 
 export async function getCheckout(checkoutId: string) {
-  const client = getWixClient();
+  const client = await getVisitorCartClient();
   return client.checkout.getCheckout(checkoutId);
 }
 
@@ -39,7 +39,7 @@ export async function createCheckoutRedirect(
   checkoutId: string,
   callbacks: CheckoutCallbacks,
 ) {
-  const client = getWixClient();
+  const client = await getVisitorCartClient();
   const result = await client.redirects.createRedirectSession({
     ecomCheckout: { checkoutId },
     callbacks,

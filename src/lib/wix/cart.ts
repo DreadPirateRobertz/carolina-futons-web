@@ -13,7 +13,8 @@
 // succeeds or fails as one unit.
 import "server-only";
 
-import { getWixClient } from "@/lib/wix-client";
+import { makeLineId, type CartLineItem } from "@/lib/cart/cart-state";
+import { getVisitorCartClient } from "./wix-visitor-client";
 
 // Wix Stores app id — constant, used as `catalogReference.appId` for every
 // Stores-sourced line item. This is the same across all Wix sites.
@@ -38,7 +39,7 @@ function toCatalogReference(item: LineItemInput) {
 }
 
 export async function getCurrentCart() {
-  const client = getWixClient();
+  const client = await getVisitorCartClient();
   try {
     return await client.currentCart.getCurrentCart();
   } catch (err) {
@@ -54,7 +55,7 @@ export async function addToCart(items: LineItemInput[]) {
   if (items.length === 0) {
     throw new Error("addToCart called with empty items array");
   }
-  const client = getWixClient();
+  const client = await getVisitorCartClient();
   const result = await client.currentCart.addToCurrentCart({
     lineItems: items.map((item) => ({
       catalogReference: toCatalogReference(item),
@@ -68,7 +69,7 @@ export async function removeFromCart(lineItemIds: string[]) {
   if (lineItemIds.length === 0) {
     throw new Error("removeFromCart called with empty lineItemIds array");
   }
-  const client = getWixClient();
+  const client = await getVisitorCartClient();
   const result =
     await client.currentCart.removeLineItemsFromCurrentCart(lineItemIds);
   return result.cart ?? null;
@@ -78,7 +79,7 @@ export async function updateLineItemQuantity(
   lineItemId: string,
   quantity: number,
 ) {
-  const client = getWixClient();
+  const client = await getVisitorCartClient();
   const result = await client.currentCart.updateCurrentCartLineItemQuantity([
     { _id: lineItemId, quantity },
   ]);
@@ -86,11 +87,48 @@ export async function updateLineItemQuantity(
 }
 
 export async function estimateCartTotals() {
-  const client = getWixClient();
+  const client = await getVisitorCartClient();
   return client.currentCart.estimateCurrentCartTotals();
 }
 
 export type WixCart = NonNullable<Awaited<ReturnType<typeof getCurrentCart>>>;
+
+// Maps a Wix server cart to the CartProvider line format. Used by the cart
+// hydration path so the client cart reflects Wix state on page load.
+export function wixCartToLines(cart: WixCart): CartLineItem[] {
+  const lines: CartLineItem[] = [];
+  for (const li of cart.lineItems ?? []) {
+    const productId = li.catalogReference?.catalogItemId;
+    if (!productId) continue;
+    const variantId =
+      (li.catalogReference?.options as Record<string, unknown> | undefined)
+        ?.variantId as string | undefined;
+    const quantity = typeof li.quantity === "number" ? li.quantity : 0;
+    if (quantity <= 0) continue;
+    const priceRaw = li.price?.amount;
+    const priceNum =
+      typeof priceRaw === "string" ? Math.round(Number(priceRaw) * 100) : 0;
+    if (!Number.isFinite(priceNum) || priceNum <= 0) continue;
+    const productName =
+      typeof li.productName === "string"
+        ? li.productName
+        : (li.productName as { original?: string } | undefined)?.original ?? "";
+    const imageUrl =
+      (li.image as { url?: string } | undefined)?.url ?? undefined;
+    lines.push({
+      id: makeLineId(productId, variantId),
+      productId,
+      productName,
+      variantId,
+      quantity,
+      unitPriceCents: priceNum,
+      formattedUnitPrice:
+        (li.price as { formattedAmount?: string } | undefined)?.formattedAmount ?? "",
+      imageUrl,
+    });
+  }
+  return lines;
+}
 
 function isOwnedCartNotFound(err: unknown): boolean {
   if (typeof err !== "object" || err === null) return false;

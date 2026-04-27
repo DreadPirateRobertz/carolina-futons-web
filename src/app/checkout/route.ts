@@ -17,7 +17,8 @@ export async function GET(req: NextRequest) {
       postFlowUrl: `${origin}/`,
     });
     return NextResponse.redirect(fullUrl, { status: 307 });
-  } catch {
+  } catch (err) {
+    console.error("[checkout] initCheckout failed:", err);
     return NextResponse.redirect(
       new URL("/cart?checkout_error=1", req.url),
       { status: 307 },
