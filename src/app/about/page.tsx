@@ -20,7 +20,7 @@ export default async function AboutPage() {
   return (
     <main className="w-full">
       {/* cf-pgec: v2 Botanical mountain skyline hero band — height container required so SVG height:100% resolves */}
-      <div className="w-full" style={{ height: "clamp(300px, 42vw, 640px)" }}>
+      <div data-slot="about-illustration" className="w-full" style={{ height: "clamp(300px, 42vw, 640px)" }}>
         <BotanicalMountainSkyline />
       </div>
       <div className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
