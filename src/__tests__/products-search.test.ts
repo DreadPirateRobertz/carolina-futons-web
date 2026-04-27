@@ -24,22 +24,30 @@ const CATALOG = [
   { _id: "5", name: "Ranchero Platform Bed", slug: "ranchero-platform-bed" },
 ];
 
-let lastCatalogLimit: number | undefined;
+function makePage(items = CATALOG, more: typeof CATALOG = []) {
+  const page: {
+    items: typeof CATALOG;
+    hasNext: () => boolean;
+    next: () => Promise<ReturnType<typeof makePage>>;
+  } = {
+    items,
+    hasNext: () => more.length > 0,
+    next: async () => makePage(more),
+  };
+  return page;
+}
 
-function makeClient(items = CATALOG) {
+function makeClient(items = CATALOG, more: typeof CATALOG = []) {
   return {
     products: {
       queryProducts: () => ({
-        limit: (n: number) => {
-          lastCatalogLimit = n;
-          return { find: async () => ({ items }) };
-        },
+        limit: () => ({
+          find: async () => makePage(items, more),
+        }),
       }),
     },
   };
 }
-
-beforeEach(() => { lastCatalogLimit = undefined; });
 
 describe("searchProducts — in-memory substring search", () => {
   it("matches mid-word substring (futon anywhere in name)", async () => {
@@ -95,21 +103,20 @@ describe("searchProducts — in-memory substring search", () => {
     expect(await searchProducts("futon")).toEqual([]);
   });
 
+  it("paginates when catalog spans multiple Wix pages (cf-ni0z regression)", async () => {
+    const page1 = [{ _id: "a", name: "Page-1 Futon", slug: "p1-futon" }];
+    const page2 = [{ _id: "b", name: "Page-2 Futon", slug: "p2-futon" }];
+    vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => makeClient(page1, page2) }));
+    const { searchProducts } = await import("@/lib/wix/products");
+    const results = await searchProducts("futon");
+    expect(results.map((p) => p._id)).toEqual(["a", "b"]);
+  });
+
   it("matches a product slug-style query spanning a word boundary", async () => {
     vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => makeClient() }));
     const { searchProducts } = await import("@/lib/wix/products");
     const results = await searchProducts("monterey");
     expect(results).toHaveLength(1);
     expect(results[0]._id).toBe("4");
-  });
-
-  it("catalog fetch uses limit ≤ 100 (Wix hard cap — cf-ni0z regression)", async () => {
-    // Wix queryProducts() throws a validation error for limit > 100, which
-    // getAllProductsForSearch catches and returns [] — making all searches empty.
-    vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => makeClient() }));
-    const { searchProducts } = await import("@/lib/wix/products");
-    await searchProducts("futon");
-    expect(lastCatalogLimit).toBeDefined();
-    expect(lastCatalogLimit).toBeLessThanOrEqual(100);
   });
 });

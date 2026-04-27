@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 
+import { BlueRidgeTimeline } from "@/components/illustrations/BlueRidgeTimeline";
 import { MountainSkyline } from "@/components/illustrations/MountainSkyline";
+import { TeamPortrait } from "@/components/illustrations/TeamPortrait";
 import {
   ShopTheRoom,
   ABOUT_HERO_PHOTO,
   ABOUT_HOTSPOT_CONFIGS,
 } from "@/components/site/ShopTheRoom";
-import { ScrollStory } from "@/components/about/ScrollStory";
 import { BUSINESS } from "@/lib/business/contact-info";
 
 export const metadata: Metadata = {
@@ -91,7 +92,25 @@ export default async function AboutPage() {
           </p>
         </section>
 
-        <ScrollStory />
+        <section
+          aria-labelledby="about-milestones"
+          className="space-y-4"
+        >
+          <h2
+            id="about-milestones"
+            className="font-playfair text-2xl font-semibold tracking-tight"
+          >
+            Three decades, four waypoints
+          </h2>
+          <p className="leading-relaxed">
+            A look back at the milestones that shaped Carolina Futons —
+            from opening in {BUSINESS.foundedYear} to where we stand today.
+          </p>
+          {/* cf-93rb A.2: editorial milestone strip — the SVG carries the
+              1991 / 2005 / 2015 / present waypoints visually; the embedded
+              <title> in the SVG body summarizes the same arc for screen readers. */}
+          <BlueRidgeTimeline />
+        </section>
 
         <section className="space-y-4">
           <h2 className="font-playfair text-2xl font-semibold tracking-tight">
@@ -103,6 +122,9 @@ export default async function AboutPage() {
             fastest way to reach any of us is the contact details above
             — we answer our own email.
           </p>
+          {/* cf-about-illus: team portrait — rustic-frame illustration with
+              LivingSky time-of-day sky overlay. */}
+          <TeamPortrait />
         </section>
         </article>
       </div>

@@ -72,6 +72,9 @@ describe("AboutPage — smoke", () => {
     expect(screen.getAllByText(new RegExp(BUSINESS.city, "i")).length).toBeGreaterThan(0);
   });
 
+  // cf-93rb A.2: hero band + milestone-strip illustrations are wired into
+  // /about. The skyline is decorative; the timeline carries the
+  // 1991→present milestone semantics and ships a meaningful alt.
   it("renders the decorative MountainSkyline header band", async () => {
     const { container } = await renderAbout();
     expect(
@@ -79,17 +82,12 @@ describe("AboutPage — smoke", () => {
     ).not.toBeNull();
   });
 
-  it("renders the ScrollStory chapter timeline replacing the static milestone strip", async () => {
+  it("renders the BlueRidgeTimeline milestone strip as an inline SVG", async () => {
     const { container } = await renderAbout();
-    expect(container.querySelector("[data-slot='scroll-story']")).not.toBeNull();
-  });
-
-  it("ScrollStory renders all four chapters (Founding, frames, showroom, today)", async () => {
-    await renderAbout();
-    expect(screen.getByText(/An idea from the mountains/i)).toBeInTheDocument();
-    expect(screen.getByText(/All hardwood, all American/i)).toBeInTheDocument();
-    expect(screen.getByText(/Come and sit on them/i)).toBeInTheDocument();
-    expect(screen.getByText(/Still here, still the same/i)).toBeInTheDocument();
+    // cf-about-illus: BlueRidgeTimeline is now an inline SVG with LivingSky
+    // overlay; the accessible name is the embedded <title>, not an img alt.
+    expect(container.querySelector("[data-slot='blue-ridge-timeline']")).not.toBeNull();
+    expect(container.querySelector("[data-slot='about-illustration']")).not.toBeNull();
   });
 
   // cf-delight: pin the ShopTheRoom section was wired in.
