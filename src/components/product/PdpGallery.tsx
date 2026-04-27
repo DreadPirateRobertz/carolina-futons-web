@@ -10,6 +10,7 @@ import {
   type MotionStyle,
 } from "framer-motion";
 import { PdpImageLightbox } from "./PdpImageLightbox";
+import { PdpImageComparison } from "./PdpImageComparison";
 
 // cf-3qt.6.F.1 + cf-3qt.7.O.1: multi-image gallery for the PDP.
 //
@@ -103,6 +104,7 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
   // FALLBACK_PRODUCT_IMG via the src prop and reconciliation never reverts it.
   const [brokenSrcs, setBrokenSrcs] = useState<ReadonlySet<string>>(new Set());
   const [zoomOpen, setZoomOpen] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
 
   const reduce = useReducedMotion();
   const supportsVT = useSupportsViewTransition();
@@ -199,22 +201,31 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
 
   return (
     <div data-slot="pdp-gallery" className="space-y-3">
-      <button
-        type="button"
-        onClick={() => setZoomOpen(true)}
-        aria-label={`View ${productName} full size`}
-        data-testid="pdp-main-image-zoom-trigger"
-        className="block w-full cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-espresso focus-visible:ring-offset-2"
-      >
-        <ZoomMainImage
-          src={resolvedSrc(active.url)}
-          alt={active.alt ?? productName}
-          crossfadeKey={index}
-          carryVTName={vtSourceIndex === null}
-          useFramerCrossfade={useFramerCrossfade}
-          onImgError={() => markBroken(active.url, "main")}
+      {compareOpen && images.length >= 2 ? (
+        <PdpImageComparison
+          before={{ url: resolvedSrc(images[0]!.url), alt: images[0]!.alt }}
+          after={{ url: resolvedSrc(images[1]!.url), alt: images[1]!.alt }}
+          productName={productName}
+          onClose={() => setCompareOpen(false)}
         />
-      </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setZoomOpen(true)}
+          aria-label={`View ${productName} full size`}
+          data-testid="pdp-main-image-zoom-trigger"
+          className="block w-full cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-espresso focus-visible:ring-offset-2"
+        >
+          <ZoomMainImage
+            src={resolvedSrc(active.url)}
+            alt={active.alt ?? productName}
+            crossfadeKey={index}
+            carryVTName={vtSourceIndex === null}
+            useFramerCrossfade={useFramerCrossfade}
+            onImgError={() => markBroken(active.url, "main")}
+          />
+        </button>
+      )}
       <PdpImageLightbox
         open={zoomOpen}
         onClose={() => setZoomOpen(false)}
@@ -226,7 +237,7 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
           role="tablist"
           aria-label={`${productName} image gallery`}
           onKeyDown={handleKey}
-          className="flex gap-2 overflow-x-auto"
+          className="flex items-center gap-2 overflow-x-auto"
           tabIndex={0}
         >
           {images.map((img, i) => {
@@ -259,6 +270,23 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
               </button>
             );
           })}
+          {images.length > 1 ? (
+            <button
+              type="button"
+              aria-pressed={compareOpen}
+              aria-label="Compare two angles"
+              data-testid="pdp-compare-toggle"
+              onClick={() => setCompareOpen((v) => !v)}
+              className={
+                "ml-auto shrink-0 rounded border px-2 py-1 text-xs transition " +
+                (compareOpen
+                  ? "border-cf-espresso bg-cf-espresso text-white"
+                  : "border-cf-sand text-cf-muted hover:border-cf-espresso/40")
+              }
+            >
+              Compare
+            </button>
+          ) : null}
         </div>
       ) : null}
     </div>
