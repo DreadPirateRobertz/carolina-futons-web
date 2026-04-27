@@ -279,4 +279,118 @@ describe("VariantSwatchGrid", () => {
     expect(swatch).not.toBeNull();
     expect(swatch?.style.backgroundImage).toContain("https://img/sand.jpg");
   });
+
+  it("tabIndex — tab-in goes to first enabled swatch when selected matches no choice", () => {
+    render(
+      <VariantSwatchGrid
+        optionName="Color"
+        choices={choices}
+        selected="Unknown"
+        onSelect={() => {}}
+      />,
+    );
+    const sand = screen.getByRole("button", { name: /color: sand/i });
+    const espresso = screen.getByRole("button", { name: /color: espresso/i });
+    const charcoal = screen.getByRole("button", { name: /color: charcoal/i });
+    expect(sand).toHaveAttribute("tabindex", "0");
+    expect(espresso).toHaveAttribute("tabindex", "-1");
+    expect(charcoal).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("tabIndex — tab-in goes to first enabled swatch when selected is a disabled choice", () => {
+    render(
+      <VariantSwatchGrid
+        optionName="Color"
+        choices={choices}
+        selected="Charcoal"
+        onSelect={() => {}}
+        isAvailable={(v) => v !== "Charcoal"}
+      />,
+    );
+    const sand = screen.getByRole("button", { name: /color: sand/i });
+    const charcoal = screen.getByRole("button", { name: /color: charcoal.*unavailable/i });
+    expect(sand).toHaveAttribute("tabindex", "0");
+    expect(charcoal).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("ArrowDown moves focus and selection like ArrowRight", () => {
+    const onSelect = vi.fn();
+    render(
+      <VariantSwatchGrid
+        optionName="Color"
+        choices={choices}
+        selected="Sand"
+        onSelect={onSelect}
+      />,
+    );
+    const sand = screen.getByRole("button", { name: /color: sand/i });
+    sand.focus();
+    fireEvent.keyDown(sand, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: /color: espresso/i }),
+    );
+    expect(onSelect).toHaveBeenLastCalledWith("Espresso");
+  });
+
+  it("ArrowUp moves focus and selection like ArrowLeft", () => {
+    const onSelect = vi.fn();
+    render(
+      <VariantSwatchGrid
+        optionName="Color"
+        choices={choices}
+        selected="Sand"
+        onSelect={onSelect}
+      />,
+    );
+    const sand = screen.getByRole("button", { name: /color: sand/i });
+    sand.focus();
+    fireEvent.keyDown(sand, { key: "ArrowUp" });
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: /color: charcoal/i }),
+    );
+    expect(onSelect).toHaveBeenLastCalledWith("Charcoal");
+  });
+
+  it("all-disabled: no button has tabIndex=0 and arrow keys are no-ops", () => {
+    const onSelect = vi.fn();
+    render(
+      <VariantSwatchGrid
+        optionName="Color"
+        choices={choices}
+        selected={undefined}
+        onSelect={onSelect}
+        isAvailable={() => false}
+      />,
+    );
+    for (const value of ["Sand", "Espresso", "Charcoal"]) {
+      const btn = screen.getByRole("button", {
+        name: new RegExp(`color: ${value}`, "i"),
+      });
+      expect(btn).toHaveAttribute("tabindex", "-1");
+    }
+    const sand = screen.getByRole("button", { name: /color: sand/i });
+    fireEvent.keyDown(sand, { key: "ArrowRight" });
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("reduced-motion: all swatch buttons still render correctly when motion is disabled", () => {
+    mockUseReducedMotion.mockReturnValue(true);
+    render(
+      <VariantSwatchGrid
+        optionName="Color"
+        choices={choices}
+        selected="Espresso"
+        onSelect={() => {}}
+        isAvailable={(v) => v !== "Charcoal"}
+      />,
+    );
+    const buttons = screen.getAllByRole("button");
+    expect(buttons).toHaveLength(3);
+    expect(
+      screen.getByRole("button", { name: /color: espresso/i }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByRole("button", { name: /color: charcoal.*unavailable/i }),
+    ).toBeDisabled();
+  });
 });
