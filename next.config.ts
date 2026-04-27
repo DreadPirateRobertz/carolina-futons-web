@@ -117,6 +117,14 @@ const nextConfig: NextConfig = {
 
       // Slug reconciliation — hookup guide used /room-planner; cfw ships /design-a-room.
       { source: "/room-planner", destination: "/design-a-room", permanent: true },
+
+      // cf-1te7 — Wix Studio /collections/* → cfw /shop/*
+      { source: "/collections/:slug", destination: "/shop/:slug", permanent: true },
+      { source: "/collections", destination: "/shop", permanent: true },
+
+      // cf-e92v — /care + /care-warranty collapse onto /warranty
+      { source: "/care", destination: "/warranty", permanent: true },
+      { source: "/care-warranty", destination: "/warranty", permanent: true },
     ];
   },
 };
