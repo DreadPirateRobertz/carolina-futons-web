@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { HeroReveal } from "@/components/motion/HeroReveal";
 import { REVIEWS, averageRating } from "@/lib/discovery/reviews";
 import { ReviewFilter } from "./ReviewFilter";
+import { BotanicalReviews } from "@/components/illustrations/BotanicalReviews";
 
 export const metadata: Metadata = {
   title: "Customer Reviews — Carolina Futons",
@@ -18,8 +19,10 @@ export default function ReviewsPage() {
   const avg = averageRating(REVIEWS);
 
   return (
-    <main className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
-      <div className="mx-auto max-w-4xl space-y-12 font-source-sans text-cf-ink">
+    <main className="w-full">
+      {/* cf-pgec: v2 Botanical quote-card scene */}
+      <BotanicalReviews className="max-h-64" />
+      <div className="mx-auto max-w-4xl space-y-12 px-4 py-12 font-source-sans text-cf-ink sm:px-6 sm:py-16">
         <HeroReveal>
           <header className="space-y-3">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
