@@ -70,3 +70,45 @@ describe("globals.css — accessibility", () => {
     expect(css).toMatch(/@media\s*\(\s*prefers-reduced-motion:\s*reduce\s*\)/);
   });
 });
+
+describe("globals.css — dark mode CF brand token overrides (cf-uyeq)", () => {
+  // Guards that the .dark block flips text-color tokens to light values so
+  // text-cf-ink / text-cf-charcoal / text-cf-espresso pass WCAG AA contrast
+  // against the dark --background. NOTE: darkSection runs from `.dark {` to
+  // the first top-level closing brace — not all the way to end-of-file — so
+  // tokens defined in later rule sets (media queries, etc.) won't falsely pass.
+  function inDarkBlock(token: string, value: string) {
+    const start = css.indexOf(".dark {");
+    const end = css.indexOf("\n}", start);
+    const darkSection = css.slice(start, end);
+    return new RegExp(`${token}:\\s*${value}`).test(darkSection);
+  }
+
+  it("overrides --cf-ink to a light value in .dark", () => {
+    expect(inDarkBlock("--cf-ink", "#e8eef4")).toBe(true);
+  });
+
+  it("overrides --cf-charcoal to a light value in .dark", () => {
+    expect(inDarkBlock("--cf-charcoal", "#e2eaf0")).toBe(true);
+  });
+
+  it("overrides --cf-espresso to a warm-light value in .dark", () => {
+    expect(inDarkBlock("--cf-espresso", "#f0e4d4")).toBe(true);
+  });
+
+  it("overrides --cf-cta to a lighter blue in .dark (links/interactive text)", () => {
+    expect(inDarkBlock("--cf-cta", "#7ab8d0")).toBe(true);
+  });
+
+  it("overrides --cf-navy to a lighter value in .dark (outline buttons)", () => {
+    expect(inDarkBlock("--cf-navy", "#7ab0c8")).toBe(true);
+  });
+
+  it("overrides --cf-sand to dark bg in .dark (prevents light flash)", () => {
+    expect(inDarkBlock("--cf-sand", "#1e2a3a")).toBe(true);
+  });
+
+  it("overrides --cf-cream to dark card surface in .dark", () => {
+    expect(inDarkBlock("--cf-cream", "#263545")).toBe(true);
+  });
+});
