@@ -110,7 +110,7 @@ export function PLPControls({
         <div className="flex flex-col gap-1">
           <label
             htmlFor="plp-priceMax"
-            className="text-xs font-medium text-zinc-500"
+            className="text-xs font-medium text-zinc-500 dark:text-zinc-400"
           >
             Max price ($)
           </label>
@@ -132,7 +132,7 @@ export function PLPControls({
             name="inStock"
             type="checkbox"
             defaultChecked={inStockOnly}
-            className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600 dark:bg-zinc-700"
+            className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600 dark:bg-zinc-700 dark:accent-zinc-300"
           />
           <label
             htmlFor="plp-inStock"

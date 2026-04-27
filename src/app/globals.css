@@ -187,7 +187,9 @@
 
   /* Marugame typography — dark-surface anti-aliasing (cf-b3ai).
      Subpixel rendering strokes appear heavier on dark; antialiased
-     keeps Clash Display / Satoshi weight true to the light-mode design. */
+     keeps Clash Display / Satoshi weight true to the light-mode design.
+     -moz-osx-font-smoothing: grayscale is the Firefox/macOS equivalent
+     of -webkit-font-smoothing: antialiased (grayscale = non-subpixel mode). */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

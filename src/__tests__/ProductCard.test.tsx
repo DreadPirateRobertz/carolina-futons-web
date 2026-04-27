@@ -309,4 +309,30 @@ describe("ProductCard — dark mode (cf-b3ai)", () => {
     const price = container.querySelector("p.mt-1");
     expect(price?.className).toContain("dark:text-zinc-300");
   });
+
+  it("carries dark:text-zinc-400 on the strikethrough original price (WCAG AA ≥4.5:1 on zinc-800)", () => {
+    const product = buildProduct({
+      priceData: {
+        price: 200,
+        discountedPrice: 150,
+        formatted: { price: "$200.00", discountedPrice: "$150.00" },
+      },
+    });
+    const { container } = render(<ProductCard product={product} />);
+    const strikeSpan = container.querySelector("span.line-through");
+    expect(strikeSpan?.className).toContain("dark:text-zinc-400");
+  });
+
+  it("carries dark:text-red-400 on the discounted price", () => {
+    const product = buildProduct({
+      priceData: {
+        price: 200,
+        discountedPrice: 150,
+        formatted: { price: "$200.00", discountedPrice: "$150.00" },
+      },
+    });
+    const { container } = render(<ProductCard product={product} />);
+    const saleSpan = container.querySelector("span.font-medium.text-red-600");
+    expect(saleSpan?.className).toContain("dark:text-red-400");
+  });
 });

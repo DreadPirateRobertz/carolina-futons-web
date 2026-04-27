@@ -30,7 +30,7 @@ export default async function ShopIndex() {
           {SHOP_CATEGORIES.map((category) => (
             <li
               key={category.slug}
-              className="rounded-lg border border-zinc-200 p-5 hover:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500"
+              className="rounded-lg border border-zinc-200 p-5 hover:border-zinc-400 focus-within:border-zinc-400 dark:border-zinc-700 dark:hover:border-zinc-500 dark:focus-within:border-zinc-500"
             >
               <Link
                 href={`/shop/${category.slug}`}

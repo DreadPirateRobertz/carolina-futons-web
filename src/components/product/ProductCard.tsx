@@ -121,7 +121,7 @@ export function ProductCard({
           <h2 className="text-base font-medium dark:text-zinc-100">{product.name}</h2>
           {showStrikethrough ? (
             <div className="mt-1 flex items-center gap-2 text-sm">
-              <span className="line-through text-zinc-400 dark:text-zinc-500">
+              <span className="line-through text-zinc-400 dark:text-zinc-400">
                 {product.priceData?.formatted?.price}
               </span>
               <span className="font-medium text-red-600 dark:text-red-400">

@@ -250,20 +250,20 @@ export default async function PlpPage(props: {
         >
           We&rsquo;re having trouble loading products right now. Please refresh
           in a moment or{" "}
-          <Link href="/contact" className="underline dark:text-amber-200">
+          <Link href="/contact" className="underline dark:text-amber-200 dark:hover:text-amber-100">
             contact us
           </Link>{" "}
           if the problem persists.
         </p>
       ) : overPaginated ? (
-        <p className="mt-10 rounded-md bg-zinc-50 p-6 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+        <p className="mt-10 rounded-md border border-zinc-100 bg-zinc-50 p-6 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
           No more products on page {pageNum}.{" "}
           <Link href={backToPageOneHref} className="underline dark:text-zinc-100">
             Back to page 1
           </Link>
         </p>
       ) : page.items.length === 0 ? (
-        <p className="mt-10 rounded-md bg-zinc-50 p-6 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+        <p className="mt-10 rounded-md border border-zinc-100 bg-zinc-50 p-6 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
           {facets.total === 0
             ? (category.emptyStateCopy ??
               "No products found in this collection yet.")
