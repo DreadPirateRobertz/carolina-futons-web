@@ -118,7 +118,7 @@ export function AddToCartButton({
         aria-describedby={
           disabledReason || error ? "add-to-cart-status" : undefined
         }
-        className="inline-flex w-full items-center justify-center rounded-md bg-zinc-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+        className="inline-flex h-12 w-full items-center justify-center rounded-md bg-zinc-900 px-5 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
       >
         {label}
       </button>
