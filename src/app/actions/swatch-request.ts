@@ -1,5 +1,6 @@
 "use server";
 
+import * as Sentry from "@sentry/nextjs";
 import { optionalEnv } from "@/lib/env";
 import { listCollectionItems } from "@/lib/wix/data";
 import {
@@ -8,9 +9,9 @@ import {
   validateSwatchContactInfo,
   validateSwatchIds,
   type SwatchItem,
+  type SwatchContactInfo,
 } from "@/lib/swatch-request/swatch-request-schema";
 import type { SwatchRequestActionState } from "@/app/swatch-request/swatch-request-state";
-import type { SwatchContactInfo } from "@/lib/swatch-request/swatch-request-schema";
 
 const TRANSPORT_ERROR_GENERIC =
   "We couldn't submit that — please try again in a moment.";
@@ -18,7 +19,6 @@ const TRANSPORT_ERROR_RATE_LIMIT =
   "We've received a few requests from this address — please try again in a few minutes.";
 const TRANSPORT_ERROR_CAPTCHA_NETWORK =
   "We couldn't verify your request right now — please try again in a moment.";
-const VELO_ERROR_MAX_LEN = 200;
 const FETCH_TIMEOUT_MS = 10_000;
 const TURNSTILE_VERIFY_URL =
   "https://challenges.cloudflare.com/turnstile/v0/siteverify";
@@ -27,10 +27,16 @@ type VeloResponse = { success: boolean; requestId?: string; error?: string };
 
 export type SwatchListResult = {
   items: SwatchItem[];
-  // Set when the CMS read failed — page can show a distinct error banner
-  // rather than the same "no swatches" message used for an empty catalogue.
+  // Set when the CMS read failed — page hides the form and shows an error
+  // banner rather than rendering an empty swatch selector.
   error?: boolean;
 };
+
+function captureWithId(err: unknown, context: string): string {
+  const errorId = crypto.randomUUID();
+  Sentry.captureException(err, { extra: { context, errorId } });
+  return errorId;
+}
 
 function transportFailure(
   values: SwatchContactInfo,
@@ -58,7 +64,8 @@ async function verifyTurnstile(
     const data = (await res.json()) as { success: boolean };
     return { ok: data.success === true };
   } catch (err) {
-    console.error("[swatch-request] Turnstile verify failed:", err);
+    const errorId = captureWithId(err, "verifyTurnstile");
+    console.error("[swatch-request] Turnstile verify failed:", errorId, err);
     return { ok: false, networkError: true };
   }
 }
@@ -79,7 +86,8 @@ export async function listSwatchesAction(): Promise<SwatchListResult> {
         })),
     };
   } catch (err) {
-    console.error("[swatch-request] listSwatchesAction failed:", err);
+    const errorId = captureWithId(err, "listSwatchesAction");
+    console.error("[swatch-request] listSwatchesAction failed:", errorId, err);
     return { items: [], error: true };
   }
 }
@@ -126,7 +134,11 @@ export async function submitSwatchRequestAction(
   const turnstileToken = formData.get("cf-turnstile-response");
   const hasSecret = !!process.env.TURNSTILE_SECRET_KEY;
   if (!hasSecret && process.env.NODE_ENV === "production") {
-    console.error("[swatch-request] TURNSTILE_SECRET_KEY not set in production — blocking submission");
+    const errorId = captureWithId(
+      new Error("TURNSTILE_SECRET_KEY not set in production"),
+      "submitSwatchRequestAction:captchaConfig",
+    );
+    console.error("[swatch-request] TURNSTILE_SECRET_KEY not set in production — blocking submission:", errorId);
     return transportFailure(contactInfo, selectedIds, TRANSPORT_ERROR_GENERIC);
   }
   if (hasSecret) {
@@ -160,7 +172,8 @@ export async function submitSwatchRequestAction(
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
   } catch (err) {
-    console.error("[swatch-request] fetch to Velo failed:", err);
+    const errorId = captureWithId(err, "submitSwatchRequestAction:fetch");
+    console.error("[swatch-request] fetch to Velo failed:", errorId, err);
     return transportFailure(contactInfo, selectedIds, TRANSPORT_ERROR_GENERIC);
   }
 
@@ -172,23 +185,28 @@ export async function submitSwatchRequestAction(
     return transportFailure(contactInfo, selectedIds, TRANSPORT_ERROR_RATE_LIMIT);
   }
 
-  let veloError: string | undefined;
+  // Never echo raw Velo error strings to the user — Velo may return internal
+  // detail that is not safe for user display. Log + capture for ops and always
+  // return the generic copy.
+  let veloErrorForLog: string | undefined;
   try {
     const body = (await res.json()) as VeloResponse;
     if (body && typeof body.error === "string") {
-      veloError = body.error.slice(0, VELO_ERROR_MAX_LEN);
+      veloErrorForLog = body.error.slice(0, 500);
     }
   } catch (parseErr) {
-    console.error("[swatch-request] failed to parse Velo error body:", parseErr);
+    const errorId = captureWithId(parseErr, "submitSwatchRequestAction:parseVeloError");
+    console.error("[swatch-request] failed to parse Velo error body:", errorId, parseErr);
   }
+  const errorId = captureWithId(
+    new Error(`Velo ${res.status}: ${veloErrorForLog ?? "(no body)"}`),
+    "submitSwatchRequestAction:veloRejected",
+  );
   console.error(
     "[swatch-request] Velo endpoint rejected submission:",
+    errorId,
     res.status,
-    veloError,
+    veloErrorForLog,
   );
-  return transportFailure(
-    contactInfo,
-    selectedIds,
-    veloError ?? TRANSPORT_ERROR_GENERIC,
-  );
+  return transportFailure(contactInfo, selectedIds, TRANSPORT_ERROR_GENERIC);
 }

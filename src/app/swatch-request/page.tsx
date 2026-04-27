@@ -36,13 +36,18 @@ export default async function SwatchRequestPage({
             </p>
           </header>
 
-          {swatchLoadError && (
+          {swatchLoadError ? (
             <p role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-              We couldn&apos;t load our fabric options right now. Please try again in a moment.
+              We couldn&apos;t load our fabric options right now. Please try
+              again in a moment or{" "}
+              <a href="/contact" className="underline">
+                contact us
+              </a>{" "}
+              and we&apos;ll send swatches directly.
             </p>
+          ) : (
+            <SwatchRequestForm swatches={swatches} productSlug={productSlug} />
           )}
-
-          <SwatchRequestForm swatches={swatches} productSlug={productSlug} />
         </article>
       </div>
     </main>

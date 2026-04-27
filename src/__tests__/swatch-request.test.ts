@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("@sentry/nextjs", () => ({
+  captureException: vi.fn(),
+  flush: vi.fn().mockResolvedValue(true),
+}));
 
 // ── Mocks ─────────────────────────────────────────────────────────────────
 
@@ -171,6 +175,19 @@ describe("listSwatchesAction", () => {
     expect(result.items[0].swatchName).toBe("Cream");
     expect(result.items[1].swatchName).toBe("Navy");
     expect(mockListCollectionItems).toHaveBeenCalledWith("FabricSwatches", 100);
+  });
+
+  it("calls Sentry.captureException on CMS failure", async () => {
+    const { captureException } = await import("@sentry/nextjs");
+    const captureSpy = vi.mocked(captureException);
+    mockListCollectionItems.mockRejectedValueOnce(new Error("wix down"));
+    const { listSwatchesAction } = await import("@/app/actions/swatch-request");
+    await listSwatchesAction();
+    expect(captureSpy).toHaveBeenCalledOnce();
+    const [, opts] = captureSpy.mock.calls[0];
+    expect((opts as { extra: { errorId: string } }).extra.errorId).toMatch(
+      /^[0-9a-f-]{36}$/,
+    );
   });
 
   it("returns error:true on CMS failure", async () => {
@@ -357,7 +374,7 @@ describe("submitSwatchRequestAction", () => {
     }
   });
 
-  it("forwards Velo error message on 400", async () => {
+  it("returns generic error on 400 (Velo error not echoed to user)", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 400,
@@ -371,7 +388,9 @@ describe("submitSwatchRequestAction", () => {
     );
     const result = await submitSwatchRequestAction(null, makeFormData());
     if (result.status === "error") {
-      expect(result.transportError).toContain("swatch");
+      // Raw Velo error strings are never echoed — always show generic copy
+      expect(result.transportError).toMatch(/couldn't submit/i);
+      expect(result.transportError).not.toContain("swatch must");
     }
   });
 
