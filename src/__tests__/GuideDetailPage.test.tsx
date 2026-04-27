@@ -1,5 +1,16 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+
+vi.mock("@sentry/nextjs", () => ({
+  captureException: vi.fn(),
+  flush: vi.fn().mockResolvedValue(true),
+}));
+
+const listGuidesMock = vi.fn();
+vi.mock("@/lib/discovery/guides", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/lib/discovery/guides")>();
+  return { ...original, listGuides: (...args: unknown[]) => listGuidesMock(...args) };
+});
 
 import GuideDetailPage, {
   generateMetadata,
@@ -7,17 +18,26 @@ import GuideDetailPage, {
 } from "@/app/guides/[slug]/page";
 import { GUIDES } from "@/lib/discovery/guides";
 
-// cf-3qt.8.D: smoke test pinning /guides/[slug] — generateStaticParams covers
-// every seed guide, metadata is slug-scoped, and the h1 renders the guide's
-// title.
+beforeEach(() => {
+  listGuidesMock.mockReset();
+  listGuidesMock.mockResolvedValue(GUIDES);
+});
 
 describe("GuideDetailPage", () => {
-  it("returns a static param for every seed guide", () => {
-    const params = generateStaticParams();
+  it("returns a static param for every seed guide", async () => {
+    const params = await generateStaticParams();
     expect(params.length).toBe(GUIDES.length);
     expect(params.map((p) => p.slug).sort()).toEqual(
       GUIDES.map((g) => g.slug).sort(),
     );
+  });
+
+  it("returns static params from CMS when available", async () => {
+    listGuidesMock.mockResolvedValue([
+      { slug: "cms-guide", title: "CMS", hook: "h", readingTimeMin: 3, coverImageUrl: null },
+    ]);
+    const params = await generateStaticParams();
+    expect(params).toEqual([{ slug: "cms-guide" }]);
   });
 
   it("produces slug-scoped metadata for a known guide", async () => {

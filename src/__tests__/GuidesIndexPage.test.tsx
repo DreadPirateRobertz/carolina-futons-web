@@ -1,11 +1,24 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+
+vi.mock("@sentry/nextjs", () => ({
+  captureException: vi.fn(),
+  flush: vi.fn().mockResolvedValue(true),
+}));
+
+const listGuidesMock = vi.fn();
+vi.mock("@/lib/discovery/guides", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/lib/discovery/guides")>();
+  return { ...original, listGuides: (...args: unknown[]) => listGuidesMock(...args) };
+});
 
 import GuidesIndexPage, { metadata } from "@/app/guides/page";
 import { GUIDES } from "@/lib/discovery/guides";
 
-// cf-3qt.8.D: smoke test pinning the Guides index contract — metadata export,
-// h1, and a card link per GUIDES entry pointing at /guides/{slug}.
+beforeEach(() => {
+  listGuidesMock.mockReset();
+  listGuidesMock.mockResolvedValue(GUIDES);
+});
 
 describe("GuidesIndexPage", () => {
   it("exports metadata with a buying-guides title", () => {
@@ -13,8 +26,9 @@ describe("GuidesIndexPage", () => {
     expect(typeof metadata.description).toBe("string");
   });
 
-  it("renders the hero h1", () => {
-    render(<GuidesIndexPage />);
+  it("renders the hero h1", async () => {
+    const ui = await GuidesIndexPage();
+    render(ui);
     expect(
       screen.getByRole("heading", {
         level: 1,
@@ -23,8 +37,9 @@ describe("GuidesIndexPage", () => {
     ).toBeTruthy();
   });
 
-  it("renders a card link per GUIDES entry pointing at /guides/{slug}", () => {
-    render(<GuidesIndexPage />);
+  it("renders a card link per guide entry pointing at /guides/{slug}", async () => {
+    const ui = await GuidesIndexPage();
+    render(ui);
     for (const guide of GUIDES) {
       const heading = screen.getByRole("heading", {
         level: 2,
@@ -34,5 +49,30 @@ describe("GuidesIndexPage", () => {
       expect(link).toBeTruthy();
       expect(link?.getAttribute("href")).toBe(`/guides/${guide.slug}`);
     }
+  });
+
+  it("renders a cover image for each guide that has a coverImageUrl", async () => {
+    const { container } = render(await GuidesIndexPage());
+    // next/image with alt="" has role=presentation; query the DOM directly.
+    const imgCount = container.querySelectorAll("img").length;
+    const coverCount = GUIDES.filter((g) => g.coverImageUrl).length;
+    expect(imgCount).toBeGreaterThanOrEqual(coverCount);
+  });
+
+  it("uses CMS data when listGuides returns custom results", async () => {
+    listGuidesMock.mockResolvedValue([
+      {
+        slug: "test-cms-guide",
+        title: "CMS Guide Title",
+        hook: "A guide from the CMS.",
+        readingTimeMin: 3,
+        coverImageUrl: null,
+      },
+    ]);
+    const ui = await GuidesIndexPage();
+    render(ui);
+    expect(
+      screen.getByRole("heading", { level: 2, name: "CMS Guide Title" }),
+    ).toBeTruthy();
   });
 });

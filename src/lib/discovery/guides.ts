@@ -1,3 +1,6 @@
+import { listCollectionItems } from "@/lib/wix/data";
+import { logWixFailure } from "@/lib/wix/errors";
+
 export interface GuideSection {
   heading: string;
   body: string;
@@ -8,15 +11,37 @@ export interface GuideSummary {
   title: string;
   hook: string;
   readingTimeMin: number;
+  coverImageUrl: string | null;
   sections?: readonly GuideSection[];
 }
+
+// Wix CMS collection ID for guides content.
+const GUIDES_COLLECTION = "Guides";
+
+// Curated cover images for the seed guides. Reuses the same Wix media assets
+// used by shop category cards so no new uploads are required.
+const COVER_IMAGES: Record<string, string> = {
+  "how-to-pick-a-futon-mattress":
+    "https://static.wixstatic.com/media/e04e89_55ecd0dfe1d5498b8a3f8cb583d5089b~mv2.jpg/v1/fill/w_800,h_500,q_90/file.jpg",
+  "platform-bed-vs-futon":
+    "https://static.wixstatic.com/media/e04e89_8cd0de059f244e8485a600d4783caa92~mv2.jpg/v1/fill/w_800,h_500,q_90/file.jpg",
+  "murphy-bed-sizing":
+    "https://static.wixstatic.com/media/e04e89_818d75df410a41e1a0721207333bc93d~mv2.jpg/v1/fill/w_800,h_500,q_90/file.jpg",
+  "room-layout-for-small-spaces":
+    "https://static.wixstatic.com/media/e04e89_72d82110638045c39e0f6274363c15f8~mv2.jpg/v1/fill/w_800,h_500,q_90/file.jpg",
+  "mattress-firmness-guide":
+    "https://static.wixstatic.com/media/e04e89_9a21133f83c3412ebe88d2f232c56cf9~mv2.jpg/v1/fill/w_800,h_500,q_90/file.jpg",
+  "warranty-and-care":
+    "https://static.wixstatic.com/media/e04e89_4bea49a709a3470a8315b5acd7309b0f~mv2.jpg/v1/fill/w_800,h_500,q_90/file.jpg",
+};
 
 export const GUIDES: readonly GuideSummary[] = [
   {
     slug: "how-to-pick-a-futon-mattress",
     title: "How to pick a futon mattress",
-    hook: "Fill types, thickness, and the tradeoff between sitting support and sleeping comfort.",
+    hook: "Fill types, thickness, and the tradeoff between sitting support and sleeping support.",
     readingTimeMin: 7,
+    coverImageUrl: COVER_IMAGES["how-to-pick-a-futon-mattress"],
     sections: [
       {
         heading: "The core tradeoff",
@@ -49,6 +74,7 @@ export const GUIDES: readonly GuideSummary[] = [
     title: "Full vs queen futons",
     hook: "The size difference is 6 inches of width. Whether that matters depends on who is sleeping and how the room is laid out.",
     readingTimeMin: 5,
+    coverImageUrl: null,
     sections: [
       {
         heading: "The size difference in numbers",
@@ -77,6 +103,7 @@ export const GUIDES: readonly GuideSummary[] = [
     title: "Murphy bed sizing",
     hook: "Clearances, mattress depths, and the wall build-out you actually need.",
     readingTimeMin: 6,
+    coverImageUrl: COVER_IMAGES["murphy-bed-sizing"],
     sections: [
       {
         heading: "The two numbers that matter most",
@@ -105,6 +132,7 @@ export const GUIDES: readonly GuideSummary[] = [
     title: "Platform bed vs futon",
     hook: "When a daybed or platform frame beats a folding futon, and vice versa.",
     readingTimeMin: 5,
+    coverImageUrl: COVER_IMAGES["platform-bed-vs-futon"],
     sections: [
       {
         heading: "The core difference",
@@ -131,8 +159,9 @@ export const GUIDES: readonly GuideSummary[] = [
   {
     slug: "room-layout-for-small-spaces",
     title: "Room layout for small spaces",
-    hook: "Getting a guest room and a home office out of the same 10×12.",
+    hook: "Getting a guest room and a home office out of the same 10x12.",
     readingTimeMin: 8,
+    coverImageUrl: COVER_IMAGES["room-layout-for-small-spaces"],
     sections: [
       {
         heading: "Start with the bed, not the desk",
@@ -165,6 +194,7 @@ export const GUIDES: readonly GuideSummary[] = [
     title: "Mattress firmness guide",
     hook: "What soft, medium, and firm actually mean across our mattress lineup.",
     readingTimeMin: 5,
+    coverImageUrl: COVER_IMAGES["mattress-firmness-guide"],
     sections: [
       {
         heading: "Why firmness labels are unreliable",
@@ -193,30 +223,55 @@ export const GUIDES: readonly GuideSummary[] = [
     title: "Warranty & care",
     hook: "Our 15-year frame warranty, covering fabric, and the small habits that keep a futon going.",
     readingTimeMin: 4,
-    sections: [
-      {
-        heading: "What the 15-year warranty covers",
-        body: "Our frames are backed by a 15-year warranty against manufacturing defects under normal residential use. That covers cracked joints, failed hardware, delaminated panels, and latch mechanisms that stop engaging. We'll repair the frame, send replacement parts, or if neither is practical, replace the piece. The warranty applies to the original purchaser and requires proof of purchase — keep your order confirmation. It does not transfer with the frame if you sell it.",
-      },
-      {
-        heading: "What it doesn't cover",
-        body: "Normal wear — including fabric fading, surface scratches, and the slight darkening of hardwood that happens over years of use — is not a defect. Commercial or rental use voids the warranty, as does damage from moving or modifications not performed by us. Aesthetic variation in solid wood (grain patterns, knot character, minor color variation between pieces) is a feature of real wood furniture, not a defect, and is not covered. Mattresses carry the manufacturer's warranty from the original maker rather than ours; covers and accessories are warranted against manufacturing defects for one year.",
-      },
-      {
-        heading: "Frame care basics",
-        body: "Hardwood frames need almost no maintenance. Dust them the way you'd dust any wood furniture. If a joint develops a slight squeak, a small amount of food-grade mineral oil at the hinge point usually resolves it. Avoid leaving the frame folded in the same position for extended periods — converting between sofa and bed position occasionally keeps the joints from stiffening. For frames with a lacquer finish, use a soft cloth and avoid spray cleaners with ammonia or silicone, which can cloud the finish over time.",
-      },
-      {
-        heading: "Mattress care that extends life",
-        body: "Rotate your mattress end-to-end every three months. This shifts the body impression zone and dramatically extends the useful life of the fill. If you can, air the mattress in indirect sunlight once or twice a year — UV exposure refreshes cotton batting without the heat that can degrade foam fills. A quality futon cover protects the mattress from the body oils and moisture that gradually break down fill material. We stock covers in cotton, microfiber, and canvas; any of them extend mattress life meaningfully compared to leaving the fill exposed.",
-      },
-      {
-        heading: "Filing a warranty claim",
-        body: "Email carolinafutons@gmail.com with your order number, a description of the issue, and photos if you can. We respond within one business day and walk you through the next step — usually a parts shipment or a showroom assessment. You can also call (828) 252-9449 during showroom hours (Wednesday–Saturday, 10am–5pm). We've been at this since 1991 and the warranty is not a bureaucratic hurdle; if something failed because of how we built it, we fix it.",
-      },
-    ],
+    coverImageUrl: COVER_IMAGES["warranty-and-care"],
   },
 ] as const;
+
+type WixGuideItem = {
+  _id?: string;
+  slug?: string | null;
+  title?: string | null;
+  hook?: string | null;
+  readingTimeMin?: number | null;
+  coverImage?: string | { url?: string | null } | null;
+};
+
+function coverUrl(raw: WixGuideItem["coverImage"]): string | null {
+  if (!raw) return null;
+  if (typeof raw === "string") return raw || null;
+  return raw.url || null;
+}
+
+function toGuideSummary(item: WixGuideItem): GuideSummary | null {
+  const slug = item.slug?.trim();
+  const title = item.title?.trim();
+  const hook = item.hook?.trim();
+  if (!slug || !title || !hook) return null;
+  return {
+    slug,
+    title,
+    hook,
+    readingTimeMin: typeof item.readingTimeMin === "number" ? item.readingTimeMin : 5,
+    coverImageUrl: coverUrl(item.coverImage) ?? COVER_IMAGES[slug] ?? null,
+  };
+}
+
+// Fetches guides from the Wix CMS Guides collection. Falls back to the static
+// GUIDES array when the collection is empty or unreachable — ensures the page
+// renders during development and before the CMS collection is created.
+export async function listGuides(): Promise<readonly GuideSummary[]> {
+  try {
+    const items = await listCollectionItems<WixGuideItem>(GUIDES_COLLECTION);
+    const guides = items.flatMap((item) => {
+      const g = toGuideSummary(item);
+      return g ? [g] : [];
+    });
+    return guides.length > 0 ? guides : GUIDES;
+  } catch (err) {
+    await logWixFailure("wix-data", "listGuides", err);
+    return GUIDES;
+  }
+}
 
 export function getGuideBySlug(slug: string): GuideSummary | undefined {
   return GUIDES.find((g) => g.slug === slug);

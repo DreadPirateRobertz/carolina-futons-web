@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 import { HeroReveal } from "@/components/motion/HeroReveal";
-import { GUIDES } from "@/lib/discovery/guides";
+import { listGuides } from "@/lib/discovery/guides";
 import { BotanicalGuides } from "@/components/illustrations/BotanicalGuides";
 
 const CARD_STAGGER_SECONDS = 0.08;
@@ -13,7 +14,9 @@ export const metadata: Metadata = {
     "Plain-English guides to picking a futon mattress, comparing platform beds, sizing a Murphy bed, and getting the most out of a small room.",
 };
 
-export default function GuidesIndexPage() {
+export default async function GuidesIndexPage() {
+  const guides = await listGuides();
+
   return (
     <main className="w-full">
       {/* cf-pgec: v2 Botanical open-book header illustration */}
@@ -35,7 +38,7 @@ export default function GuidesIndexPage() {
         </HeroReveal>
 
         <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {GUIDES.map((guide, index) => (
+          {guides.map((guide, index) => (
             <li key={guide.slug}>
               <HeroReveal delay={index * CARD_STAGGER_SECONDS}>
                 <Link
@@ -44,8 +47,18 @@ export default function GuidesIndexPage() {
                 >
                   <div
                     aria-hidden="true"
-                    className="h-32 rounded-md bg-gradient-to-br from-cf-cta/15 via-cf-cta/5 to-transparent"
-                  />
+                    className="relative h-32 overflow-hidden rounded-md bg-gradient-to-br from-cf-cta/15 via-cf-cta/5 to-transparent"
+                  >
+                    {guide.coverImageUrl && (
+                      <Image
+                        src={guide.coverImageUrl}
+                        alt=""
+                        fill
+                        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    )}
+                  </div>
                   <h2 className="font-playfair text-xl font-semibold tracking-tight group-hover:text-cf-cta">
                     {guide.title}
                   </h2>
