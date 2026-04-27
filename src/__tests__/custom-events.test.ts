@@ -17,7 +17,7 @@ beforeEach(() => {
 });
 
 describe("trackCustomEvent", () => {
-  it("forwards to customEvents/trackCustomEvent with [eventName, params] args", async () => {
+  it("calls /_functions/trackCustomEvent (HTTP fn) with [eventName, params] args", async () => {
     veloMocks.callVelo.mockResolvedValueOnce({ success: true });
     const { trackCustomEvent } = await import("@/lib/wix/custom-events");
     const result = await trackCustomEvent("winback_landing_view", {
@@ -26,7 +26,7 @@ describe("trackCustomEvent", () => {
     });
     expect(result).toEqual({ success: true });
     expect(veloMocks.callVelo).toHaveBeenCalledWith({
-      method: "customEvents/trackCustomEvent",
+      method: "trackCustomEvent",
       args: [
         "winback_landing_view",
         { source: "winback", utm_source: "email" },
@@ -39,7 +39,7 @@ describe("trackCustomEvent", () => {
     const { trackCustomEvent } = await import("@/lib/wix/custom-events");
     await trackCustomEvent("quiz_completed");
     expect(veloMocks.callVelo).toHaveBeenCalledWith({
-      method: "customEvents/trackCustomEvent",
+      method: "trackCustomEvent",
       args: ["quiz_completed", {}],
     });
   });
@@ -47,7 +47,7 @@ describe("trackCustomEvent", () => {
   it("returns success:false on VeloRpcError without rethrowing", async () => {
     const { VeloRpcError } = await import("@/lib/wix/velo-client");
     veloMocks.callVelo.mockRejectedValueOnce(
-      new VeloRpcError("customEvents/trackCustomEvent", 500, "boom"),
+      new VeloRpcError("trackCustomEvent", 500, "boom"),
     );
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { trackCustomEvent } = await import("@/lib/wix/custom-events");
