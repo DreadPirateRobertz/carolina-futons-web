@@ -32,11 +32,26 @@ export async function getVisitorCartClient() {
 
   // No session yet — generate anonymous visitor tokens and persist them so
   // subsequent requests (e.g., /checkout) resolve the same Wix cart.
-  const anonClient = getWixClientWithTokens();
-  const tokens = await anonClient.auth.generateVisitorTokens();
-  jar.set(SESSION_COOKIE_NAME, serializeSessionTokens(tokens), {
-    ...SESSION_COOKIE_OPTIONS,
-    maxAge: VISITOR_SESSION_MAX_AGE,
-  });
-  return getWixClientWithTokens(tokens);
+  // If Wix token generation fails (network blip, rate-limit), fall back to
+  // a bare anonymous client — same behaviour as before this fix, no crash.
+  try {
+    const anonClient = getWixClientWithTokens();
+    const tokens = await anonClient.auth.generateVisitorTokens();
+    try {
+      jar.set(SESSION_COOKIE_NAME, serializeSessionTokens(tokens), {
+        ...SESSION_COOKIE_OPTIONS,
+        maxAge: VISITOR_SESSION_MAX_AGE,
+      });
+    } catch {
+      // Headers already sent (e.g., called from inside a streamed response).
+      // Continue with the generated tokens for this request; next request
+      // will regenerate — no worse than the original unauthenticated path.
+    }
+    return getWixClientWithTokens(tokens);
+  } catch {
+    // Token generation failed — fall back to a stateless anonymous client.
+    // Cart adds will work for this request but won't survive to checkout
+    // until a working session can be established.
+    return getWixClientWithTokens();
+  }
 }

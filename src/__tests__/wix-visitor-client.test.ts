@@ -121,4 +121,37 @@ describe("getVisitorCartClient", () => {
     expect(mockGenerateVisitorTokens).toHaveBeenCalledOnce();
     expect(mockSet).toHaveBeenCalledOnce();
   });
+
+  it("falls back to anonymous client when generateVisitorTokens throws", async () => {
+    mockGet.mockReturnValue(undefined);
+    mockGenerateVisitorTokens.mockRejectedValueOnce(new Error("Wix unavailable"));
+
+    const { getWixClientWithTokens } = await import("@/lib/wix-client");
+    const { getVisitorCartClient } = await import("@/lib/wix/wix-visitor-client");
+    const client = await getVisitorCartClient();
+
+    // Should not throw
+    expect(client).toBeDefined();
+    // Cookie should NOT be set on failure
+    expect(mockSet).not.toHaveBeenCalled();
+    // Final call to getWixClientWithTokens should be with no tokens (anonymous fallback)
+    const calls = (getWixClientWithTokens as ReturnType<typeof vi.fn>).mock.calls;
+    const lastCall = calls[calls.length - 1]!;
+    expect(lastCall[0]).toBeUndefined();
+  });
+
+  it("returns client with generated tokens even when jar.set throws", async () => {
+    mockGet.mockReturnValue(undefined);
+    mockSet.mockImplementationOnce(() => { throw new Error("headers already sent"); });
+
+    const { getWixClientWithTokens } = await import("@/lib/wix-client");
+    const { getVisitorCartClient } = await import("@/lib/wix/wix-visitor-client");
+    const client = await getVisitorCartClient();
+
+    // Should not throw and should return a client with the generated tokens
+    expect(client).toBeDefined();
+    const calls = (getWixClientWithTokens as ReturnType<typeof vi.fn>).mock.calls;
+    const lastCall = calls[calls.length - 1]!;
+    expect(lastCall[0]).toEqual(VISITOR_TOKENS);
+  });
 });
