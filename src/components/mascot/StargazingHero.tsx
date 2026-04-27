@@ -3,7 +3,7 @@
 // Night hero: bear lying on a Blue Ridge hill, milky way, stars, fireflies, moon.
 // Ported from design-harvest/v3-heroes.jsx HeroStargaze + v3-02-stargazing.svg.
 
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 
 const SKY = {
   sky0: "#0E1838",
@@ -81,27 +81,28 @@ function BearLying({ py }: { py: number }) {
   );
 }
 
-export function StargazingHero() {
-  const [t, setT] = useState(0);
+// Time animation is hoisted to LivingHero (single RAF for the page) — pass
+// `time` (seconds since page mount) and `reduceMotion` from the parent.
+// Defaults preserve standalone usage (e.g. /theme-c) where the component
+// drives nothing animated and renders a frozen scene at t=0.
+export function StargazingHero({
+  time = 0,
+  reduceMotion = false,
+}: {
+  time?: number;
+  reduceMotion?: boolean;
+} = {}) {
   const stars = useRef<StarDef[] | null>(null);
   const fireflies = useRef<FireflyDef[] | null>(null);
   if (!stars.current) stars.current = buildStars();
   if (!fireflies.current) fireflies.current = buildFireflies();
 
-  useEffect(() => {
-    let raf: number;
-    const start = performance.now();
-    const tick = (now: number) => {
-      setT((now - start) / 1000);
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
+  // When reduce-motion is on, freeze t at 0 — fireflies sit at their static
+  // positions, shooting star is hidden, sky is still painted in full color.
+  const t = reduceMotion ? 0 : time;
   const shootX = 400 + (t % 8) * 200;
   const shootY = 120 + (t % 8) * 50;
-  const shootOpacity = t % 8 < 0.8 ? 1 - (t % 8) / 0.8 : 0;
+  const shootOpacity = reduceMotion ? 0 : t % 8 < 0.8 ? 1 - (t % 8) / 0.8 : 0;
 
   return (
     <svg
