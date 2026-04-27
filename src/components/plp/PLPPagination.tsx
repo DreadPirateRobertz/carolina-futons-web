@@ -44,27 +44,27 @@ export function PLPPagination({
       {hasPrev ? (
         <Link
           href={buildPageUrl(basePath, searchParams, page - 1)}
-          className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+          className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-700"
         >
           ← Previous
         </Link>
       ) : (
-        <span className="rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-300">
+        <span className="rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-300 dark:border-zinc-700 dark:text-zinc-600">
           ← Previous
         </span>
       )}
 
-      <span className="text-sm text-zinc-500">Page {page}</span>
+      <span className="text-sm text-zinc-500 dark:text-zinc-400">Page {page}</span>
 
       {hasNext ? (
         <Link
           href={buildPageUrl(basePath, searchParams, page + 1)}
-          className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+          className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-700"
         >
           Next →
         </Link>
       ) : (
-        <span className="rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-300">
+        <span className="rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-300 dark:border-zinc-700 dark:text-zinc-600">
           Next →
         </span>
       )}

@@ -184,6 +184,12 @@
   --sidebar-accent-foreground: oklch(0.97 0.005 230);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.62 0.06 232 / 0.5);
+
+  /* Marugame typography — dark-surface anti-aliasing (cf-b3ai).
+     Subpixel rendering strokes appear heavier on dark; antialiased
+     keeps Clash Display / Satoshi weight true to the light-mode design. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* cf-delight D2 — Mr Pops marquee keyframe.

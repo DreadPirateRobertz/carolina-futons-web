@@ -79,14 +79,14 @@ export function ProductCard({
       data-slot="product-card"
       data-has-secondary={hasSecondary ? "true" : "false"}
       data-reduced-motion={prefersReducedMotion ? "true" : "false"}
-      className="relative overflow-hidden rounded-lg border border-zinc-200 shadow-sm transition-shadow duration-200 hover:border-zinc-400 hover:shadow-lg focus-within:border-zinc-400 focus-within:shadow-lg"
+      className="relative overflow-hidden rounded-lg border border-zinc-200 shadow-sm transition-shadow duration-200 hover:border-zinc-400 hover:shadow-lg focus-within:border-zinc-400 focus-within:shadow-lg dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-zinc-500 dark:focus-within:border-zinc-500"
       initial={{ opacity: 1, y: 0 }}
       whileHover={hoverVariant}
       whileFocus={hoverVariant}
       transition={{ duration: MOTION_DURATION_SEC, ease: "easeOut" }}
     >
       <Link href={href} className="group block focus:outline-none">
-        <div className="relative aspect-square w-full overflow-hidden rounded-t-lg bg-zinc-100">
+        <div className="relative aspect-square w-full overflow-hidden rounded-t-lg bg-zinc-100 dark:bg-zinc-700">
           {primary ? (
             <>
               <Image
@@ -118,25 +118,25 @@ export function ProductCard({
           ) : null}
         </div>
         <div className="p-4">
-          <h2 className="text-base font-medium">{product.name}</h2>
+          <h2 className="text-base font-medium dark:text-zinc-100">{product.name}</h2>
           {showStrikethrough ? (
             <div className="mt-1 flex items-center gap-2 text-sm">
-              <span className="line-through text-zinc-400">
+              <span className="line-through text-zinc-400 dark:text-zinc-500">
                 {product.priceData?.formatted?.price}
               </span>
-              <span className="font-medium text-red-600">
+              <span className="font-medium text-red-600 dark:text-red-400">
                 {product.priceData?.formatted?.discountedPrice}
               </span>
             </div>
           ) : (
-            <p className="mt-1 text-sm text-zinc-600">
+            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
               {formatPlpPrice(product)}
             </p>
           )}
           {reviewStats ? (
             <p
               data-testid="review-badge"
-              className="mt-1 text-xs text-cf-charcoal/60"
+              className="mt-1 text-xs text-cf-charcoal/60 dark:text-zinc-400"
             >
               <span aria-hidden="true">★</span>{" "}
               {reviewStats.rating.toFixed(1)} ({reviewStats.count}{" "}
