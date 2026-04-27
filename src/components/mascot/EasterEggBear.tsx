@@ -38,25 +38,25 @@ export function EasterEggBear() {
       <AnimatePresence>
         {found && !claimed && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: 8 }}
+            initial={{ opacity: 0, scale: 0.8, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 8 }}
+            exit={{ opacity: 0, scale: 0.8, y: 12 }}
             transition={{ type: "spring", stiffness: 260, damping: 20 }}
             style={{
-              position: "absolute",
-              bottom: "110%",
+              position: "fixed",
+              bottom: 120,
               left: "50%",
               transform: "translateX(-50%)",
+              width: "min(320px, 90vw)",
               background: c.paperWarm,
               border: `1.5px solid ${c.ink}`,
               borderRadius: 10,
-              padding: "10px 16px",
-              whiteSpace: "nowrap",
+              padding: "12px 16px",
               fontFamily: "var(--font-source-sans)",
               fontSize: 13,
               color: c.ink,
-              zIndex: 50,
-              boxShadow: "0 8px 24px rgba(58,37,24,.18)",
+              zIndex: 9999,
+              boxShadow: "0 8px 32px rgba(58,37,24,.22)",
             }}
           >
             <p style={{ fontWeight: 700, marginBottom: 4 }}>You found the bear! 🐻</p>
@@ -98,18 +98,17 @@ export function EasterEggBear() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             style={{
-              position: "absolute",
-              bottom: "110%",
+              position: "fixed",
+              bottom: 120,
               left: "50%",
               transform: "translateX(-50%)",
               fontFamily: "var(--font-source-sans)",
               fontSize: 12,
               color: c.ink,
               opacity: 0.6,
-              whiteSpace: "nowrap",
             }}
           >
-            Code copied ✓
+            Code saved ✓
           </motion.div>
         )}
       </AnimatePresence>

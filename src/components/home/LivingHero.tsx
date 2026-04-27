@@ -28,15 +28,19 @@ function getPhase(h: number): Phase {
 }
 
 export function LivingHero() {
-  const [phase, setPhase] = useState<Phase>("day"); // SSR default
+  const [phase, setPhase] = useState<Phase>("day"); // SSR default — suppressed until mounted
+  const [mounted, setMounted] = useState(false);
   const [time, setTime] = useState(0);
   const [reduceMotion, setReduceMotion] = useState(false);
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // Resolve phase from wall clock on mount
+    // Resolve correct phase from wall clock immediately on mount.
+    // React batches both setState calls so they apply in a single render
+    // before any transition can fire — no flash of the wrong scene.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot client seed for SSR phase fallback
     setPhase(getPhase(new Date().getHours()));
+    setMounted(true);
 
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot client seed for SSR motion fallback
@@ -88,7 +92,7 @@ export function LivingHero() {
           position: "absolute",
           inset: 0,
           opacity: phase === "night" ? 1 : 0,
-          transition: "opacity 4s ease-in-out",
+          transition: mounted ? "opacity 4s ease-in-out" : "none",
           pointerEvents: phase === "night" ? "auto" : "none",
         }}
       >
@@ -101,7 +105,7 @@ export function LivingHero() {
           position: "absolute",
           inset: 0,
           opacity: phase === "dawn" ? 1 : 0,
-          transition: "opacity 4s ease-in-out",
+          transition: mounted ? "opacity 4s ease-in-out" : "none",
           pointerEvents: phase === "dawn" ? "auto" : "none",
         }}
       >
@@ -114,7 +118,7 @@ export function LivingHero() {
           position: "absolute",
           inset: 0,
           opacity: phase === "day" ? 1 : 0,
-          transition: "opacity 4s ease-in-out",
+          transition: mounted ? "opacity 4s ease-in-out" : "none",
           pointerEvents: phase === "day" ? "auto" : "none",
         }}
       >
@@ -127,7 +131,7 @@ export function LivingHero() {
           position: "absolute",
           inset: 0,
           opacity: phase === "dusk" ? 1 : 0,
-          transition: "opacity 4s ease-in-out",
+          transition: mounted ? "opacity 4s ease-in-out" : "none",
           pointerEvents: phase === "dusk" ? "auto" : "none",
         }}
       >
