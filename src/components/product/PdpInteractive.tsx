@@ -10,10 +10,12 @@ import { PdpGallery, type GalleryImage } from "@/components/product/PdpGallery";
 import { PdpShippingEstimate } from "@/components/product/PdpShippingEstimate";
 import { PdpStickyCta } from "@/components/product/PdpStickyCta";
 import { PdpStockBadge } from "@/components/product/PdpStockBadge";
+import { PdpFabricSwatches } from "@/components/product/PdpFabricSwatches";
 import { PdpWhiteGlove } from "@/components/product/PdpWhiteGlove";
 import { PdpWishlistButton } from "@/components/product/PdpWishlistButton";
 import { VariantPicker } from "@/components/product/VariantPicker";
 import type { StockBadgeInput } from "@/lib/product/stock-badge-state";
+import type { SwatchItem } from "@/lib/swatch-request/swatch-request-schema";
 import {
   findMatchingVariant,
   getSelectedImageUrl,
@@ -37,6 +39,7 @@ export type PdpInteractiveProps = {
   fallbackPriceCents: number;
   galleryImages?: ReadonlyArray<GalleryImage>;
   stock?: StockBadgeInput | null;
+  fabricSwatches?: SwatchItem[];
 };
 
 export function PdpInteractive({
@@ -50,6 +53,7 @@ export function PdpInteractive({
   fallbackPriceCents,
   galleryImages,
   stock,
+  fabricSwatches,
 }: PdpInteractiveProps) {
   // Intentional duplication: VariantPicker also seeds from initialSelection() and holds its own
   // selection state for price/stock display. The two stay in sync via onSelectionChange. If
@@ -154,6 +158,9 @@ export function PdpInteractive({
           fallbackPrice={fallbackPrice}
           onSelectionChange={(next) => setSelection(next)}
         />
+        {fabricSwatches && fabricSwatches.length > 0 && (
+          <PdpFabricSwatches swatches={fabricSwatches} productSlug={productSlug} />
+        )}
         <div ref={primaryCtaRef} data-slot="pdp-primary-cta" className="flex flex-wrap items-center gap-3">
           <AddToCartButton {...addToCartProps} />
           <PdpWishlistButton

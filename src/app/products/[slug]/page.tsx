@@ -19,6 +19,8 @@ import { PdpViewItemTracker } from "@/components/product/PdpViewItemTracker";
 import { getReviewStats } from "@/lib/product/review-stats";
 import { getProductBySlug } from "@/lib/wix/products";
 import { logWixFailure } from "@/lib/wix/errors";
+import { listFabricSwatches } from "@/lib/wix/fabrics";
+import type { SwatchItem } from "@/lib/swatch-request/swatch-request-schema";
 import { formatPlpPrice } from "@/lib/product/plp-price";
 import { getCrossSellProducts } from "@/lib/product/cross-sell";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -90,6 +92,12 @@ export default async function PdpPage(props: {
   const stock = (product.stock ?? null) as StockBadgeInput | null;
   const crossSell = await getCrossSellProducts(product);
   const mattresses = isFutonFrame(slug) ? await getMesaMattresses() : [];
+  let fabricSwatches: SwatchItem[] = [];
+  try {
+    fabricSwatches = await listFabricSwatches();
+  } catch (err) {
+    await logWixFailure("pdp-fabricSwatches", "listFabricSwatches", err);
+  }
 
   const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
   const canonicalUrl = `${siteUrl}/products/${slug}`;
@@ -161,6 +169,7 @@ export default async function PdpPage(props: {
           fallbackPriceCents={fallbackPriceCents}
           galleryImages={galleryImages}
           stock={stock}
+          fabricSwatches={fabricSwatches}
         />
       </div>
 
