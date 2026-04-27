@@ -84,7 +84,9 @@ beforeEach(() => {
 });
 
 // cf-theme-ad-grid: A+D hybrid — MrPopsHero + MrPopsMarquee + AdGrid filter-first.
-describe("HomePage — A+D hybrid (cf-theme-ad-grid)", () => {
+// SUITE SKIPPED 2026-04-26: cf-wmha replaced this layout with LivingHero +
+// MascotWorldHero. Coverage to be re-authored against the new home.
+describe.skip("HomePage — A+D hybrid (cf-theme-ad-grid)", () => {
   it("renders the Hero landmark", async () => {
     await renderHome();
     expect(screen.getByRole("region", { name: /hero/i })).toBeInTheDocument();
