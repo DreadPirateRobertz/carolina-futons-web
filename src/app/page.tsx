@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { MascotWorldHero } from "@/components/mascot/MascotWorldHero";
+import { LivingHero } from "@/components/home/LivingHero";
 import { MascotCategoryCard } from "@/components/mascot/MascotCategoryCard";
 import { MascotFooterDivider } from "@/components/mascot/MascotFooterDivider";
 import { EasterEggBear } from "@/components/mascot/EasterEggBear";
@@ -56,9 +56,9 @@ export default async function HomePage() {
     <>
       <EmailCapturePopup />
 
-      {/* ── Mascot World hero — bear eyes track cursor ── */}
+      {/* ── Living Hero — time-of-day cycling: dawn rays / day bear / dusk rays / night stars ── */}
       <div className="w-full" style={{ height: "80vh", minHeight: 500, maxHeight: 900 }}>
-        <MascotWorldHero />
+        <LivingHero />
       </div>
 
       {/* ── Headline ── */}
