@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { BUSINESS } from "@/lib/business/contact-info";
+import { BotanicalVisitUs } from "@/components/illustrations/BotanicalVisitUs";
 
 export const metadata: Metadata = {
   title: "Visit Us — Carolina Futons",
@@ -21,7 +22,10 @@ export default function VisitPage() {
 
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
+    <main className="w-full">
+      {/* cf-pgec: v2 Botanical storefront scene */}
+      <BotanicalVisitUs className="max-h-72" />
+      <div className="mx-auto w-full max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
       <h1 className="font-heading text-4xl font-bold tracking-tight text-cf-navy sm:text-5xl">
         Visit Us
       </h1>
@@ -120,6 +124,7 @@ export default function VisitPage() {
         >
           Browse all products
         </Link>
+      </div>
       </div>
     </main>
   );

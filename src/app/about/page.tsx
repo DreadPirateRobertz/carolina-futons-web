@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
-import { BlueRidgeTimeline } from "@/components/illustrations/BlueRidgeTimeline";
-import { MountainSkyline } from "@/components/illustrations/MountainSkyline";
+import { BotanicalMountainSkyline } from "@/components/illustrations/BotanicalMountainSkyline";
+import { BotanicalTimeline } from "@/components/illustrations/BotanicalTimeline";
 import { TeamPortrait } from "@/components/illustrations/TeamPortrait";
 import {
   ShopTheRoom,
@@ -19,114 +19,100 @@ export const metadata: Metadata = {
 export default async function AboutPage() {
   return (
     <main className="w-full">
-      {/* cf-93rb A.2: full-bleed Blue Ridge skyline above the page header
-          to anchor the brand sense of place before the prose begins. */}
-      <MountainSkyline />
+      {/* cf-pgec: v2 Botanical mountain skyline hero band — height container required so SVG height:100% resolves */}
+      <div className="w-full" style={{ height: "clamp(300px, 42vw, 640px)" }}>
+        <BotanicalMountainSkyline />
+      </div>
       <div className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
         <article className="mx-auto max-w-[65ch] space-y-8 font-source-sans text-cf-ink">
           <header className="space-y-3">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
-            Our story
-          </p>
-          <h1 className="font-playfair text-4xl font-semibold tracking-tight sm:text-5xl">
-            About Carolina Futons
-          </h1>
-          <p className="text-lg leading-relaxed text-cf-muted">
-            Family-owned and independently operated in Hendersonville,
-            North Carolina since {BUSINESS.foundedYear}.
-          </p>
-        </header>
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
+              Our story
+            </p>
+            <h1 className="font-playfair text-4xl font-semibold tracking-tight sm:text-5xl">
+              About Carolina Futons
+            </h1>
+            <p className="text-lg leading-relaxed text-cf-muted">
+              Family-owned and independently operated in Hendersonville,
+              North Carolina since {BUSINESS.foundedYear}.
+            </p>
+          </header>
 
-        <p className="text-lg leading-relaxed">
-          Carolina Futons opened its doors in {BUSINESS.foundedYear} with
-          a simple idea: sell furniture that is built to last, made by
-          people who take the work seriously, and stand behind it
-          personally. Three decades later, that is still the job.
-        </p>
+          <p className="text-lg leading-relaxed">
+            Carolina Futons opened its doors in {BUSINESS.foundedYear} with
+            a simple idea: sell furniture that is built to last, made by
+            people who take the work seriously, and stand behind it
+            personally. Three decades later, that is still the job.
+          </p>
 
-        <section className="space-y-4">
-          <h2 className="font-playfair text-2xl font-semibold tracking-tight">
-            What we believe
-          </h2>
-          <p className="leading-relaxed">
-            Furniture should be durable, repairable, and honest about what
-            it is. We favor solid hardwood frames and mattresses made in
-            the United States, we tell you where each piece comes from,
-            and we price our catalog so you can compare without
-            decoding a sale.
-          </p>
-          <p className="leading-relaxed">
-            A futon is a bed that also earns its keep as a sofa, so the
-            decision should feel as considered as any other major
-            purchase. We’d rather help one customer choose the right
-            frame than ship two of the wrong one.
-          </p>
-        </section>
+          <section className="space-y-4">
+            <h2 className="font-playfair text-2xl font-semibold tracking-tight">
+              What we believe
+            </h2>
+            <p className="leading-relaxed">
+              Furniture should be durable, repairable, and honest about what
+              it is. We favor solid hardwood frames and mattresses made in
+              the United States, we tell you where each piece comes from,
+              and we price our catalog so you can compare without
+              decoding a sale.
+            </p>
+            <p className="leading-relaxed">
+              A futon is a bed that also earns its keep as a sofa, so the
+              decision should feel as considered as any other major
+              purchase. We'd rather help one customer choose the right
+              frame than ship two of the wrong one.
+            </p>
+          </section>
 
-        <section className="space-y-4">
-          <h2 className="font-playfair text-2xl font-semibold tracking-tight">
-            Where to find us
-          </h2>
-          <p className="leading-relaxed">
-            Our showroom is at {BUSINESS.street}, {BUSINESS.city},{" "}
-            {BUSINESS.state} {BUSINESS.zip}. Stop in to sit on the
-            frames, feel the mattresses, and meet the people who will
-            answer the phone if anything ever goes sideways.
-          </p>
-          <p className="leading-relaxed">
-            Prefer to talk first? Call{" "}
-            <a
-              href={BUSINESS.phoneHref}
-              className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
-            >
-              {BUSINESS.phone}
-            </a>{" "}
-            or email{" "}
-            <a
-              href={BUSINESS.emailHref}
-              className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
-            >
-              {BUSINESS.email}
-            </a>
-            .
-          </p>
-        </section>
+          <section className="space-y-4">
+            <h2 className="font-playfair text-2xl font-semibold tracking-tight">
+              Where to find us
+            </h2>
+            <p className="leading-relaxed">
+              Our showroom is at {BUSINESS.street}, {BUSINESS.city},{" "}
+              {BUSINESS.state} {BUSINESS.zip}. Stop in to sit on the
+              frames, feel the mattresses, and meet the people who will
+              answer the phone if anything ever goes sideways.
+            </p>
+            <p className="leading-relaxed">
+              Prefer to talk first? Call{" "}
+              <a
+                href={BUSINESS.phoneHref}
+                className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
+              >
+                {BUSINESS.phone}
+              </a>{" "}
+              or email{" "}
+              <a
+                href={BUSINESS.emailHref}
+                className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
+              >
+                {BUSINESS.email}
+              </a>
+              .
+            </p>
+          </section>
 
-        <section
-          aria-labelledby="about-milestones"
-          className="space-y-4"
-        >
-          <h2
-            id="about-milestones"
-            className="font-playfair text-2xl font-semibold tracking-tight"
-          >
-            Three decades, four waypoints
-          </h2>
-          <p className="leading-relaxed">
-            A look back at the milestones that shaped Carolina Futons —
-            from opening in {BUSINESS.foundedYear} to where we stand today.
-          </p>
-          {/* cf-93rb A.2: editorial milestone strip — the SVG carries the
-              1991 / 2005 / 2015 / present waypoints visually; the embedded
-              <title> in the SVG body summarizes the same arc for screen readers. */}
-          <BlueRidgeTimeline />
-        </section>
-
-        <section className="space-y-4">
-          <h2 className="font-playfair text-2xl font-semibold tracking-tight">
-            The team
-          </h2>
-          <p className="leading-relaxed">
-            A short roster of the people who build, deliver, and stand
-            behind every order is coming soon. In the meantime, the
-            fastest way to reach any of us is the contact details above
-            — we answer our own email.
-          </p>
-          {/* cf-about-illus: team portrait — rustic-frame illustration with
-              LivingSky time-of-day sky overlay. */}
-          <TeamPortrait />
-        </section>
+          <section className="space-y-4">
+            <h2 className="font-playfair text-2xl font-semibold tracking-tight">
+              The team
+            </h2>
+            <p className="leading-relaxed">
+              A short roster of the people who build, deliver, and stand
+              behind every order is coming soon. In the meantime, the
+              fastest way to reach any of us is the contact details above
+              — we answer our own email.
+            </p>
+            {/* cf-about-illus: team portrait — rustic-frame illustration with
+                LivingSky time-of-day sky overlay. */}
+            <TeamPortrait />
+          </section>
         </article>
+      </div>
+
+      {/* cf-pgec: v2 Blue Ridge milestone timeline (1991 → 2026) — full-width band */}
+      <div className="w-full" style={{ height: "clamp(180px, 28vw, 500px)" }}>
+        <BotanicalTimeline />
       </div>
 
       {/* cf-delight Phase 3: shop-the-room hotspots over a coastal-bedroom
