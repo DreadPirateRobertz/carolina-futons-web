@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
@@ -407,8 +407,8 @@ describe("submitSwatchRequestAction", () => {
       expect(result.transportError).toMatch(/captcha/i);
     }
     // Velo fetch should NOT have been called
-    const veloCalls = mockFetch.mock.calls.filter(([url]: [string]) =>
-      String(url).includes("sampleRequests"),
+    const veloCalls = mockFetch.mock.calls.filter((args: unknown[]) =>
+      String(args[0]).includes("sampleRequests"),
     );
     expect(veloCalls).toHaveLength(0);
   });
@@ -428,15 +428,24 @@ describe("submitSwatchRequestAction", () => {
     }
   });
 
-  it("skips Turnstile when secret key not configured", async () => {
-    mockFetch.mockResolvedValueOnce({ ok: true, status: 200 } as Response);
-    const fd = makeFormData();
-    fd.set("cf-turnstile-response", "some-token");
+  it("hard-fails in production when TURNSTILE_SECRET_KEY is missing", async () => {
+    vi.stubEnv("NODE_ENV", "production");
     const { submitSwatchRequestAction } = await import(
       "@/app/actions/swatch-request"
     );
-    const result = await submitSwatchRequestAction(null, fd);
-    // No TURNSTILE_SECRET_KEY set — bypass, fetch to Velo proceeds
+    const result = await submitSwatchRequestAction(null, makeFormData());
+    expect(result.status).toBe("error");
+    expect(mockFetch).not.toHaveBeenCalled();
+    vi.unstubAllEnvs();
+  });
+
+  it("skips Turnstile when secret key not configured outside production", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, status: 200 } as Response);
+    const { submitSwatchRequestAction } = await import(
+      "@/app/actions/swatch-request"
+    );
+    // NODE_ENV is "test" by default — no secret, no production guard
+    const result = await submitSwatchRequestAction(null, makeFormData());
     expect(result.status).toBe("success");
   });
 

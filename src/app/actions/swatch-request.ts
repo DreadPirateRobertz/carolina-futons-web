@@ -46,12 +46,8 @@ async function verifyTurnstile(
   token: string,
 ): Promise<{ ok: boolean; networkError?: boolean }> {
   const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) {
-    // Secret not configured — bypass verification. Ensure TURNSTILE_SECRET_KEY
-    // is set in production; this path should not be reachable in prod.
-    console.warn("[swatch-request] TURNSTILE_SECRET_KEY not set — skipping CAPTCHA verification");
-    return { ok: true };
-  }
+  // Caller guards against calling this without a secret; defensive check only.
+  if (!secret) return { ok: true };
   try {
     const res = await fetch(TURNSTILE_VERIFY_URL, {
       method: "POST",
@@ -123,11 +119,17 @@ export async function submitSwatchRequestAction(
     };
   }
 
-  // Gate on TURNSTILE_SECRET_KEY (server secret) — not the public site key —
-  // so the CAPTCHA check can never be bypassed by a build missing the public
-  // env var while the secret is correctly deployed.
+  // Gate on TURNSTILE_SECRET_KEY (server secret). In production, a missing
+  // secret is a deployment misconfiguration — hard-fail so prod never accepts
+  // unverified submissions. In dev/test the bypass lets local work proceed
+  // without keys configured.
   const turnstileToken = formData.get("cf-turnstile-response");
-  if (process.env.TURNSTILE_SECRET_KEY) {
+  const hasSecret = !!process.env.TURNSTILE_SECRET_KEY;
+  if (!hasSecret && process.env.NODE_ENV === "production") {
+    console.error("[swatch-request] TURNSTILE_SECRET_KEY not set in production — blocking submission");
+    return transportFailure(contactInfo, selectedIds, TRANSPORT_ERROR_GENERIC);
+  }
+  if (hasSecret) {
     if (typeof turnstileToken !== "string" || !turnstileToken) {
       return transportFailure(contactInfo, selectedIds, "Please complete the CAPTCHA.");
     }
