@@ -108,6 +108,7 @@ export function wixCartToLines(cart: WixCart): CartLineItem[] {
     const priceRaw = li.price?.amount;
     const priceNum =
       typeof priceRaw === "string" ? Math.round(Number(priceRaw) * 100) : 0;
+    if (!Number.isFinite(priceNum) || priceNum <= 0) continue;
     const productName =
       typeof li.productName === "string"
         ? li.productName

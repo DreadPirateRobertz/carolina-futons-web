@@ -28,7 +28,7 @@ export type CartAction =
   | { type: "remove"; id: string }
   | { type: "setQuantity"; id: string; quantity: number }
   | { type: "clear" }
-  | { type: "hydrate"; lines: CartLineItem[] };
+  | { type: "hydrate"; lines: ReadonlyArray<CartLineItem> };
 
 export const EMPTY_CART: CartState = { lines: [] };
 
@@ -92,7 +92,7 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
     case "clear":
       return EMPTY_CART;
     case "hydrate":
-      return { lines: action.lines };
+      return { lines: [...action.lines] };
     default: {
       const _exhaustive: never = action;
       void _exhaustive;
