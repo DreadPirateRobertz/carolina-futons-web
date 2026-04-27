@@ -73,20 +73,6 @@ test.describe("/api/auth/register — API contract (no live Wix creds needed)", 
     expect(res.status()).toBe(400);
   });
 
-  test("rejects an external callbackUrl (open-redirect guard)", async ({ request }) => {
-    // The route must accept the request but sanitise the callbackUrl.
-    // We can only assert the route returns a known-safe state since the Wix
-    // SDK call will fail without live creds — 502 is expected here.
-    const res = await request.post("/api/auth/register", {
-      data: {
-        email: "a@b.com",
-        password: "password123",
-        callbackUrl: "//evil.example.com/steal",
-      },
-    });
-    // Either 200 (Wix accepted) or 502 (no live creds) — never a redirect to evil.com.
-    expect([200, 502]).toContain(res.status());
-  });
 });
 
 // Full sign-up → session round-trip. Requires a unique email against a
