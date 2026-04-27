@@ -187,16 +187,19 @@
 
   /* CF brand tokens — flipped for dark surfaces (cf-uyeq).
      Light-mode values are dark-on-light; dark-mode values flip to
-     light-on-dark so text-cf-ink / text-cf-charcoal / text-cf-espresso
-     meet WCAG AA (≥4.5:1) against the dark background. */
+     light-on-dark, intended to meet WCAG AA (≥4.5:1) for body text
+     and 3:1 for interactive elements against the dark background. */
   --cf-ink:      #e8eef4;   /* primary text on dark — off-white blue-gray */
   --cf-charcoal: #e2eaf0;   /* body text on dark */
   --cf-espresso: #f0e4d4;   /* heading accent on dark — warm off-white */
+  --cf-navy:     #7ab0c8;   /* outline button / accent on dark */
+  --cf-cta:      #7ab8d0;   /* link / CTA text on dark (~7:1 vs bg) */
+  --cf-cta-hover: #8ec4d8;  /* CTA hover on dark */
   --cf-sand:     #1e2a3a;   /* page bg on dark (matches --background) */
   --cf-cream:    #263545;   /* card surface on dark */
   --cf-divider:  oklch(1 0 0 / 12%);  /* hairline on dark */
   --cf-header-start: #1a2535;
-  --cf-header-end:   #1e2a3a;
+  --cf-header-end:   var(--cf-sand);
 
   /* Marugame typography — dark-surface anti-aliasing (cf-b3ai).
      Subpixel rendering strokes appear heavier on dark; antialiased
