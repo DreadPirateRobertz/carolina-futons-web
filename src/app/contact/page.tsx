@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { AppointmentForm } from "@/components/contact/AppointmentForm";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { ContactHero } from "@/components/illustrations/ContactHero";
 import { BUSINESS } from "@/lib/business/contact-info";
@@ -62,6 +63,20 @@ export default function ContactPage() {
               </dd>
             </div>
           </dl>
+        </section>
+
+        <section aria-labelledby="appointment-form" className="space-y-4">
+          <h2
+            id="appointment-form"
+            className="font-playfair text-2xl font-semibold tracking-tight"
+          >
+            Schedule a showroom visit
+          </h2>
+          <p className="text-sm leading-relaxed text-cf-muted">
+            Open Wednesday through Saturday, 10&nbsp;am–5&nbsp;pm. Request a
+            slot and we&apos;ll confirm by email within one business day.
+          </p>
+          <AppointmentForm />
         </section>
 
         <section aria-labelledby="contact-form" className="space-y-4">

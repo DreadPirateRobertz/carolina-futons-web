@@ -1,7 +1,9 @@
 "use server";
 
+import nodemailer from "nodemailer";
 import * as Sentry from "@sentry/nextjs";
 import { optionalEnv } from "@/lib/env";
+import { BUSINESS } from "@/lib/business/contact-info";
 import {
   coerceContactRequest,
   hasContactErrors,
@@ -9,6 +11,11 @@ import {
   type ContactRequest,
 } from "@/lib/contact/contact-schema";
 import type { ContactActionState } from "@/app/contact/contact-state";
+import type {
+  AppointmentActionState,
+  AppointmentErrors,
+  AppointmentRequest,
+} from "@/app/contact/appointment-state";
 
 const TRANSPORT_ERROR_GENERIC =
   "We couldn't send that — please try again in a moment.";
@@ -143,4 +150,119 @@ export async function sendContactForm(
     veloError,
   );
   return transportFailure(req, veloError ?? TRANSPORT_ERROR_GENERIC);
+}
+
+// Showroom hours: Wed–Sat 10am–5pm. Last slot is 4pm (1hr visit).
+const APPOINTMENT_TIMES: Record<string, string> = {
+  "10:00": "10:00 AM",
+  "11:00": "11:00 AM",
+  "12:00": "12:00 PM",
+  "13:00": "1:00 PM",
+  "14:00": "2:00 PM",
+  "15:00": "3:00 PM",
+  "16:00": "4:00 PM",
+};
+
+function validateAppointment(req: AppointmentRequest): AppointmentErrors {
+  const errors: AppointmentErrors = {};
+  if (!req.appointmentName.trim()) errors.appointmentName = "Name is required.";
+  if (!req.appointmentEmail.trim()) {
+    errors.appointmentEmail = "Email is required.";
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(req.appointmentEmail)) {
+    errors.appointmentEmail = "Please enter a valid email address.";
+  }
+  if (!req.appointmentDate) {
+    errors.appointmentDate = "Please select a date.";
+  } else {
+    const d = new Date(req.appointmentDate + "T00:00:00");
+    const day = d.getDay(); // 1=Mon…6=Sat, 0=Sun; open days are 3–6
+    if (d < new Date(new Date().toDateString())) {
+      errors.appointmentDate = "Please choose a future date.";
+    } else if (![3, 4, 5, 6].includes(day)) {
+      errors.appointmentDate = "We're open Wednesday through Saturday.";
+    }
+  }
+  if (!APPOINTMENT_TIMES[req.appointmentTime]) {
+    errors.appointmentTime = "Please select a time.";
+  }
+  return errors;
+}
+
+function buildAppointmentBody(req: AppointmentRequest): string {
+  const timeLabel = APPOINTMENT_TIMES[req.appointmentTime] ?? req.appointmentTime;
+  return (
+    `New showroom appointment request from carolinafutons.com.\n\n` +
+    `Name: ${req.appointmentName}\n` +
+    `Email: ${req.appointmentEmail}\n` +
+    `Requested date: ${req.appointmentDate}\n` +
+    `Requested time: ${timeLabel}\n`
+  );
+}
+
+function readEnv(): { host: string; port: number; user: string; pass: string } | null {
+  const host = process.env.SMTP_HOST;
+  const portStr = process.env.SMTP_PORT;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  if (!host || !portStr || !user || !pass) return null;
+  return { host, port: Number(portStr), user, pass };
+}
+
+export async function bookAppointment(
+  _prev: AppointmentActionState | null,
+  formData: FormData,
+): Promise<AppointmentActionState> {
+  const req: AppointmentRequest = {
+    appointmentName: String(formData.get("appointmentName") ?? "").trim(),
+    appointmentEmail: String(formData.get("appointmentEmail") ?? "").trim(),
+    appointmentDate: String(formData.get("appointmentDate") ?? "").trim(),
+    appointmentTime: String(formData.get("appointmentTime") ?? "").trim(),
+  };
+
+  const errors = validateAppointment(req);
+  if (Object.keys(errors).length > 0) {
+    return { status: "error", errors, values: req };
+  }
+
+  const env = readEnv();
+  if (!env) {
+    console.error("[appointment-form] SMTP env vars missing — cannot send");
+    return {
+      status: "error",
+      errors: {},
+      transportError: "Our booking system isn't configured yet — please call us to schedule.",
+      values: req,
+    };
+  }
+
+  const transport = nodemailer.createTransport({
+    host: env.host,
+    port: env.port,
+    secure: env.port === 465,
+    auth: { user: env.user, pass: env.pass },
+  });
+
+  try {
+    await transport.sendMail({
+      from: `"Carolina Futons Website" <${env.user}>`,
+      to: BUSINESS.email,
+      replyTo: { name: req.appointmentName, address: req.appointmentEmail },
+      subject: `[Appointment] ${req.appointmentDate} at ${APPOINTMENT_TIMES[req.appointmentTime] ?? req.appointmentTime}`,
+      text: buildAppointmentBody(req),
+    });
+  } catch (err) {
+    console.error("[appointment-form] sendMail failed:", err);
+    return {
+      status: "error",
+      errors: {},
+      transportError: "We couldn't send that — please try again or call us directly.",
+      values: req,
+    };
+  }
+
+  return {
+    status: "success",
+    date: req.appointmentDate,
+    time: APPOINTMENT_TIMES[req.appointmentTime] ?? req.appointmentTime,
+  };
 }

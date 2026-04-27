@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 const AUTO_SPIN_ROTATIONS = 3;
 const AUTO_SPIN_INTERVAL_MS = 60;
@@ -55,9 +55,16 @@ export function ProductSpinViewer({ spinImages, productName = "product" }: Props
   const containerRef = useRef<HTMLDivElement>(null);
   const dragStartX = useRef<number | null>(null);
   const frameAtDragStart = useRef(0);
+  // Mirrors `frame` state so non-React handlers read the current value without stale closures
+  const frameRef = useRef(0);
   const autoSpinTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const totalFrames = spinImages.length;
+
+  // Sync frameRef outside of render — keeps non-React handlers stale-closure free
+  useLayoutEffect(() => {
+    frameRef.current = frame;
+  });
 
   // SSR-safe reduced-motion detection — fires when OS preference changes mid-session
   useEffect(() => {
@@ -126,7 +133,7 @@ export function ProductSpinViewer({ spinImages, productName = "product" }: Props
   function handleMouseDown(e: React.MouseEvent) {
     cancelAutoSpin();
     dragStartX.current = e.clientX;
-    frameAtDragStart.current = frame;
+    frameAtDragStart.current = frameRef.current;
     setIsDragging(true);
   }
 
@@ -146,7 +153,7 @@ export function ProductSpinViewer({ spinImages, productName = "product" }: Props
     if (!touch) return;
     cancelAutoSpin();
     dragStartX.current = touch.clientX;
-    frameAtDragStart.current = frame;
+    frameAtDragStart.current = frameRef.current;
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
