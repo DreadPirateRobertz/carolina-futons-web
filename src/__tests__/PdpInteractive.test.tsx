@@ -438,4 +438,58 @@ describe("PdpInteractive (cf-3qt.2.1 + 2.2 integration)", () => {
       expect(btn).not.toBeDisabled();
     });
   });
+
+  describe("white-glove widget visibility", () => {
+    it("hides white-glove widget when fallbackPriceCents below threshold", () => {
+      const { container } = render(
+        <PdpInteractive
+          {...baseProps}
+          fallbackPriceCents={79900}
+          productName="Budget Futon"
+          productOptions={[]}
+          variants={[]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$799"
+        />,
+      );
+      expect(
+        container.querySelector("[data-slot='pdp-white-glove']"),
+      ).toBeNull();
+    });
+
+    it("shows white-glove widget when whiteGlovePriceCents overrides a zero fallbackPriceCents", () => {
+      render(
+        <PdpInteractive
+          {...baseProps}
+          fallbackPriceCents={0}
+          whiteGlovePriceCents={297_800}
+          productName="Ranchero Murphy Cabinet Bed"
+          productOptions={[]}
+          variants={[]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$2,978"
+        />,
+      );
+      expect(
+        screen.getByRole("region", { name: /free white-glove delivery/i }),
+      ).toBeInTheDocument();
+    });
+
+    it("shows white-glove widget when fallbackPriceCents alone meets threshold", () => {
+      render(
+        <PdpInteractive
+          {...baseProps}
+          fallbackPriceCents={279_800}
+          productName="Daisy Premium Futon"
+          productOptions={[]}
+          variants={[]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$2,798"
+        />,
+      );
+      expect(
+        screen.getByRole("region", { name: /free white-glove delivery/i }),
+      ).toBeInTheDocument();
+    });
+  });
 });

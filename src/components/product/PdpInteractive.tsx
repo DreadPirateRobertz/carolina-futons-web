@@ -50,6 +50,9 @@ export type PdpInteractiveProps = {
   fallbackImageUrl: string | undefined;
   fallbackPrice: string;
   fallbackPriceCents: number;
+  // For manageVariants products priceData.price = 0; pass priceRange.maxValue here
+  // so the white-glove widget shows for high-end variant products (cf-kcnu GAP-2).
+  whiteGlovePriceCents?: number;
   galleryImages?: ReadonlyArray<GalleryImage>;
   stock?: StockBadgeInput | null;
   fabricSwatches?: SwatchItem[];
@@ -65,6 +68,7 @@ export function PdpInteractive({
   fallbackImageUrl,
   fallbackPrice,
   fallbackPriceCents,
+  whiteGlovePriceCents,
   galleryImages,
   stock,
   fabricSwatches,
@@ -181,7 +185,7 @@ export function PdpInteractive({
             imageUrl={fallbackImageUrl}
           />
         </div>
-        <PdpWhiteGlove unitPriceCents={fallbackPriceCents} />
+        <PdpWhiteGlove unitPriceCents={whiteGlovePriceCents ?? fallbackPriceCents} />
         <PdpShippingEstimate />
       </div>
       <PdpStickyCta
