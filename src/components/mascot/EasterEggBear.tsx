@@ -1,0 +1,118 @@
+"use client";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { V3_PAL as c } from "./MascotPalette";
+import { Bear } from "./MascotCharacters";
+
+const DISCOUNT_CODE = "BEAR10";
+
+export function EasterEggBear() {
+  const [found, setFound] = useState(false);
+  const [claimed, setClaimed] = useState(false);
+
+  return (
+    <div
+      style={{ position: "relative", display: "inline-block" }}
+      aria-label="Hidden bear — click to claim 10% off"
+    >
+      <button
+        onClick={() => setFound(true)}
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          padding: 0,
+          display: "block",
+        }}
+        aria-label="Peek-a-boo bear"
+      >
+        <svg
+          viewBox="-80 -20 160 120"
+          style={{ width: 80, display: "block" }}
+          aria-hidden="true"
+        >
+          <Bear pose="peeking" scale={1} />
+        </svg>
+      </button>
+
+      <AnimatePresence>
+        {found && !claimed && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 8 }}
+            transition={{ type: "spring", stiffness: 260, damping: 20 }}
+            style={{
+              position: "absolute",
+              bottom: "110%",
+              left: "50%",
+              transform: "translateX(-50%)",
+              background: c.paperWarm,
+              border: `1.5px solid ${c.ink}`,
+              borderRadius: 10,
+              padding: "10px 16px",
+              whiteSpace: "nowrap",
+              fontFamily: "var(--font-source-sans)",
+              fontSize: 13,
+              color: c.ink,
+              zIndex: 50,
+              boxShadow: "0 8px 24px rgba(58,37,24,.18)",
+            }}
+          >
+            <p style={{ fontWeight: 700, marginBottom: 4 }}>You found the bear! 🐻</p>
+            <p style={{ opacity: 0.75, marginBottom: 8 }}>10% off your order:</p>
+            <code
+              style={{
+                display: "block",
+                background: c.ink,
+                color: c.cream,
+                borderRadius: 6,
+                padding: "4px 10px",
+                fontFamily: "monospace",
+                letterSpacing: ".08em",
+                textAlign: "center",
+                marginBottom: 8,
+              }}
+            >
+              {DISCOUNT_CODE}
+            </code>
+            <button
+              onClick={() => setClaimed(true)}
+              style={{
+                width: "100%",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 11,
+                opacity: 0.5,
+                fontFamily: "var(--font-source-sans)",
+              }}
+            >
+              Dismiss
+            </button>
+          </motion.div>
+        )}
+        {claimed && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "absolute",
+              bottom: "110%",
+              left: "50%",
+              transform: "translateX(-50%)",
+              fontFamily: "var(--font-source-sans)",
+              fontSize: 12,
+              color: c.ink,
+              opacity: 0.6,
+              whiteSpace: "nowrap",
+            }}
+          >
+            Code copied ✓
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
