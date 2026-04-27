@@ -204,9 +204,9 @@ describe("cartReducer — hydrate action", () => {
     expect(next.lines[0].id).toBe("prod-1");
   });
 
-  it("hydrating with empty lines is a no-op (preserves optimistic adds)", () => {
-    // CartHydrator only dispatches when lines.length > 0 — this tests the
-    // reducer in isolation; the component guards against dispatching.
+  it("hydrating with empty lines clears existing client state", () => {
+    // CartHydrator always dispatches on first mount — an empty server cart
+    // (post-checkout) intentionally replaces client state with an empty array.
     const clientState: CartState = { lines: [seedLine] };
     const next = cartReducer(clientState, { type: "hydrate", lines: [] });
     expect(next.lines).toHaveLength(0);

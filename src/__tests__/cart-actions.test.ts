@@ -8,6 +8,7 @@ const addToCart = vi.fn();
 const removeFromCart = vi.fn();
 const updateLineItemQuantity = vi.fn();
 const getCurrentCart = vi.fn();
+const wixCartToLines = vi.fn();
 
 vi.mock("@/lib/wix/cart", () => ({
   addToCart: (...args: unknown[]) => addToCart(...args),
@@ -15,6 +16,7 @@ vi.mock("@/lib/wix/cart", () => ({
   updateLineItemQuantity: (...args: unknown[]) =>
     updateLineItemQuantity(...args),
   getCurrentCart: (...args: unknown[]) => getCurrentCart(...args),
+  wixCartToLines: (...args: unknown[]) => wixCartToLines(...args),
 }));
 
 describe("cart server actions", () => {
@@ -125,6 +127,42 @@ describe("cart server actions", () => {
       const { getCartAction } = await import("@/app/actions/cart");
       const result = await getCartAction();
       expect(result).toEqual({ ok: false, error: "boom" });
+    });
+  });
+
+  describe("hydrateCartAction", () => {
+    const mockLine = {
+      id: "p1",
+      productId: "p1",
+      productName: "Daisy Futon",
+      quantity: 1,
+      unitPriceCents: 79900,
+      formattedUnitPrice: "$799.00",
+    };
+
+    it("returns mapped lines when cart exists", async () => {
+      const fakeCart = { _id: "cart1", lineItems: [{}] };
+      getCurrentCart.mockResolvedValueOnce(fakeCart);
+      wixCartToLines.mockReturnValueOnce([mockLine]);
+      const { hydrateCartAction } = await import("@/app/actions/cart");
+      const result = await hydrateCartAction();
+      expect(result).toEqual({ ok: true, lines: [mockLine] });
+      expect(wixCartToLines).toHaveBeenCalledWith(fakeCart);
+    });
+
+    it("returns empty lines when getCurrentCart returns null (no cart yet)", async () => {
+      getCurrentCart.mockResolvedValueOnce(null);
+      const { hydrateCartAction } = await import("@/app/actions/cart");
+      const result = await hydrateCartAction();
+      expect(result).toEqual({ ok: true, lines: [] });
+      expect(wixCartToLines).not.toHaveBeenCalled();
+    });
+
+    it("returns error result when getCurrentCart throws", async () => {
+      getCurrentCart.mockRejectedValueOnce(new Error("Wix down"));
+      const { hydrateCartAction } = await import("@/app/actions/cart");
+      const result = await hydrateCartAction();
+      expect(result).toEqual({ ok: false, error: "Wix down" });
     });
   });
 });

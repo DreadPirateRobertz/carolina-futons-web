@@ -36,15 +36,20 @@ export async function getVisitorCartClient() {
         ...SESSION_COOKIE_OPTIONS,
         maxAge: VISITOR_SESSION_MAX_AGE,
       });
-    } catch {
-      // headers already sent (streamed response) — tokens are still valid
-      // for this request; cookie will be missing on the next request and
-      // a new visitor session will be generated then.
+    } catch (err) {
+      // Next.js throws when jar.set() is called from an RSC render context
+      // ("Cookies can only be modified in a Server Action or Route Handler").
+      // That's expected and safe to swallow — the returned client still carries
+      // valid tokens for this request. Any other error is unexpected and should
+      // surface so serialization bugs don't silently prevent cookie persistence.
+      const msg = err instanceof Error ? err.message : "";
+      if (!msg.includes("Cookies can only be modified")) {
+        console.error("[wix-visitor-client] unexpected jar.set failure:", err);
+      }
     }
     return getWixClientWithTokens(tokens);
-  } catch {
-    // Wix token generation failed (network blip) — fall back to a bare
-    // anonymous client. Checkout will likely fail but add-to-cart survives.
+  } catch (err) {
+    console.error("[wix-visitor-client] generateVisitorTokens failed:", err);
     return getWixClientWithTokens();
   }
 }
