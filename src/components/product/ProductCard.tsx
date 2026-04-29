@@ -7,6 +7,7 @@ import { m, useReducedMotion } from "framer-motion";
 import { formatPlpPrice } from "@/lib/product/plp-price";
 import { getPlpCardImages } from "@/lib/product/plp-card-images";
 import { getReviewStats } from "@/lib/product/review-stats";
+import { AddToCompareButton } from "@/components/compare/AddToCompareButton";
 import type { WixProduct } from "@/lib/wix/products";
 
 function hasDiscount(product: WixProduct): boolean {
@@ -85,6 +86,13 @@ export function ProductCard({
       whileFocus={hoverVariant}
       transition={{ duration: MOTION_DURATION_SEC, ease: "easeOut" }}
     >
+      {product.slug ? (
+        // Sits above the card Link (z-10) so clicks land on the button, not
+        // the Link. stopPropagation in AddToCompareButton prevents navigation.
+        <div className="absolute bottom-12 right-2 z-10">
+          <AddToCompareButton slug={product.slug} />
+        </div>
+      ) : null}
       <Link href={href} className="group block focus:outline-none">
         <div className="relative aspect-square w-full overflow-hidden rounded-t-lg bg-zinc-100 dark:bg-zinc-700">
           {primary ? (
