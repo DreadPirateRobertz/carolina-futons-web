@@ -76,6 +76,9 @@ export function ProductCard({
   const reviewStats = getReviewStats(product.slug);
 
   return (
+    // Outer wrapper is the positioning context for AddToCompareButton so it
+    // sits outside the m.div's overflow-hidden and is never clipped by it.
+    <div className="relative">
     <m.div
       data-slot="product-card"
       data-has-secondary={hasSecondary ? "true" : "false"}
@@ -86,13 +89,6 @@ export function ProductCard({
       whileFocus={hoverVariant}
       transition={{ duration: MOTION_DURATION_SEC, ease: "easeOut" }}
     >
-      {product.slug ? (
-        // Sits above the card Link (z-10) so clicks land on the button, not
-        // the Link. stopPropagation in AddToCompareButton prevents navigation.
-        <div className="absolute bottom-12 right-2 z-10">
-          <AddToCompareButton slug={product.slug} />
-        </div>
-      ) : null}
       <Link href={href} className="group block focus:outline-none">
         <div className="relative aspect-square w-full overflow-hidden rounded-t-lg bg-zinc-100 dark:bg-zinc-700">
           {primary ? (
@@ -164,5 +160,14 @@ export function ProductCard({
         ) : null}
       </Link>
     </m.div>
+    {product.slug ? (
+      // Rendered as a sibling of m.div (outside overflow-hidden) so it can
+      // never be clipped by the card's rounded corners. Positioned absolute
+      // relative to the outer wrapper div (bottom-12 = 48px up from card base).
+      <div className="absolute bottom-12 right-2 z-10">
+        <AddToCompareButton slug={product.slug} />
+      </div>
+    ) : null}
+    </div>
   );
 }

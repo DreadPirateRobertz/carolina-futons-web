@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 
 // Mock localStorage and window.dispatchEvent before module import.
 const storage: Record<string, string> = {};
@@ -75,5 +75,32 @@ describe("AddToCompareButton", () => {
     btn.dispatchEvent(event);
     expect(stopPropagation).toHaveBeenCalled();
     expect(preventDefault).toHaveBeenCalled();
+  });
+
+  it("removes cf-compare-change listener on unmount", () => {
+    const { unmount } = render(<AddToCompareButton slug="kingston" />);
+    unmount();
+    expect(window.removeEventListener).toHaveBeenCalledWith(
+      "cf-compare-change",
+      expect.any(Function),
+    );
+  });
+
+  it("re-renders when cf-compare-change fires from another component", () => {
+    // Capture the listener registered by useEffect so we can fire it manually.
+    let changeListener: (() => void) | null = null;
+    (window.addEventListener as ReturnType<typeof vi.fn>).mockImplementation(
+      (event: string, fn: () => void) => {
+        if (event === "cf-compare-change") changeListener = fn;
+      },
+    );
+
+    render(<AddToCompareButton slug="kingston" />);
+
+    // Simulate another component writing "kingston" to storage and firing the event.
+    storage["cf-compare-slugs"] = JSON.stringify(["kingston"]);
+    act(() => changeListener?.());
+
+    expect(screen.getByTestId("add-to-compare")).toHaveTextContent("In compare");
   });
 });
