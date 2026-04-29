@@ -29,6 +29,7 @@ import {
   buildProductSchema,
   resolveSiteUrl,
 } from "@/lib/seo/json-ld";
+import { AppDownloadBanner } from "@/components/site/AppDownloadBanner";
 import type { StockBadgeInput } from "@/lib/product/stock-badge-state";
 import type {
   ProductOptionInput,
@@ -144,6 +145,7 @@ export default async function PdpPage(props: {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-10">
+      <AppDownloadBanner />
       <JsonLd id="jsonld-product" schema={productSchema} />
       <JsonLd id="jsonld-breadcrumb" schema={breadcrumbSchema} />
       <Breadcrumbs
