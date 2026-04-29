@@ -5,7 +5,10 @@ import {
   hasNewsletterErrors,
   validateNewsletterRequest,
 } from "@/lib/newsletter/newsletter-schema";
-import { upsertSubscriber } from "@/lib/newsletter/newsletter-store";
+import {
+  upsertSubscriber,
+  NewsletterRateLimitError,
+} from "@/lib/newsletter/newsletter-store";
 import type { NewsletterActionState } from "@/app/newsletter/newsletter-state";
 
 // cf-newsletter-footer: Server Action for the footer signup.
@@ -34,6 +37,14 @@ export async function subscribeToNewsletter(
     );
     return { status: "success", alreadySubscribed: !created };
   } catch (err) {
+    if (err instanceof NewsletterRateLimitError) {
+      console.warn("[newsletter] rate-limited:", req.email);
+      return {
+        status: "error",
+        errors: {},
+        storeError: "Too many attempts — please try again in a few minutes.",
+      };
+    }
     console.error("[newsletter] upsertSubscriber failed:", err);
     return {
       status: "error",
