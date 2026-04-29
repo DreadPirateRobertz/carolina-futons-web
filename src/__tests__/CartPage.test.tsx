@@ -19,6 +19,10 @@ import { trackBeginCheckout } from "@/lib/analytics/ga4-events";
 import CartPage from "@/app/cart/page";
 import type { CartLineItem } from "@/lib/cart/cart-state";
 
+beforeEach(() => {
+  vi.mocked(trackBeginCheckout).mockClear();
+});
+
 const removeLine = vi.fn();
 const setQuantity = vi.fn();
 
@@ -110,6 +114,27 @@ describe("CartPage", () => {
     render(<CartPage />);
     const btn = screen.getByTestId("proceed-to-checkout");
     expect(btn.getAttribute("data-nextlink")).toBeNull();
+  });
+
+  it("fires GA4 begin_checkout with cart lines + subtotal on checkout click", () => {
+    // cf-o3bv.2: CartPage.tsx calls trackBeginCheckout in the checkout Link's
+    // onClick. Verify the call shape mirrors CartDrawer's GA4 path.
+    mockCart([LINE]);
+    render(<CartPage />);
+    fireEvent.click(screen.getByTestId("proceed-to-checkout"));
+    expect(vi.mocked(trackBeginCheckout)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(trackBeginCheckout)).toHaveBeenCalledWith(
+      [
+        {
+          item_id: "prod-1",
+          item_name: "Kingston Futon Frame",
+          item_variant: "Size: Full",
+          price: 799,        // 79900 cents / 100
+          quantity: 2,
+        },
+      ],
+      1598,                  // 79900 * 2 cents / 100 = $1,598
+    );
   });
 
   it("product name is a link when productUrl is set", () => {
