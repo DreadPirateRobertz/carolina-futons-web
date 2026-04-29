@@ -20,7 +20,7 @@ import CartPage from "@/app/cart/page";
 import type { CartLineItem } from "@/lib/cart/cart-state";
 
 beforeEach(() => {
-  vi.mocked(trackBeginCheckout).mockClear();
+  vi.mocked(trackBeginCheckout).mockReset();
 });
 
 const removeLine = vi.fn();
