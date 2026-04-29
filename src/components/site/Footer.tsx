@@ -96,8 +96,11 @@ export function Footer() {
       data-slot="site-footer"
       className="relative mt-auto border-t border-cf-divider bg-cf-footer-bg text-cf-cream"
     >
-      {/* Living time-of-day atmosphere — sky tint + star field at night */}
+      {/* Living time-of-day atmosphere — absolute inset-0 overlays; relative on
+          the <footer> is load-bearing so they stay within the footer bounds */}
       <LivingFooterOverlay />
+      {/* relative z-10 ensures content paints above the absolute overlay divs */}
+      <div className="relative z-10">
       {/* cf-pgec: v2 Botanical ridge divider softens the footer top edge */}
       <BotanicalFooterDivider />
       <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -221,6 +224,7 @@ export function Footer() {
           </div>
         </div>
       </div>
+      </div> {/* end relative z-10 content wrapper */}
     </footer>
   );
 }

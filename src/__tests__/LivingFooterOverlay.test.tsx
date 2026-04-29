@@ -11,9 +11,9 @@ vi.mock("framer-motion", async () => {
 });
 
 // Freeze time so computeLivingSky produces deterministic output.
-// 02:00 → deep night (starOpacity ≈ 0.85, very dark skyColors)
+// 02:00 → deep night (starOpacity well above the 0.15 render threshold)
+// 12:00 → midday (starOpacity is 0 — stars suppressed)
 const NIGHT_DATE = new Date("2026-04-28T02:00:00");
-// 12:00 → midday (starOpacity ≈ 0, bright skyColors)
 const DAY_DATE = new Date("2026-04-28T12:00:00");
 
 import { LivingFooterOverlay } from "@/components/site/LivingFooterOverlay";
@@ -29,10 +29,8 @@ afterEach(() => {
 });
 
 describe("LivingFooterOverlay — initial render", () => {
-  it("renders nothing until atmosphere is derived (no content on initial markup)", async () => {
-    // In jsdom effects fire synchronously; we verify the overlay eventually
-    // produces atmospheric markup (not that it's absent mid-render, which isn't
-    // meaningful in this test environment).
+  it("renders atmospheric markup after effects flush", async () => {
+    // useEffect needs act() to flush — the overlay is null until derive() runs.
     vi.setSystemTime(DAY_DATE);
     const { container } = render(<LivingFooterOverlay />);
     await act(async () => {});
@@ -57,14 +55,13 @@ describe("LivingFooterOverlay — initial render", () => {
 });
 
 describe("LivingFooterOverlay — night branch (starOpacity > 0.15)", () => {
-  it("renders star elements at 02:00", async () => {
+  it("renders 12 star elements at 02:00", async () => {
     vi.setSystemTime(NIGHT_DATE);
     reduceMotionSpy.mockReturnValue(false);
     const { container } = render(<LivingFooterOverlay />);
     await act(async () => {});
-    // Stars are rendered as <span> elements inside a second aria-hidden div
-    const spans = container.querySelectorAll("span");
-    expect(spans.length).toBeGreaterThan(0);
+    const stars = container.querySelectorAll("[data-testid='star']");
+    expect(stars.length).toBe(12);
   });
 
   it("star elements are aria-hidden", async () => {
@@ -85,8 +82,8 @@ describe("LivingFooterOverlay — reduced-motion branch", () => {
     vi.setSystemTime(NIGHT_DATE);
     const { container } = render(<LivingFooterOverlay />);
     await act(async () => {});
-    const spans = container.querySelectorAll("span");
-    expect(spans.length).toBe(0);
+    const stars = container.querySelectorAll("[data-testid='star']");
+    expect(stars.length).toBe(0);
   });
 
   it("still renders the sky tint overlay when reduced-motion is set", async () => {
@@ -99,13 +96,12 @@ describe("LivingFooterOverlay — reduced-motion branch", () => {
 });
 
 describe("LivingFooterOverlay — daytime (no stars)", () => {
-  it("does NOT render star elements at 12:00 (starOpacity near 0)", async () => {
+  it("does NOT render star elements at 12:00 (starOpacity is 0)", async () => {
     vi.setSystemTime(DAY_DATE);
     const { container } = render(<LivingFooterOverlay />);
     await act(async () => {});
-    // At noon, starOpacity is effectively 0 — star spans should be absent
-    const spans = container.querySelectorAll("span");
-    expect(spans.length).toBe(0);
+    const stars = container.querySelectorAll("[data-testid='star']");
+    expect(stars.length).toBe(0);
   });
 });
 

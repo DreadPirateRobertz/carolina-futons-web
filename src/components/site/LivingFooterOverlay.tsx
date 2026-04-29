@@ -14,16 +14,21 @@ type Atmosphere = {
   starOpacity: number;
 };
 
-function derive(): Atmosphere {
-  const s = computeLivingSky(totalMinutesNow());
-  return {
-    gradTop: s.skyColors[1],
-    gradBottom: s.skyColors[3],
-    starOpacity: s.starOpacity,
-  };
+function derive(): Atmosphere | null {
+  try {
+    const sky = computeLivingSky(totalMinutesNow());
+    return {
+      gradTop: sky.skyColors[1],
+      gradBottom: sky.skyColors[3],
+      starOpacity: sky.starOpacity,
+    };
+  } catch {
+    return null;
+  }
 }
 
-// Deterministic star positions scattered across the footer.
+// Fixed star positions that scatter across the footer area.
+// Array length determines the stagger: delay = index × 0.25s.
 const STARS: Array<{ x: string; y: string }> = [
   { x: "8%",  y: "20%" }, { x: "23%", y: "65%" }, { x: "41%", y: "15%" },
   { x: "55%", y: "75%" }, { x: "70%", y: "30%" }, { x: "84%", y: "55%" },
@@ -37,15 +42,24 @@ export function LivingFooterOverlay() {
 
   useEffect(() => {
     setAtmos(derive());
-    const id = setInterval(() => setAtmos(derive()), 60_000);
+
+    // Skip live updates under reduced-motion — one static tint is enough.
+    if (reduceMotion) return;
+
+    const id = setInterval(() => {
+      const next = derive();
+      if (next) setAtmos(next);
+    }, 60_000);
     return () => clearInterval(id);
-  }, []);
+  }, [reduceMotion]);
 
   if (!atmos) return null;
 
+  const showStars = atmos.starOpacity > 0.15 && !reduceMotion;
+
   return (
     <>
-      {/* Sky tint — 30% opacity over the dark footer bg keeps cream text legible */}
+      {/* Sky tint — decorative atmosphere layer */}
       <motion.div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -57,8 +71,8 @@ export function LivingFooterOverlay() {
         aria-hidden="true"
       />
 
-      {/* Star field — only visible at dusk/night */}
-      {atmos.starOpacity > 0.15 && !reduceMotion && (
+      {/* Star field — only at dusk/night (starOpacity > 0.15) */}
+      {showStars && (
         <motion.div
           className="absolute inset-0 pointer-events-none"
           initial={{ opacity: 0 }}
@@ -69,6 +83,7 @@ export function LivingFooterOverlay() {
           {STARS.map(({ x, y }, i) => (
             <motion.span
               key={i}
+              data-testid="star"
               className="absolute inline-block h-0.5 w-0.5 rounded-full bg-white"
               style={{ left: x, top: y }}
               animate={{ opacity: [0.3, 1, 0.3] }}
