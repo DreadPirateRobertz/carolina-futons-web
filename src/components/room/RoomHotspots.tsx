@@ -206,7 +206,7 @@ function Hotspot({ spot, isOpen, reduceMotion, onToggle }: HotspotProps) {
           // Anchor the card just below + right of the dot. Phase-1
           // hardcoded position; future revision should clamp near the
           // image edges to keep the card in-bounds on tight crops.
-          className="absolute left-4 top-4 z-10 w-56 rounded-md border border-cf-divider bg-white p-3 shadow-lg"
+          className="absolute left-4 top-4 z-10 w-56 rounded-md border border-cf-divider bg-white p-3 shadow-lg dark:bg-cf-cream"
         >
           <p className="text-sm font-medium text-cf-ink">
             {spot.productName}
