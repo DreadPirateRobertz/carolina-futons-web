@@ -276,3 +276,62 @@ describe("PdpFabricSwatches — error state", () => {
     expect(screen.queryByText(/temporarily unavailable/i)).toBeNull();
   });
 });
+
+// ── imageUrl / photo rendering (cf-vh30) ────────────────────────────────────
+
+describe("PdpFabricSwatches — photo swatches (cf-vh30)", () => {
+  const photoSwatch: SwatchItem = {
+    _id: "p1",
+    swatchName: "Crypton Taupe",
+    colorFamily: "Neutral",
+    colorHex: "#B2A99A",
+    imageUrl: "https://cdn.crypton.com/swatches/taupe.jpg",
+  };
+
+  it("renders an img element when imageUrl is present", () => {
+    const { container } = render(
+      <PdpFabricSwatches swatches={[photoSwatch]} productSlug="p" />,
+    );
+    expect(container.querySelector("img")).not.toBeNull();
+  });
+
+  it("img has src containing the imageUrl", () => {
+    const { container } = render(
+      <PdpFabricSwatches swatches={[photoSwatch]} productSlug="p" />,
+    );
+    const img = container.querySelector("img");
+    expect(img?.getAttribute("src") ?? "").toContain("crypton.com");
+  });
+
+  it("falls back to hex dot when no imageUrl", () => {
+    const hexOnly: SwatchItem = { _id: "h1", swatchName: "Sand", colorHex: "#C2B280" };
+    const { container } = render(
+      <PdpFabricSwatches swatches={[hexOnly]} productSlug="p" />,
+    );
+    expect(container.querySelector("img")).toBeNull();
+    // hex circle rendered as a div with backgroundColor
+    const dot = container.querySelector('[aria-hidden="true"][style]');
+    expect(dot).not.toBeNull();
+  });
+
+  it("renders mixed photo + hex swatches together", () => {
+    const mixed: SwatchItem[] = [
+      photoSwatch,
+      { _id: "h1", swatchName: "Sand", colorFamily: "Neutral", colorHex: "#C2B280" },
+    ];
+    const { container } = render(
+      <PdpFabricSwatches swatches={mixed} productSlug="p" />,
+    );
+    expect(container.querySelector("img")).not.toBeNull();
+    expect(screen.getByText("Crypton Taupe")).toBeInTheDocument();
+    expect(screen.getByText("Sand")).toBeInTheDocument();
+  });
+
+  it("img is aria-hidden (decorative — name shown in text label below)", () => {
+    const { container } = render(
+      <PdpFabricSwatches swatches={[photoSwatch]} productSlug="p" />,
+    );
+    const imgWrapper = container.querySelector('[aria-hidden="true"]');
+    expect(imgWrapper).not.toBeNull();
+  });
+});
