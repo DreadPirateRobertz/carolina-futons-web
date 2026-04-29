@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 import { AppDownloadBanner } from "@/components/site/AppDownloadBanner";
@@ -13,6 +13,7 @@ const queryPromoRegion = () =>
 
 beforeEach(() => {
   localStorage.clear();
+  vi.restoreAllMocks();
 });
 
 afterEach(() => {
@@ -100,6 +101,14 @@ describe("AppDownloadBanner", () => {
       expect(queryPromoRegion()).toBeNull();
     });
 
+    it("hides the banner when Enter is pressed on the dismiss button", async () => {
+      render(<AppDownloadBanner />);
+      const btn = await screen.findByRole("button", { name: /dismiss app download banner/i });
+      fireEvent.keyDown(btn, { key: "Enter" });
+      fireEvent.click(btn);
+      expect(queryPromoRegion()).toBeNull();
+    });
+
     it("writes dismiss timestamp to localStorage on dismiss", async () => {
       render(<AppDownloadBanner />);
       await waitFor(() =>
@@ -125,15 +134,19 @@ describe("AppDownloadBanner", () => {
     it("does not render when dismissed within the last 7 days", async () => {
       localStorage.setItem(STORAGE_KEY, String(Date.now() - 1000));
       render(<AppDownloadBanner />);
-      await new Promise((r) => setTimeout(r, 50));
-      expect(queryPromoRegion()).toBeNull();
+      await waitFor(() => expect(queryPromoRegion()).toBeNull());
     });
 
     it("does not render when dismissed exactly 1 day ago", async () => {
       localStorage.setItem(STORAGE_KEY, String(Date.now() - 24 * 60 * 60 * 1000));
       render(<AppDownloadBanner />);
-      await new Promise((r) => setTimeout(r, 50));
-      expect(queryPromoRegion()).toBeNull();
+      await waitFor(() => expect(queryPromoRegion()).toBeNull());
+    });
+
+    it("renders when dismissed at exactly the 7-day boundary", async () => {
+      localStorage.setItem(STORAGE_KEY, String(Date.now() - SEVEN_DAYS_MS));
+      render(<AppDownloadBanner />);
+      await waitFor(() => expect(getPromoRegion()).toBeInTheDocument());
     });
 
     it("renders again when dismissed more than 7 days ago", async () => {
@@ -150,6 +163,14 @@ describe("AppDownloadBanner", () => {
 
     it("renders when localStorage value is 0", async () => {
       localStorage.setItem(STORAGE_KEY, "0");
+      render(<AppDownloadBanner />);
+      await waitFor(() => expect(getPromoRegion()).toBeInTheDocument());
+    });
+
+    it("renders when localStorage.getItem throws (storage unavailable)", async () => {
+      vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+        throw new Error("storage unavailable");
+      });
       render(<AppDownloadBanner />);
       await waitFor(() => expect(getPromoRegion()).toBeInTheDocument());
     });
