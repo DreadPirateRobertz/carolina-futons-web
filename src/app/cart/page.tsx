@@ -166,7 +166,7 @@ export default function CartPage() {
             </div>
           </dl>
 
-          <p className="mt-2 text-xs text-cf-charcoal/50">
+          <p className="mt-2 text-xs text-muted-foreground">
             Shipping and taxes calculated at checkout.
           </p>
 

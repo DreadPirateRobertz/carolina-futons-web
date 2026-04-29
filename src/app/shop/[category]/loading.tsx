@@ -17,7 +17,7 @@ export default function PlpLoading() {
       aria-live="polite"
       className="mx-auto w-full max-w-6xl px-4 py-10"
     >
-      <div className="text-sm text-zinc-500">
+      <div className="text-sm text-muted-foreground">
         <Skeleton className="inline-block h-3 w-24 rounded" />
       </div>
 

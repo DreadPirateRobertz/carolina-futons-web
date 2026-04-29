@@ -142,7 +142,7 @@ export function AdGrid({ categories }: { categories: AdCategory[] }) {
       >
         {filtered.length === 0 ? (
           <div className="flex min-h-[240px] items-center justify-center rounded-xl border border-dashed border-cf-divider">
-            <p className="text-sm text-cf-charcoal/50">
+            <p className="text-sm text-muted-foreground">
               Try a different category or price range
             </p>
           </div>

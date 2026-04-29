@@ -24,7 +24,7 @@ export default function RootError({
         to the shop.
       </p>
       {error.digest ? (
-        <p className="mt-2 font-mono text-xs text-cf-charcoal/50">
+        <p className="mt-2 font-mono text-xs text-muted-foreground">
           Ref: {error.digest}
         </p>
       ) : null}
