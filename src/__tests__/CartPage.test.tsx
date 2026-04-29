@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 vi.mock("@/lib/analytics/ga4-events", () => ({
@@ -14,11 +14,16 @@ vi.mock("next/link", () => ({
 }));
 
 import { useCart } from "@/components/cart/CartProvider";
+import { trackBeginCheckout } from "@/lib/analytics/ga4-events";
 import CartPage from "@/app/cart/page";
 import type { CartLineItem } from "@/lib/cart/cart-state";
 
 const removeLine = vi.fn();
 const setQuantity = vi.fn();
+
+beforeEach(() => {
+  vi.mocked(trackBeginCheckout).mockReset();
+});
 
 const LINE: CartLineItem = {
   id: "line-1",
@@ -102,6 +107,26 @@ describe("CartPage", () => {
     expect(screen.getByRole("link", { name: "Kingston Futon Frame" })).toHaveAttribute(
       "href",
       "/products/kingston",
+    );
+  });
+
+  it("fires trackBeginCheckout with correct item shape on proceed-to-checkout click", () => {
+    mockCart([LINE]);
+    render(<CartPage />);
+    fireEvent.click(screen.getByTestId("proceed-to-checkout"));
+    expect(vi.mocked(trackBeginCheckout)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(trackBeginCheckout)).toHaveBeenCalledWith(
+      [
+        {
+          item_id: "prod-1",
+          item_name: "Kingston Futon Frame",
+          item_variant: "Size: Full",
+          price: 799,
+          quantity: 2,
+        },
+      ],
+      // 79900 × 2 = 159800 cents → 1598 dollars
+      1598,
     );
   });
 });
