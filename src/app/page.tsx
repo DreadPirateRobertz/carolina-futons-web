@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { VideoHeroSection } from "@/components/home/VideoHeroSection";
+import { LivingHero } from "@/components/home/LivingHero";
 import { VideoShowcaseStrip } from "@/components/home/VideoShowcaseStrip";
 import {
   FilterFirst,
@@ -64,8 +64,8 @@ export default async function HomePage() {
     <>
       <EmailCapturePopup />
 
-      {/* ── Video-first hero — full-bleed autoplay background + headline + CTA ── */}
-      <VideoHeroSection />
+      {/* ── Time-of-day living hero (dawn/day/dusk/night) ── */}
+      <LivingHero />
 
       {/* ── Video showcase strip — immediately below the fold ── */}
       {featuredVideos.length > 0 && (
