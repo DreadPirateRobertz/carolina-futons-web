@@ -328,3 +328,14 @@ describe("RoomHotspots", () => {
     warn.mockRestore();
   });
 });
+
+describe("RoomHotspots — dark mode (cf-b3ai)", () => {
+  it("carries dark:bg-cf-cream on the hotspot popover card", async () => {
+    const user = userEvent.setup();
+    renderRoom();
+    await user.click(screen.getByRole("button", { name: /shop kingston/i }));
+    const popover = document.querySelector('[data-slot="room-hotspot-popover"]');
+    expect(popover).not.toBeNull();
+    expect(popover!.className).toContain("dark:bg-cf-cream");
+  });
+});
