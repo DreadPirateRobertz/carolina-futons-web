@@ -216,7 +216,8 @@ describe.skip("HomePage — A+D hybrid (cf-theme-ad-grid)", () => {
 describe("HomePage — cf-ml6n footer regression guard", () => {
   it("does not render MascotFooterDivider (doubled footer fix)", async () => {
     const { container } = await renderHome();
-    // MascotFooterDivider SVG uses a linearGradient with id="v3fd-sky" — unique to that component.
+    // MascotFooterDivider SVG uses a linearGradient with id="v3fd-sky" — shared by the mascot/
+    // and theme-a/ variants of that component, and absent from all other site components.
     expect(container.querySelector("#v3fd-sky")).toBeNull();
   });
 
