@@ -122,6 +122,7 @@ export default function CartPage() {
                     </button>
                   </div>
 
+                  {/* icon-only interactive — WCAG 1.4.11 non-text contrast, 3:1 threshold; passes at ~4:1 */}
                   <button
                     type="button"
                     aria-label={`Remove ${line.productName}`}

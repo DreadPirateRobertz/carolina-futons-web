@@ -50,7 +50,7 @@ export function AddToCartButton({
   className,
   onAdded,
 }: AddToCartButtonProps) {
-  const { addLine, removeLine, openCart, beginCartWrite, endCartWrite } = useCart();
+  const { addLine, removeLine, openCart } = useCart();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,23 +75,13 @@ export function AddToCartButton({
     addLine(line);
     openCart();
     setPending(true);
-    beginCartWrite();
-    let result: Awaited<ReturnType<typeof addItemAction>>;
-    try {
-      result = await addItemAction({
-        productId,
-        quantity,
-        variantId,
-        options,
-      });
-    } catch {
-      removeLine(line.id);
-      setError("Could not add to cart");
-      return;
-    } finally {
-      setPending(false);
-      endCartWrite();
-    }
+    const result = await addItemAction({
+      productId,
+      quantity,
+      variantId,
+      options,
+    });
+    setPending(false);
     if (!result.ok) {
       removeLine(line.id);
       setError(result.error ?? "Could not add to cart");
@@ -135,7 +125,7 @@ export function AddToCartButton({
       {disabledReason && !error ? (
         <p
           id="add-to-cart-status"
-          className="mt-2 text-sm text-zinc-600 dark:text-zinc-400"
+          className="mt-2 text-sm text-muted-foreground"
           role="status"
         >
           {disabledReason}
