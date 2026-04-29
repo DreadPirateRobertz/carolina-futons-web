@@ -10,6 +10,7 @@ import Link from "next/link";
 import { BUSINESS } from "@/lib/business/contact-info";
 import { BotanicalFooterDivider } from "@/components/illustrations/BotanicalFooterDivider";
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
+import { LivingFooterOverlay } from "@/components/site/LivingFooterOverlay";
 
 type SocialLink = {
   name: string;
@@ -93,8 +94,10 @@ export function Footer() {
   return (
     <footer
       data-slot="site-footer"
-      className="mt-auto border-t border-cf-divider bg-cf-footer-bg text-cf-cream"
+      className="relative mt-auto border-t border-cf-divider bg-cf-footer-bg text-cf-cream"
     >
+      {/* Living time-of-day atmosphere — sky tint + star field at night */}
+      <LivingFooterOverlay />
       {/* cf-pgec: v2 Botanical ridge divider softens the footer top edge */}
       <BotanicalFooterDivider />
       <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
