@@ -41,6 +41,7 @@ export function LivingFooterOverlay() {
   const [atmos, setAtmos] = useState<Atmosphere | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot client seed for SSR atmosphere fallback
     setAtmos(derive());
 
     // Skip live updates under reduced-motion — one static tint is enough.
