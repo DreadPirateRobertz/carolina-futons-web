@@ -22,6 +22,46 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async headers() {
+    return [
+      {
+        // Apply to all routes. Individual routes can override via response headers.
+        source: "/(.*)",
+        headers: [
+          // Prevent MIME-type sniffing — browsers must respect Content-Type.
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          // Block clickjacking — no iframing allowed from any origin.
+          // cfw has no legitimate use case for embedding; DENY is safer than SAMEORIGIN.
+          { key: "X-Frame-Options", value: "DENY" },
+          // Limit referrer to origin only on cross-origin requests; full URL
+          // on same-origin (safe for analytics, hides path from third parties).
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+          // Restrict access to browser features not used by the site.
+          // camera/microphone/geolocation unused; payment delegated to Wix.
+          {
+            key: "Permissions-Policy",
+            value:
+              "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+          },
+          // HSTS: force HTTPS for 1 year, include subdomains, allow preload.
+          // Vercel already enforces HTTPS; this header hardens the browser-side
+          // contract and enables preload-list submission post-DNS cutover.
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains; preload",
+          },
+          // X-DNS-Prefetch-Control: on — browsers already default to this on
+          // HTTPS but setting it explicitly documents intent and prevents some
+          // edge proxy stripping.
+          { key: "X-DNS-Prefetch-Control", value: "on" },
+        ],
+      },
+    ];
+  },
+
   async redirects() {
     return [
       // Legacy nav shortcuts (cf-tjh) — pre-migration permalinks.
