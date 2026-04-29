@@ -1,7 +1,7 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 
-import { LivingHero } from "@/components/home/LivingHero";
+import { VideoHeroSection } from "@/components/home/VideoHeroSection";
+import { VideoShowcaseStrip } from "@/components/home/VideoShowcaseStrip";
 import {
   FilterFirst,
   type ThemeDCategory,
@@ -12,11 +12,11 @@ import { StatsStrip } from "@/components/site/StatsStrip";
 import { TestimonialsStrip } from "@/components/site/TestimonialsStrip";
 import { TrustBar } from "@/components/site/TrustBar";
 import { EmailCapturePopup } from "@/components/site/EmailCapturePopup";
-import { V3_PAL as c } from "@/components/mascot/MascotPalette";
 import {
   getCollectionBySlug,
   listProductsByCollectionId,
 } from "@/lib/wix/products";
+import { getVideoCatalog } from "@/lib/videos/catalog";
 
 export const metadata: Metadata = {
   title: "Carolina Futons — Hardwood Frames & Mattresses | Hendersonville, NC",
@@ -38,103 +38,39 @@ const FILTER_CATEGORIES = [
   { slug: "mattresses", collectionSlug: "mattresses", label: "Mattresses" },
 ] as const;
 
+// Showcase strip: 3 featured videos spanning categories (futon frame + conversion demos).
+// Intentionally hardcoded so editorial can pick high-quality demos rather than
+// auto-ordering by catalog sortOrder.
+const SHOWCASE_IDS = ["vid-asheville", "vid-studio-conversion", "vid-moonglider-conversion"];
+
 export default async function HomePage() {
-  const categories = await Promise.all(
-    FILTER_CATEGORIES.map(async (cat): Promise<ThemeDCategory> => {
-      const collection = await getCollectionBySlug(cat.collectionSlug);
-      const products = collection?._id
-        ? await listProductsByCollectionId(collection._id, 24)
-        : [];
-      return { slug: cat.slug, label: cat.label, products };
-    }),
-  );
+  const [categories, allVideos] = await Promise.all([
+    Promise.all(
+      FILTER_CATEGORIES.map(async (cat): Promise<ThemeDCategory> => {
+        const collection = await getCollectionBySlug(cat.collectionSlug);
+        const products = collection?._id
+          ? await listProductsByCollectionId(collection._id, 24)
+          : [];
+        return { slug: cat.slug, label: cat.label, products };
+      }),
+    ),
+    Promise.resolve(getVideoCatalog()),
+  ]);
+
+  const featuredVideos = SHOWCASE_IDS.flatMap((id) => {
+    const v = allVideos.find((e) => e.id === id);
+    return v ? [v] : [];
+  });
 
   return (
     <>
       <EmailCapturePopup />
 
-      {/* ── Living Hero — time-of-day cycling: dawn rays / day bear / dusk rays / night stars ── */}
-      <div className="w-full" style={{ height: "80vh", minHeight: 500, maxHeight: 900 }}>
-        <LivingHero />
-      </div>
+      {/* ── Video-first hero — full-bleed autoplay background + headline + CTA ── */}
+      <VideoHeroSection />
 
-      {/* ── Headline + CTA ── */}
-      <div
-        className="mx-auto w-full max-w-5xl px-6 py-16 text-center"
-        style={{ background: c.paperWarm, color: c.ink }}
-      >
-        <p
-          style={{
-            fontFamily: "var(--font-source-sans)",
-            fontSize: 11,
-            letterSpacing: ".16em",
-            textTransform: "uppercase",
-            opacity: 0.6,
-            marginBottom: 12,
-          }}
-        >
-          Handmade in the Blue Ridge
-        </p>
-        <h1
-          style={{
-            fontFamily: "var(--font-playfair)",
-            fontSize: "clamp(2.4rem, 5vw, 4rem)",
-            fontWeight: 700,
-            lineHeight: 1.1,
-            marginBottom: 20,
-          }}
-        >
-          Furniture that earns its place.
-        </h1>
-        <p
-          style={{
-            fontSize: "1.125rem",
-            lineHeight: 1.7,
-            maxWidth: 560,
-            margin: "0 auto 32px",
-            opacity: 0.8,
-          }}
-        >
-          Family-owned since 1991. Solid hardwood frames, American mattresses
-          — no veneer, no shortcuts, no commission pressure.
-        </p>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <Link
-            href="/shop"
-            style={{
-              display: "inline-block",
-              background: c.ink,
-              color: c.cream,
-              borderRadius: 8,
-              padding: "12px 28px",
-              fontWeight: 600,
-              fontSize: "0.9375rem",
-              textDecoration: "none",
-              letterSpacing: ".03em",
-            }}
-          >
-            Browse all furniture
-          </Link>
-          <Link
-            href="/design-a-room"
-            style={{
-              display: "inline-block",
-              background: "transparent",
-              color: c.ink,
-              border: `1.5px solid ${c.ink}`,
-              borderRadius: 8,
-              padding: "12px 28px",
-              fontWeight: 600,
-              fontSize: "0.9375rem",
-              textDecoration: "none",
-              letterSpacing: ".03em",
-              opacity: 0.75,
-            }}
-          >
-            Design a room
-          </Link>
-        </div>
-      </div>
+      {/* ── Video showcase strip — immediately below the fold ── */}
+      <VideoShowcaseStrip videos={featuredVideos} />
 
       {/* ── Filter-first product browser (Theme D) ── */}
       <link rel="preconnect" href="https://api.fontshare.com" />
