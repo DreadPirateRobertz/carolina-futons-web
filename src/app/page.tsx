@@ -44,19 +44,17 @@ const FILTER_CATEGORIES = [
 const SHOWCASE_IDS = ["vid-asheville", "vid-studio-conversion", "vid-moonglider-conversion"];
 
 export default async function HomePage() {
-  const [categories, allVideos] = await Promise.all([
-    Promise.all(
-      FILTER_CATEGORIES.map(async (cat): Promise<ThemeDCategory> => {
-        const collection = await getCollectionBySlug(cat.collectionSlug);
-        const products = collection?._id
-          ? await listProductsByCollectionId(collection._id, 24)
-          : [];
-        return { slug: cat.slug, label: cat.label, products };
-      }),
-    ),
-    Promise.resolve(getVideoCatalog()),
-  ]);
+  const categories = await Promise.all(
+    FILTER_CATEGORIES.map(async (cat): Promise<ThemeDCategory> => {
+      const collection = await getCollectionBySlug(cat.collectionSlug);
+      const products = collection?._id
+        ? await listProductsByCollectionId(collection._id, 24)
+        : [];
+      return { slug: cat.slug, label: cat.label, products };
+    }),
+  );
 
+  const allVideos = getVideoCatalog();
   const featuredVideos = SHOWCASE_IDS.flatMap((id) => {
     const v = allVideos.find((e) => e.id === id);
     return v ? [v] : [];
@@ -70,7 +68,9 @@ export default async function HomePage() {
       <VideoHeroSection />
 
       {/* ── Video showcase strip — immediately below the fold ── */}
-      <VideoShowcaseStrip videos={featuredVideos} />
+      {featuredVideos.length > 0 && (
+        <VideoShowcaseStrip videos={featuredVideos} />
+      )}
 
       {/* ── Filter-first product browser (Theme D) ── */}
       <link rel="preconnect" href="https://api.fontshare.com" />

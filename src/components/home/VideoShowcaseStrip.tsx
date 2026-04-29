@@ -116,14 +116,20 @@ export function VideoShowcaseStrip({ videos }: Props) {
               Close ✕
             </button>
             <div className="aspect-video w-full overflow-hidden rounded-lg bg-black">
-              {active.source === "youtube" && active.embedUrl ? (
-                <iframe
-                  src={`${active.embedUrl}?autoplay=1`}
-                  title={active.title}
-                  allow="autoplay; encrypted-media; picture-in-picture"
-                  allowFullScreen
-                  className="h-full w-full"
-                />
+              {active.source === "youtube" ? (
+                active.embedUrl ? (
+                  <iframe
+                    src={`${active.embedUrl}?autoplay=1`}
+                    title={active.title}
+                    allow="autoplay; encrypted-media; picture-in-picture"
+                    allowFullScreen
+                    className="h-full w-full"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-white/60 text-sm">
+                    Video unavailable
+                  </div>
+                )
               ) : (
                 <video
                   src={active.videoUrl}
