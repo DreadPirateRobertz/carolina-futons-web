@@ -19,6 +19,7 @@ import {
   listProductsByCollectionId,
 } from "@/lib/wix/products";
 import { getVideoCatalog } from "@/lib/videos/catalog";
+import { HomeGiftCardCta } from "@/components/home/HomeGiftCardCta";
 
 export const metadata: Metadata = {
   title: "Carolina Futons — Hardwood Frames & Mattresses | Hendersonville, NC",
@@ -84,6 +85,9 @@ export default async function HomePage() {
 
       {/* ── Swatch promo — fabric CTA (cf-ph80) ── */}
       <SwatchPromoSection />
+
+      {/* ── Gift card CTA ── */}
+      <HomeGiftCardCta />
 
       <StatsStrip />
       <TestimonialsStrip />
