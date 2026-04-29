@@ -13,6 +13,7 @@ function isDismissed(): boolean {
     if (!ts) return false;
     return Date.now() - ts < SEVEN_DAYS_MS;
   } catch {
+    // storage unavailable — silently ignore
     return false;
   }
 }
