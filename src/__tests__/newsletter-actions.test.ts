@@ -10,9 +10,14 @@ const storeMocks = vi.hoisted(() => ({
   >(async () => ({ created: true })),
 }));
 
-vi.mock("@/lib/newsletter/newsletter-store", () => ({
-  upsertSubscriber: storeMocks.upsertSubscriber,
-}));
+vi.mock(
+  "@/lib/newsletter/newsletter-store",
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<typeof import("@/lib/newsletter/newsletter-store")>();
+    return { ...actual, upsertSubscriber: storeMocks.upsertSubscriber };
+  },
+);
 
 beforeEach(() => {
   storeMocks.upsertSubscriber.mockReset();
