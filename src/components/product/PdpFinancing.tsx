@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 const FINANCING_GATE_CENTS = 50_000; // $500
 const AFTERPAY_MAX_CENTS = 100_000; // $1,000
@@ -22,31 +22,29 @@ function afterpayInstallment(priceDollars: number): number {
   return roundCents(priceDollars / 4);
 }
 
-function lowestMonthly(priceDollars: number, afterpayEligible: boolean): number {
-  const termMin = Math.min(...TERMS.map((m) => monthly(priceDollars, m)));
-  if (afterpayEligible) {
-    return Math.min(termMin, afterpayInstallment(priceDollars));
-  }
-  return termMin;
+// price/12 < price/4 always for positive prices, so Afterpay never produces
+// the lowest monthly amount — lowestMonthly is always the 12-month term.
+function lowestMonthly(priceDollars: number): number {
+  return Math.min(...TERMS.map((m) => monthly(priceDollars, m)));
 }
 
 export type PdpFinancingProps = {
-  priceCents: number;
+  unitPriceCents: number;
 };
 
-export function PdpFinancing({ priceCents }: PdpFinancingProps) {
+export function PdpFinancing({ unitPriceCents }: PdpFinancingProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const headingId = useId();
   const modalTitleId = useId();
 
-  if (!Number.isFinite(priceCents) || priceCents < FINANCING_GATE_CENTS) {
+  if (!Number.isFinite(unitPriceCents) || unitPriceCents < FINANCING_GATE_CENTS) {
     return null;
   }
 
-  const priceDollars = priceCents / 100;
-  const afterpayEligible = priceCents <= AFTERPAY_MAX_CENTS;
+  const priceDollars = unitPriceCents / 100;
+  const afterpayEligible = unitPriceCents <= AFTERPAY_MAX_CENTS;
   const installment = afterpayEligible ? afterpayInstallment(priceDollars) : 0;
-  const lowest = lowestMonthly(priceDollars, afterpayEligible);
+  const lowest = lowestMonthly(priceDollars);
 
   return (
     <section data-testid="pdp-financing" aria-labelledby={headingId} className="space-y-3">
@@ -59,11 +57,7 @@ export function PdpFinancing({ priceCents }: PdpFinancingProps) {
       </p>
 
       {afterpayEligible && (
-        <p
-          data-testid="afterpay-teaser"
-          className="text-sm text-cf-espresso/70"
-          aria-label={`Or pay in 4 interest-free installments of ${fmt(installment)} with Afterpay`}
-        >
+        <p data-testid="afterpay-teaser" className="text-sm text-cf-espresso/70">
           4 payments of {fmt(installment)} with Afterpay
         </p>
       )}
@@ -118,12 +112,43 @@ function FinancingModal({
   titleId,
   onClose,
 }: ModalProps) {
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+
+  // Escape dismissal + focus the close button on mount so keyboard users
+  // land on an actionable control, matching PdpImageLightbox convention.
+  useEffect(() => {
+    closeBtnRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const afterpaySchedule = [
+    { label: "Today", amount: installment },
+    { label: "In 2 weeks", amount: installment },
+    { label: "In 4 weeks", amount: installment },
+    // Reconcile rounding — last installment picks up any cent remainder;
+    // clamped to 0 to guard against floating-point underflow.
+    {
+      label: "In 6 weeks",
+      amount: Math.max(0, roundCents(priceDollars - installment * 3)),
+    },
+  ];
+
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between mb-4">
@@ -131,6 +156,7 @@ function FinancingModal({
             Financing &amp; payment options
           </h3>
           <button
+            ref={closeBtnRef}
             type="button"
             onClick={onClose}
             aria-label="Close financing options"
@@ -147,18 +173,11 @@ function FinancingModal({
               4 interest-free payments of {fmt(installment)} with Afterpay
             </p>
             <ul className="mt-2 space-y-1 text-xs text-cf-espresso/60">
-              {[0, 1, 2, 3].map((i) => {
-                const label = i === 0 ? "Today" : `In ${i * 2} weeks`;
-                const amount =
-                  i === 3
-                    ? roundCents(priceDollars - installment * 3)
-                    : installment;
-                return (
-                  <li key={i}>
-                    {label}: {fmt(amount)}
-                  </li>
-                );
-              })}
+              {afterpaySchedule.map(({ label, amount }) => (
+                <li key={label}>
+                  {label}: {fmt(amount)}
+                </li>
+              ))}
             </ul>
           </div>
         )}

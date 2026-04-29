@@ -186,7 +186,7 @@ export function PdpInteractive({
             imageUrl={fallbackImageUrl}
           />
         </div>
-        <PdpFinancing priceCents={fallbackPriceCents} />
+        <PdpFinancing unitPriceCents={fallbackPriceCents} />
         <PdpWhiteGlove unitPriceCents={whiteGlovePriceCents ?? fallbackPriceCents} />
         <PdpShippingEstimate />
       </div>
