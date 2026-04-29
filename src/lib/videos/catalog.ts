@@ -68,11 +68,30 @@ const WIX_SEEDS: readonly WixSeed[] = [
 ];
 
 const YOUTUBE_SEEDS: readonly YouTubeSeed[] = [
+  // KD Frames — assembly guides
   { id: "v-kd-001", title: "Nomad Platform Bed Assembly", description: "Step-by-step assembly guide for the KD Frames Nomad Platform Bed.", category: "assembly", brand: "KD Frames", youtubeId: "EC1GCQ5CiSo", productSlug: "nomad-platform-bed", sortOrder: 100 },
   { id: "v-kd-002", title: "Charleston Platform Bed Assembly", description: "Assembly instructions for the KD Frames Charleston Platform Bed.", category: "assembly", brand: "KD Frames", youtubeId: "ouc5kWkEMfE", productSlug: "charleston-platform-bed", sortOrder: 101 },
   { id: "v-kd-003", title: "Fold Platform Bed Assembly", description: "How to assemble the KD Frames Fold Platform Bed.", category: "assembly", brand: "KD Frames", youtubeId: "Xi4Gddlhzd0", productSlug: "fold-platform-bed", sortOrder: 102 },
   { id: "v-kd-004", title: "Studio Bifold Futon Assembly", description: "Assembly walkthrough for the KD Frames Studio Bifold Futon.", category: "assembly", brand: "KD Frames", youtubeId: "lDnFOcn7qZ8", productSlug: "studio-bifold-futon", sortOrder: 103 },
   { id: "v-kd-005", title: "KD Lounger Assembly", description: "Assembly guide for the KD Frames Lounger.", category: "assembly", brand: "KD Frames", youtubeId: "RjBfOFzDxuo", productSlug: "kd-lounger", sortOrder: 104 },
+  // Night & Day Furniture — Gold Shoe Fittings™ (Premium Collection)
+  { id: "v-nd-001", title: "Gold Shoe Fittings™ Conversion Demo", description: "See how Night & Day's Premium Collection futon frames convert from sofa to bed.", category: "conversion", brand: "Night & Day Furniture", youtubeId: "CHUoDl-2hrI", sortOrder: 200 },
+  { id: "v-nd-002", title: "Gold Shoe Fittings™ Assembly Guide", description: "Full assembly walkthrough for Night & Day Premium Collection futon frames with Gold Shoe Fittings™.", category: "assembly", brand: "Night & Day Furniture", youtubeId: "QZ5ZGx0tgTY", sortOrder: 201 },
+  { id: "v-nd-003", title: "Gold Shoe Fittings™ Disassembly", description: "How to disassemble Night & Day Premium Collection futon frames with Gold Shoe Fittings™.", category: "assembly", brand: "Night & Day Furniture", youtubeId: "fKHYMwN4rJw", sortOrder: 202 },
+  // Night & Day Furniture — Bronze Shoe Fittings™ (Standard Collection)
+  { id: "v-nd-004", title: "Bronze Shoe Fittings™ Conversion Demo", description: "See how Night & Day's Standard Collection futon frames convert from sofa to bed.", category: "conversion", brand: "Night & Day Furniture", youtubeId: "Ek1as-Q9_vU", sortOrder: 203 },
+  { id: "v-nd-005", title: "Bronze Shoe Fittings™ Assembly Guide", description: "Full assembly walkthrough for Night & Day Standard Collection futon frames with Bronze Shoe Fittings™.", category: "assembly", brand: "Night & Day Furniture", youtubeId: "HeRI1MtQxnk", sortOrder: 204 },
+  { id: "v-nd-006", title: "Bronze Shoe Fittings™ Disassembly", description: "How to disassemble Night & Day Standard Collection futon frames with Bronze Shoe Fittings™.", category: "assembly", brand: "Night & Day Furniture", youtubeId: "w1-aYQm4M-Q", sortOrder: 205 },
+  // Night & Day Furniture — Murphy Cabinet Beds & brand overviews
+  { id: "v-nd-007", title: "Murphy Cube Cabinet Bed", description: "The Night & Day Cube Murphy Cabinet Bed — a queen bed folds into a compact free-standing cabinet.", category: "overview", brand: "Night & Day Furniture", youtubeId: "4K9m1nRzCIQ", productSlug: "cube-murphy-cabinet-bed", sortOrder: 206 },
+  { id: "v-nd-008", title: "Night & Day Futon Frames Overview", description: "Brand overview of Night & Day Furniture's hardwood futon frame collection.", category: "overview", brand: "Night & Day Furniture", youtubeId: "CXjcdNcSTCg", sortOrder: 207 },
+  { id: "v-nd-009", title: "Why Night & Day Futon Frames", description: "What sets Night & Day Furniture futon frames apart — hardwood construction and the Shoe Fittings™ system.", category: "overview", brand: "Night & Day Furniture", youtubeId: "bxhYIZ5towk", sortOrder: 208 },
+  // Strata Furniture — Wall Hugger operation & assembly
+  { id: "v-strata-002", title: "Wall Hugger Futon Operation", description: "How to operate your Strata Furniture wall hugger futon frame — converts without pulling away from the wall.", category: "conversion", brand: "Strata Furniture", youtubeId: "S_EsSUjluL0", sortOrder: 300 },
+  { id: "v-strata-003", title: "Wall Hugger Futon Assembly", description: "Assembly walkthrough for Strata Furniture wall hugger futon frames.", category: "assembly", brand: "Strata Furniture", youtubeId: "BUY9R5tyUQk", sortOrder: 301 },
+  { id: "v-strata-004", title: "Wall Hugger Futon Frame Assembly Guide", description: "Detailed assembly guide with hints and tips for Strata Furniture wall hugger frames.", category: "assembly", brand: "Strata Furniture", youtubeId: "foWwS39hDN8", sortOrder: 302 },
+  { id: "v-strata-005", title: "Wall Hugger Futon Demo", description: "Strata Furniture wall hugger futon frame operation demonstration.", category: "conversion", brand: "Strata Furniture", youtubeId: "BKNuewUNlU8", sortOrder: 303 },
+  { id: "v-strata-006", title: "Why Strata Furniture?", description: "Overview of Strata Furniture's wall hugger futon engineering and quality.", category: "overview", brand: "Strata Furniture", youtubeId: "LqobLEvNRIg", sortOrder: 304 },
 ];
 
 const MP4_SEEDS: readonly Mp4Seed[] = [
@@ -129,6 +148,10 @@ export function getVideoCatalog(): VideoEntry[] {
     ...YOUTUBE_SEEDS.map(buildYouTube),
     ...MP4_SEEDS.map(buildMp4),
   ].sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+export function getVideoByProductSlug(slug: string): VideoEntry | null {
+  return getVideoCatalog().find((v) => v.productSlug === slug) ?? null;
 }
 
 export type VideoCategoryOption = {
