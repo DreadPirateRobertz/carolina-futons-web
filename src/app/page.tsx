@@ -6,7 +6,6 @@ import {
   FilterFirst,
   type ThemeDCategory,
 } from "@/components/theme-d/FilterFirst";
-import { MascotFooterDivider } from "@/components/mascot/MascotFooterDivider";
 import { EasterEggBear } from "@/components/mascot/EasterEggBear";
 import { SwatchPromoSection } from "@/components/home/SwatchPromoSection";
 import { QuizCtaSection } from "@/components/home/QuizCtaSection";
@@ -109,11 +108,6 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
-
-      {/* ── Sleeping bear footer divider ── */}
-      <div className="w-full">
-        <MascotFooterDivider />
-      </div>
 
       {/* ── Hidden Easter egg bear ── */}
       <div
