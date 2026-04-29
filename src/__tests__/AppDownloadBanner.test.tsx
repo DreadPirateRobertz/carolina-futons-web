@@ -6,6 +6,11 @@ import { AppDownloadBanner } from "@/components/site/AppDownloadBanner";
 const STORAGE_KEY = "cf_app_banner_dismissed";
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
+const getPromoRegion = () =>
+  screen.getByRole("region", { name: /app download promotion/i });
+const queryPromoRegion = () =>
+  screen.queryByRole("region", { name: /app download promotion/i });
+
 beforeEach(() => {
   localStorage.clear();
 });
@@ -16,9 +21,9 @@ afterEach(() => {
 
 describe("AppDownloadBanner", () => {
   describe("rendering", () => {
-    it("renders the banner when localStorage has no dismiss key", async () => {
+    it("renders when localStorage has no dismiss key", async () => {
       render(<AppDownloadBanner />);
-      await waitFor(() => expect(screen.getByRole("banner")).toBeInTheDocument());
+      await waitFor(() => expect(getPromoRegion()).toBeInTheDocument());
     });
 
     it("renders the promo copy", async () => {
@@ -28,9 +33,19 @@ describe("AppDownloadBanner", () => {
       );
     });
 
-    it("has role=banner on the root element", async () => {
+    it("uses role=region (not role=banner) to avoid landmark nesting violation", async () => {
       render(<AppDownloadBanner />);
-      await waitFor(() => expect(screen.getByRole("banner")).toBeInTheDocument());
+      await waitFor(() => {
+        expect(getPromoRegion()).toBeInTheDocument();
+        expect(screen.queryByRole("banner")).toBeNull();
+      });
+    });
+
+    it("has aria-label='App download promotion' on the root element", async () => {
+      render(<AppDownloadBanner />);
+      await waitFor(() =>
+        expect(getPromoRegion()).toHaveAttribute("aria-label", "App download promotion")
+      );
     });
 
     it("renders an App Store link with href='#'", async () => {
@@ -51,10 +66,9 @@ describe("AppDownloadBanner", () => {
 
     it("applies md:hidden so banner is hidden on desktop breakpoints", async () => {
       render(<AppDownloadBanner />);
-      await waitFor(() => {
-        const banner = screen.getByRole("banner");
-        expect(banner.className).toMatch(/md:hidden/);
-      });
+      await waitFor(() =>
+        expect(getPromoRegion().className).toMatch(/md:hidden/)
+      );
     });
   });
 
@@ -83,7 +97,7 @@ describe("AppDownloadBanner", () => {
         expect(screen.getByRole("button", { name: /dismiss app download banner/i })).toBeInTheDocument()
       );
       fireEvent.click(screen.getByRole("button", { name: /dismiss app download banner/i }));
-      expect(screen.queryByRole("banner")).toBeNull();
+      expect(queryPromoRegion()).toBeNull();
     });
 
     it("writes dismiss timestamp to localStorage on dismiss", async () => {
@@ -111,34 +125,33 @@ describe("AppDownloadBanner", () => {
     it("does not render when dismissed within the last 7 days", async () => {
       localStorage.setItem(STORAGE_KEY, String(Date.now() - 1000));
       render(<AppDownloadBanner />);
-      // wait a tick and confirm it stays hidden
       await new Promise((r) => setTimeout(r, 50));
-      expect(screen.queryByRole("banner")).toBeNull();
+      expect(queryPromoRegion()).toBeNull();
     });
 
     it("does not render when dismissed exactly 1 day ago", async () => {
       localStorage.setItem(STORAGE_KEY, String(Date.now() - 24 * 60 * 60 * 1000));
       render(<AppDownloadBanner />);
       await new Promise((r) => setTimeout(r, 50));
-      expect(screen.queryByRole("banner")).toBeNull();
+      expect(queryPromoRegion()).toBeNull();
     });
 
     it("renders again when dismissed more than 7 days ago", async () => {
       localStorage.setItem(STORAGE_KEY, String(Date.now() - SEVEN_DAYS_MS - 1000));
       render(<AppDownloadBanner />);
-      await waitFor(() => expect(screen.getByRole("banner")).toBeInTheDocument());
+      await waitFor(() => expect(getPromoRegion()).toBeInTheDocument());
     });
 
     it("renders when localStorage has an invalid (non-numeric) value", async () => {
       localStorage.setItem(STORAGE_KEY, "not-a-timestamp");
       render(<AppDownloadBanner />);
-      await waitFor(() => expect(screen.getByRole("banner")).toBeInTheDocument());
+      await waitFor(() => expect(getPromoRegion()).toBeInTheDocument());
     });
 
     it("renders when localStorage value is 0", async () => {
       localStorage.setItem(STORAGE_KEY, "0");
       render(<AppDownloadBanner />);
-      await waitFor(() => expect(screen.getByRole("banner")).toBeInTheDocument());
+      await waitFor(() => expect(getPromoRegion()).toBeInTheDocument());
     });
   });
 });

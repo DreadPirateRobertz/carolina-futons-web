@@ -40,7 +40,8 @@ export function AppDownloadBanner() {
 
   return (
     <div
-      role="banner"
+      role="region"
+      aria-label="App download promotion"
       className="md:hidden flex items-center gap-3 px-4 py-3 text-cf-espresso"
       style={{ backgroundColor: "#E8D5B7" }}
     >
