@@ -221,3 +221,50 @@ describe("VideoShowcaseStrip — empty / edge cases", () => {
     expect(screen.queryAllByRole("button", { name: /^play video:/i })).toHaveLength(0);
   });
 });
+
+describe("VideoShowcaseStrip — mobile horizontal scroll snap", () => {
+  it("video list has snap-x class for mobile scroll snap", () => {
+    renderStrip();
+    const list = document.querySelector('[data-slot="video-showcase-strip"] ul');
+    expect(list?.classList.contains("snap-x")).toBe(true);
+  });
+
+  it("video list has snap-mandatory class for strict snap behavior", () => {
+    renderStrip();
+    const list = document.querySelector('[data-slot="video-showcase-strip"] ul');
+    expect(list?.classList.contains("snap-mandatory")).toBe(true);
+  });
+
+  it("each video item has snap-start class", () => {
+    renderStrip();
+    const items = document.querySelectorAll('[data-slot="video-showcase-strip"] li');
+    expect(items.length).toBeGreaterThan(0);
+    items.forEach((item) => {
+      expect(item.classList.contains("snap-start")).toBe(true);
+    });
+  });
+});
+
+describe("VideoShowcaseStrip — iOS autoplay poster fallback", () => {
+  it("lightbox video has poster attribute for iOS Safari fallback", async () => {
+    const user = userEvent.setup();
+    renderStrip();
+    await user.click(
+      screen.getByRole("button", { name: /play video: asheville/i }),
+    );
+    const video = screen.getByRole("dialog").querySelector("video");
+    expect(video).not.toBeNull();
+    expect(video!.getAttribute("poster")).toContain("wixstatic.com");
+  });
+
+  it("lightbox video has playsInline attribute for iOS autoplay", async () => {
+    const user = userEvent.setup();
+    renderStrip();
+    await user.click(
+      screen.getByRole("button", { name: /play video: asheville/i }),
+    );
+    const video = screen.getByRole("dialog").querySelector("video");
+    expect(video).not.toBeNull();
+    expect(video!.hasAttribute("playsinline")).toBe(true);
+  });
+});
