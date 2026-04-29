@@ -7,6 +7,7 @@ export type SwatchItem = {
   swatchName: string;
   colorFamily?: string;
   colorHex?: string;
+  imageUrl?: string;
 };
 
 export type SwatchContactInfo = {
