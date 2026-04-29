@@ -47,10 +47,10 @@ export function VideoShowcaseStrip({ videos }: Props) {
           </Link>
         </div>
 
-        {/* Mobile: horizontal scroll; desktop: 3-col grid */}
-        <ul className="mt-6 flex gap-4 overflow-x-auto pb-3 sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0">
+        {/* Mobile: horizontal scroll with snap; desktop: 3-col grid */}
+        <ul className="mt-6 flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0">
           {videos.map((video) => (
-            <li key={video.id} className="w-[80vw] shrink-0 sm:w-auto">
+            <li key={video.id} className="w-[80vw] shrink-0 snap-start sm:w-auto">
               <button
                 type="button"
                 aria-label={`Play video: ${video.title}`}

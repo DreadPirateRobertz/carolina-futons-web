@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { VideoHeroSection } from "@/components/home/VideoHeroSection";
 import { VideoShowcaseStrip } from "@/components/home/VideoShowcaseStrip";
+import { AppDownloadBanner } from "@/components/site/AppDownloadBanner";
 import {
   FilterFirst,
   type ThemeDCategory,
@@ -71,6 +72,9 @@ export default async function HomePage() {
       {featuredVideos.length > 0 && (
         <VideoShowcaseStrip videos={featuredVideos} />
       )}
+
+      {/* ── App download CTA (mobile only — cm-003) ── */}
+      <AppDownloadBanner />
 
       {/* ── Filter-first product browser (Theme D) ── */}
       <link rel="preconnect" href="https://api.fontshare.com" />
