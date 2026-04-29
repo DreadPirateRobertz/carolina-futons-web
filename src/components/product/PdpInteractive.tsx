@@ -12,6 +12,7 @@ import { PdpStickyCta } from "@/components/product/PdpStickyCta";
 import { PdpStockBadge } from "@/components/product/PdpStockBadge";
 import { PdpFabricSwatches } from "@/components/product/PdpFabricSwatches";
 import { PdpFinancing } from "@/components/product/PdpFinancing";
+import { PdpNotifyMe } from "@/components/product/PdpNotifyMe";
 import { PdpWhiteGlove } from "@/components/product/PdpWhiteGlove";
 import { PdpWishlistButton } from "@/components/product/PdpWishlistButton";
 import { VariantPicker } from "@/components/product/VariantPicker";
@@ -180,6 +181,9 @@ export function PdpInteractive({
             error={fabricSwatchError}
           />
         ) : null}
+        {selectionComplete && !inStock && (
+          <PdpNotifyMe productId={productId} />
+        )}
         <div ref={primaryCtaRef} data-slot="pdp-primary-cta" className="flex flex-wrap items-center gap-3">
           <AddToCartButton {...addToCartProps} className="flex-1 min-w-0" />
           <PdpWishlistButton
