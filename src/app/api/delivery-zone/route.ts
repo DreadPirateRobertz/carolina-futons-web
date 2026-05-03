@@ -104,8 +104,9 @@ export async function POST(request: Request) {
     );
   }
   const obj = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
-  const rawWeight = typeof obj.weight === "number" ? obj.weight : 0;
-  const weightLbs = Number.isFinite(rawWeight) && rawWeight >= 0 ? rawWeight : 0;
+  const weightLbs = parseWeight(
+    typeof obj.weight === "number" ? String(obj.weight) : typeof obj.weight === "string" ? obj.weight : null,
+  );
   const result = lookup({
     zip: obj.zip,
     weightLbs,

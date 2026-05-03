@@ -263,4 +263,16 @@ describe("POST /api/delivery-zone", () => {
     expect(res.status).toBe(200);
     expect((await res.json()).tier).toBe("ltl");
   });
+
+  it("string weight '20' in POST body is parsed as numeric (parcel)", async () => {
+    const res = await POST(makePost({ zip: "90210", weight: "20" }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).tier).toBe("parcel");
+  });
+
+  it("string weight '600' in POST body is parsed as numeric (freight)", async () => {
+    const res = await POST(makePost({ zip: "90210", weight: "600" }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).tier).toBe("freight");
+  });
 });

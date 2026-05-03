@@ -17,8 +17,8 @@ type ResultState =
 
 const TIER_COPY: Record<ShippingTier, string> = {
   parcel: "Ships UPS Ground",
-  ltl: "Ships LTL freight",
-  freight: "Ships full pallet freight",
+  ltl: "LTL freight delivery",
+  freight: "Full pallet freight",
   "white-glove": "Free white-glove delivery",
   unsupported: "Outside our delivery area",
 };
@@ -95,7 +95,9 @@ export function PdpShippingEstimate({
           className="text-sm text-cf-espresso"
           data-testid="pdp-shipping-result"
         >
-          {TIER_COPY[result.tier]} — delivers in {result.window} to {result.zip}.
+          {result.tier === "unsupported"
+            ? TIER_COPY[result.tier]
+            : `${TIER_COPY[result.tier]} — delivers in ${result.window} to ${result.zip}.`}
         </p>
       )}
       {result.kind === "error" && (
