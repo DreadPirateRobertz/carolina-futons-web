@@ -1,9 +1,13 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  getShippingTier,
   getShippingZone,
   getDeliveryWindow,
   isValidZip,
+  PARCEL_MAX_LBS,
+  FREIGHT_MIN_LBS,
+  type ShippingTier,
   type ShippingZone,
 } from "@/lib/product/shipping-estimate";
 
@@ -63,6 +67,46 @@ describe("getShippingZone", () => {
 
   it("returns 'other' for ZIPs outside mapped tiers (edge 00000)", () => {
     expect(getShippingZone("00000")).toBe<ShippingZone>("other");
+  });
+});
+
+describe("getShippingTier", () => {
+  it("returns white-glove for NC regardless of weight", () => {
+    expect(getShippingTier(0, "nc")).toBe<ShippingTier>("white-glove");
+    expect(getShippingTier(20, "nc")).toBe<ShippingTier>("white-glove");
+    expect(getShippingTier(600, "nc")).toBe<ShippingTier>("white-glove");
+  });
+
+  it("returns unsupported for AK/HI and territories", () => {
+    expect(getShippingTier(20, "akhi")).toBe<ShippingTier>("unsupported");
+    expect(getShippingTier(20, "territory")).toBe<ShippingTier>("unsupported");
+  });
+
+  it(`returns parcel for weight 1–${PARCEL_MAX_LBS - 1} lbs (CONUS)`, () => {
+    expect(getShippingTier(1, "se")).toBe<ShippingTier>("parcel");
+    expect(getShippingTier(20, "west")).toBe<ShippingTier>("parcel");
+    expect(getShippingTier(PARCEL_MAX_LBS - 1, "mid")).toBe<ShippingTier>("parcel");
+  });
+
+  it(`returns ltl for weight ${PARCEL_MAX_LBS}–${FREIGHT_MIN_LBS - 1} lbs (CONUS)`, () => {
+    expect(getShippingTier(PARCEL_MAX_LBS, "se")).toBe<ShippingTier>("ltl");
+    expect(getShippingTier(150, "west")).toBe<ShippingTier>("ltl");
+    expect(getShippingTier(FREIGHT_MIN_LBS - 1, "mid")).toBe<ShippingTier>("ltl");
+  });
+
+  it(`returns freight for weight >= ${FREIGHT_MIN_LBS} lbs (CONUS)`, () => {
+    expect(getShippingTier(FREIGHT_MIN_LBS, "se")).toBe<ShippingTier>("freight");
+    expect(getShippingTier(600, "west")).toBe<ShippingTier>("freight");
+  });
+
+  it("returns freight when palletized regardless of weight", () => {
+    expect(getShippingTier(20, "se", true)).toBe<ShippingTier>("freight");
+    expect(getShippingTier(0, "west", true)).toBe<ShippingTier>("freight");
+  });
+
+  it("returns ltl for weight=0 (unknown weight — safe default)", () => {
+    expect(getShippingTier(0, "se")).toBe<ShippingTier>("ltl");
+    expect(getShippingTier(0, "west")).toBe<ShippingTier>("ltl");
   });
 });
 

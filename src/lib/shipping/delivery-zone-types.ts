@@ -11,6 +11,7 @@
 import type {
   EstDays,
   ShippingService,
+  ShippingTier,
   ShippingZone,
 } from "@/lib/product/shipping-estimate";
 
@@ -20,6 +21,7 @@ export type DeliveryZoneOk = {
   zone: ShippingZone;
   eligible: boolean;
   service: ShippingService;
+  tier: ShippingTier;
   estDays: EstDays;
   label: string;
 };

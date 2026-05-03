@@ -44,6 +44,7 @@ describe("GET /api/delivery-zone", () => {
       zone: "nc",
       eligible: true,
       service: "white-glove",
+      tier: "white-glove",
       estDays: { min: 1, max: 2 },
       label: "Free white-glove delivery",
     });
@@ -167,6 +168,7 @@ describe("POST /api/delivery-zone", () => {
       zone: "nc",
       eligible: true,
       service: "white-glove",
+      tier: "white-glove",
       estDays: { min: 1, max: 2 },
       label: "Free white-glove delivery",
     });
