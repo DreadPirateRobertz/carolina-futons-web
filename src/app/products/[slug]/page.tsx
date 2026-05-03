@@ -32,6 +32,7 @@ import {
   resolveSiteUrl,
 } from "@/lib/seo/json-ld";
 import { AppDownloadBanner } from "@/components/site/AppDownloadBanner";
+import { ArModelViewer } from "@/components/product/ArModelViewer";
 import type { StockBadgeInput } from "@/lib/product/stock-badge-state";
 import type {
   ProductOptionInput,
@@ -167,6 +168,11 @@ export default async function PdpPage(props: {
           item_category: product.collectionIds?.[0],
           price: product.priceData?.price ?? undefined,
         }}
+      />
+
+      <ArModelViewer
+        glbUrl={`https://cdn.carolinafutons.com/models/glb/${slug}.glb`}
+        productName={product.name ?? undefined}
       />
 
       <div className="mt-6">
