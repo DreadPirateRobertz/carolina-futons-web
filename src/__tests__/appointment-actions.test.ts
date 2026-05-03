@@ -36,11 +36,20 @@ function fd(fields: Record<string, string>): FormData {
   return data;
 }
 
-// 2026-04-29 = Wednesday (future)
+// Compute the next Wednesday at or after today so this date never becomes stale.
+function nextWednesday(): string {
+  const d = new Date();
+  d.setHours(12, 0, 0, 0); // noon local — avoids DST edge cases
+  const dow = d.getDay(); // 0=Sun … 6=Sat; Wednesday=3
+  const daysAhead = dow <= 3 ? 3 - dow : 7 - (dow - 3);
+  d.setDate(d.getDate() + (daysAhead === 0 ? 7 : daysAhead));
+  return d.toISOString().slice(0, 10);
+}
+
 const VALID = {
   appointmentName: "Alice Buyer",
   appointmentEmail: "alice@example.com",
-  appointmentDate: "2026-04-29",
+  appointmentDate: nextWednesday(),
   appointmentTime: "10:00",
 };
 
@@ -126,7 +135,7 @@ describe("bookAppointment — nodemailer transport", () => {
     const result = await bookAppointment(null, fd(VALID));
     expect(result.status).toBe("success");
     if (result.status !== "success") return;
-    expect(result.date).toBe("2026-04-29");
+    expect(result.date).toBe(VALID.appointmentDate);
     expect(result.time).toBe("10:00 AM");
   });
 
@@ -140,7 +149,7 @@ describe("bookAppointment — nodemailer transport", () => {
       text: string;
     };
     expect(call.to).toBe("carolinafutons@gmail.com");
-    expect(call.subject).toContain("2026-04-29");
+    expect(call.subject).toContain(VALID.appointmentDate);
     expect(call.text).toContain("Alice Buyer");
     expect(call.text).toContain("alice@example.com");
     expect(call.text).toContain("10:00 AM");
