@@ -169,25 +169,33 @@ export default function CartPage() {
             Shipping and taxes calculated at checkout.
           </p>
 
-          <Link
+          {/* Plain <a> — not <Link> — so the browser makes a full
+              navigation request that properly follows the 307 to the
+              Wix-hosted payment page. Next.js <Link> does SPA-style
+              fetch and won't follow an external redirect. */}
+          <a
             href="/checkout"
             data-testid="proceed-to-checkout"
             onClick={() => {
-              trackBeginCheckout(
-                state.lines.map((line) => ({
-                  item_id: line.productId,
-                  item_name: line.productName,
-                  item_variant: line.variantLabel,
-                  price: line.unitPriceCents / 100,
-                  quantity: line.quantity,
-                })),
-                subtotalCents / 100,
-              );
+              try {
+                trackBeginCheckout(
+                  state.lines.map((line) => ({
+                    item_id: line.productId,
+                    item_name: line.productName,
+                    item_variant: line.variantLabel,
+                    price: line.unitPriceCents / 100,
+                    quantity: line.quantity,
+                  })),
+                  subtotalCents / 100,
+                );
+              } catch (e) {
+                console.error("[cart-page] trackBeginCheckout failed", e);
+              }
             }}
             className="mt-5 flex h-12 w-full items-center justify-center rounded-md bg-cf-cta text-sm font-medium text-white transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
           >
             Proceed to checkout
-          </Link>
+          </a>
 
           <Link
             href="/shop"
