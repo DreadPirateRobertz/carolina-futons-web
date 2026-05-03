@@ -1,5 +1,21 @@
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
+import type React from "react";
+
+vi.mock("framer-motion", () => ({
+  motion: {
+    a: ({ children, ...rest }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { children?: React.ReactNode }) => (
+      <a {...rest}>{children}</a>
+    ),
+    div: ({ children, ...rest }: React.HTMLAttributes<HTMLDivElement> & { children?: React.ReactNode }) => (
+      <div {...rest}>{children}</div>
+    ),
+    g: ({ children, ...rest }: React.SVGAttributes<SVGGElement> & { children?: React.ReactNode }) => (
+      <g {...rest}>{children}</g>
+    ),
+  },
+  useReducedMotion: () => false,
+}));
 
 // Spy ShopTheRoom so the call-site contract (right photo + configs +
 // headingId) is pinned for /shop. Behavioral coverage of the section
@@ -91,46 +107,19 @@ describe("ShopIndex — smoke", () => {
   });
 });
 
-describe("ShopIndex — dark mode (cf-b3ai)", () => {
-  it("carries dark:text-zinc-100 on the Shop H1", async () => {
-    const { container } = await renderShop();
-    const h1 = container.querySelector("h1");
-    expect(h1?.className).toContain("dark:text-zinc-100");
-  });
-
-  it("carries dark:border-zinc-700 and dark:hover:border-zinc-500 on each category card", async () => {
+describe("ShopIndex — mascot cards (cf-shop-mascot)", () => {
+  it("renders one card per SHOP_CATEGORY (4+ cards)", async () => {
     const { container } = await renderShop();
     const cards = container.querySelectorAll("ul > li");
-    expect(cards.length).toBeGreaterThan(0);
-    for (const card of cards) {
-      expect(card.className).toContain("dark:border-zinc-700");
-      expect(card.className).toContain("dark:hover:border-zinc-500");
-    }
+    expect(cards.length).toBeGreaterThanOrEqual(4);
   });
 
-  it("carries dark:focus-within:border-zinc-500 on each category card for keyboard nav", async () => {
-    const { container } = await renderShop();
-    const cards = container.querySelectorAll("ul > li");
-    for (const card of cards) {
-      expect(card.className).toContain("dark:focus-within:border-zinc-500");
-    }
-  });
-
-  it("carries dark:text-zinc-100 on category name headings", async () => {
-    const { container } = await renderShop();
-    const headings = container.querySelectorAll("ul li h2");
-    expect(headings.length).toBeGreaterThan(0);
-    for (const h of headings) {
-      expect(h.className).toContain("dark:text-zinc-100");
-    }
-  });
-
-  it("carries dark:text-zinc-400 on category description paragraphs", async () => {
-    const { container } = await renderShop();
-    const descs = container.querySelectorAll("ul li p");
-    expect(descs.length).toBeGreaterThan(0);
-    for (const p of descs) {
-      expect(p.className).toContain("dark:text-zinc-400");
+  it("each category card is an accessible link with a recognisable href", async () => {
+    await renderShop();
+    const links = screen.getAllByRole("link", { name: /futon|murphy|platform|mattress/i });
+    expect(links.length).toBeGreaterThanOrEqual(4);
+    for (const link of links) {
+      expect(link.getAttribute("href")).toMatch(/^\/shop\//);
     }
   });
 });
