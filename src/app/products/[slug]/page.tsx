@@ -20,6 +20,8 @@ import { getReviewStats } from "@/lib/product/review-stats";
 import { getProductBySlug } from "@/lib/wix/products";
 import { logWixFailure } from "@/lib/wix/errors";
 import { listFabricSwatches } from "@/lib/wix/fabrics";
+import { getVideoByProductSlug } from "@/lib/videos/catalog";
+import { PdpProductVideo } from "@/components/product/PdpProductVideo";
 import type { SwatchItem } from "@/lib/swatch-request/swatch-request-schema";
 import { formatPlpPrice } from "@/lib/product/plp-price";
 import { getCrossSellProducts } from "@/lib/product/cross-sell";
@@ -106,6 +108,8 @@ export default async function PdpPage(props: {
     await logWixFailure("pdp-fabricSwatches", "listFabricSwatches", err);
   }
 
+  const productVideo = getVideoByProductSlug(slug);
+
   const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
   const canonicalUrl = `${siteUrl}/products/${slug}`;
   // cf-xe54: surface the same review data the PdpReviews component renders
@@ -183,6 +187,8 @@ export default async function PdpPage(props: {
           weightLbs={product.weight ?? 0}
         />
       </div>
+
+      {productVideo ? <PdpProductVideo video={productVideo} /> : null}
 
       {descriptionText ? (
         <section className="mt-10 max-w-3xl">
