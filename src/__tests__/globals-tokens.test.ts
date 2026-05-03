@@ -16,8 +16,8 @@ describe("globals.css — CF brand tokens", () => {
   it.each([
     ["--cf-navy", "#1e3a5f"],
     ["--cf-blue", "#5b8fa8"],
-    ["--cf-cta", "#4a7d94"],
-    ["--cf-cta-hover", "#3d6a80"],
+    ["--cf-cta", "#3e6b7e"],
+    ["--cf-cta-hover", "#325c70"],
     ["--cf-sand", "#f0f4f8"],
     ["--cf-cream", "#fefcf7"],
     ["--cf-espresso", "#3a2518"],
