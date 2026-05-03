@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: '0 6 * * *'  # Nightly at 6am UTC — full lint/typecheck/unit/E2E suite
+  workflow_dispatch:
 
 jobs:
   lint-typecheck-test:
