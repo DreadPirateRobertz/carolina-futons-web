@@ -12,65 +12,13 @@
 // Cross-fade between phases is a 90s CSS opacity transition so the switch
 // is perceptible but not jarring.
 
-import { useEffect, useRef, useState } from "react";
-
+import { useTimeOfDay } from "@/lib/hooks/useTimeOfDay";
 import { MascotWorldHero } from "@/components/mascot/MascotWorldHero";
 import { VintageSunRays } from "@/components/mascot/VintageSunRays";
 import { StargazingHero } from "@/components/mascot/StargazingHero";
 
-type Phase = "night" | "dawn" | "day" | "dusk";
-
-function getPhase(h: number): Phase {
-  if (h < 5 || h >= 20) return "night";
-  if (h < 7) return "dawn";
-  if (h < 17) return "day";
-  return "dusk";
-}
-
 export function LivingHero() {
-  const [phase, setPhase] = useState<Phase>("day"); // SSR default — suppressed until mounted
-  const [mounted, setMounted] = useState(false);
-  const [time, setTime] = useState(0);
-  const [reduceMotion, setReduceMotion] = useState(false);
-  const rafRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    // Resolve correct phase from wall clock immediately on mount.
-    // React batches both setState calls so they apply in a single render
-    // before any transition can fire — no flash of the wrong scene.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot client seed for SSR phase fallback
-    setPhase(getPhase(new Date().getHours()));
-    setMounted(true);
-
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot client seed for SSR motion fallback
-    setReduceMotion(mq.matches);
-    const onMotion = () => setReduceMotion(mq.matches);
-    mq.addEventListener?.("change", onMotion);
-
-    // Update phase every minute
-    const id = setInterval(() => {
-      setPhase(getPhase(new Date().getHours()));
-    }, 60_000);
-
-    // Animation time for dawn/dusk rays + stargazing fireflies/shooting star.
-    // Skip the RAF entirely when reduce-motion is on — components compute
-    // static-friendly state when time stays at 0.
-    if (!mq.matches) {
-      const start = performance.now();
-      const tick = (now: number) => {
-        setTime((now - start) / 1000);
-        rafRef.current = requestAnimationFrame(tick);
-      };
-      rafRef.current = requestAnimationFrame(tick);
-    }
-
-    return () => {
-      clearInterval(id);
-      mq.removeEventListener?.("change", onMotion);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
+  const { phase, time, mounted, reduceMotion } = useTimeOfDay();
 
   return (
     <div
