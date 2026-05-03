@@ -8,6 +8,8 @@ import {
 } from "@/components/theme-d/FilterFirst";
 import { MascotFooterDivider } from "@/components/mascot/MascotFooterDivider";
 import { EasterEggBear } from "@/components/mascot/EasterEggBear";
+import { SwatchPromoSection } from "@/components/home/SwatchPromoSection";
+import { QuizCtaSection } from "@/components/home/QuizCtaSection";
 import { StatsStrip } from "@/components/site/StatsStrip";
 import { TestimonialsStrip } from "@/components/site/TestimonialsStrip";
 import { TrustBar } from "@/components/site/TrustBar";
@@ -80,8 +82,14 @@ export default async function HomePage() {
       {/* ── Trust bar ── */}
       <TrustBar />
 
+      {/* ── Swatch promo — fabric CTA (cf-ph80) ── */}
+      <SwatchPromoSection />
+
       <StatsStrip />
       <TestimonialsStrip />
+
+      {/* ── Quiz CTA — style quiz entry point (cf-e4vd) ── */}
+      <QuizCtaSection />
 
       {/* ── Value props ── */}
       <section className="border-t border-cf-divider bg-cf-sand/40">
