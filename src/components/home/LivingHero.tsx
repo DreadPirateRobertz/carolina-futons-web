@@ -18,7 +18,7 @@ import { VintageSunRays } from "@/components/mascot/VintageSunRays";
 import { StargazingHero } from "@/components/mascot/StargazingHero";
 
 export function LivingHero() {
-  const { phase, time, mounted, reduceMotion } = useTimeOfDay();
+  const { phase, time, mounted, reduceMotion } = useTimeOfDay({ trackTime: true });
 
   return (
     <div
