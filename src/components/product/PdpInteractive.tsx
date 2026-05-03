@@ -11,6 +11,7 @@ import { PdpShippingEstimate } from "@/components/product/PdpShippingEstimate";
 import { PdpStickyCta } from "@/components/product/PdpStickyCta";
 import { PdpStockBadge } from "@/components/product/PdpStockBadge";
 import { PdpFabricSwatches } from "@/components/product/PdpFabricSwatches";
+import { PdpFinancing } from "@/components/product/PdpFinancing";
 import { PdpWhiteGlove } from "@/components/product/PdpWhiteGlove";
 import { PdpWishlistButton } from "@/components/product/PdpWishlistButton";
 import { VariantPicker } from "@/components/product/VariantPicker";
@@ -189,6 +190,7 @@ export function PdpInteractive({
             imageUrl={fallbackImageUrl}
           />
         </div>
+        <PdpFinancing unitPriceCents={fallbackPriceCents} />
         <PdpWhiteGlove unitPriceCents={whiteGlovePriceCents ?? fallbackPriceCents} />
         <PdpShippingEstimate weightLbs={weightLbs} palletized={palletized} />
       </div>
