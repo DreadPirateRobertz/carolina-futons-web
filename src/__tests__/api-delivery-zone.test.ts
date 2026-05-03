@@ -7,11 +7,15 @@ import { GET, POST } from "@/app/api/delivery-zone/route";
 // these tests pin down the wire contract — request parsing, response shape,
 // status codes, error vocabulary — at the route boundary.
 
-function makeGet(zip?: string | null) {
-  const url = zip == null
-    ? "https://carolinafutons.com/api/delivery-zone"
-    : `https://carolinafutons.com/api/delivery-zone?zip=${encodeURIComponent(zip)}`;
-  return new Request(url);
+function makeGet(zip?: string | null, params?: { weight?: number; palletized?: boolean }) {
+  const url = new URL(
+    zip == null
+      ? "https://carolinafutons.com/api/delivery-zone"
+      : `https://carolinafutons.com/api/delivery-zone?zip=${encodeURIComponent(zip)}`,
+  );
+  if (params?.weight !== undefined) url.searchParams.set("weight", String(params.weight));
+  if (params?.palletized) url.searchParams.set("palletized", "true");
+  return new Request(url.toString());
 }
 
 function makePost(body: unknown, { rawBody }: { rawBody?: string } = {}) {
@@ -50,7 +54,7 @@ describe("GET /api/delivery-zone", () => {
     });
   });
 
-  it("returns LTL tier for a non-NC CONUS ZIP (Atlanta 30303)", async () => {
+  it("returns LTL tier for a non-NC CONUS ZIP (Atlanta 30303) with no weight", async () => {
     const res = await GET(makeGet("30303"));
     expect(res.status).toBe(200);
     const json = await res.json();
@@ -58,6 +62,7 @@ describe("GET /api/delivery-zone", () => {
       ok: true,
       zone: "se",
       service: "ltl",
+      tier: "ltl",
       eligible: true,
       estDays: { min: 2, max: 3 },
     });
@@ -71,9 +76,9 @@ describe("GET /api/delivery-zone", () => {
       ok: true,
       zone: "mid",
       service: "ltl",
+      tier: "ltl",
       eligible: true,
       estDays: { min: 3, max: 5 },
-      label: "LTL freight delivery",
     });
   });
 
@@ -85,6 +90,7 @@ describe("GET /api/delivery-zone", () => {
       ok: true,
       zone: "west",
       service: "ltl",
+      tier: "ltl",
       eligible: true,
       estDays: { min: 5, max: 7 },
     });
@@ -98,6 +104,7 @@ describe("GET /api/delivery-zone", () => {
       ok: true,
       zone: "akhi",
       service: "unsupported",
+      tier: "unsupported",
       eligible: false,
     });
   });
@@ -116,8 +123,8 @@ describe("GET /api/delivery-zone", () => {
       ok: true,
       zone: "territory",
       service: "unsupported",
+      tier: "unsupported",
       eligible: false,
-      label: "Outside our delivery area",
     });
   });
 
@@ -125,6 +132,44 @@ describe("GET /api/delivery-zone", () => {
     const res = await GET(makeGet("  28739  "));
     expect(res.status).toBe(200);
     expect((await res.json()).zip).toBe("28739");
+  });
+
+  // Weight-based tier routing
+  it("?zip=90210&weight=20 → parcel (light item, CONUS)", async () => {
+    const res = await GET(makeGet("90210", { weight: 20 }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).tier).toBe("parcel");
+  });
+
+  it("?zip=90210&weight=150 → ltl (medium item)", async () => {
+    const res = await GET(makeGet("90210", { weight: 150 }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).tier).toBe("ltl");
+  });
+
+  it("?zip=90210&weight=600 → freight (heavy item)", async () => {
+    const res = await GET(makeGet("90210", { weight: 600 }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).tier).toBe("freight");
+  });
+
+  it("?zip=28801&weight=20 → white-glove (NC always overrides weight)", async () => {
+    const res = await GET(makeGet("28801", { weight: 20 }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).tier).toBe("white-glove");
+  });
+
+  it("?zip=90210&palletized=true → freight (pallet flag overrides weight)", async () => {
+    const res = await GET(makeGet("90210", { weight: 50, palletized: true }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).tier).toBe("freight");
+  });
+
+  it("invalid weight param is ignored (falls back to ltl default)", async () => {
+    const url = new URL("https://carolinafutons.com/api/delivery-zone?zip=90210&weight=abc");
+    const res = await GET(new Request(url.toString()));
+    expect(res.status).toBe(200);
+    expect((await res.json()).tier).toBe("ltl");
   });
 });
 
@@ -182,8 +227,40 @@ describe("POST /api/delivery-zone", () => {
       ok: true,
       zone: "other",
       service: "ltl",
+      tier: "ltl",
       eligible: true,
       estDays: { min: 7, max: 10 },
     });
+  });
+
+  // Weight-based tier routing via POST body
+  it("{ zip, weight:20 } → parcel for CONUS non-NC ZIP", async () => {
+    const res = await POST(makePost({ zip: "90210", weight: 20 }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).tier).toBe("parcel");
+  });
+
+  it("{ zip, weight:150 } → ltl", async () => {
+    const res = await POST(makePost({ zip: "90210", weight: 150 }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).tier).toBe("ltl");
+  });
+
+  it("{ zip, weight:600 } → freight", async () => {
+    const res = await POST(makePost({ zip: "90210", weight: 600 }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).tier).toBe("freight");
+  });
+
+  it("{ zip, palletized:true } → freight regardless of weight", async () => {
+    const res = await POST(makePost({ zip: "90210", weight: 30, palletized: true }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).tier).toBe("freight");
+  });
+
+  it("negative weight is coerced to 0 (ltl default)", async () => {
+    const res = await POST(makePost({ zip: "90210", weight: -10 }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).tier).toBe("ltl");
   });
 });
