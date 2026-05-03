@@ -11,7 +11,9 @@ import {
 } from "@/lib/newsletter/newsletter-store";
 import type { NewsletterActionState } from "@/app/newsletter/newsletter-state";
 
-// cf-newsletter-footer: Server Action for the footer signup.
+// Endpoint-only — no /newsletter page route exists or is planned (cf-7ue0).
+// This Server Action backs NewsletterSignup in the footer and any inline
+// signup sections. /newsletter 404s intentionally; that is not a bug.
 // Designed for `useActionState`: the form binds this and renders directly
 // off { status, errors?, alreadySubscribed?, storeError? }. Store errors
 // are logged server-side and surfaced as a friendly message — the user
