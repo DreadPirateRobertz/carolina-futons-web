@@ -180,6 +180,7 @@ export default async function PdpPage(props: {
           stock={stock}
           fabricSwatches={fabricSwatches}
           fabricSwatchError={fabricSwatchError}
+          weightLbs={product.weight ?? 0}
         />
       </div>
 

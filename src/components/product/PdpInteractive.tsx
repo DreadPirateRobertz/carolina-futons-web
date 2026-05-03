@@ -57,6 +57,8 @@ export type PdpInteractiveProps = {
   stock?: StockBadgeInput | null;
   fabricSwatches?: SwatchItem[];
   fabricSwatchError?: boolean;
+  weightLbs?: number;
+  palletized?: boolean;
 };
 
 export function PdpInteractive({
@@ -73,6 +75,8 @@ export function PdpInteractive({
   stock,
   fabricSwatches,
   fabricSwatchError,
+  weightLbs,
+  palletized,
 }: PdpInteractiveProps) {
   // Intentional duplication: VariantPicker also seeds from initialSelection() and holds its own
   // selection state for price/stock display. The two stay in sync via onSelectionChange. If
@@ -186,7 +190,7 @@ export function PdpInteractive({
           />
         </div>
         <PdpWhiteGlove unitPriceCents={whiteGlovePriceCents ?? fallbackPriceCents} />
-        <PdpShippingEstimate />
+        <PdpShippingEstimate weightLbs={weightLbs} palletized={palletized} />
       </div>
       <PdpStickyCta
         visible={!primaryInView}

@@ -79,6 +79,35 @@ const ZONE_TO_SERVICE: Record<ShippingZone, ShippingService> = {
   other: "ltl",
 };
 
+// Weight-based shipping tiers for CONUS (non-NC) orders.
+// NC always resolves to white-glove regardless of weight.
+// Thresholds are in pounds (Wix stores weight in store-configured units;
+// carolina-futons-web is a US store, so the unit is always lb).
+export type ShippingTier = "parcel" | "ltl" | "freight" | "white-glove" | "unsupported";
+
+// Boundary values:
+//   < PARCEL_MAX_LBS  → parcel (UPS Ground)
+//   < FREIGHT_MIN_LBS → ltl
+//   >= FREIGHT_MIN_LBS or palletized → freight
+export const PARCEL_MAX_LBS = 70;
+export const FREIGHT_MIN_LBS = 500;
+
+// Returns the weight-based shipping tier for a CONUS order.
+// `weightLbs` should be the product's shipping weight; pass 0 or omit to
+// fall back to ltl (safe default — LTL is more expensive than parcel so
+// we never under-charge, but never over-promise faster parcel service).
+export function getShippingTier(
+  weightLbs: number,
+  zone: ShippingZone,
+  palletized = false,
+): ShippingTier {
+  if (zone === "nc") return "white-glove";
+  if (zone === "akhi" || zone === "territory") return "unsupported";
+  if (palletized || weightLbs >= FREIGHT_MIN_LBS) return "freight";
+  if (weightLbs > 0 && weightLbs < PARCEL_MAX_LBS) return "parcel";
+  return "ltl";
+}
+
 export type EstDays = { min: number; max: number };
 
 const ZONE_EST_DAYS: Record<ShippingZone, EstDays> = {

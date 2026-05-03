@@ -1,8 +1,12 @@
 // /api/delivery-zone — ZIP → service-tier classification.
 //
 // Wire contract (DeliveryZoneOk | DeliveryZoneError, single `ok` discriminant):
-//   200 {ok:true, zip, zone, eligible, service, estDays:{min,max}, label}
+//   200 {ok:true, zip, zone, eligible, service, tier, estDays:{min,max}, label}
 //   400 {ok:false, error: "missing-zip" | "invalid-zip" | "invalid-json"}
+//
+// Optional params (GET query string or POST body):
+//   weight     — product shipping weight in lbs (number); omit → ltl default
+//   palletized — boolean; true → freight regardless of weight
 //
 // Error code semantics (matters: client switches on `error` to pick UI copy):
 //   "missing-zip"  — zip field absent / empty / non-string
@@ -17,10 +21,11 @@ import { NextResponse } from "next/server";
 import {
   getEstDays,
   getServiceTier,
+  getShippingTier,
   getShippingZone,
   isEligible,
   isValidZip,
-  type ShippingService,
+  type ShippingTier,
 } from "@/lib/product/shipping-estimate";
 import type {
   DeliveryZoneError,
@@ -29,13 +34,21 @@ import type {
 
 export const dynamic = "force-dynamic";
 
-const SERVICE_LABEL: Record<ShippingService, string> = {
-  "white-glove": "Free white-glove delivery",
+const TIER_LABEL: Record<ShippingTier, string> = {
+  parcel: "Ships UPS Ground",
   ltl: "LTL freight delivery",
+  freight: "Full pallet freight",
+  "white-glove": "Free white-glove delivery",
   unsupported: "Outside our delivery area",
 };
 
-function lookup(zip: unknown): DeliveryZoneOk | DeliveryZoneError {
+type LookupParams = {
+  zip: unknown;
+  weightLbs?: number;
+  palletized?: boolean;
+};
+
+function lookup({ zip, weightLbs = 0, palletized = false }: LookupParams): DeliveryZoneOk | DeliveryZoneError {
   if (typeof zip !== "string" || zip.length === 0) {
     return { ok: false, error: "missing-zip" };
   }
@@ -45,20 +58,36 @@ function lookup(zip: unknown): DeliveryZoneOk | DeliveryZoneError {
   }
   const zone = getShippingZone(trimmed);
   const service = getServiceTier(zone);
+  const tier = getShippingTier(weightLbs, zone, palletized);
   return {
     ok: true,
     zip: trimmed,
     zone,
     eligible: isEligible(zone),
     service,
+    tier,
     estDays: getEstDays(zone),
-    label: SERVICE_LABEL[service],
+    label: TIER_LABEL[tier],
   };
+}
+
+function parseWeight(raw: string | null): number {
+  if (raw === null) return 0;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+}
+
+function parsePalletized(raw: string | null): boolean {
+  return raw === "true" || raw === "1";
 }
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const result = lookup(url.searchParams.get("zip"));
+  const result = lookup({
+    zip: url.searchParams.get("zip"),
+    weightLbs: parseWeight(url.searchParams.get("weight")),
+    palletized: parsePalletized(url.searchParams.get("palletized")),
+  });
   return NextResponse.json(result, { status: result.ok ? 200 : 400 });
 }
 
@@ -74,10 +103,14 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const zip =
-    body && typeof body === "object" && "zip" in body
-      ? (body as { zip?: unknown }).zip
-      : undefined;
-  const result = lookup(zip);
+  const obj = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+  const weightLbs = parseWeight(
+    typeof obj.weight === "number" ? String(obj.weight) : typeof obj.weight === "string" ? obj.weight : null,
+  );
+  const result = lookup({
+    zip: obj.zip,
+    weightLbs,
+    palletized: obj.palletized === true,
+  });
   return NextResponse.json(result, { status: result.ok ? 200 : 400 });
 }

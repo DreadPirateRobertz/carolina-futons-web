@@ -3,17 +3,35 @@
 import { useId, useState } from "react";
 
 import {
-  getDeliveryWindow,
+  getEstDays,
+  getShippingTier,
   getShippingZone,
   isValidZip,
+  type ShippingTier,
 } from "@/lib/product/shipping-estimate";
 
 type ResultState =
   | { kind: "idle" }
-  | { kind: "ok"; zip: string; window: string }
+  | { kind: "ok"; zip: string; tier: ShippingTier; window: string }
   | { kind: "error"; message: string };
 
-export function PdpShippingEstimate() {
+const TIER_COPY: Record<ShippingTier, string> = {
+  parcel: "Ships UPS Ground",
+  ltl: "LTL freight delivery",
+  freight: "Full pallet freight",
+  "white-glove": "Free white-glove delivery",
+  unsupported: "Outside our delivery area",
+};
+
+export type PdpShippingEstimateProps = {
+  weightLbs?: number;
+  palletized?: boolean;
+};
+
+export function PdpShippingEstimate({
+  weightLbs = 0,
+  palletized = false,
+}: PdpShippingEstimateProps) {
   const [zip, setZip] = useState("");
   const [result, setResult] = useState<ResultState>({ kind: "idle" });
 
@@ -21,22 +39,17 @@ export function PdpShippingEstimate() {
   const resultId = useId();
   const errorId = useId();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     const trimmed = zip.trim();
     if (!isValidZip(trimmed)) {
-      setResult({
-        kind: "error",
-        message: "Please enter a 5-digit ZIP.",
-      });
+      setResult({ kind: "error", message: "Please enter a 5-digit ZIP." });
       return;
     }
     const zone = getShippingZone(trimmed);
-    setResult({
-      kind: "ok",
-      zip: trimmed,
-      window: getDeliveryWindow(zone),
-    });
+    const tier = getShippingTier(weightLbs, zone, palletized);
+    const { min, max } = getEstDays(zone);
+    setResult({ kind: "ok", zip: trimmed, tier, window: `${min}-${max} business days` });
   };
 
   // aria-describedby points at whichever message is currently live (status or
@@ -82,7 +95,9 @@ export function PdpShippingEstimate() {
           className="text-sm text-cf-espresso"
           data-testid="pdp-shipping-result"
         >
-          Delivers in {result.window} to {result.zip}.
+          {result.tier === "unsupported"
+            ? TIER_COPY[result.tier]
+            : `${TIER_COPY[result.tier]} — delivers in ${result.window} to ${result.zip}.`}
         </p>
       )}
       {result.kind === "error" && (
