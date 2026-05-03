@@ -125,6 +125,9 @@ const nextConfig: NextConfig = {
       // cf-e92v — /care + /care-warranty collapse onto /warranty
       { source: "/care", destination: "/warranty", permanent: true },
       { source: "/care-warranty", destination: "/warranty", permanent: true },
+
+      // cf-992s — product slug corrections (Wix CMS slug mismatch → 404)
+      { source: "/products/wilderness-log-futon-frame", destination: "/products/wilderness-log-futon", permanent: true },
     ];
   },
 };

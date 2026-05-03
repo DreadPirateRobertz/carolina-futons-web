@@ -73,3 +73,13 @@ describe("next.config redirects (cf-3qt.7.1) — Wix Studio → cfw", () => {
     expect(new Set(sources).size).toBe(sources.length);
   });
 });
+
+describe("next.config redirects (cf-992s) — product slug corrections", () => {
+  it("redirects wilderness-log-futon-frame to the correct slug", async () => {
+    const redirects = await nextConfig.redirects!();
+    const r = redirects.find((x) => x.source === "/products/wilderness-log-futon-frame");
+    expect(r).toBeDefined();
+    expect(r!.destination).toBe("/products/wilderness-log-futon");
+    expect(r!.permanent).toBe(true);
+  });
+});
