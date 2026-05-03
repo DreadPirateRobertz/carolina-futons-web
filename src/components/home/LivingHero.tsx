@@ -9,7 +9,7 @@
 //   day     h 7 – 17            → MascotWorldHero (bear on porch, cursor eyes)
 //   dusk    h 17 – 20           → VintageSunRays (giant sunburst, dusk palette)
 //
-// Cross-fade between phases is a 90s CSS opacity transition so the switch
+// Cross-fade between phases is a 4s CSS opacity transition so the switch
 // is perceptible but not jarring.
 
 import { useTimeOfDay } from "@/lib/hooks/useTimeOfDay";
