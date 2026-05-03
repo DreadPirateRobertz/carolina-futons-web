@@ -210,6 +210,22 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* cf-j6ub Living Footer ambient animations */
+@keyframes cf-star-twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50%       { opacity: 1;   transform: scale(1.2); }
+}
+
+@keyframes cf-footer-orb {
+  from { opacity: 0.6; transform: translateX(-50%) scale(1);   }
+  to   { opacity: 0.9; transform: translateX(-50%) scale(1.1); }
+}
+
+@keyframes cf-footer-drift {
+  from { background-position: 0% 0%;   }
+  to   { background-position: 0% 100%; }
+}
+
 /* cf-delight D2 — Mr Pops marquee keyframe.
    MarqueeTrack (MrPopsMarquee.tsx) renders each item list twice in the DOM.
    Animating to translateX(-50%) scrolls exactly one copy's width, then the

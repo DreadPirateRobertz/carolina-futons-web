@@ -1,4 +1,4 @@
-// Site-wide footer — Phase 3 rebrand.
+// Site-wide footer — Phase 3 rebrand + cf-j6ub Living Footer atmosphere.
 // Retires the Phase 1 108px chrome spec in favor of a content-height
 // footer that carries the brand: logo + tagline + real contact data
 // (BUSINESS constant) + social presence. Marketing owns the tagline and
@@ -10,7 +10,7 @@ import Link from "next/link";
 import { BUSINESS } from "@/lib/business/contact-info";
 import { BotanicalFooterDivider } from "@/components/illustrations/BotanicalFooterDivider";
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
-import { LivingFooterOverlay } from "@/components/site/LivingFooterOverlay";
+import { LivingFooterBg } from "@/components/site/LivingFooterBg";
 
 type SocialLink = {
   name: string;
@@ -94,16 +94,15 @@ export function Footer() {
   return (
     <footer
       data-slot="site-footer"
-      className="relative mt-auto border-t border-cf-divider bg-cf-footer-bg text-cf-cream"
+      className="relative mt-auto overflow-hidden border-t border-cf-divider bg-cf-footer-bg text-cf-cream"
     >
-      {/* Living time-of-day atmosphere — absolute inset-0 overlays; relative on
-          the <footer> is load-bearing so they stay within the footer bounds */}
-      <LivingFooterOverlay />
-      {/* relative z-10 ensures content paints above the absolute overlay divs */}
-      <div className="relative z-10">
+      {/* cf-j6ub: time-of-day animated atmosphere — absolute behind all content */}
+      <LivingFooterBg />
       {/* cf-pgec: v2 Botanical ridge divider softens the footer top edge */}
-      <BotanicalFooterDivider />
-      <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <div className="relative z-10">
+        <BotanicalFooterDivider />
+      </div>
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col gap-4">
             <Link href="/" className="inline-flex w-fit items-center gap-3">
@@ -198,7 +197,7 @@ export function Footer() {
 
       <div
         data-slot="site-footer-bottom"
-        className="border-t border-cf-cream/10 text-xs text-cf-cream/70"
+        className="relative z-10 border-t border-cf-cream/10 text-xs text-cf-cream/70"
       >
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
           <span>© {new Date().getFullYear()} Carolina Futons. Hendersonville, NC.</span>
@@ -224,7 +223,6 @@ export function Footer() {
           </div>
         </div>
       </div>
-      </div> {/* end relative z-10 content wrapper */}
     </footer>
   );
 }
