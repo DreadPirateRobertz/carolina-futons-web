@@ -19,7 +19,7 @@ export const SEO_CITIES: ReadonlyArray<SeoCity> = [
 ];
 
 export function getCityBySlug(slug: string): SeoCity | null {
-  return SEO_CITIES.find((c) => c.slug === slug) ?? null;
+  return SEO_CITIES.find((c) => c.slug === slug.toLowerCase().trim()) ?? null;
 }
 
 export function proximityLine(city: SeoCity): string {

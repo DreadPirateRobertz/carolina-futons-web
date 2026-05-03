@@ -4,8 +4,12 @@ import Link from "next/link";
 import { BUSINESS } from "@/lib/business/contact-info";
 import { SEO_CITIES, getCityBySlug, proximityLine } from "@/lib/seo/cities";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { resolveSiteUrl } from "@/lib/seo/json-ld";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://carolinafutons.com";
+// Return a real 404 for any slug that isn't in SEO_CITIES.
+export const dynamicParams = false;
+
+const SITE_URL = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
 
 export async function generateStaticParams() {
   return SEO_CITIES.map((city) => ({ "city-slug": city.slug }));

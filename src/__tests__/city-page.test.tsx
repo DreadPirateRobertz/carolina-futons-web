@@ -5,7 +5,7 @@ import CityPage, {
   generateStaticParams,
   generateMetadata,
 } from "@/app/near/[city-slug]/page";
-import { SEO_CITIES } from "@/lib/seo/cities";
+import { SEO_CITIES, proximityLine, getCityBySlug } from "@/lib/seo/cities";
 
 describe("generateStaticParams", () => {
   it("returns a slug for every city in SEO_CITIES", async () => {
@@ -49,11 +49,25 @@ describe("generateMetadata", () => {
     expect(String(meta.description)).toMatch(/charlotte/i);
   });
 
+  it("includes a canonical URL with the slug", async () => {
+    const meta = await generateMetadata({
+      params: Promise.resolve({ "city-slug": "asheville" }),
+    });
+    expect(String(meta.alternates?.canonical)).toMatch(/\/near\/asheville/);
+  });
+
   it("returns a 404-style metadata for unknown slugs", async () => {
     const meta = await generateMetadata({
       params: Promise.resolve({ "city-slug": "timbuktu" }),
     });
     expect(meta.robots).toMatchObject({ index: false });
+  });
+
+  it("unknown slug metadata has no canonical URL", async () => {
+    const meta = await generateMetadata({
+      params: Promise.resolve({ "city-slug": "timbuktu" }),
+    });
+    expect(meta.alternates).toBeUndefined();
   });
 });
 
@@ -77,14 +91,20 @@ describe("CityPage — Asheville", () => {
     expect(shopLinks.length).toBeGreaterThan(0);
   });
 
-  it("renders store distance or proximity messaging", async () => {
+  it("renders the distance in miles from the store", async () => {
     const ui = await CityPage({ params });
     render(ui);
     const main = screen.getByRole("main");
-    expect(main.textContent).toMatch(/miles|minutes|Hendersonville/i);
+    expect(main.textContent).toMatch(/20 miles/i);
   });
 
-  it("embeds a JSON-LD script tag with LocalBusiness type", async () => {
+  it("renders the distance paragraph in the showroom section", async () => {
+    const ui = await CityPage({ params });
+    render(ui);
+    expect(screen.getByText(/approximately 20 miles from asheville/i)).toBeTruthy();
+  });
+
+  it("embeds a JSON-LD script tag with FurnitureStore type", async () => {
     const ui = await CityPage({ params });
     const { container } = render(ui);
     const scripts = container.querySelectorAll('script[type="application/ld+json"]');
@@ -95,21 +115,61 @@ describe("CityPage — Asheville", () => {
         if (data["@type"] === "LocalBusiness" || data["@type"] === "FurnitureStore") {
           found = true;
         }
-      } catch {
-        // skip malformed
+      } catch (err) {
+        throw new Error(`Malformed JSON-LD: ${err}`);
       }
     });
     expect(found).toBe(true);
   });
+
+  it("JSON-LD areaServed matches the requested city", async () => {
+    const ui = await CityPage({ params });
+    const { container } = render(ui);
+    const scripts = container.querySelectorAll('script[type="application/ld+json"]');
+    let areaServedName: string | undefined;
+    scripts.forEach((s) => {
+      try {
+        const data = JSON.parse(s.textContent ?? "");
+        if (data.areaServed) areaServedName = data.areaServed.name;
+      } catch {
+        // skip
+      }
+    });
+    expect(areaServedName).toBe("Asheville");
+  });
+});
+
+describe("CityPage — Hendersonville (zero-distance city)", () => {
+  const params = Promise.resolve({ "city-slug": "hendersonville" });
+
+  it("renders H1 containing Hendersonville", async () => {
+    const ui = await CityPage({ params });
+    render(ui);
+    expect(
+      screen.getByRole("heading", { level: 1, name: /hendersonville/i }),
+    ).toBeTruthy();
+  });
+
+  it("renders the 'right here' proximity copy (not a miles count)", async () => {
+    const ui = await CityPage({ params });
+    render(ui);
+    const main = screen.getByRole("main");
+    expect(main.textContent).toMatch(/right here/i);
+    expect(main.textContent).not.toMatch(/\d+ miles from our/i);
+  });
+
+  it("does not render the distance paragraph in the showroom section", async () => {
+    const ui = await CityPage({ params });
+    render(ui);
+    expect(screen.queryByText(/approximately \d+ miles from hendersonville/i)).toBeNull();
+  });
 });
 
 describe("CityPage — not found slug", () => {
-  it("renders a 404 / not found result for unknown slugs", async () => {
+  it("returns null for unknown slugs (dynamicParams=false handles real 404 at the framework level)", async () => {
     const result = await CityPage({
       params: Promise.resolve({ "city-slug": "nowhere-town" }),
     });
-    // Page should call notFound() — but since notFound() throws in Next.js,
-    // we verify the city data lookup returns null for unknown slugs
     expect(result).toBeNull();
   });
 });
@@ -128,5 +188,28 @@ describe("SEO_CITIES data", () => {
     const hendo = SEO_CITIES.find((c) => c.slug === "hendersonville");
     expect(hendo).toBeDefined();
     expect(hendo?.name).toBe("Hendersonville");
+  });
+});
+
+describe("proximityLine", () => {
+  it("returns 'right here' copy for distanceMiles === 0", () => {
+    const hendo = getCityBySlug("hendersonville")!;
+    expect(proximityLine(hendo)).toMatch(/right here/i);
+  });
+
+  it("returns miles copy for non-zero distance", () => {
+    const asheville = getCityBySlug("asheville")!;
+    expect(proximityLine(asheville)).toMatch(/20 miles/i);
+  });
+});
+
+describe("getCityBySlug", () => {
+  it("is case-insensitive", () => {
+    expect(getCityBySlug("Asheville")).not.toBeNull();
+    expect(getCityBySlug("CHARLOTTE")).not.toBeNull();
+  });
+
+  it("returns null for unknown slugs", () => {
+    expect(getCityBySlug("nowhere")).toBeNull();
   });
 });
