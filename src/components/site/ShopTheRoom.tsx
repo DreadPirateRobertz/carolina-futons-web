@@ -121,7 +121,7 @@ export const HOME_HERO_PHOTO: HeroPhoto = LIFESTYLE_FUTON_FRAMES_PHOTO;
 export const HOME_HOTSPOT_CONFIGS: ReadonlyArray<HotspotConfig> = [
   { id: "monterey", xPct: 38, yPct: 70, productSlug: "monterey-futon-frame" },
   { id: "kingston", xPct: 60, yPct: 65, productSlug: "kingston-futon-frame" },
-  { id: "canby", xPct: 50, yPct: 55, productSlug: "canby-mattress" },
+  { id: "canby", xPct: 50, yPct: 55, productSlug: "canby-futon-frame" },
 ];
 
 export const ABOUT_HERO_PHOTO: HeroPhoto = {
@@ -147,14 +147,14 @@ export const SHOP_HERO_PHOTO: HeroPhoto = {
 export const SHOP_HOTSPOT_CONFIGS: ReadonlyArray<HotspotConfig> = [
   { id: "solstice", xPct: 50, yPct: 50, productSlug: "solstice-mattress" },
   { id: "portofino-shop", xPct: 30, yPct: 60, productSlug: "portofino-mattress" },
-  { id: "canby-shop", xPct: 70, yPct: 60, productSlug: "canby-mattress" },
+  { id: "canby-shop", xPct: 70, yPct: 60, productSlug: "canby-futon-frame" },
 ];
 
 // /shop/futon-frames PLP. Reuses the shared LIFESTYLE_FUTON_FRAMES_PHOTO
 // (same asset as HOME_HERO_PHOTO) — a single source of truth for the
 // futon-room scene. Hotspot products are all real futon SKUs verified
-// live on prod (canby-mattress was flagged stale in review and dropped
-// in favor of ekko-futon-frame).
+// live on prod (canby-futon-frame was dropped from this scene in favor
+// of ekko-futon-frame to avoid duplicating the home hero).
 export const FUTON_FRAMES_PLP_HERO_PHOTO: HeroPhoto = LIFESTYLE_FUTON_FRAMES_PHOTO;
 
 export const FUTON_FRAMES_PLP_HOTSPOT_CONFIGS: ReadonlyArray<HotspotConfig> = [
