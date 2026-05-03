@@ -21,6 +21,7 @@ import { getProductBySlug } from "@/lib/wix/products";
 import { logWixFailure } from "@/lib/wix/errors";
 import { listFabricSwatches } from "@/lib/wix/fabrics";
 import { getVideoByProductSlug } from "@/lib/videos/catalog";
+import { getGlbUrlByProductSlug } from "@/lib/models3d/catalog";
 import { PdpProductVideo } from "@/components/product/PdpProductVideo";
 import type { SwatchItem } from "@/lib/swatch-request/swatch-request-schema";
 import { formatPlpPrice } from "@/lib/product/plp-price";
@@ -110,6 +111,7 @@ export default async function PdpPage(props: {
   }
 
   const productVideo = getVideoByProductSlug(slug);
+  const glbUrl = getGlbUrlByProductSlug(slug) ?? "";
 
   const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
   const canonicalUrl = `${siteUrl}/products/${slug}`;
@@ -170,10 +172,7 @@ export default async function PdpPage(props: {
         }}
       />
 
-      <ArModelViewer
-        glbUrl={`https://cdn.carolinafutons.com/models/glb/${slug}.glb`}
-        productName={product.name ?? undefined}
-      />
+      {glbUrl ? <ArModelViewer glbUrl={glbUrl} productName={product.name ?? undefined} /> : null}
 
       <div className="mt-6">
         <PdpInteractive
@@ -195,6 +194,7 @@ export default async function PdpPage(props: {
       </div>
 
       {productVideo ? <PdpProductVideo video={productVideo} /> : null}
+
 
       {descriptionText ? (
         <section className="mt-10 max-w-3xl">
