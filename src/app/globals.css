@@ -219,6 +219,13 @@
   background-color: oklch(0.47 0.053 232);
 }
 
+/* cf-jcta: dark mode CTA hover keeps sufficient contrast with white text.
+   bg-cf-cta in dark mode resolves to #7ab8d0 (light blue) — white-on-light
+   fails 4.5:1 AA. Override hover to the light-mode teal (#3e6b7e, 5.26:1). */
+.dark .hover\:bg-cf-cta\/90:hover {
+  background-color: rgb(62 107 126 / 0.9);
+}
+
 /* cf-j6ub Living Footer ambient animations */
 @keyframes cf-star-twinkle {
   0%, 100% { opacity: 0.3; transform: scale(0.8); }
