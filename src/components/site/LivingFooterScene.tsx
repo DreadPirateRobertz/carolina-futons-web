@@ -39,6 +39,21 @@ export function LivingFooterScene() {
         preserveAspectRatio="xMidYMax slice"
         style={{ display: "block", width: "100%", height: "100%" }}
       >
+        <defs>
+          <style>{`
+            @keyframes lfs-bear-breathe {
+              0%, 100% { transform: scale(1); }
+              50% { transform: scale(1.03); }
+            }
+            @media (prefers-reduced-motion: no-preference) {
+              .lfs-bear-breathe {
+                transform-box: fill-box;
+                transform-origin: center;
+                animation: lfs-bear-breathe 3s ease-in-out infinite;
+              }
+            }
+          `}</style>
+        </defs>
         {/* Distant ridge — semi-transparent so atmosphere bleeds through */}
         <path
           d="M 0 60 Q 240 42 480 52 Q 720 62 960 38 Q 1200 14 1440 55 Q 1680 96 1920 62 L 1920 120 L 0 120 Z"
@@ -60,9 +75,11 @@ export function LivingFooterScene() {
           d="M 0 96 Q 240 88 480 94 Q 720 100 960 90 Q 1200 80 1440 94 Q 1680 110 1920 96 L 1920 120 L 0 120 Z"
           fill={c.ridge1}
         />
-        {/* Sleeping bear centered on the near ridge */}
+        {/* Sleeping bear: outer g positions, inner g animates (avoids CSS transform fighting SVG translate) */}
         <g transform="translate(960 90)">
-          <Bear pose="sleeping" scale={0.55} />
+          <g className="lfs-bear-breathe">
+            <Bear pose="sleeping" scale={0.55} />
+          </g>
         </g>
       </svg>
     </div>
