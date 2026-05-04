@@ -123,7 +123,7 @@ function ProductSection({ products }: { products: ReadonlyArray<SearchProduct> }
         {products.map((p) => (
           <li
             key={p._id ?? p.slug}
-            className="rounded-md border border-cf-divider bg-white/60 p-4"
+            className="rounded-md border border-cf-divider bg-white/60 dark:bg-cf-cream p-4"
           >
             <Link
               href={`/products/${p.slug}`}
@@ -168,7 +168,7 @@ function ArticleSection({ posts }: { posts: ReadonlyArray<BlogPostSummary> }) {
         {posts.map((post) => (
           <li
             key={post._id}
-            className="rounded-md border border-cf-divider bg-white/60 p-4"
+            className="rounded-md border border-cf-divider bg-white/60 dark:bg-cf-cream p-4"
           >
             <Link
               href={`/blog/${post.slug}`}
