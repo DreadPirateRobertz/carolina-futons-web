@@ -40,7 +40,7 @@ export default async function PublicRegistryPage({
         <h1 className="font-heading text-2xl font-semibold text-cf-espresso">
           Registry not found
         </h1>
-        <p className="mt-3 text-cf-charcoal/60">
+        <p className="mt-3 text-cf-charcoal/70">
           This registry link may have expired or been made private.
         </p>
         <Link
@@ -65,7 +65,7 @@ export default async function PublicRegistryPage({
         <h1 className="font-heading text-2xl font-semibold text-cf-espresso sm:text-3xl">
           {registry.title}
         </h1>
-        <p className="mt-1 text-sm text-cf-charcoal/60">
+        <p className="mt-1 text-sm text-cf-charcoal/70">
           {occasion}
           {registry.eventDate
             ? ` · ${new Date(registry.eventDate).toLocaleDateString("en-US", { dateStyle: "long" })}`
@@ -79,7 +79,7 @@ export default async function PublicRegistryPage({
       </header>
 
       {registry.items.length === 0 ? (
-        <p className="text-cf-charcoal/60">No items added to this registry yet.</p>
+        <p className="text-cf-charcoal/70">No items added to this registry yet.</p>
       ) : (
         <ul
           role="list"
@@ -109,7 +109,7 @@ export default async function PublicRegistryPage({
                     {item.productName}
                   </p>
                   {item.productPrice > 0 && (
-                    <p className="mt-0.5 text-sm text-cf-charcoal/60">
+                    <p className="mt-0.5 text-sm text-cf-charcoal/70">
                       ${item.productPrice.toFixed(2)}
                     </p>
                   )}
