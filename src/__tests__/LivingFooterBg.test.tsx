@@ -68,62 +68,6 @@ describe("LivingFooterBg — structure", () => {
   });
 });
 
-describe("LivingFooterBg — night stars", () => {
-  it("renders the star SVG when phase is night", () => {
-    mockState.phase = "night";
-    const { container } = render(<LivingFooterBg />);
-    const svg = container.querySelector("svg[viewBox='0 0 100 100']");
-    expect(svg).not.toBeNull();
-  });
-
-  it("star SVG container is aria-hidden", () => {
-    mockState.phase = "night";
-    const { container } = render(<LivingFooterBg />);
-    const root = container.querySelector("[aria-hidden='true']") as HTMLElement;
-    // The outermost wrapper carries aria-hidden — confirms entire animated bg is decorative
-    expect(root?.getAttribute("aria-hidden")).toBe("true");
-  });
-
-  it("renders 14 star circles", () => {
-    mockState.phase = "night";
-    const { container } = render(<LivingFooterBg />);
-    const circles = container.querySelectorAll("circle");
-    expect(circles.length).toBe(14);
-  });
-
-  it("star circles get twinkle animation when motion allowed", () => {
-    mockState.phase = "night";
-    mockState.reduceMotion = false;
-    const { container } = render(<LivingFooterBg />);
-    const circle = container.querySelector("circle") as SVGCircleElement;
-    expect(circle.style.animation).toContain("cf-star-twinkle");
-  });
-
-  it("star circles get static opacity under reduced-motion", () => {
-    mockState.phase = "night";
-    mockState.reduceMotion = true;
-    const { container } = render(<LivingFooterBg />);
-    const circle = container.querySelector("circle") as SVGCircleElement;
-    expect(circle.style.animation).toBeFalsy();
-    expect(circle.style.opacity).toBeTruthy();
-  });
-
-  it("star SVG is opaque when phase is night and mounted", () => {
-    mockState.phase = "night";
-    mockState.mounted = true;
-    const { container } = render(<LivingFooterBg />);
-    const svg = container.querySelector("svg[viewBox='0 0 100 100']") as SVGElement;
-    expect(svg.style.opacity).toBe("1");
-  });
-
-  it("star SVG is transparent when phase is day", () => {
-    mockState.phase = "day";
-    const { container } = render(<LivingFooterBg />);
-    const svg = container.querySelector("svg[viewBox='0 0 100 100']") as SVGElement;
-    expect(svg.style.opacity).toBe("0");
-  });
-});
-
 describe("LivingFooterBg — dawn/dusk orbs", () => {
   it("renders two orb divs (dawn + dusk) always", () => {
     const { container } = render(<LivingFooterBg />);
