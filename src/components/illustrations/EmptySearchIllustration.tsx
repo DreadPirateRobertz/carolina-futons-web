@@ -1,18 +1,7 @@
-// cf-93rb Phase E — illustration for the search no-results state.
-//
-// Visual cousin of EmptyCartIllustration: same layered Blue Ridge palette
-// (cf-navy + Mountain Blue), with a stylized magnifying glass scanning
-// across the ridge. The glass barrel sits at a slight tilt so it reads as
-// "still looking" rather than "found nothing" — the no-results copy
-// already carries the absence, and we don't want the illustration to feel
-// like a brick wall to the user. cf-cta accent on the ring keeps the
-// brand color present.
+import { Bear } from "@/components/mascot/MascotCharacters";
+import { V3_PAL as c } from "@/components/mascot/MascotPalette";
 
-export function EmptySearchIllustration({
-  className,
-}: {
-  className?: string;
-}) {
+export function EmptySearchIllustration({ className }: { className?: string }) {
   return (
     <svg
       role="img"
@@ -25,72 +14,34 @@ export function EmptySearchIllustration({
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        <linearGradient id="empty-search-sky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#FFF8F0" />
-          <stop offset="100%" stopColor="#F5F0E8" />
+        <linearGradient id="es-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={c.sky2} />
+          <stop offset="100%" stopColor={c.cream} />
         </linearGradient>
       </defs>
-
-      <rect width="220" height="140" rx="12" fill="url(#empty-search-sky)" />
-
-      {/* Distant ridge — pale Mountain Blue, mirrors EmptyCartIllustration */}
+      <rect width="220" height="140" rx="12" fill="url(#es-sky)" />
       <path
-        d="M0 88 C 36 72, 72 78, 110 68 C 142 60, 174 72, 220 64 L 220 140 L 0 140 Z"
-        fill="#B8D0E0"
+        d="M0 78 C 40 64, 90 70, 130 62 C 162 56, 192 66, 220 60 L 220 140 L 0 140 Z"
+        fill={c.ridge5}
         opacity="0.8"
       />
-
-      {/* Mid ridge — Mountain Blue */}
       <path
-        d="M0 102 C 32 90, 64 96, 104 84 C 136 76, 170 92, 200 84 C 210 82, 218 84, 220 84 L 220 140 L 0 140 Z"
-        fill="#5B8FA8"
-        opacity="0.85"
+        d="M0 96 C 32 82, 72 88, 110 80 C 144 74, 180 86, 220 80 L 220 140 L 0 140 Z"
+        fill={c.ridge3}
       />
-
-      {/* Foreground ridge — cf-navy */}
       <path
-        d="M0 116 C 28 102, 60 108, 96 100 C 128 92, 158 106, 196 100 C 208 98, 216 100, 220 100 L 220 140 L 0 140 Z"
-        fill="#1E3A5F"
+        d="M0 114 C 28 102, 64 108, 100 100 C 132 94, 164 106, 220 100 L 220 140 L 0 140 Z"
+        fill={c.ridge1}
       />
-
-      {/* Magnifying glass scanning the ridge — slight tilt so the
-          composition reads as in-motion, not a dead-end. */}
-      <g transform="translate(108 68) rotate(-18)">
-        {/* Glass body — warm cream interior so the brand palette shows
-            through from the back. */}
-        <circle r="22" fill="#FFFCE8" stroke="#3A2518" strokeWidth="2.4" />
-        {/* Inner ring — cf-cta accent ties to the rest of the brand
-            palette and keeps the eye on the search target. */}
-        <circle r="22" fill="none" stroke="#E8845C" strokeWidth="1" opacity="0.7" />
-        {/* Hint of ridge inside the glass to suggest it's actively
-            scanning the landscape rather than empty. */}
-        <path
-          d="M-18 4 C -10 -2, -4 2, 4 -4 C 12 -8, 18 -2, 22 -4"
-          fill="none"
-          stroke="#5B8FA8"
-          strokeWidth="1.4"
-          opacity="0.6"
-        />
-        {/* Handle — same espresso ink as the body */}
-        <line
-          x1="16"
-          y1="16"
-          x2="36"
-          y2="36"
-          stroke="#3A2518"
-          strokeWidth="3.2"
-          strokeLinecap="round"
-        />
-        <line
-          x1="16"
-          y1="16"
-          x2="36"
-          y2="36"
-          stroke="#5C4033"
-          strokeWidth="1.4"
-          strokeLinecap="round"
-          opacity="0.7"
-        />
+      {/* Bear sitting on foreground ridge, curious pose */}
+      <g transform="translate(100 106)">
+        <Bear pose="sitting" scale={0.38} />
+      </g>
+      {/* Magnifying glass tilted to suggest active searching */}
+      <g transform="translate(148 76) rotate(-18)">
+        <circle r="13" fill={c.cream} stroke={c.inkSoft} strokeWidth="2" />
+        <circle r="13" fill="none" stroke={c.coral} strokeWidth="0.9" opacity="0.7" />
+        <line x1="9" y1="9" x2="22" y2="22" stroke={c.inkSoft} strokeWidth="3" strokeLinecap="round" />
       </g>
     </svg>
   );

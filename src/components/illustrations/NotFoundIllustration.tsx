@@ -1,9 +1,21 @@
-// cf-93rb Phase E — illustration for the 404 not-found page.
-//
-// A weathered trail sign post planted at the edge of a Blue Ridge ridgeline:
-// the path literally ends here. Uses the same cf-navy / Mountain Blue / warm
-// cream palette as the other Phase E illustrations. aria-hidden — the heading
-// copy already communicates the empty state.
+// Night scene (v3-02-stargazing palette) — bear napping under the stars.
+// "Lost but peaceful" — the heading copy handles the 404 message; this
+// illustration carries warmth so the page doesn't feel punishing.
+
+const NIGHT = {
+  sky0: "#0E1838",
+  sky1: "#1F2A4A",
+  r1: "#06091A",
+  r2: "#0E1424",
+  r3: "#1A2440",
+  r4: "#2A3658",
+  star: "#FAE8B0",
+  moon: "#FAF2DE",
+  // Moonlit fur — lighter than day palette so bear reads on dark ridges.
+  fur: "#5A3828",
+  muzzle: "#A8806A",
+  nose: "#2A1810",
+};
 
 export function NotFoundIllustration({ className }: { className?: string }) {
   return (
@@ -18,64 +30,97 @@ export function NotFoundIllustration({ className }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        <linearGradient id="nf-sky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#FFF8F0" />
-          <stop offset="100%" stopColor="#F5F0E8" />
+        <linearGradient id="nf-sky-v3" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={NIGHT.sky0} />
+          <stop offset="100%" stopColor={NIGHT.sky1} />
         </linearGradient>
       </defs>
-
-      {/* Sky */}
-      <rect width="220" height="140" rx="12" fill="url(#nf-sky)" />
-
-      {/* Distant ridge — pale Mountain Blue */}
+      <rect width="220" height="140" rx="12" fill="url(#nf-sky-v3)" />
+      {/* Stars */}
+      {(
+        [
+          [28, 18, 1.2], [60, 12, 0.8], [95, 20, 1.0], [130, 10, 0.8],
+          [158, 22, 1.2], [185, 14, 0.8], [44, 35, 0.8], [110, 32, 1.0],
+          [170, 30, 0.8], [200, 40, 1.2],
+        ] as [number, number, number][]
+      ).map(([x, y, r], i) => (
+        <circle key={i} cx={x} cy={y} r={r} fill={NIGHT.star} opacity="0.8" />
+      ))}
+      {/* Crescent moon */}
+      <circle cx="178" cy="24" r="12" fill={NIGHT.moon} opacity="0.9" />
+      <circle cx="183" cy="21" r="10" fill={NIGHT.sky0} />
+      {/* Ridge layers */}
       <path
-        d="M0 92 C 30 76, 70 82, 110 70 C 148 60, 180 74, 220 66 L 220 140 L 0 140 Z"
-        fill="#B8D0E0"
-        opacity="0.75"
+        d="M0 72 Q 55 58, 110 66 Q 165 74, 220 62 L 220 140 L 0 140 Z"
+        fill={NIGHT.r4}
       />
-
-      {/* Mid ridge */}
       <path
-        d="M0 106 C 28 92, 62 98, 100 88 C 136 78, 168 94, 198 86 C 210 84, 218 86, 220 86 L 220 140 L 0 140 Z"
-        fill="#5B8FA8"
-        opacity="0.82"
+        d="M0 90 Q 55 76, 110 84 Q 165 92, 220 82 L 220 140 L 0 140 Z"
+        fill={NIGHT.r3}
       />
-
-      {/* Foreground ridge — cf-navy */}
       <path
-        d="M0 120 C 24 108, 56 114, 92 106 C 126 98, 158 112, 196 106 C 208 104, 216 106, 220 106 L 220 140 L 0 140 Z"
-        fill="#1E3A5F"
+        d="M0 108 Q 55 96, 110 104 Q 165 112, 220 102 L 220 140 L 0 140 Z"
+        fill={NIGHT.r2}
       />
-
-      {/* Sign post — planted in the foreground ridge */}
-      {/* Vertical post */}
-      <rect x="108" y="72" width="4" height="38" rx="1" fill="#3A2518" />
-
-      {/* Upper sign pointing nowhere — slight angle */}
-      <g transform="translate(82 78) rotate(-4)">
-        <rect width="44" height="14" rx="2" fill="#F5ECD8" stroke="#3A2518" strokeWidth="1.2" />
-        {/* Diagonal stripe — "trail ends" marker */}
-        <line x1="6" y1="2" x2="2" y2="12" stroke="#E8845C" strokeWidth="1.2" opacity="0.7" />
-        <line x1="11" y1="2" x2="7" y2="12" stroke="#E8845C" strokeWidth="1.2" opacity="0.7" />
-        {/* "?" text stand-in — three dots suggesting uncertainty */}
-        <circle cx="22" cy="7" r="1.2" fill="#3A2518" opacity="0.6" />
-        <circle cx="26" cy="7" r="1.2" fill="#3A2518" opacity="0.6" />
-        <circle cx="30" cy="7" r="1.2" fill="#3A2518" opacity="0.6" />
-      </g>
-
-      {/* Lower sign — blank, the path just stops here */}
-      <g transform="translate(108 90)">
-        <rect x="4" width="38" height="12" rx="2" fill="#F5ECD8" stroke="#3A2518" strokeWidth="1.2" />
-        {/* Blank — intentionally empty */}
-        <line x1="9" y1="6" x2="37" y2="6" stroke="#3A2518" strokeWidth="0.8" opacity="0.2" />
-      </g>
-
-      {/* Small pine trees at edge of ridge */}
-      <g fill="#4A7C59" opacity="0.5">
-        <polygon points="38,120 42,108 46,120" />
-        <polygon points="40,112 43,104 46,112" />
-        <polygon points="168,118 172,106 176,118" />
-        <polygon points="170,110 173,102 176,110" />
+      <path
+        d="M0 122 Q 55 112, 110 118 Q 165 126, 220 116 L 220 140 L 0 140 Z"
+        fill={NIGHT.r1}
+      />
+      {/* Sleeping bear — inline with moonlit-adjusted fur so it reads on dark ridges */}
+      <g transform="translate(110 112) scale(0.32)">
+        <ellipse cx="0" cy="20" rx="58" ry="22" fill={NIGHT.fur} />
+        <ellipse cx="-50" cy="6" rx="22" ry="18" fill={NIGHT.fur} />
+        <circle cx="-66" cy="-8" r="7" fill={NIGHT.fur} />
+        <ellipse cx="-50" cy="14" rx="10" ry="6" fill={NIGHT.muzzle} />
+        <ellipse cx="-58" cy="10" rx="3" ry="2" fill={NIGHT.nose} />
+        <path
+          d="M -56 0 q 4 0 6 -1"
+          fill="none"
+          stroke={NIGHT.nose}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <path
+          d="M -42 -2 q 4 0 6 -1"
+          fill="none"
+          stroke={NIGHT.nose}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        {/* z z Z */}
+        <text
+          x="20"
+          y="-20"
+          fontFamily="serif"
+          fontSize="14"
+          fontWeight="700"
+          fill={NIGHT.star}
+          opacity="0.6"
+        >
+          z
+        </text>
+        <text
+          x="34"
+          y="-32"
+          fontFamily="serif"
+          fontSize="18"
+          fontWeight="700"
+          fill={NIGHT.star}
+          opacity="0.5"
+        >
+          z
+        </text>
+        <text
+          x="50"
+          y="-46"
+          fontFamily="serif"
+          fontSize="22"
+          fontWeight="700"
+          fill={NIGHT.star}
+          opacity="0.4"
+        >
+          Z
+        </text>
       </g>
     </svg>
   );
