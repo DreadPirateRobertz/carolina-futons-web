@@ -39,7 +39,7 @@ export function LivingHero() {
         style={{
           position: "absolute",
           inset: 0,
-          opacity: phase === "night" ? 1 : 0,
+          opacity: !mounted ? 0 : phase === "night" ? 1 : 0,
           transition: mounted ? "opacity 4s ease-in-out" : "none",
           pointerEvents: phase === "night" ? "auto" : "none",
         }}
@@ -52,7 +52,7 @@ export function LivingHero() {
         style={{
           position: "absolute",
           inset: 0,
-          opacity: phase === "dawn" ? 1 : 0,
+          opacity: !mounted ? 0 : phase === "dawn" ? 1 : 0,
           transition: mounted ? "opacity 4s ease-in-out" : "none",
           pointerEvents: phase === "dawn" ? "auto" : "none",
         }}
@@ -65,7 +65,7 @@ export function LivingHero() {
         style={{
           position: "absolute",
           inset: 0,
-          opacity: phase === "day" ? 1 : 0,
+          opacity: !mounted ? 0 : phase === "day" ? 1 : 0,
           transition: mounted ? "opacity 4s ease-in-out" : "none",
           pointerEvents: phase === "day" ? "auto" : "none",
         }}
@@ -78,7 +78,7 @@ export function LivingHero() {
         style={{
           position: "absolute",
           inset: 0,
-          opacity: phase === "dusk" ? 1 : 0,
+          opacity: !mounted ? 0 : phase === "dusk" ? 1 : 0,
           transition: mounted ? "opacity 4s ease-in-out" : "none",
           pointerEvents: phase === "dusk" ? "auto" : "none",
         }}
