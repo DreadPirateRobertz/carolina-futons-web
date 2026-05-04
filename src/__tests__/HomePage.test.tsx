@@ -208,3 +208,23 @@ describe.skip("HomePage — A+D hybrid (cf-theme-ad-grid)", () => {
     expect(overlays).toHaveLength(16);
   });
 });
+
+// cf-ml6n regression: home page must not render a second footer-like visual
+// (MascotFooterDivider was doubling the footer — day landscape + night footer).
+// The Footer component is rendered by layout.tsx (outside this render scope);
+// this test guards that page.tsx does NOT render a second footer element.
+describe("HomePage — cf-ml6n footer regression guard", () => {
+  it("does not render MascotFooterDivider (doubled footer fix)", async () => {
+    const { container } = await renderHome();
+    // MascotFooterDivider SVG uses a linearGradient with id="v3fd-sky" — shared by the mascot/
+    // and theme-a/ variants of that component, and absent from all other site components.
+    expect(container.querySelector("#v3fd-sky")).toBeNull();
+  });
+
+  it("renders no site-footer element (layout renders the single Footer)", async () => {
+    const { container } = await renderHome();
+    // The site Footer (data-slot="site-footer") is added by layout.tsx, not page.tsx.
+    // Any <footer> elements in page output are semantic quote attributions (TestimonialsStrip).
+    expect(container.querySelector("[data-slot='site-footer']")).toBeNull();
+  });
+});

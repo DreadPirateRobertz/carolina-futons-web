@@ -10,7 +10,7 @@ export async function listFabricSwatches(): Promise<SwatchItem[]> {
   );
   return items
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-    .flatMap(({ _id, swatchName, colorFamily, colorHex }) =>
-      _id && swatchName ? [{ _id, swatchName, colorFamily, colorHex }] : [],
+    .flatMap(({ _id, swatchName, colorFamily, colorHex, imageUrl }) =>
+      _id && swatchName ? [{ _id, swatchName, colorFamily, colorHex, imageUrl }] : [],
     );
 }

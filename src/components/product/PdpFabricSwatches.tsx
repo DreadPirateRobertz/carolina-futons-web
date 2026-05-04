@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 
 import type { SwatchItem } from "@/lib/swatch-request/swatch-request-schema";
@@ -109,13 +110,29 @@ export function PdpFabricSwatches({ swatches, productSlug, error }: Props) {
         {visible.map((swatch) => (
           <li key={swatch._id}>
             <div className="flex flex-col items-center gap-1">
-              <div
-                aria-hidden="true"
-                className="h-8 w-8 rounded-full border border-cf-divider shadow-sm"
-                style={
-                  swatch.colorHex ? { backgroundColor: swatch.colorHex } : undefined
-                }
-              />
+              {swatch.imageUrl ? (
+                <div
+                  className="relative h-8 w-8 overflow-hidden rounded-full border border-cf-divider shadow-sm"
+                  aria-hidden="true"
+                >
+                  <Image
+                    src={swatch.imageUrl}
+                    alt=""
+                    fill
+                    sizes="32px"
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
+              ) : (
+                <div
+                  aria-hidden="true"
+                  className="h-8 w-8 rounded-full border border-cf-divider shadow-sm"
+                  style={
+                    swatch.colorHex ? { backgroundColor: swatch.colorHex } : undefined
+                  }
+                />
+              )}
               <span className="line-clamp-2 text-center text-[10px] leading-tight text-cf-muted">
                 {swatch.swatchName}
               </span>
