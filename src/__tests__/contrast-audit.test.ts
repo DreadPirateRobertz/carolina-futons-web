@@ -213,3 +213,20 @@ describe("Dark mode — muted foreground", () => {
     expect(ratio).toBeGreaterThanOrEqual(AA_NORMAL);
   });
 });
+
+describe("Light mode — PLP filter label text (cf-af7h)", () => {
+  // PLPControls uses text-zinc-600 for Sort/Min/Max labels and results count.
+  // zinc-500 (#71717a) was 4.38:1 on cf-sand — failing AA by 0.12.
+  // zinc-600 (#52525b) must clear 4.5:1.
+  const zinc600 = "#52525b";
+
+  it("zinc-600 on cf-sand meets AA normal (replaces zinc-500 which was 4.38:1)", () => {
+    const ratio = contrastRatio(zinc600, L.sand);
+    expect(ratio).toBeGreaterThanOrEqual(AA_NORMAL);
+  });
+
+  it("zinc-600 on cf-cream meets AA normal", () => {
+    const ratio = contrastRatio(zinc600, L.cream);
+    expect(ratio).toBeGreaterThanOrEqual(AA_NORMAL);
+  });
+});
