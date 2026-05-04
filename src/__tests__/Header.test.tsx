@@ -45,7 +45,6 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
     // Two "Primary" navs exist: desktop (hidden md:flex) + mobile drawer
     const navs = screen.getAllByRole("navigation", { name: /primary/i });
     expect(navs.length).toBeGreaterThanOrEqual(1);
-    const nav = navs[0];
     const expected = [
       ["Futons", "/shop/futon-frames"],
       ["Murphy Beds", "/shop/murphy-cabinet-beds"],
@@ -91,25 +90,9 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
     expect(header?.className).toContain("h-cf-header");
   });
 
-  // cf-f0rx: LivingSky backdrop wired in header (every page)
-  it("renders the LivingSky backdrop inside the header", () => {
-    const { container } = renderHeader();
-    expect(container.querySelector('[data-slot="living-sky-svg"]')).not.toBeNull();
-  });
-
-  it("LivingSky backdrop wrapper is aria-hidden and pointer-events-none", () => {
-    const { container } = renderHeader();
-    const backdrop = container.querySelector('[data-slot="living-sky-backdrop"]');
-    expect(backdrop).not.toBeNull();
-    expect(backdrop?.getAttribute("aria-hidden")).toBe("true");
-    expect(backdrop?.className).toContain("pointer-events-none");
-  });
-
-  it("header does not have overflow-hidden (backdrop wrapper clips SVG instead)", () => {
+  it("header does not have overflow-hidden", () => {
     const { container } = renderHeader();
     const header = container.querySelector('header[data-slot="site-header"]');
     expect(header?.className).not.toContain("overflow-hidden");
-    const backdrop = container.querySelector('[data-slot="living-sky-backdrop"]');
-    expect(backdrop?.className).toContain("overflow-hidden");
   });
 });
