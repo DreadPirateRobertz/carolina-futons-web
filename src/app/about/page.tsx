@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 export default async function AboutPage() {
   return (
     <main className="w-full">
-      {/* v3 mascot porch scene — bear on Blue Ridge, replaces v2 BotanicalMountainSkyline */}
+      {/* v3 mascot porch scene — bear on Blue Ridge */}
       <div data-slot="about-illustration" className="w-full" style={{ height: "clamp(300px, 42vw, 640px)" }}>
         <MascotWorldHero />
       </div>
