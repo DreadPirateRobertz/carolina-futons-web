@@ -127,7 +127,7 @@ describe("AnnouncementBarCartAware", () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     renderWithCart(0);
     const region = screen.getByRole("region", { name: /site announcement/i });
-    expect(region.textContent).toBe(ROTATION_MESSAGES[0]);
+    expect(region.textContent).toContain(ROTATION_MESSAGES[0]);
   });
 
   it("advances to the next message after one interval", () => {
@@ -135,7 +135,7 @@ describe("AnnouncementBarCartAware", () => {
     renderWithCart(0);
     act(() => vi.advanceTimersByTime(ROTATION_INTERVAL_MS));
     const region = screen.getByRole("region", { name: /site announcement/i });
-    expect(region.textContent).toBe(ROTATION_MESSAGES[1]);
+    expect(region.textContent).toContain(ROTATION_MESSAGES[1]);
   });
 
   it("cycles through all 5 messages and wraps back to the first", () => {
@@ -144,11 +144,21 @@ describe("AnnouncementBarCartAware", () => {
     const region = screen.getByRole("region", { name: /site announcement/i });
 
     for (let i = 0; i < ROTATION_MESSAGES.length; i++) {
-      expect(region.textContent).toBe(ROTATION_MESSAGES[i]);
+      // Index 3 (swatch) includes a CTA link — textContent includes the link label.
+      expect(region.textContent).toContain(ROTATION_MESSAGES[i]);
       act(() => vi.advanceTimersByTime(ROTATION_INTERVAL_MS));
     }
     // After a full cycle it wraps back to index 0
-    expect(region.textContent).toBe(ROTATION_MESSAGES[0]);
+    expect(region.textContent).toContain(ROTATION_MESSAGES[0]);
+  });
+
+  it("swatch message shows a link to /swatch-request", () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderWithCart(0);
+    // Advance to the swatch message (index 3)
+    act(() => vi.advanceTimersByTime(ROTATION_INTERVAL_MS * 3));
+    const link = screen.getByRole("link", { name: /order free swatches/i });
+    expect(link).toHaveAttribute("href", "/swatch-request");
   });
 
   it("stops rotating and shows cart copy when items are added", () => {

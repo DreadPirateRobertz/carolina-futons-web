@@ -22,6 +22,16 @@ export const ROTATION_MESSAGES = [
   "Assembly included with every delivery",
 ] as const;
 
+// CTA links paired with ROTATION_MESSAGES by index; undefined = message-only.
+const ROTATION_CTAS: Array<{ ctaLabel: string; ctaHref: string } | undefined> =
+  [
+    undefined,
+    undefined,
+    undefined,
+    { ctaLabel: "Order free swatches", ctaHref: "/swatch-request" },
+    undefined,
+  ];
+
 export const ROTATION_INTERVAL_MS = 5_000;
 
 export function announcementMessage(subtotalCents: number): string {
@@ -53,10 +63,11 @@ export function AnnouncementBarCartAware() {
     return () => clearInterval(id);
   }, [subtotalCents]);
 
-  const message =
-    subtotalCents > 0
-      ? announcementMessage(subtotalCents)
-      : ROTATION_MESSAGES[index];
+  const isRotating = subtotalCents <= 0;
+  const message = isRotating
+    ? ROTATION_MESSAGES[index]
+    : announcementMessage(subtotalCents);
+  const cta = isRotating ? ROTATION_CTAS[index] : undefined;
 
-  return <AnnouncementBar message={message} />;
+  return <AnnouncementBar message={message} {...cta} />;
 }
