@@ -9,6 +9,6 @@ export default async function MemberLayout({
   children: React.ReactNode;
 }) {
   const session = await getMemberSession();
-  if (!session) redirect("/?auth_required=1");
+  if (!session) redirect("/account?next=/dashboard");
   return <>{children}</>;
 }

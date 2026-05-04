@@ -11,6 +11,11 @@ export const metadata: Metadata = {
 // Server-component wrapper so Next.js can collect the metadata export. The
 // interactive sign-in UI lives in AccountSignIn (client component) because
 // the OAuth redirect uses window.location.href (cf-3qt.8.A.F1).
-export default function AccountPage() {
-  return <AccountSignIn />;
+export default async function AccountPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+  return <AccountSignIn next={next} />;
 }

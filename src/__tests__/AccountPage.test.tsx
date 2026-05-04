@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import type React from "react";
 import AccountPage, { metadata } from "@/app/account/page";
 
 // ── matchMedia stub (required for jsdom) ──────────────────────────────────────
@@ -26,8 +27,10 @@ afterEach(() => {
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function renderPage() {
-  return render(<AccountPage />);
+// AccountPage is an async server component — call it directly to get its JSX.
+async function renderPage(next?: string) {
+  const jsx = await AccountPage({ searchParams: Promise.resolve(next ? { next } : {}) });
+  return render(jsx as React.ReactElement);
 }
 
 function getSubmitButton() {
@@ -62,32 +65,32 @@ describe("AccountPage — metadata (cf-3qt.8.A.F1)", () => {
 });
 
 describe("AccountPage — rendering", () => {
-  it("renders sign-in heading", () => {
-    renderPage();
+  it("renders sign-in heading", async () => {
+    await renderPage();
     expect(screen.getByRole("heading", { name: /sign in/i })).toBeInTheDocument();
   });
 
-  it("renders email and password inputs", () => {
-    renderPage();
+  it("renders email and password inputs", async () => {
+    await renderPage();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
   });
 
-  it("renders submit button enabled by default", () => {
-    renderPage();
+  it("renders submit button enabled by default", async () => {
+    await renderPage();
     expect(getSubmitButton()).not.toBeDisabled();
   });
 
-  it("renders link to dashboard for already-signed-in users", () => {
-    renderPage();
+  it("renders link to dashboard for already-signed-in users", async () => {
+    await renderPage();
     expect(screen.getByRole("link", { name: /go to your dashboard/i })).toHaveAttribute(
       "href",
       "/dashboard",
     );
   });
 
-  it("no error alert visible on initial render", () => {
-    renderPage();
+  it("no error alert visible on initial render", async () => {
+    await renderPage();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });
@@ -100,7 +103,7 @@ describe("AccountPage — sign-in success", () => {
         json: async () => ({ ok: true, redirectTo: "/dashboard" }),
       }),
     );
-    renderPage();
+    await renderPage();
     fillAndSubmit();
     await waitFor(() => {
       expect(window.location.href).toBe("/dashboard");
@@ -112,7 +115,7 @@ describe("AccountPage — sign-in success", () => {
       json: async () => ({ ok: true, redirectTo: "/dashboard" }),
     });
     vi.stubGlobal("fetch", fetchSpy);
-    renderPage();
+    await renderPage();
     fillAndSubmit("user@test.com", "hunter2");
     await waitFor(() => expect(window.location.href).toBe("/dashboard"));
     const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
@@ -128,7 +131,7 @@ describe("AccountPage — sign-in success", () => {
       "fetch",
       vi.fn().mockReturnValue(new Promise((r) => (resolveFetch = r))),
     );
-    renderPage();
+    await renderPage();
     fillAndSubmit();
     expect(screen.getByRole("button", { name: /signing in/i })).toBeInTheDocument();
     act(() => resolveFetch({ json: async () => ({ error: "fail" }) }));
@@ -140,7 +143,7 @@ describe("AccountPage — sign-in success", () => {
       "fetch",
       vi.fn().mockReturnValue(new Promise((r) => (resolveFetch = r))),
     );
-    renderPage();
+    await renderPage();
     fillAndSubmit();
     // During loading the button text is "Signing in…" — not "Sign in"
     expect(screen.getByRole("button", { name: /signing in/i })).toBeDisabled();
@@ -156,7 +159,7 @@ describe("AccountPage — sign-in failure", () => {
         json: async () => ({ error: "Email or password is incorrect." }),
       }),
     );
-    renderPage();
+    await renderPage();
     fillAndSubmit();
     await waitFor(() => {
       expect(screen.getByRole("alert")).toBeInTheDocument();
@@ -171,7 +174,7 @@ describe("AccountPage — sign-in failure", () => {
         json: async () => ({ error: "fail" }),
       }),
     );
-    renderPage();
+    await renderPage();
     fillAndSubmit();
     await waitFor(() => {
       expect(getSubmitButton()).not.toBeDisabled();
@@ -180,7 +183,7 @@ describe("AccountPage — sign-in failure", () => {
 
   it("shows error alert on network error (fetch throws)", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
-    renderPage();
+    await renderPage();
     fillAndSubmit();
     await waitFor(() => {
       expect(screen.getByRole("alert")).toBeInTheDocument();
@@ -194,7 +197,7 @@ describe("AccountPage — sign-in failure", () => {
         json: async () => ({ error: "Email or password is incorrect." }),
       }),
     );
-    renderPage();
+    await renderPage();
     fillAndSubmit();
     await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
     expect(window.location.href).toBe("");
@@ -209,7 +212,7 @@ describe("AccountPage — email verification pending", () => {
         json: async () => ({ state: "email_verification_required" }),
       }),
     );
-    renderPage();
+    await renderPage();
     fillAndSubmit("pending@example.com");
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /check your email/i })).toBeInTheDocument();
@@ -224,7 +227,7 @@ describe("AccountPage — email verification pending", () => {
         json: async () => ({ state: "email_verification_required" }),
       }),
     );
-    renderPage();
+    await renderPage();
     fillAndSubmit();
     await waitFor(() => expect(screen.getByRole("heading", { name: /check your email/i })).toBeInTheDocument());
     expect(screen.getByRole("button", { name: /back to sign in/i })).toBeInTheDocument();
@@ -237,7 +240,7 @@ describe("AccountPage — email verification pending", () => {
         json: async () => ({ state: "email_verification_required" }),
       }),
     );
-    renderPage();
+    await renderPage();
     fillAndSubmit();
     await waitFor(() => expect(screen.getByRole("heading", { name: /check your email/i })).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: /back to sign in/i }));
@@ -252,7 +255,7 @@ describe("AccountPage — catch-path logging", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     const thrown = new Error("network down");
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(thrown));
-    renderPage();
+    await renderPage();
     fillAndSubmit();
     await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
     expect(spy).toHaveBeenCalled();
@@ -266,9 +269,78 @@ describe("AccountPage — catch-path logging", () => {
       "fetch",
       vi.fn().mockResolvedValue({ json: async () => ({ unexpected: true }) }),
     );
-    renderPage();
+    await renderPage();
     fillAndSubmit();
     await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
     expect(spy).toHaveBeenCalled();
+  });
+});
+
+describe("AccountPage — ?next= redirect (cf-w5ks)", () => {
+  it("redirects to ?next= after successful login when next is a safe internal path", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => ({ ok: true, redirectTo: "/dashboard/wishlist" }),
+      }),
+    );
+    await renderPage("/dashboard/wishlist");
+    fillAndSubmit();
+    await waitFor(() => {
+      expect(window.location.href).toBe("/dashboard/wishlist");
+    });
+  });
+
+  it("sends the ?next= path as callbackUrl in the login request", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      json: async () => ({ ok: true, redirectTo: "/dashboard/orders" }),
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+    await renderPage("/dashboard/orders");
+    fillAndSubmit();
+    await waitFor(() => expect(window.location.href).toBe("/dashboard/orders"));
+    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    const sent = JSON.parse(init.body as string) as { callbackUrl: string };
+    expect(sent.callbackUrl).toBe("/dashboard/orders");
+  });
+
+  it("falls back to /dashboard when no ?next= provided", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => ({ ok: true, redirectTo: "/dashboard" }),
+      }),
+    );
+    await renderPage();
+    fillAndSubmit();
+    await waitFor(() => {
+      expect(window.location.href).toBe("/dashboard");
+    });
+  });
+
+  it("rejects protocol-relative ?next= and redirects to /dashboard instead", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      json: async () => ({ ok: true }),
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+    await renderPage("//evil.example.com");
+    fillAndSubmit();
+    await waitFor(() => expect(window.location.href).toBe("/dashboard"));
+    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    const sent = JSON.parse(init.body as string) as { callbackUrl: string };
+    expect(sent.callbackUrl).toBe("/dashboard");
+  });
+
+  it("rejects absolute URL ?next= and redirects to /dashboard instead", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      json: async () => ({ ok: true }),
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+    await renderPage("https://evil.example.com/steal");
+    fillAndSubmit();
+    await waitFor(() => expect(window.location.href).toBe("/dashboard"));
+    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    const sent = JSON.parse(init.body as string) as { callbackUrl: string };
+    expect(sent.callbackUrl).toBe("/dashboard");
   });
 });
