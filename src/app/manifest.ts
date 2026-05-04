@@ -5,10 +5,11 @@ import type { MetadataRoute } from "next";
 // /manifest.webmanifest at build time.
 //
 // Icon-size note: only a 256px square logo is currently in public/brand/.
-// Chrome requires both a >=192px and a >=512px icon for full install
-// eligibility — see follow-on bead for generating the missing 512px asset.
-// Until then the banner will render but Chromium may not surface the install
-// prompt on every device. Safari "Add to Home Screen" works at 256px.
+// Chrome's installability criteria require both a >=192px and a >=512px PNG
+// icon (https://web.dev/articles/install-criteria). Until proper sizes are
+// generated, Chromium may not fire `beforeinstallprompt` on every device — but
+// the banner still renders correctly when it does. Safari "Add to Home Screen"
+// works at 256px regardless. Icon generation tracked in cf-l6aj.13.1.
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Carolina Futons",

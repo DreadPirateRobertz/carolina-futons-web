@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { PwaInstallBanner } from "@/components/site/PwaInstallBanner";
@@ -21,26 +21,8 @@ function makePromptEvent(outcome: PromptOutcome = "accepted") {
   return { event, prompt };
 }
 
-function setStandalone(matches: boolean) {
-  Object.defineProperty(window, "matchMedia", {
-    configurable: true,
-    writable: true,
-    value: (_q: string) => ({
-      matches,
-      media: _q,
-      onchange: null,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    }),
-  });
-}
-
 beforeEach(() => {
   window.localStorage.clear();
-  setStandalone(false);
 });
 
 afterEach(() => {
@@ -85,9 +67,11 @@ describe("PwaInstallBanner", () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /^install$/i }));
     expect(prompt).toHaveBeenCalledTimes(1);
-    expect(
-      screen.queryByRole("region", { name: /install carolina futons/i }),
-    ).toBeNull();
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("region", { name: /install carolina futons/i }),
+      ).toBeNull();
+    });
   });
 
   it("persists dismissal when user picks 'Not now'", async () => {
@@ -112,7 +96,11 @@ describe("PwaInstallBanner", () => {
     });
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: /^install$/i }));
-    expect(window.localStorage.getItem(DISMISS_KEY)).not.toBeNull();
+    // localStorage write happens after two awaits in handleInstall — wait for
+    // the microtask chain to settle rather than asserting synchronously.
+    await waitFor(() => {
+      expect(window.localStorage.getItem(DISMISS_KEY)).not.toBeNull();
+    });
   });
 
   it("does not surface the banner when dismissed within the 30-day window", async () => {
@@ -140,6 +128,32 @@ describe("PwaInstallBanner", () => {
     ).toBeInTheDocument();
   });
 
+  it("ignores a non-finite stored dismissal value", async () => {
+    window.localStorage.setItem(DISMISS_KEY, "not-a-number");
+    render(<PwaInstallBanner />);
+    const { event } = makePromptEvent();
+    await act(async () => {
+      window.dispatchEvent(event);
+    });
+    expect(
+      screen.getByRole("region", { name: /install carolina futons/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("treats a localStorage read throw as not-dismissed (Lockdown Mode/ITP)", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("storage blocked");
+    });
+    render(<PwaInstallBanner />);
+    const { event } = makePromptEvent();
+    await act(async () => {
+      window.dispatchEvent(event);
+    });
+    expect(
+      screen.getByRole("region", { name: /install carolina futons/i }),
+    ).toBeInTheDocument();
+  });
+
   it("hides itself when 'appinstalled' fires while the banner is showing", async () => {
     render(<PwaInstallBanner />);
     const { event } = makePromptEvent();
@@ -154,8 +168,17 @@ describe("PwaInstallBanner", () => {
     ).toBeNull();
   });
 
-  it("never registers the prompt listener when the app is already in standalone mode", async () => {
-    setStandalone(true);
+  it("does not surface the banner when the app is already in standalone mode", async () => {
+    vi.spyOn(window, "matchMedia").mockImplementation((query) => ({
+      matches: query === "(display-mode: standalone)",
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
     render(<PwaInstallBanner />);
     const { event } = makePromptEvent();
     await act(async () => {
@@ -164,5 +187,31 @@ describe("PwaInstallBanner", () => {
     expect(
       screen.queryByRole("region", { name: /install carolina futons/i }),
     ).toBeNull();
+  });
+
+  it("replaces a stale deferredPrompt when beforeinstallprompt fires twice", async () => {
+    render(<PwaInstallBanner />);
+    const first = makePromptEvent();
+    await act(async () => {
+      window.dispatchEvent(first.event);
+    });
+    const second = makePromptEvent();
+    await act(async () => {
+      window.dispatchEvent(second.event);
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /^install$/i }));
+    // Only the most recent event's prompt() should fire.
+    expect(second.prompt).toHaveBeenCalledTimes(1);
+    expect(first.prompt).not.toHaveBeenCalled();
+  });
+
+  it("removes its event listeners on unmount", () => {
+    const removeSpy = vi.spyOn(window, "removeEventListener");
+    const { unmount } = render(<PwaInstallBanner />);
+    unmount();
+    const removed = removeSpy.mock.calls.map((args) => args[0]);
+    expect(removed).toContain("beforeinstallprompt");
+    expect(removed).toContain("appinstalled");
   });
 });

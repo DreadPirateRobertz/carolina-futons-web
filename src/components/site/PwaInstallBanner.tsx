@@ -25,7 +25,9 @@ function isDismissed(): boolean {
     if (!Number.isFinite(dismissedAt)) return false;
     return Date.now() - dismissedAt < DISMISS_DURATION_MS;
   } catch {
-    // localStorage can throw in private-mode Safari; treat as not-dismissed.
+    // localStorage access can throw when storage is partitioned or disabled
+    // (Lockdown Mode, ITP-partitioned 3rd-party contexts, embedded WebViews).
+    // Treat as not-dismissed so the banner can still surface.
     return false;
   }
 }
@@ -33,9 +35,11 @@ function isDismissed(): boolean {
 function markDismissed(): void {
   try {
     window.localStorage.setItem(DISMISS_STORAGE_KEY, String(Date.now()));
-  } catch {
-    // Best-effort — if storage is blocked the banner will simply re-appear
-    // next session, which is acceptable degraded behavior.
+  } catch (err) {
+    // Storage blocked — banner will re-appear next session. Log so we can spot
+    // a persistently-broken session in production rather than guessing from
+    // support tickets.
+    console.warn("[PwaInstallBanner] markDismissed: localStorage write failed", err);
   }
 }
 
@@ -51,7 +55,6 @@ function isStandaloneMode(): boolean {
 export function PwaInstallBanner() {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
-  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     if (isStandaloneMode()) return;
@@ -61,11 +64,9 @@ export function PwaInstallBanner() {
       // Suppress Chrome's automatic mini-infobar so we control the surface.
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setVisible(true);
     };
 
     const onAppInstalled = () => {
-      setVisible(false);
       setDeferredPrompt(null);
     };
 
@@ -83,7 +84,6 @@ export function PwaInstallBanner() {
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     setDeferredPrompt(null);
-    setVisible(false);
     if (outcome === "dismissed") {
       // Treat a declined install the same as a banner-dismiss to avoid nagging.
       markDismissed();
@@ -92,11 +92,10 @@ export function PwaInstallBanner() {
 
   const handleDismiss = () => {
     markDismissed();
-    setVisible(false);
     setDeferredPrompt(null);
   };
 
-  if (!visible) return null;
+  if (!deferredPrompt) return null;
 
   return (
     <div
