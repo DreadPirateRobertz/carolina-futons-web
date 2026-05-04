@@ -55,6 +55,13 @@ export function SignUpForm() {
         return;
       }
       if (data.ok && typeof data.redirectTo === "string") {
+        // Fire welcome email trigger — best-effort, must not block redirect.
+        fetch("/api/email/trigger", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ type: "welcome", email }),
+          keepalive: true,
+        }).catch(() => undefined);
         window.location.href = data.redirectTo;
         return;
       }
