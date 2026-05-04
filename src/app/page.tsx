@@ -18,6 +18,7 @@ import {
   listProductsByCollectionId,
 } from "@/lib/wix/products";
 import { getVideoCatalog } from "@/lib/videos/catalog";
+import { HomeSaleStrip } from "@/components/home/HomeSaleStrip";
 
 export const metadata: Metadata = {
   title: "Carolina Futons — Hardwood Frames & Mattresses | Hendersonville, NC",
@@ -77,6 +78,9 @@ export default async function HomePage() {
       <link rel="preconnect" href="https://api.fontshare.com" />
       <link rel="stylesheet" href={FONTSHARE_URL} />
       <FilterFirst categories={categories} />
+
+      {/* ── Sale strip — collapses to nothing when no sale products ── */}
+      <HomeSaleStrip />
 
       {/* ── Trust bar ── */}
       <TrustBar />
