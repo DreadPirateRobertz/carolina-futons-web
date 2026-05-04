@@ -135,8 +135,21 @@ describe("sitemap()", () => {
     expect(entries.every((e) => !/[^:]\/\//.test(e.url))).toBe(true);
   });
 
-  it("falls back to VERCEL_URL (deployment domain) when NEXT_PUBLIC_SITE_URL is unset (cf-izyc)", async () => {
+  it("prefers VERCEL_PROJECT_PRODUCTION_URL over VERCEL_URL for stable prod host (cf-kj8n)", async () => {
     delete process.env.NEXT_PUBLIC_SITE_URL;
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = "carolina-futons-web.vercel.app";
+    process.env.VERCEL_URL = "cfw-abc123-git-main.vercel.app"; // deployment-specific
+    const entries = await sitemap();
+    expect(
+      entries.every((e) => e.url.startsWith("https://carolina-futons-web.vercel.app")),
+    ).toBe(true);
+    delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
+    delete process.env.VERCEL_URL;
+  });
+
+  it("falls back to VERCEL_URL when VERCEL_PROJECT_PRODUCTION_URL is unset (cf-izyc)", async () => {
+    delete process.env.NEXT_PUBLIC_SITE_URL;
+    delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
     process.env.VERCEL_URL = "cfw-abc123.vercel.app";
     const entries = await sitemap();
     expect(
@@ -145,8 +158,9 @@ describe("sitemap()", () => {
     delete process.env.VERCEL_URL;
   });
 
-  it("falls back to localhost when neither NEXT_PUBLIC_SITE_URL nor VERCEL_URL is set", async () => {
+  it("falls back to localhost when no Vercel env vars are set", async () => {
     delete process.env.NEXT_PUBLIC_SITE_URL;
+    delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
     delete process.env.VERCEL_URL;
     const entries = await sitemap();
     expect(

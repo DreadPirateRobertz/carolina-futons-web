@@ -44,9 +44,14 @@ export function resolveSiteBase(): string {
   if (process.env.NEXT_PUBLIC_SITE_URL) {
     return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/+$/, "");
   }
-  // VERCEL_URL is auto-injected on every deployment (no protocol prefix).
-  // Using it as fallback avoids robots.txt + sitemap.xml pointing to the old
-  // Wix domain before NEXT_PUBLIC_SITE_URL is wired up in Vercel env vars.
+  // VERCEL_PROJECT_PRODUCTION_URL is the stable production alias (e.g.
+  // carolina-futons-web.vercel.app). Prefer it over VERCEL_URL, which is
+  // the deployment-specific URL and changes on every preview build.
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  }
+  // VERCEL_URL: deployment-specific fallback — still better than localhost
+  // for preview builds that haven't set NEXT_PUBLIC_SITE_URL.
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
   }
