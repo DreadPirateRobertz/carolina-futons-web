@@ -20,6 +20,7 @@ import { resolveVerification } from "@/lib/seo/webmaster-verification";
 import { RouteProgressBar } from "@/components/site/RouteProgressBar";
 import { SaleLightbox } from "@/components/site/SaleLightbox";
 import { BackToTop } from "@/components/site/BackToTop";
+import { PwaInstallBanner } from "@/components/site/PwaInstallBanner";
 import { TikTokPixel } from "@/components/analytics/TikTokPixel";
 import { PinterestTag } from "@/components/analytics/PinterestTag";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
@@ -125,6 +126,7 @@ export default async function RootLayout({
             <Footer />
             <CartDrawer />
             <BackToTop />
+            <PwaInstallBanner />
             <SaleLightbox />
           </CartProvider>
         </MotionProvider>
