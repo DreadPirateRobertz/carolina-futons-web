@@ -73,7 +73,7 @@ export default async function HomePage() {
       {/* ── Featured collections grid (cf-3qt.2.6) ── */}
       <HomeFeaturedCollections />
 
-      {/* ── Video showcase strip — immediately below the fold ── */}
+      {/* ── Video showcase strip ── */}
       {featuredVideos.length > 0 && (
         <VideoShowcaseStrip videos={featuredVideos} />
       )}
