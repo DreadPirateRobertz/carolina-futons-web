@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { HeroReveal } from "@/components/motion/HeroReveal";
 import { REVIEWS, averageRating } from "@/lib/discovery/reviews";
 import { ReviewFilter } from "./ReviewFilter";
-import { BotanicalReviews } from "@/components/illustrations/BotanicalReviews";
+import { FallsScene } from "@/components/mascot/FallsScene";
 
 export const metadata: Metadata = {
   title: "Customer Reviews — Carolina Futons",
@@ -20,8 +20,7 @@ export default function ReviewsPage() {
 
   return (
     <main className="w-full">
-      {/* cf-pgec: v2 Botanical quote-card scene */}
-      <BotanicalReviews className="max-h-64" />
+      <FallsScene className="max-h-64" />
       <div className="mx-auto max-w-4xl space-y-12 px-4 py-12 font-source-sans text-cf-ink sm:px-6 sm:py-16">
         <HeroReveal>
           <header className="space-y-3">
