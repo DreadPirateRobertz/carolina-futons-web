@@ -236,3 +236,59 @@ export function buildFaqPageSchema(
     })),
   };
 }
+
+// cf-3qt.7: BlogPosting JSON-LD for blog post pages. Required for Rich
+// Results eligibility on /blog/[slug]. author is typed as Organization
+// rather than Person because CF blog posts are not bylined to individuals
+// — Google accepts both; the requirement is that author.name is present.
+// headline is capped at 110 chars per Google's structured-data validator.
+export type ArticleSchemaInput = {
+  title: string;
+  description: string;
+  canonicalUrl: string;
+  siteUrl: string;
+  publishedDate: Date | null;
+  heroImageUrl?: string | null;
+};
+
+type AuthorOrg = {
+  "@type": "Organization";
+  name: string;
+  url: string;
+};
+
+export type ArticleSchema = {
+  "@context": "https://schema.org";
+  "@type": "BlogPosting";
+  headline: string;
+  description: string;
+  url: string;
+  author: AuthorOrg;
+  publisher: AuthorOrg;
+  datePublished?: string;
+  image?: string;
+};
+
+export function buildArticleSchema(input: ArticleSchemaInput): ArticleSchema {
+  const author: AuthorOrg = {
+    "@type": "Organization",
+    name: BUSINESS.name,
+    url: input.siteUrl,
+  };
+  const schema: ArticleSchema = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: input.title.slice(0, 110),
+    description: input.description,
+    url: input.canonicalUrl,
+    author,
+    publisher: { ...author },
+  };
+  if (input.publishedDate) {
+    schema.datePublished = input.publishedDate.toISOString();
+  }
+  if (input.heroImageUrl) {
+    schema.image = input.heroImageUrl;
+  }
+  return schema;
+}
