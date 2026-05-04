@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 import { EmptySearchIllustration } from "@/components/illustrations/EmptySearchIllustration";
@@ -126,14 +127,25 @@ function ProductSection({ products }: { products: ReadonlyArray<SearchProduct> }
           >
             <Link
               href={`/products/${p.slug}`}
-              className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta"
+              className="flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta"
             >
-              <p className="font-medium text-cf-espresso">{p.name}</p>
-              {p.priceData?.formatted?.price ? (
-                <p className="mt-1 text-sm text-cf-muted">
-                  {p.priceData.formatted.price}
-                </p>
+              {p.media?.mainMedia?.image?.url ? (
+                <Image
+                  src={p.media.mainMedia.image.url}
+                  alt=""
+                  width={64}
+                  height={64}
+                  className="size-16 flex-none rounded object-cover"
+                />
               ) : null}
+              <div>
+                <p className="font-medium text-cf-espresso">{p.name}</p>
+                {p.priceData?.formatted?.price ? (
+                  <p className="mt-1 text-sm text-cf-muted">
+                    {p.priceData.formatted.price}
+                  </p>
+                ) : null}
+              </div>
             </Link>
           </li>
         ))}
