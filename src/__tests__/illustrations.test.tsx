@@ -1,41 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, act } from "@testing-library/react";
+import { render, act } from "@testing-library/react";
 
-import { FooterMountainDivider } from "@/components/illustrations/FooterMountainDivider";
 import { LivingSky } from "@/components/illustrations/LivingSky";
 import { LivingSkyClient } from "@/components/illustrations/LivingSkyClient";
-import { MountainSkyline } from "@/components/illustrations/MountainSkyline";
-import { BlueRidgeTimeline } from "@/components/illustrations/BlueRidgeTimeline";
 import { FogScene } from "@/components/mascot/FogScene";
 import { LIVING_SKY_SVG_BODY } from "@/lib/illustrations/living-sky-svg";
 
 // cf-93rb Phase A: contract tests for the illustration wrappers.
-// Decorative components (FooterMountainDivider, MountainSkyline) must
-// remain hidden from AT to avoid noisy alt-text in the SR linearization.
-// Meaningful components (LivingSky, BlueRidgeTimeline, FogScene) ship
-// with a default alt/aria-label describing the scene.
-
-function srcOf(node: HTMLElement): string {
-  return decodeURIComponent(node.getAttribute("src") ?? "");
-}
-
-describe("FooterMountainDivider", () => {
-  it("is decorative — empty alt and aria-hidden wrapper", () => {
-    const { container } = render(<FooterMountainDivider />);
-    const wrapper = container.querySelector(
-      "[data-slot='footer-mountain-divider']",
-    );
-    expect(wrapper).not.toBeNull();
-    expect(wrapper?.getAttribute("aria-hidden")).toBe("true");
-    // next/image renders an <img> with the alt attribute we passed.
-    const img = container.querySelector("img");
-    expect(img).not.toBeNull();
-    expect(img?.getAttribute("alt")).toBe("");
-    expect(srcOf(img as HTMLElement)).toContain(
-      "footer-mountain-divider.svg",
-    );
-  });
-});
+// LivingSky and FogScene are the surviving illustration components.
+// FooterMountainDivider, MountainSkyline, BlueRidgeTimeline, and ContactHero
+// were deleted as part of the v2→v3 botanical migration.
 
 describe("LivingSky", () => {
   // cf-93rb-livingsky-dynamic: LivingSky now mounts the dynamic Client
@@ -63,33 +37,6 @@ describe("LivingSky", () => {
     const wrapper = container.querySelector("[data-slot='living-sky']");
     expect(wrapper?.className).toContain("opacity-60");
     expect(wrapper?.className).toContain("w-full");
-  });
-});
-
-describe("MountainSkyline", () => {
-  it("is decorative — empty alt and aria-hidden wrapper", () => {
-    const { container } = render(<MountainSkyline />);
-    const wrapper = container.querySelector(
-      "[data-slot='mountain-skyline']",
-    );
-    expect(wrapper?.getAttribute("aria-hidden")).toBe("true");
-    expect(container.querySelector("img")?.getAttribute("alt")).toBe("");
-  });
-});
-
-describe("BlueRidgeTimeline", () => {
-  // cf-about-illus: upgraded from static next/image to inline SVG with
-  // LivingSky overlay.  The <title> inside the SVG body provides the
-  // accessible name; there is no longer an <img> element.
-  it("renders the data-slot wrapper", () => {
-    const { container } = render(<BlueRidgeTimeline />);
-    expect(container.querySelector("[data-slot='blue-ridge-timeline']")).not.toBeNull();
-  });
-
-  it("inlines an SVG with the company-history title for AT users", () => {
-    const { container } = render(<BlueRidgeTimeline />);
-    expect(container.querySelector("svg")).not.toBeNull();
-    expect(container.innerHTML).toContain("Carolina Futons company milestones");
   });
 });
 

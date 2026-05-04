@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { StargazingHero } from "@/components/illustrations/StargazingHero";
+import { StargazingHero } from "@/components/mascot/StargazingHero";
 
 export const metadata: Metadata = {
   title: "Theme C — Stargazing (preview) | Carolina Futons",
