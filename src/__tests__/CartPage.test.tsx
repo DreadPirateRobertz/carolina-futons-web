@@ -7,9 +7,10 @@ vi.mock("@/lib/analytics/ga4-events", () => ({
 vi.mock("@/components/cart/CartProvider", () => ({
   useCart: vi.fn(),
 }));
+// Sentinel so tests can distinguish next/link from a plain <a>
 vi.mock("next/link", () => ({
   default: ({ children, href, onClick, ...rest }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { href: string; children: React.ReactNode }) => (
-    <a href={href} onClick={onClick} {...rest}>{children}</a>
+    <a href={href} onClick={onClick} {...rest} data-nextlink="true">{children}</a>
   ),
 }));
 
@@ -99,6 +100,16 @@ describe("CartPage", () => {
     mockCart([LINE]);
     render(<CartPage />);
     expect(screen.getByTestId("proceed-to-checkout")).toHaveAttribute("href", "/checkout");
+  });
+
+  it("proceed-to-checkout is a plain <a> not next/link — required for external 307 redirect", () => {
+    // /checkout route handler issues a 307 to a Wix-hosted URL. Next.js <Link>
+    // does SPA-fetch navigation and silently drops cross-origin redirects, so
+    // the button MUST use a plain <a> tag (same fix as CartDrawer).
+    mockCart([LINE]);
+    render(<CartPage />);
+    const btn = screen.getByTestId("proceed-to-checkout");
+    expect(btn.getAttribute("data-nextlink")).toBeNull();
   });
 
   it("product name is a link when productUrl is set", () => {
