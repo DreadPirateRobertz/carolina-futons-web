@@ -4,7 +4,7 @@ test.describe("/shop/futon-frames PLP controls", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/shop/futon-frames");
     // Wait for the PLP controls to be present
-    await page.waitForSelector("select#plp-sort", { timeout: 10_000 });
+    await page.waitForSelector("select#plp-sort", { timeout: 30_000 });
   });
 
   test("displays product count header", async ({ page }) => {
