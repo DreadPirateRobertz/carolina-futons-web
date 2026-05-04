@@ -5,9 +5,11 @@ import userEvent from "@testing-library/user-event";
 const addLine = vi.fn();
 const removeLine = vi.fn();
 const openCart = vi.fn();
+const beginCartWrite = vi.fn();
+const endCartWrite = vi.fn();
 
 vi.mock("@/components/cart/CartProvider", () => ({
-  useCart: () => ({ addLine, removeLine, openCart }),
+  useCart: () => ({ addLine, removeLine, openCart, beginCartWrite, endCartWrite }),
 }));
 
 const addItemAction = vi.fn();
@@ -39,6 +41,8 @@ describe("AddToCartButton", () => {
     addLine.mockReset();
     removeLine.mockReset();
     openCart.mockReset();
+    beginCartWrite.mockReset();
+    endCartWrite.mockReset();
     addItemAction.mockReset();
     fireMetaEvent.mockReset();
     trackAddToCart.mockReset();
@@ -209,5 +213,29 @@ describe("AddToCartButton", () => {
     await userEvent.click(screen.getByRole("button"));
     await screen.findByRole("alert");
     expect(trackAddToCart).not.toHaveBeenCalled();
+  });
+
+  // cf-cfol: checkout race guard — beginCartWrite must bracket addItemAction
+  // so CartDrawer's isCartPending is true while the SA is in flight, preventing
+  // the user from navigating to /checkout before the Wix cart is committed.
+  it("calls beginCartWrite before addItemAction and endCartWrite after", async () => {
+    let resolveAdd!: (v: { ok: true; cart: null }) => void;
+    addItemAction.mockReturnValueOnce(
+      new Promise<{ ok: true; cart: null }>((r) => { resolveAdd = r; }),
+    );
+    render(<AddToCartButton {...baseProps} />);
+    await userEvent.click(screen.getByRole("button", { name: /add to cart/i }));
+    expect(beginCartWrite).toHaveBeenCalledOnce();
+    expect(endCartWrite).not.toHaveBeenCalled();
+    resolveAdd({ ok: true, cart: null });
+    await screen.findByRole("button", { name: /add to cart/i });
+    expect(endCartWrite).toHaveBeenCalledOnce();
+  });
+
+  it("calls endCartWrite even when addItemAction rejects", async () => {
+    addItemAction.mockRejectedValueOnce(new Error("network failure"));
+    render(<AddToCartButton {...baseProps} />);
+    await userEvent.click(screen.getByRole("button", { name: /add to cart/i }));
+    await vi.waitFor(() => expect(endCartWrite).toHaveBeenCalledOnce());
   });
 });

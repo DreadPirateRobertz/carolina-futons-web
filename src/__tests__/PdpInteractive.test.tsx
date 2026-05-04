@@ -7,6 +7,8 @@ vi.mock("@/components/cart/CartProvider", () => ({
     addLine: vi.fn(),
     removeLine: vi.fn(),
     openCart: vi.fn(),
+    beginCartWrite: vi.fn(),
+    endCartWrite: vi.fn(),
   }),
 }));
 

@@ -24,6 +24,12 @@ function Seed({ lines }: { lines: ReadonlyArray<CartLineItem> }) {
   return null;
 }
 
+function SetPending() {
+  const { beginCartWrite } = useCart();
+  useEffect(() => { beginCartWrite(); }, [beginCartWrite]);
+  return null;
+}
+
 function renderWith(lines: ReadonlyArray<CartLineItem> = []) {
   return render(
     <CartProvider>
@@ -246,6 +252,26 @@ describe("CartDrawer (cf-3qt.2.3)", () => {
       metaKey: true,
     });
     expect(trackBeginCheckout).not.toHaveBeenCalled();
+  });
+
+  // cf-cfol: checkout race guard — while a cart write is pending (addItemAction
+  // in flight) the checkout CTA must be visually disabled and block navigation
+  // so the /checkout route doesn't run createCheckoutFromCurrentCart against
+  // an empty Wix cart.
+  it("shows 'Saving…' and blocks navigation while a cart write is pending", () => {
+    const { getByTestId } = render(
+      <CartProvider>
+        <SetPending />
+        <Seed lines={[lineA]} />
+        <CartTrigger />
+        <CartDrawer />
+      </CartProvider>,
+    );
+    fireEvent.click(getByTestId("cart-trigger"));
+    const cta = getByTestId("cart-checkout-cta");
+    expect(cta).toHaveTextContent("Saving…");
+    expect(cta).toHaveAttribute("aria-disabled", "true");
+    expect(cta).toHaveClass("opacity-60");
   });
 
   // marugame-illustrations: Blue Ridge strip in filled cart
