@@ -128,6 +128,24 @@ const nextConfig: NextConfig = {
 
       // cf-992s — product slug corrections (Wix CMS slug mismatch → 404)
       { source: "/products/wilderness-log-futon-frame", destination: "/products/wilderness-log-futon", permanent: true },
+
+      // cf-3qt.8.6 — pre-cutover redirect map gaps.
+
+      // Wix Stores Cart Page slug → cfw /cart.
+      { source: "/cart-page", destination: "/cart", permanent: true },
+
+      // Wix Stores also exposes /product/:slug (singular, no "page" suffix) in
+      // its sitemap alongside /product-page/:slug. Both must reach cfw /products/.
+      { source: "/product/:slug", destination: "/products/:slug", permanent: true },
+
+      // Wix Stores Classic (pre-Studio) served the store at /store and PDPs at
+      // /store/product/:slug. Covers old backlinks and Google-indexed paths.
+      { source: "/store", destination: "/shop", permanent: true },
+      { source: "/store/product/:slug", destination: "/products/:slug", permanent: true },
+      { source: "/store/category/:slug", destination: "/shop/:slug", permanent: true },
+
+      // Style Quiz Wix page used "blank" page template with slug /blank-1.
+      { source: "/blank-1", destination: "/style-quiz", permanent: true },
     ];
   },
 };
