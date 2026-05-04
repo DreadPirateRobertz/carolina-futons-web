@@ -5,11 +5,13 @@
 // real Wix product IDs and any accidental prod leak is immediately obvious.
 //
 // Coverage matrix:
-//   kingston-futon-frame   — futon frame, ~$399, parcel, in-stock, 2 options (frame/mattress)
-//   asheville-murphy-bed   — murphy bed, ~$849, LTL freight, in-stock, 1 option (finish)
-//   mesa-foam-mattress     — mattress, ~$119, parcel, in-stock, 1 option (size)
-//   monterey-platform-bed  — platform bed, ~$1,699, white-glove eligible, in-stock
-//   sedona-futon-frame-oos — futon frame, out-of-stock (notify-me flow)
+//   kingston-futon-frame        — futon frame, ~$399, parcel, in-stock, 2 options (frame/mattress)
+//   asheville-murphy-bed        — murphy bed, ~$849, LTL freight, in-stock, 1 option (finish)
+//   cube-murphy-cabinet-bed     — murphy bed, ~$1,199, LTL freight, in-stock, 1 option (finish)
+//   ranchero-murphy-cabinet-bed — murphy bed, ~$2,978, LTL freight, in-stock, 1 option (finish)
+//   mesa-foam-mattress          — mattress, ~$119, parcel, in-stock, 1 option (size)
+//   monterey-platform-bed       — platform bed, ~$1,699, white-glove eligible, in-stock
+//   sedona-futon-frame-oos      — futon frame, out-of-stock (notify-me flow)
 
 // No import from @/lib/wix/products — that module imports from here and
 // importing WixProduct back would create a circular type reference.
@@ -152,6 +154,76 @@ const ASHEVILLE = makeProduct(
   ["fixture-col-murphy-beds", "fixture-col-all"],
 );
 
+// --- Cube Murphy Cabinet Bed (~$1,199, LTL freight, in-stock, 1 option) ---
+const CUBE = makeProduct(
+  "cube-murphy-cabinet-bed",
+  "cube-murphy-cabinet-bed",
+  "Cube Murphy Cabinet Bed",
+  "Night & Day Cube murphy bed — queen size folds into a free-standing cabinet. Ships LTL freight.",
+  1199,
+  { trackInventory: true, inStock: true, quantity: 3 },
+  [
+    {
+      name: "Finish",
+      optionType: "drop_down" as const,
+      choices: [
+        { description: "White", value: "White", inStock: true },
+        { description: "Espresso", value: "Espresso", inStock: true },
+      ],
+    },
+  ],
+  [
+    {
+      _id: "fixture-var-cu1",
+      choices: { Finish: "White" },
+      stock: { trackQuantity: true, inStock: true, quantity: 2 },
+      variant: { priceData: { price: 1199 } },
+    },
+    {
+      _id: "fixture-var-cu2",
+      choices: { Finish: "Espresso" },
+      stock: { trackQuantity: true, inStock: true, quantity: 1 },
+      variant: { priceData: { price: 1199 } },
+    },
+  ],
+  ["fixture-col-murphy-beds", "fixture-col-all"],
+);
+
+// --- Ranchero Murphy Cabinet Bed (~$2,978, LTL freight, in-stock, 1 option) ---
+const RANCHERO = makeProduct(
+  "ranchero-murphy-cabinet-bed",
+  "ranchero-murphy-cabinet-bed",
+  "Ranchero Murphy Cabinet Bed",
+  "Night & Day Ranchero murphy cabinet bed — full Murphy bed in a solid wood cabinet with storage.",
+  2978,
+  { trackInventory: true, inStock: true, quantity: 2 },
+  [
+    {
+      name: "Finish",
+      optionType: "drop_down" as const,
+      choices: [
+        { description: "White", value: "White", inStock: true },
+        { description: "Walnut", value: "Walnut", inStock: true },
+      ],
+    },
+  ],
+  [
+    {
+      _id: "fixture-var-r1",
+      choices: { Finish: "White" },
+      stock: { trackQuantity: true, inStock: true, quantity: 1 },
+      variant: { priceData: { price: 2978 } },
+    },
+    {
+      _id: "fixture-var-r2",
+      choices: { Finish: "Walnut" },
+      stock: { trackQuantity: true, inStock: true, quantity: 1 },
+      variant: { priceData: { price: 2978 } },
+    },
+  ],
+  ["fixture-col-murphy-beds", "fixture-col-all"],
+);
+
 // --- Mesa Foam Mattress (~$119, parcel, in-stock, 1 option) ---
 const MESA = makeProduct(
   "mesa-foam-mattress",
@@ -257,6 +329,8 @@ const SEDONA = makeProduct(
 export const FIXTURE_PRODUCTS = [
   KINGSTON,
   ASHEVILLE,
+  CUBE,
+  RANCHERO,
   MESA,
   MONTEREY,
   SEDONA,

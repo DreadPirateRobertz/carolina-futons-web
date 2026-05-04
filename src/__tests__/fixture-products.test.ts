@@ -9,8 +9,8 @@ import {
 } from "@/lib/fixtures/collections";
 
 describe("fixture products", () => {
-  it("exports 5 products", () => {
-    expect(FIXTURE_PRODUCTS).toHaveLength(5);
+  it("exports 7 products", () => {
+    expect(FIXTURE_PRODUCTS).toHaveLength(7);
   });
 
   it("all products have required PDP fields", () => {
@@ -54,6 +54,8 @@ describe("fixture products", () => {
     const inStockSlugs = [
       "kingston-futon-frame",
       "asheville-murphy-bed",
+      "cube-murphy-cabinet-bed",
+      "ranchero-murphy-cabinet-bed",
       "mesa-foam-mattress",
       "monterey-platform-bed",
     ];
