@@ -5,7 +5,7 @@
 // "Smoke" scope: cover the happy path + one meaningful edge case per domain.
 // Unit-level edge cases (e.g. exhaustive sort enum) live in plp.test.ts.
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   COMPARE_MIN,
   COMPARE_MAX,
@@ -35,8 +35,12 @@ import { FIXTURE_PRODUCTS } from "@/lib/fixtures/products";
 
 describe("searchProducts — fixture mode round-trip", () => {
   beforeEach(() => {
-    vi.resetModules();
     vi.stubEnv("NEXT_PUBLIC_USE_FIXTURE_PRODUCTS", "1");
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("returns futon-frame products matching 'futon'", async () => {
@@ -65,6 +69,8 @@ describe("searchProducts — fixture mode round-trip", () => {
     const { searchProducts } = await import("@/lib/wix/products");
     const all = await searchProducts("futon", 999);
     const limited = await searchProducts("futon", 2);
+    expect(all.length).toBeGreaterThan(0); // fixture has futon products — not vacuously passing
+    expect(limited.length).toBeGreaterThan(0);
     expect(limited.length).toBeLessThanOrEqual(2);
     expect(limited.length).toBeLessThanOrEqual(all.length);
   });
@@ -72,11 +78,11 @@ describe("searchProducts — fixture mode round-trip", () => {
   it("is case-insensitive", async () => {
     const { searchProducts } = await import("@/lib/wix/products");
     const lower = await searchProducts("kingston");
+    expect(lower.length).toBeGreaterThan(0); // guard: fixture mode must be active
     const upper = await searchProducts("KINGSTON");
     const mixed = await searchProducts("KiNgStOn");
     expect(lower.length).toBe(upper.length);
     expect(lower.length).toBe(mixed.length);
-    expect(lower.length).toBeGreaterThan(0);
   });
 });
 
@@ -138,8 +144,10 @@ describe("compare — fixture mode round-trip", () => {
   });
 
   describe("getCompareAttribute", () => {
-    const inStockProduct = fixtureAsCompare.find((p) => p.inStock === true)!;
-    const oosProduct = fixtureAsCompare.find((p) => p.inStock === false)!;
+    const inStockProduct = fixtureAsCompare.find((p) => p.inStock === true);
+    const oosProduct = fixtureAsCompare.find((p) => p.inStock === false);
+    if (!inStockProduct) throw new Error("fixture has no in-stock product");
+    if (!oosProduct) throw new Error("fixture has no out-of-stock product");
 
     it("returns formatted price", () => {
       const price = getCompareAttribute(inStockProduct, "Price");
@@ -212,7 +220,8 @@ describe("wishlist — fixture mode round-trip", () => {
   // Build a wishlist item from the first futon-frame fixture product.
   const futonProduct = FIXTURE_PRODUCTS.find((p) =>
     p.collectionIds.includes("fixture-col-futon-frames"),
-  )!;
+  );
+  if (!futonProduct) throw new Error("fixture has no futon-frames product");
 
   const futonItem = makeWishlistItem(
     futonProduct._id,
@@ -257,7 +266,8 @@ describe("wishlist — fixture mode round-trip", () => {
     // Build a second item from a different fixture product.
     const murphyProduct = FIXTURE_PRODUCTS.find((p) =>
       p.collectionIds.includes("fixture-col-murphy-beds"),
-    )!;
+    );
+    if (!murphyProduct) throw new Error("fixture has no murphy-beds product");
     const murphyItem = makeWishlistItem(
       murphyProduct._id,
       murphyProduct.name,

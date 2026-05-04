@@ -12,9 +12,9 @@ import {
   getFixtureCollectionBySlug,
 } from "@/lib/fixtures/collections";
 
-// Import types directly from the Wix SDK to avoid circular references —
-// inferring WixProduct from listProducts' return type is circular because
-// the fixture cast references WixProduct.
+// Import types directly from the Wix SDK to avoid a self-referential type alias —
+// inferring WixProduct from listProducts' return type fails because listProducts
+// casts its return to WixProduct[], making the definition depend on itself.
 export type WixProduct = WixProductSDK;
 export type WixCollection = WixCollectionSDK;
 
@@ -99,9 +99,10 @@ export async function searchProducts(
       )
       .slice(0, limit);
   }
-  // Live: delegate to Wix search webMethod (not yet wired in cf-3qt.2 scope).
-  // For now returns empty to avoid an unimplemented call — wire when Phase 2
-  // search endpoint lands.
+  // TODO(cf-3qt.2): wire Wix search webMethod when Phase 2 search endpoint lands.
+  // Returns empty intentionally — avoids an unimplemented live call. This will
+  // produce silent empty results in production until wired.
+  console.warn("searchProducts: live mode not yet implemented — returning []");
   return [];
 }
 
