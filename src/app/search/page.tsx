@@ -95,7 +95,7 @@ function SearchForm({ q }: { q: string }) {
         type="search"
         defaultValue={q}
         placeholder="Search products and articles"
-        className="h-11 flex-1 rounded-md border border-cf-divider bg-white px-3 text-sm text-cf-espresso placeholder:text-cf-muted focus:border-cf-cta focus:outline-none focus:ring-2 focus:ring-cf-cta/30"
+        className="h-11 flex-1 rounded-md border border-cf-divider bg-white dark:bg-cf-cream px-3 text-sm text-cf-espresso placeholder:text-cf-muted focus:border-cf-cta focus:outline-none focus:ring-2 focus:ring-cf-cta/30"
       />
       <button
         type="submit"

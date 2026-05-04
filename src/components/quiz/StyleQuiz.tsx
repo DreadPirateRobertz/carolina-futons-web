@@ -329,7 +329,7 @@ function EmailGate({
             onChange={(e) => onEmailChange(e.target.value)}
             aria-describedby={emailError ? "quiz-email-error" : undefined}
             aria-invalid={emailError ? true : undefined}
-            className="w-full rounded-md border border-cf-ink/20 bg-white px-4 py-2.5 text-cf-ink placeholder:text-cf-muted focus:border-cf-cta focus:outline-none focus:ring-1 focus:ring-cf-cta"
+            className="w-full rounded-md border border-cf-ink/20 bg-white dark:bg-cf-cream px-4 py-2.5 text-cf-ink placeholder:text-cf-muted focus:border-cf-cta focus:outline-none focus:ring-1 focus:ring-cf-cta"
             placeholder="you@example.com"
           />
           {emailError && (
