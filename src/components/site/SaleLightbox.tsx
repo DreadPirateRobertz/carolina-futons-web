@@ -3,9 +3,9 @@
 // cf-0i3p — Sale promo lightbox on the home page.
 // Fires 3s after first home visit. Suppressed for 24h after dismiss via localStorage.
 // Phase 1: hardcoded Spring Sale copy + promo code + email capture + featured products.
-// Phase 3 (rennala) will swap for a Wix CMS Promotions collection fetch.
+// Phase 3 (rennala) will swap for a Wix CMS Promotions collection fetch so copy can be updated without a deploy.
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 
@@ -72,16 +72,22 @@ function copyToClipboard(text: string): Promise<void> {
   if (typeof navigator !== "undefined" && navigator.clipboard) {
     return navigator.clipboard.writeText(text);
   }
-  // Fallback for browsers without Clipboard API
-  return new Promise((resolve) => {
+  // Fallback for SSR/Node environments and legacy browsers lacking navigator.clipboard
+  return new Promise<void>((resolve, reject) => {
     const el = document.createElement("textarea");
     el.value = text;
     el.style.cssText = "position:fixed;opacity:0;pointer-events:none";
     document.body.appendChild(el);
-    el.focus();
     el.select();
-    try { document.execCommand("copy"); } catch { /* best effort */ }
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch (err) {
+      document.body.removeChild(el);
+      reject(err);
+      return;
+    }
     document.body.removeChild(el);
+    // execCommand returns false when the browser refuses the copy (focus/policy)
+    if (!ok) { reject(new Error("execCommand('copy') returned false")); return; }
     resolve();
   });
 }
@@ -121,6 +127,7 @@ export function SaleLightbox() {
   const [copied, setCopied] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const triggered = useRef(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { days, hours, mins, secs, expired } = useCountdown(SALE_END_DATE);
   const prefersReduced =
     typeof window !== "undefined" &&
@@ -130,6 +137,13 @@ export function SaleLightbox() {
   useFocusTrap(dialogRef, visible);
 
   useEffect(() => {
+    return () => { if (copyTimerRef.current) clearTimeout(copyTimerRef.current); };
+  }, []);
+
+  useEffect(() => {
+    // Skip in Playwright/automation contexts so PLP + form E2E tests
+    // aren't blocked by the modal's scrim intercepting pointer events.
+    // navigator.webdriver is true in automated browsers.
     if (typeof navigator !== "undefined" && navigator.webdriver) return;
 
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -149,6 +163,13 @@ export function SaleLightbox() {
     return () => clearTimeout(id);
   }, [expired]);
 
+  const dismiss = useCallback(() => {
+    setVisible(false);
+    try {
+      localStorage.setItem(STORAGE_KEY, String(Date.now()));
+    } catch { /* storage blocked (private mode / quota) — suppression won't persist */ }
+  }, []);
+
   useEffect(() => {
     if (!visible) return;
     function onKey(e: KeyboardEvent) {
@@ -156,17 +177,17 @@ export function SaleLightbox() {
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [visible]);
-
-  function dismiss() {
-    setVisible(false);
-    localStorage.setItem(STORAGE_KEY, String(Date.now()));
-  }
+  }, [visible, dismiss]);
 
   function handleCopyPromoCode() {
-    copyToClipboard(PROMO_CODE).catch(() => undefined);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    copyToClipboard(PROMO_CODE).then(
+      () => {
+        if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+        setCopied(true);
+        copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
+      },
+      () => undefined,
+    );
   }
 
   if (!visible || expired) return null;
@@ -178,14 +199,13 @@ export function SaleLightbox() {
       role="dialog"
       aria-labelledby="sale-lightbox-heading"
     >
-      {/* Backdrop */}
       <div
+        data-testid="lightbox-backdrop"
         className="absolute inset-0 bg-black/60"
         aria-hidden="true"
         onClick={dismiss}
       />
 
-      {/* Panel */}
       <div
         ref={dialogRef}
         className="relative w-full max-w-md overflow-hidden rounded-2xl bg-cf-navy shadow-2xl"
@@ -200,7 +220,6 @@ export function SaleLightbox() {
           }
         `}</style>
 
-        {/* Dismiss */}
         <button
           type="button"
           aria-label="Close sale popup"
@@ -214,7 +233,6 @@ export function SaleLightbox() {
 
         <SaleIllustration />
 
-        {/* Body */}
         <div className="max-h-[60vh] overflow-y-auto px-6 pb-6 pt-4 text-cf-cream">
           <p className="text-xs font-semibold uppercase tracking-widest text-cf-cream/60" aria-hidden="true">
             Limited time
@@ -279,7 +297,7 @@ export function SaleLightbox() {
             ))}
           </div>
 
-          {/* Featured sale products */}
+          {/* Featured sale products — onClick={dismiss} counts as engagement → 24h suppression */}
           <div className="mt-4">
             <p className="text-[10px] uppercase tracking-widest text-cf-cream/50">Featured deals</p>
             <ul className="mt-1.5 flex flex-col gap-1" aria-label="Featured sale products">
@@ -303,7 +321,6 @@ export function SaleLightbox() {
             </ul>
           </div>
 
-          {/* CTA */}
           <a
             href={CTA_HREF}
             onClick={dismiss}
