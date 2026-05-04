@@ -8,7 +8,16 @@ import { initCheckout } from "@/lib/wix/checkout";
 //
 // CartDrawer and CartPage both link here. The 307 preserves method so any
 // future POST flow can follow the same route.
+//
+// Fixture mode (NEXT_PUBLIC_USE_FIXTURE_PRODUCTS=1): skips Wix checkout and
+// redirects to /order-confirmation so E2E smoke tests can complete the flow.
 export async function GET(req: NextRequest) {
+  if (process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1") {
+    return NextResponse.redirect(
+      new URL("/order-confirmation?orderId=fixture-test-order", req.url),
+      { status: 307 },
+    );
+  }
   const origin = req.nextUrl.origin;
   try {
     const { fullUrl } = await initCheckout({
