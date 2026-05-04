@@ -38,7 +38,7 @@ export function ReviewFilter() {
               className={`rounded-full border px-4 py-1.5 text-sm font-medium transition ${
                 isActive
                   ? "border-cf-cta bg-cf-cta text-white"
-                  : "border-cf-ink/20 bg-white text-cf-ink hover:border-cf-cta/50"
+                  : "border-cf-ink/20 bg-white dark:bg-cf-cream dark:border-cf-ink/30 text-cf-ink hover:border-cf-cta/50"
               }`}
             >
               {category.label}
@@ -53,7 +53,7 @@ export function ReviewFilter() {
         <ul className="space-y-6">
           {filtered.map((review) => (
             <li key={review.id}>
-              <article className="space-y-3 rounded-lg border border-cf-ink/10 bg-white p-6">
+              <article className="space-y-3 rounded-lg border border-cf-ink/10 bg-white dark:bg-cf-cream dark:border-cf-ink/30 p-6">
                 <div
                   aria-label={`${review.rating} out of 5 stars`}
                   className="flex gap-1"

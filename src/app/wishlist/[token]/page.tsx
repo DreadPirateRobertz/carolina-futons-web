@@ -74,7 +74,7 @@ export default async function SharedWishlistPage({
 
 function SharedWishlistCard({ item }: { item: WishlistItem }) {
   return (
-    <li className="overflow-hidden rounded-lg border border-cf-sand bg-white">
+    <li className="overflow-hidden rounded-lg border border-cf-sand bg-white dark:bg-cf-cream dark:border-cf-ink/30">
       {item.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img

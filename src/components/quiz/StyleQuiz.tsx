@@ -224,7 +224,7 @@ export function StyleQuiz({ initialOptions }: Props) {
                 "w-full rounded-lg border-2 px-5 py-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2",
                 selectedValue === opt.value
                   ? "border-cf-cta bg-cf-cta/5 text-cf-ink"
-                  : "border-cf-ink/10 bg-white hover:border-cf-cta/50 hover:bg-cf-cream/40 text-cf-ink",
+                  : "border-cf-ink/10 bg-white dark:bg-cf-cream dark:border-cf-ink/30 hover:border-cf-cta/50 hover:bg-cf-cream/40 text-cf-ink",
               ].join(" ")}
             >
               <span className="block font-medium">{opt.label}</span>
@@ -410,7 +410,7 @@ function Results({ results, copy, headingRef }: ResultsProps) {
           {results.map(({ product, reason }) => (
             <li
               key={product._id}
-              className="flex items-start gap-4 rounded-lg border border-cf-ink/10 bg-white p-5 shadow-sm"
+              className="flex items-start gap-4 rounded-lg border border-cf-ink/10 bg-white dark:bg-cf-cream dark:border-cf-ink/30 p-5 shadow-sm"
             >
               <div className="min-w-0 flex-1">
                 <h2 className="font-playfair text-xl font-semibold text-cf-ink">

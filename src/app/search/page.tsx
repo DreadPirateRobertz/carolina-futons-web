@@ -123,7 +123,7 @@ function ProductSection({ products }: { products: ReadonlyArray<SearchProduct> }
         {products.map((p) => (
           <li
             key={p._id ?? p.slug}
-            className="rounded-md border border-cf-divider bg-white/60 p-4"
+            className="rounded-md border border-cf-divider bg-white/60 dark:bg-cf-cream dark:border-cf-ink/30 p-4"
           >
             <Link
               href={`/products/${p.slug}`}
@@ -168,7 +168,7 @@ function ArticleSection({ posts }: { posts: ReadonlyArray<BlogPostSummary> }) {
         {posts.map((post) => (
           <li
             key={post._id}
-            className="rounded-md border border-cf-divider bg-white/60 p-4"
+            className="rounded-md border border-cf-divider bg-white/60 dark:bg-cf-cream dark:border-cf-ink/30 p-4"
           >
             <Link
               href={`/blog/${post.slug}`}
@@ -210,7 +210,7 @@ function SearchSuggestions() {
           <li key={s.q}>
             <Link
               href={s.href}
-              className="inline-flex items-center rounded-full border border-cf-divider bg-white/60 px-3 py-1 text-sm text-cf-espresso hover:border-cf-cta hover:text-cf-cta"
+              className="inline-flex items-center rounded-full border border-cf-divider bg-white/60 dark:bg-cf-cream dark:border-cf-ink/30 px-3 py-1 text-sm text-cf-espresso hover:border-cf-cta hover:text-cf-cta"
             >
               {s.label}
             </Link>
