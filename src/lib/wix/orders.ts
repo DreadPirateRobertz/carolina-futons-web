@@ -1,70 +1,47 @@
 import "server-only";
-import type { Tokens } from "@wix/sdk";
-import { getWixClient, getWixClientWithTokens } from "@/lib/wix-client";
+import { getWixClient } from "@/lib/wix-client";
 
-// Synthetic order returned in fixture mode when orderId starts with "fixture-".
-// Shaped to satisfy every field OrderConfirmationPage reads (priceSummary,
-// lineItems, shippingInfo, billingInfo, currency, number).
+// Derive WixOrder from the SDK client type — avoids a circular dependency that
+// would arise from `NonNullable<Awaited<ReturnType<typeof getOrder>>>`.
+type _WixClient = ReturnType<typeof getWixClient>;
+export type WixOrder = NonNullable<
+  Awaited<ReturnType<_WixClient["orders"]["getOrder"]>>
+>;
+
+const FIXTURE_ORDER_ID = "fixture-test-order";
+
+// Minimal fixture order for NEXT_PUBLIC_USE_FIXTURE_PRODUCTS=1 E2E runs.
+// Shape matches WixOrder fields consumed by OrderConfirmationPage.
 const FIXTURE_ORDER = {
-  _id: "fixture-order-1",
-  number: "CF-DEMO-001",
-  status: "APPROVED",
-  paymentStatus: "PAID",
-  fulfillmentStatus: "NOT_FULFILLED",
-  currency: "USD",
-  priceSummary: {
-    subtotal: { amount: "399.00", formattedAmount: "$399.00" },
-    shipping: { amount: "0.00", formattedAmount: "$0.00" },
-    tax: { amount: "29.93", formattedAmount: "$29.93" },
-    total: { amount: "428.93", formattedAmount: "$428.93" },
-  },
+  _id: FIXTURE_ORDER_ID,
+  number: "CF-FIXTURE-001",
   lineItems: [
     {
-      _id: "fixture-li-1",
+      _id: "li-1",
       productName: { original: "Kingston Futon Frame" },
-      catalogReference: { catalogItemId: "fixture-kingston-futon-frame" },
       quantity: 1,
-      price: { amount: "399.00", formattedAmount: "$399.00" },
-      priceBeforeDiscounts: { amount: "399.00" },
-      image:
-        "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&auto=format&fit=crop",
+      price: { formattedAmount: "$399.00" },
+      image: null,
     },
   ],
-  shippingInfo: {
-    logistics: {
-      shippingDestination: {
-        address: {
-          addressLine: "123 Demo Street",
-          city: "Hendersonville",
-          subdivision: "NC",
-          postalCode: "28739",
-          country: "US",
-        },
-      },
-    },
+  priceSummary: {
+    subtotal: { formattedAmount: "$399.00" },
+    shipping: { formattedAmount: "$0.00" },
+    tax: { formattedAmount: "$0.00" },
+    total: { formattedAmount: "$399.00" },
   },
-  billingInfo: {
-    address: {
-      addressLine: "123 Demo Street",
-      city: "Hendersonville",
-      subdivision: "NC",
-      postalCode: "28739",
-      country: "US",
-    },
-  },
-};
+  shippingInfo: null,
+  billingInfo: null,
+} as const;
 
-export async function getOrder(orderId: string) {
+export async function getOrder(orderId: string): Promise<WixOrder | null> {
   if (!orderId) return null;
-  if (process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1" && orderId.startsWith("fixture-")) {
-    return FIXTURE_ORDER as unknown as NonNullable<
-      Awaited<ReturnType<typeof _getOrderFromWix>>
-    >;
+  if (
+    process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1" &&
+    orderId === FIXTURE_ORDER_ID
+  ) {
+    return FIXTURE_ORDER as unknown as WixOrder;
   }
-  return _getOrderFromWix(orderId);
-}
-
-async function _getOrderFromWix(orderId: string) {
   const client = getWixClient();
   try {
     return await client.orders.getOrder(orderId);
@@ -72,103 +49,6 @@ async function _getOrderFromWix(orderId: string) {
     if (isNotFound(err)) return null;
     throw err;
   }
-}
-
-export type WixOrder = NonNullable<Awaited<ReturnType<typeof getOrder>>>;
-
-export type MemberOrderSummary = {
-  id: string;
-  number: string | null;
-  createdDate: string | null;
-  status: string;
-  paymentStatus: string;
-  fulfillmentStatus: string;
-  totalFormatted: string | null;
-  totalValue: number | null;
-  currency: string | null;
-  itemCount: number;
-};
-
-// cf-m1vy: list a member's orders for the dashboard view.
-//
-// searchOrders filters by buyerInfo.contactId — the Wix-side identifier the
-// ecom platform uses to attribute orders to a buyer. Member tokens encode
-// the member identity but Wix orders are keyed on the underlying contact,
-// so callers pass the contactId resolved from getCurrentMember().
-//
-// Returns a flattened summary shape rather than the raw SDK Order so the
-// dashboard view doesn't need to thread Wix's nested money/status types
-// through to the JSX. Errors are caught and surfaced as an empty list +
-// console.error — the page renders an empty state rather than 500'ing.
-export async function getOrdersForMember(args: {
-  contactId: string;
-  tokens: Tokens;
-  limit?: number;
-}): Promise<MemberOrderSummary[]> {
-  if (!args.contactId) return [];
-  const client = getWixClientWithTokens(args.tokens);
-  const limit = args.limit ?? 25;
-
-  let response;
-  try {
-    response = await client.orders.searchOrders({
-      filter: { "buyerInfo.contactId": args.contactId },
-      sort: [{ fieldName: "_createdDate", order: "DESC" }],
-      cursorPaging: { limit },
-    });
-  } catch (err) {
-    console.error("[orders] searchOrders failed:", err);
-    return [];
-  }
-
-  const orders = (response?.orders ?? []) as Record<string, unknown>[];
-  return orders.map(toSummary);
-}
-
-function toSummary(order: Record<string, unknown>): MemberOrderSummary {
-  const id = (order._id as string | undefined) ?? "";
-  const number = (order.number as string | undefined) ?? null;
-  const createdDate = (order._createdDate as string | undefined) ?? null;
-  const status = (order.status as string | undefined) ?? "UNKNOWN";
-  const paymentStatus =
-    (order.paymentStatus as string | undefined) ?? "UNKNOWN";
-  const fulfillmentStatus =
-    (order.fulfillmentStatus as string | undefined) ?? "UNKNOWN";
-
-  const priceSummary =
-    (order.priceSummary as Record<string, unknown> | undefined) ?? null;
-  const total =
-    (priceSummary?.total as Record<string, unknown> | undefined) ?? null;
-  const totalFormatted = (total?.formattedAmount as string | undefined) ?? null;
-  const totalValueRaw = total?.amount as string | number | undefined;
-  const totalValue =
-    typeof totalValueRaw === "number"
-      ? totalValueRaw
-      : typeof totalValueRaw === "string"
-        ? Number.parseFloat(totalValueRaw)
-        : null;
-  const currency = (order.currency as string | undefined) ?? null;
-
-  const lineItems = (order.lineItems as unknown[] | undefined) ?? [];
-  const itemCount = lineItems.reduce<number>((sum, item) => {
-    const qty = (item as { quantity?: number }).quantity;
-    return sum + (typeof qty === "number" ? qty : 1);
-  }, 0);
-
-  return {
-    id,
-    number,
-    createdDate,
-    status,
-    paymentStatus,
-    fulfillmentStatus,
-    totalFormatted,
-    totalValue: typeof totalValue === "number" && Number.isFinite(totalValue)
-      ? totalValue
-      : null,
-    currency,
-    itemCount,
-  };
 }
 
 function isNotFound(err: unknown): boolean {
