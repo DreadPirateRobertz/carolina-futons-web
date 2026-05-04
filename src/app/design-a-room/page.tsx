@@ -4,7 +4,7 @@ import Link from "next/link";
 import { HeroReveal } from "@/components/motion/HeroReveal";
 import { RoomPlannerCanvas } from "@/components/design-a-room/RoomPlannerCanvas";
 import { RoomSceneViewer } from "@/components/design-a-room/RoomSceneViewer";
-import { BotanicalDesignARoom } from "@/components/illustrations/BotanicalDesignARoom";
+import { StargazingHero } from "@/components/mascot/StargazingHero";
 import { BUSINESS } from "@/lib/business/contact-info";
 import { DESIGN_STEPS } from "@/lib/design-a-room/steps";
 
@@ -19,8 +19,9 @@ const SHOWROOM_HOURS = "Wed–Sat, 10am–5pm";
 export default function DesignARoomPage() {
   return (
     <main className="w-full">
-      {/* cf-pgec: v2 Botanical room-scene header illustration */}
-      <BotanicalDesignARoom className="max-h-72" />
+      <div className="max-h-72 w-full overflow-hidden">
+        <StargazingHero />
+      </div>
       <article className="mx-auto max-w-[65ch] space-y-24 px-4 py-12 font-source-sans text-cf-ink sm:px-6 sm:py-16">
         <HeroReveal>
           <header className="space-y-3">
