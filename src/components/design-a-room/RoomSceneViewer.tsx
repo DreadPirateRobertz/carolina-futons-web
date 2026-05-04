@@ -16,11 +16,11 @@ const VB_W = 600;
 const VB_H = 420;
 
 // Room box corners
-const FL = [60, 390] as const;   // floor front-left
-const FR = [540, 390] as const;  // floor front-right
-const BL = [120, 205] as const;  // floor back-left
-const BR = [480, 205] as const;  // floor back-right
-const BWT = 52;                   // back-wall top y
+const FL: [number, number] = [60, 390];   // floor front-left
+const FR: [number, number] = [540, 390];  // floor front-right
+const BL: [number, number] = [120, 205];  // floor back-left
+const BR: [number, number] = [480, 205];  // floor back-right
+const BWT = 52;                            // back-wall top y
 
 // Map a normalized floor position (nx ∈ [0,1], nz ∈ [0,1]) to screen coords.
 // nz=0 → back of room, nz=1 → front of room.
