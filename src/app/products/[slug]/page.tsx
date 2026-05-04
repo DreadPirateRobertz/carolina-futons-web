@@ -24,6 +24,9 @@ import { listFabricSwatches } from "@/lib/wix/fabrics";
 import { getVideoByProductSlug } from "@/lib/videos/catalog";
 import { getGlbUrlByProductSlug } from "@/lib/models3d/catalog";
 import { PdpProductVideo } from "@/components/product/PdpProductVideo";
+import { getProductDimensions, getCareGuide } from "@/lib/product/size-guide";
+import { PdpSizeGuide } from "@/components/product/PdpSizeGuide";
+import { ProductInfoModal } from "@/components/product/ProductInfoModal";
 import type { SwatchItem } from "@/lib/swatch-request/swatch-request-schema";
 import { formatPlpPrice } from "@/lib/product/plp-price";
 import { getCrossSellProducts } from "@/lib/product/cross-sell";
@@ -113,6 +116,10 @@ export default async function PdpPage(props: {
 
   const productVideo = getVideoByProductSlug(slug);
   const glbUrl = getGlbUrlByProductSlug(slug) ?? "";
+  const [dimensions, careGuide] = await Promise.all([
+    getProductDimensions(product._id ?? slug),
+    getCareGuide(slug),
+  ]);
 
   const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
   const canonicalUrl = `${siteUrl}/products/${slug}`;
@@ -201,14 +208,27 @@ export default async function PdpPage(props: {
 
       {descriptionText ? (
         <section className="mt-10 max-w-3xl">
-          <h2 className="font-heading text-lg font-semibold text-cf-espresso">
-            About this product
-          </h2>
-          <p className="mt-3 whitespace-pre-line text-cf-espresso/80">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+            <h2 className="font-heading text-lg font-semibold text-cf-espresso">
+              About this product
+            </h2>
+            <ProductInfoModal
+              productName={product.name ?? ""}
+              dimensions={dimensions}
+              careGuide={careGuide}
+            />
+          </div>
+          <p className="mt-1 whitespace-pre-line text-cf-espresso/80">
             {descriptionText}
           </p>
         </section>
       ) : null}
+
+      <PdpSizeGuide
+        productName={product.name ?? ""}
+        dimensions={dimensions}
+        careGuide={careGuide}
+      />
 
       <PdpMattressBundle mattresses={mattresses} />
 
