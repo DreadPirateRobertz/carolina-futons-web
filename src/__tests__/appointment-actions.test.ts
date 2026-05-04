@@ -36,15 +36,16 @@ function fd(fields: Record<string, string>): FormData {
   return data;
 }
 
-// Compute the next Wednesday at or after today so this date never becomes stale.
-function nextWednesday(): string {
+function nextWeekday(targetDow: number): string {
   const d = new Date();
   d.setHours(12, 0, 0, 0); // noon local — avoids DST edge cases
-  const dow = d.getDay(); // 0=Sun … 6=Sat; Wednesday=3
-  const daysAhead = dow <= 3 ? 3 - dow : 7 - (dow - 3);
-  d.setDate(d.getDate() + (daysAhead === 0 ? 7 : daysAhead));
+  const dow = d.getDay();
+  const daysAhead = dow < targetDow ? targetDow - dow : 7 - (dow - targetDow);
+  d.setDate(d.getDate() + daysAhead);
   return d.toISOString().slice(0, 10);
 }
+function nextWednesday(): string { return nextWeekday(3); }
+function nextSunday(): string { return nextWeekday(0); }
 
 const VALID = {
   appointmentName: "Alice Buyer",
@@ -106,7 +107,7 @@ describe("bookAppointment — validation", () => {
 
   it("returns Wed-Sat error for a future Sunday", async () => {
     const { bookAppointment } = await import("@/app/contact/actions");
-    const result = await bookAppointment(null, fd({ ...VALID, appointmentDate: "2026-05-03" })); // future Sunday
+    const result = await bookAppointment(null, fd({ ...VALID, appointmentDate: nextSunday() }));
     expect(result.status).toBe("error");
     if (result.status !== "error") return;
     expect(result.errors.appointmentDate).toMatch(/wednesday/i);
