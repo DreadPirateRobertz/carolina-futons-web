@@ -29,7 +29,7 @@ export function VideoShowcaseStrip({ videos }: Props) {
     <section
       data-slot="video-showcase-strip"
       aria-labelledby="video-showcase-heading"
-      className="w-full bg-cf-espresso py-10 sm:py-12"
+      className="w-full bg-cf-espresso py-10 dark:bg-cf-sand sm:py-12"
     >
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-baseline justify-between gap-4">
@@ -73,7 +73,7 @@ export function VideoShowcaseStrip({ videos }: Props) {
                   <div className="absolute inset-0 flex items-center justify-center bg-black/30 transition-colors duration-150 group-hover:bg-black/50">
                     <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 shadow-lg transition-transform duration-150 group-hover:scale-110">
                       <Play
-                        className="size-6 translate-x-0.5 text-cf-espresso"
+                        className="size-6 translate-x-0.5 text-cf-espresso dark:text-cf-sand"
                         aria-hidden="true"
                       />
                     </span>
@@ -111,7 +111,7 @@ export function VideoShowcaseStrip({ videos }: Props) {
               type="button"
               onClick={() => setActive(null)}
               aria-label="Close video"
-              className="absolute -top-10 right-0 rounded-full bg-white/90 px-3 py-1 text-sm font-medium text-cf-navy hover:bg-white"
+              className="absolute -top-10 right-0 rounded-full bg-white/90 px-3 py-1 text-sm font-medium text-cf-navy hover:bg-white dark:text-cf-sand"
             >
               Close ✕
             </button>
@@ -147,7 +147,7 @@ export function VideoShowcaseStrip({ videos }: Props) {
               <div className="mt-4 text-center">
                 <Link
                   href={`/products/${active.productSlug}`}
-                  className="inline-block rounded-md bg-white px-5 py-2 text-sm font-medium text-cf-navy hover:bg-white/90"
+                  className="inline-block rounded-md bg-white px-5 py-2 text-sm font-medium text-cf-navy hover:bg-white/90 dark:text-cf-sand"
                 >
                   Shop the {active.title}
                 </Link>
