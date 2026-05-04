@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CtaButton } from "@/components/ui/cta-button";
 
 import { FeaturedProducts } from "@/components/site/FeaturedProducts";
-import { LivingSky } from "@/components/illustrations/LivingSky";
+import { VintageSunRays } from "@/components/mascot/VintageSunRays";
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 import { findCategory } from "@/lib/shop/categories";
 import { resolveDerivedProducts } from "@/lib/shop/derived-products";
@@ -10,7 +10,7 @@ import { resolveDerivedProducts } from "@/lib/shop/derived-products";
 // cf-3qt.5.2: /spring-sale marketing landing.
 //
 // Composes the existing primitives — derived "mattresses-sale" PLP source,
-// FeaturedProducts strip, NewsletterSignup, LivingSky band — into a hero +
+// FeaturedProducts strip, NewsletterSignup, VintageSunRays band — into a hero +
 // strip + capture format. No new product reader: reuses
 // resolveDerivedProducts(category) so any change to the mattresses-sale
 // filter logic flows through to this landing without a second code path.
@@ -70,7 +70,7 @@ export default async function SpringSalePage() {
             </div>
           </div>
           <div data-slot="spring-sale-aside" className="hidden md:block">
-            <LivingSky />
+            <VintageSunRays phase="dawn" />
           </div>
         </div>
       </section>
