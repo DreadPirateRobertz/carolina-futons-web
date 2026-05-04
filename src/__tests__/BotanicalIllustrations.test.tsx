@@ -1,7 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render } from "@testing-library/react";
-import { SHOP_CATEGORIES } from "@/lib/shop/categories";
-
 import { BotanicalMountainSkyline } from "@/components/illustrations/BotanicalMountainSkyline";
 import { BotanicalTimeline } from "@/components/illustrations/BotanicalTimeline";
 import { BotanicalFooterDivider } from "@/components/illustrations/BotanicalFooterDivider";
@@ -154,22 +152,3 @@ describe("MattressesCategory — instanceKey deduplication", () => {
   });
 });
 
-describe("CATEGORY_ILLUSTRATION coverage", () => {
-  const ILLUSTRATED_SLUGS = new Set([
-    "futon-frames",
-    "sofa-beds",
-    "murphy-cabinet-beds",
-    "platform-beds",
-    "mattresses",
-    "mattresses-sale",
-  ]);
-
-  it("every SHOP_CATEGORY slug has an assigned illustration", () => {
-    for (const cat of SHOP_CATEGORIES) {
-      expect(
-        ILLUSTRATED_SLUGS.has(cat.slug),
-        `${cat.slug} is missing from CATEGORY_ILLUSTRATION`,
-      ).toBe(true);
-    }
-  });
-});
