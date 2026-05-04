@@ -9,6 +9,20 @@
 // Member logins also flow through this cookie (OAuthStrategy tokens from
 // login callback). getVisitorCartClient() passes whatever tokens are in the
 // cookie to getWixClientWithTokens() — member tokens work the same way.
+//
+// cf-p7la: two variants for read vs write operations.
+//
+// getVisitorCartClient() — write path (addToCart, checkout). Creates and
+// persists a new visitor identity if none exists. All write operations must
+// go through this path so the session cookie is set before the browser
+// navigates to /checkout.
+//
+// getExistingVisitorCartClient() — read path (getCurrentCart, hydrateCart).
+// Returns null if no session cookie is present. Does NOT generate or set a
+// new cookie, which prevents a concurrent hydrateCartAction call from racing
+// with addItemAction over which Set-Cookie header the browser stores. If both
+// calls ran getVisitorCartClient() concurrently, the later response would
+// overwrite the cookie set by the earlier one, orphaning the add's Wix cart.
 import "server-only";
 
 import { cookies } from "next/headers";
@@ -22,6 +36,14 @@ import {
 import { getWixClientWithTokens } from "@/lib/wix-client";
 
 const VISITOR_SESSION_MAX_AGE = 30 * 24 * 60 * 60; // 30 days
+
+export async function getExistingVisitorCartClient() {
+  const jar = await cookies();
+  const rawCookie = jar.get(SESSION_COOKIE_NAME)?.value;
+  const existing = parseSessionCookie(rawCookie);
+  if (!existing) return null;
+  return getWixClientWithTokens(existing);
+}
 
 export async function getVisitorCartClient() {
   const jar = await cookies();
