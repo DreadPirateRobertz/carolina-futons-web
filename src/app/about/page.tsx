@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
-import { BotanicalMountainSkyline } from "@/components/illustrations/BotanicalMountainSkyline";
-import { BotanicalTimeline } from "@/components/illustrations/BotanicalTimeline";
-import { TeamPortrait } from "@/components/illustrations/TeamPortrait";
+import { MascotWorldHero } from "@/components/mascot/MascotWorldHero";
+import { MascotTimeline } from "@/components/mascot/MascotTimeline";
+import { Bear, Deer, Fox, Owl } from "@/components/mascot/MascotCharacters";
 import {
   ShopTheRoom,
   ABOUT_HERO_PHOTO,
@@ -19,9 +19,9 @@ export const metadata: Metadata = {
 export default async function AboutPage() {
   return (
     <main className="w-full">
-      {/* cf-pgec: v2 Botanical mountain skyline hero band — height container required so SVG height:100% resolves */}
+      {/* v3 mascot porch scene — bear on Blue Ridge, replaces v2 BotanicalMountainSkyline */}
       <div data-slot="about-illustration" className="w-full" style={{ height: "clamp(300px, 42vw, 640px)" }}>
-        <BotanicalMountainSkyline />
+        <MascotWorldHero />
       </div>
       <div className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
         <article className="mx-auto max-w-[65ch] space-y-8 font-source-sans text-cf-ink">
@@ -103,16 +103,32 @@ export default async function AboutPage() {
               fastest way to reach any of us is the contact details above
               — we answer our own email.
             </p>
-            {/* cf-about-illus: team portrait — rustic-frame illustration with
-                LivingSky time-of-day sky overlay. */}
-            <TeamPortrait />
+            {/* v3: character ensemble — bear, owl, fox, deer replacing TeamPortrait */}
+            <div
+              data-slot="character-ensemble"
+              className="flex items-end justify-center gap-8 py-6"
+              aria-hidden="true"
+            >
+              <svg viewBox="-60 -80 120 100" width="80" height="100">
+                <Bear pose="sitting" scale={0.7} />
+              </svg>
+              <svg viewBox="-24 -36 48 48" width="60" height="72">
+                <Owl scale={0.65} />
+              </svg>
+              <svg viewBox="-55 -28 110 38" width="90" height="55">
+                <Fox scale={0.75} />
+              </svg>
+              <svg viewBox="-24 -50 80 60" width="80" height="75">
+                <Deer scale={0.65} />
+              </svg>
+            </div>
           </section>
         </article>
       </div>
 
-      {/* cf-pgec: v2 Blue Ridge milestone timeline (1991 → 2026) — full-width band */}
+      {/* v3: mascot character vignettes timeline (1991 → 2026) */}
       <div className="w-full" style={{ height: "clamp(180px, 28vw, 500px)" }}>
-        <BotanicalTimeline />
+        <MascotTimeline />
       </div>
 
       {/* cf-delight Phase 3: shop-the-room hotspots over a coastal-bedroom

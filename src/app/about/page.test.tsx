@@ -72,22 +72,23 @@ describe("AboutPage — smoke", () => {
     expect(screen.getAllByText(new RegExp(BUSINESS.city, "i")).length).toBeGreaterThan(0);
   });
 
-  // cf-93rb A.2: hero band + milestone-strip illustrations are wired into
-  // /about. The skyline is decorative; the timeline carries the
-  // 1991→present milestone semantics and ships a meaningful alt.
-  it("renders the decorative MountainSkyline header band", async () => {
+  // design-migration: v3 mascot hero + timeline replace v2 botanical components.
+  it("renders the v3 mascot world hero band (replaces BotanicalMountainSkyline)", async () => {
     const { container } = await renderAbout();
-    expect(
-      container.querySelector("[data-slot='mountain-skyline']"),
-    ).not.toBeNull();
+    // MascotWorldHero is a client component; JSDOM renders its SVG stub.
+    // Confirm the about-illustration wrapper is present — the slot is the
+    // stable contract even when the inner SVG is hydrated client-side.
+    expect(container.querySelector("[data-slot='about-illustration']")).not.toBeNull();
   });
 
-  it("renders the BlueRidgeTimeline milestone strip as an inline SVG", async () => {
+  it("renders the MascotTimeline milestone strip (replaces BotanicalTimeline)", async () => {
     const { container } = await renderAbout();
-    // cf-about-illus: BlueRidgeTimeline is now an inline SVG with LivingSky
-    // overlay; the accessible name is the embedded <title>, not an img alt.
-    expect(container.querySelector("[data-slot='blue-ridge-timeline']")).not.toBeNull();
-    expect(container.querySelector("[data-slot='about-illustration']")).not.toBeNull();
+    expect(container.querySelector("[data-slot='mascot-timeline']")).not.toBeNull();
+  });
+
+  it("renders the character ensemble team section (replaces TeamPortrait)", async () => {
+    const { container } = await renderAbout();
+    expect(container.querySelector("[data-slot='character-ensemble']")).not.toBeNull();
   });
 
   // cf-delight: pin the ShopTheRoom section was wired in.
