@@ -55,7 +55,7 @@ export function VideoShowcaseStrip({ videos }: Props) {
                 type="button"
                 aria-label={`Play video: ${video.title}`}
                 onClick={() => setActive(video)}
-                className="group relative block w-full rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-cf-espresso"
+                className="group relative block w-full rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-cf-espresso dark:focus-visible:ring-offset-cf-sand"
               >
                 <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-zinc-900">
                   {video.posterUrl ? (
