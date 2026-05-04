@@ -123,6 +123,7 @@ function ProductSection({ products }: { products: ReadonlyArray<SearchProduct> }
         {products.map((p) => (
           <li
             key={p._id ?? p.slug}
+            data-slot="product-card"
             className="rounded-md border border-cf-divider bg-white/60 dark:bg-cf-cream dark:border-cf-ink/30 p-4"
           >
             <Link

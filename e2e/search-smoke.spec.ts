@@ -43,6 +43,19 @@ test.describe("/search — no query param", () => {
     await expect(chip).toBeVisible();
     await expect(chip).toHaveAttribute("href", /^\/search\?q=/);
   });
+
+  test("submitting the search form navigates to /search?q=…", async ({
+    page,
+  }) => {
+    const input = page.getByRole("searchbox");
+    await expect(input).toBeVisible();
+    await input.fill("futon");
+    await input.press("Enter");
+    await page.waitForURL(/\/search\?q=futon/, { timeout: PAGE_TIMEOUT });
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(
+      /search results/i,
+    );
+  });
 });
 
 // ── Fixture-mode: ?q=kingston ─────────────────────────────────────────────────
@@ -55,12 +68,10 @@ test.describe("/search?q=kingston — fixture mode", () => {
     expect(res?.status()).toBe(200);
   });
 
-  test("returns at least one product result for 'kingston'", async ({
-    page,
-  }) => {
+  test("returns at least one product card for 'kingston'", async ({ page }) => {
     const section = page.locator('[data-slot="search-products"]');
     await expect(section).toBeVisible();
-    const count = await section.locator("li").count();
+    const count = await section.locator('li[data-slot="product-card"]').count();
     expect(count).toBeGreaterThanOrEqual(1);
     await expect(section.getByText(/kingston/i)).toBeVisible();
   });
