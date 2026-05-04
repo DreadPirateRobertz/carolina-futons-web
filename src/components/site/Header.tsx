@@ -17,6 +17,7 @@ import { Search, User } from "lucide-react";
 import { AnnouncementBarCartAware } from "@/components/site/AnnouncementBarCartAware";
 import { CartTrigger } from "@/components/cart/CartTrigger";
 import { HeaderMobileMenu } from "@/components/site/HeaderMobileMenu";
+import { LivingSkyClient } from "@/components/illustrations/LivingSkyClient";
 import { ThemeToggle } from "@/components/site/ThemeToggle";
 
 const PRIMARY_NAV = [
@@ -70,6 +71,24 @@ export function Header() {
         .filter(Boolean)
         .join(" ")}
     >
+      {/* LivingSky backdrop — time-of-day sky fills header width at desktop.
+          SVG viewBox 1040×150 renders ≈208px tall at 1440px wide, nearly
+          filling the 213px header. On narrow viewports bg-cf-cream on the
+          header element shows as the fallback.
+          overflow-hidden is on this wrapper only, not the <header>, so
+          CMS-driven announcement bar text can grow without being clipped.
+          Veil reduced to white/10 so sky colours remain vibrant while still
+          smoothing the narrow-viewport edge where the SVG ends. */}
+      <div
+        aria-hidden="true"
+        data-slot="living-sky-backdrop"
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+      >
+        <div className="absolute top-0 left-0 z-0 w-full">
+          <LivingSkyClient />
+        </div>
+        <div className="absolute inset-0 z-10 bg-white/10" />
+      </div>
       <div className="relative z-20">
         <AnnouncementBarCartAware />
 
