@@ -38,3 +38,20 @@ export const V3_PAL = {
   cream: "#FAF2DE",
   sand: "#E8D5B7",
 } as const;
+
+// Night / stargazing palette — dark sky, moonlit bear, stars.
+// Used by NotFoundIllustration and any future night-scene spots.
+export const V3_NIGHT = {
+  sky0: "#0E1838",
+  sky1: "#1F2A4A",
+  r1: "#06091A",
+  r2: "#0E1424",
+  r3: "#1A2440",
+  r4: "#2A3658",
+  star: "#FAE8B0",
+  moon: "#FAF2DE",
+  // Lighter than V3_PAL.bearFur so bear reads against dark ridges.
+  fur: "#5A3828",
+  muzzle: "#A8806A",
+  nose: "#2A1810",
+} as const;
