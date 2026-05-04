@@ -15,6 +15,7 @@ import {
 import { PdpRecentlyViewed } from "@/components/product/PdpRecentlyViewed";
 import { PdpReviews, pickPdpReviews } from "@/components/product/PdpReviews";
 import { PdpShareButtons } from "@/components/product/PdpShareButtons";
+import { PdpFinancing } from "@/components/product/PdpFinancing";
 import { PdpViewItemTracker } from "@/components/product/PdpViewItemTracker";
 import { getReviewStats } from "@/lib/product/review-stats";
 import { getProductBySlug } from "@/lib/wix/products";
@@ -192,6 +193,8 @@ export default async function PdpPage(props: {
           weightLbs={product.weight ?? 0}
         />
       </div>
+
+      <PdpFinancing unitPriceCents={whiteGlovePriceCents} />
 
       {productVideo ? <PdpProductVideo video={productVideo} /> : null}
 
