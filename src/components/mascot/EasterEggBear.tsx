@@ -23,8 +23,21 @@ const PORTAL_BASE: React.CSSProperties = {
 export function EasterEggBear() {
   const [found, setFound] = useState(false);
   const [claimed, setClaimed] = useState(false);
+  const [copied, setCopied] = useState(false);
   // false on SSR (document undefined), true after hydration — portal is client-only.
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+
+  async function handleDismiss() {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(DISCOUNT_CODE);
+        setCopied(true);
+      } catch {
+        // clipboard write rejected (e.g., permissions, insecure context) — dismiss silently
+      }
+    }
+    setClaimed(true);
+  }
 
   return (
     <div
@@ -93,7 +106,7 @@ export function EasterEggBear() {
               </code>
               <button
                 type="button"
-                onClick={() => setClaimed(true)}
+                onClick={handleDismiss}
                 style={{
                   width: "100%",
                   background: "none",
@@ -104,11 +117,11 @@ export function EasterEggBear() {
                   fontFamily: "var(--font-source-sans)",
                 }}
               >
-                Dismiss
+                Copy &amp; dismiss
               </button>
             </motion.div>
           )}
-          {claimed && (
+          {claimed && copied && (
             <motion.div
               key="bear-confirmed"
               initial={{ x: "-50%", opacity: 0 }}
@@ -122,7 +135,7 @@ export function EasterEggBear() {
                 color: c.ink,
               }}
             >
-              Code saved ✓
+              Copied to clipboard ✓
             </motion.div>
           )}
         </AnimatePresence>,
