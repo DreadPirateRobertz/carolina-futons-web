@@ -71,6 +71,16 @@ export const SHOP_CATEGORIES: readonly ShopCategory[] = [
     image: "https://static.wixstatic.com/media/e04e89_4bea49a709a3470a8315b5acd7309b0f~mv2.jpg/v1/fill/w_600,h_400,q_90/file.jpg",
   },
   {
+    slug: "sale",
+    name: "Sale",
+    description: "Discounted futons, beds, and mattresses — while supplies last.",
+    collectionSlug: "sale",
+    sourceSlug: "all-products",
+    filter: "on-sale",
+    emptyStateCopy: "No items are on sale right now. Check back soon.",
+    image: "https://static.wixstatic.com/media/e04e89_9a21133f83c3412ebe88d2f232c56cf9~mv2.jpg/v1/fill/w_600,h_400,q_90/file.jpg",
+  },
+  {
     slug: "mattresses-sale",
     name: "Mattresses on Sale",
     description: "Current mattress promotions.",

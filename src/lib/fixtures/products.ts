@@ -42,7 +42,10 @@ function makeProduct(
     priceData: {
       price,
       discountedPrice: discountedPrice ?? null,
-      formatted: { price: `$${price.toFixed(2)}` },
+      formatted: {
+        price: `$${price.toFixed(2)}`,
+        ...(discountedPrice != null ? { discountedPrice: `$${discountedPrice.toFixed(2)}` } : {}),
+      },
     },
     priceRange: {
       minValue: price,
@@ -70,7 +73,7 @@ function makeProduct(
   };
 }
 
-// --- Kingston Futon Frame (~$399, parcel, in-stock, 2 options) ---
+// --- Kingston Futon Frame (~$399 → $319 sale, parcel, in-stock, 2 options) ---
 const KINGSTON = makeProduct(
   "kingston-futon-frame",
   "kingston-futon-frame",
@@ -123,6 +126,8 @@ const KINGSTON = makeProduct(
     },
   ],
   ["fixture-col-futon-frames", "fixture-col-all"],
+  undefined,
+  319,
 );
 
 // --- Asheville Murphy Bed (~$849, LTL freight, in-stock, 1 option) ---
@@ -267,7 +272,7 @@ const MESA = makeProduct(
   89,
 );
 
-// --- Monterey Platform Bed (~$1,699, white-glove eligible) ---
+// --- Monterey Platform Bed (~$1,699 → $1,399 sale, white-glove eligible) ---
 // priceData.price > WHITE_GLOVE_THRESHOLD_CENTS/100 ($1,500) so the white-glove
 // widget renders on its PDP.
 const MONTEREY = makeProduct(
@@ -303,6 +308,7 @@ const MONTEREY = makeProduct(
   ],
   ["fixture-col-platform-beds", "fixture-col-all"],
   1899,
+  1399,
 );
 
 // --- Blue Ridge Sofa Bed (~$799, parcel/LTL, in-stock) ---

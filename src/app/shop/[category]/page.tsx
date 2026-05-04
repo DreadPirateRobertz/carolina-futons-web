@@ -61,6 +61,7 @@ export async function generateMetadata(props: {
   }
 }
 
+
 const VALID_SORTS = new Set<PlpSort>([
   "featured",
   "price-asc",
