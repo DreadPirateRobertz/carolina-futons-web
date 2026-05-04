@@ -1,3 +1,5 @@
+"use client";
+
 // Site-wide footer — Phase 3 rebrand + cf-j6ub Living Footer atmosphere.
 // Retires the Phase 1 108px chrome spec in favor of a content-height
 // footer that carries the brand: logo + tagline + real contact data
@@ -6,11 +8,12 @@
 // (e.g. someone updates a handle without a bead) surfaces as a failure.
 import Image from "next/image";
 import Link from "next/link";
+import { motion, useReducedMotion } from "framer-motion";
 
 import { BUSINESS } from "@/lib/business/contact-info";
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 import { LivingFooterBg } from "@/components/site/LivingFooterBg";
-import { LivingFooterScene } from "@/components/site/LivingFooterScene";
+import { MascotFooterDivider } from "@/components/mascot/MascotFooterDivider";
 
 type SocialLink = {
   name: string;
@@ -91,16 +94,25 @@ function SocialIcon({ path, label }: { path: string; label: string }) {
 }
 
 export function Footer() {
+  const prefersReducedMotion = useReducedMotion() ?? false;
+
   return (
     <footer
       data-slot="site-footer"
-      className="relative mt-auto overflow-hidden border-t border-cf-divider bg-cf-footer-bg text-cf-cream"
+      className="relative mt-auto overflow-hidden bg-cf-footer-bg text-cf-cream"
     >
       {/* cf-j6ub: time-of-day animated atmosphere — absolute behind all content */}
       <LivingFooterBg />
-      {/* v3 mascot scene: transparent SVG ridge + sleeping bear over the living background */}
-      <LivingFooterScene />
-      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 pt-32 pb-12 sm:px-6 lg:px-8">
+      {/* Animated mascot divider — sky → ridges → sleeping bear, floats gently */}
+      <motion.div
+        aria-hidden="true"
+        className="relative z-10 h-[200px] w-full"
+        animate={prefersReducedMotion ? undefined : { y: [0, -6, 0] }}
+        transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+      >
+        <MascotFooterDivider className="h-full w-full" />
+      </motion.div>
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col gap-4">
             <Link href="/" className="inline-flex w-fit items-center gap-3">
