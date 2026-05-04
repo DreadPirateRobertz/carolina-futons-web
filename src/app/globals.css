@@ -58,6 +58,7 @@
   --color-cf-espresso: var(--cf-espresso);
   --color-cf-charcoal: var(--cf-charcoal);
   --color-cf-divider: var(--cf-divider);
+  --color-cf-smoke: var(--cf-smoke);
   --color-cf-success: var(--cf-success);
   --color-cf-warning: var(--cf-warning);
   --color-cf-error: var(--cf-error);
@@ -98,6 +99,7 @@
   --cf-espresso: #3a2518;    /* espresso (legacy accent) */
   --cf-charcoal: #1a1a1a;    /* body text */
   --cf-divider: #e2e8f0;     /* hairline dividers */
+  --cf-smoke: #d0dae3;       /* card/form-field borders — slightly more prominent than cf-divider */
   --cf-success: #2f855a;
   --cf-warning: #c05621;
   --cf-error: #c53030;
