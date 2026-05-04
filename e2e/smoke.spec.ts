@@ -33,5 +33,9 @@ test.describe("/smoke", () => {
     expect(res.headers()["referrer-policy"]).toBe(
       "strict-origin-when-cross-origin",
     );
+    expect(res.headers()["strict-transport-security"]).toContain("max-age=31536000");
+    expect(res.headers()["strict-transport-security"]).toContain("includeSubDomains");
+    expect(res.headers()["permissions-policy"]).toContain("payment=()");
+    expect(res.headers()["x-dns-prefetch-control"]).toBe("on");
   });
 });
