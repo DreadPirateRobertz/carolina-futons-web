@@ -9,6 +9,17 @@ const DISCOUNT_CODE = "BEAR10";
 export function EasterEggBear() {
   const [found, setFound] = useState(false);
   const [claimed, setClaimed] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  async function handleDismiss() {
+    try {
+      await navigator.clipboard.writeText(DISCOUNT_CODE);
+      setCopied(true);
+    } catch {
+      // clipboard denied — dismiss silently
+    }
+    setClaimed(true);
+  }
 
   return (
     <div
@@ -77,7 +88,7 @@ export function EasterEggBear() {
               {DISCOUNT_CODE}
             </code>
             <button
-              onClick={() => setClaimed(true)}
+              onClick={handleDismiss}
               style={{
                 width: "100%",
                 background: "none",
@@ -88,11 +99,11 @@ export function EasterEggBear() {
                 fontFamily: "var(--font-source-sans)",
               }}
             >
-              Dismiss
+              Copy &amp; dismiss
             </button>
           </motion.div>
         )}
-        {claimed && (
+        {claimed && copied && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -108,7 +119,7 @@ export function EasterEggBear() {
               opacity: 0.6,
             }}
           >
-            Code saved ✓
+            Copied to clipboard ✓
           </motion.div>
         )}
       </AnimatePresence>
