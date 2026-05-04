@@ -21,6 +21,7 @@ import { getVideoCatalog } from "@/lib/videos/catalog";
 import { HomeFeaturedCollections } from "@/components/home/HomeFeaturedCollections";
 import { HomeSaleStrip } from "@/components/home/HomeSaleStrip";
 import { ContinueShoppingStrip } from "@/components/home/ContinueShoppingStrip";
+import { RecentlyViewedStrip } from "@/components/home/RecentlyViewedStrip";
 import { SocialFeeds } from "@/components/home/SocialFeeds";
 
 export const metadata: Metadata = {
@@ -87,6 +88,9 @@ export default async function HomePage() {
       <link rel="preconnect" href="https://api.fontshare.com" />
       <link rel="stylesheet" href={FONTSHARE_URL} />
       <FilterFirst categories={categories} />
+
+      {/* ── Recently Viewed — localStorage LRU, hidden for first-time visitors (cf-l6aj.8) ── */}
+      <RecentlyViewedStrip />
 
       {/* ── Sale strip — collapses to nothing when no sale products ── */}
       <HomeSaleStrip />
