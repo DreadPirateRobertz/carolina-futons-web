@@ -11,7 +11,7 @@
 // hydration frame are identical — no flicker, no hydration mismatch.
 // The storage event listener syncs across tabs.
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 
 import {
@@ -62,8 +62,7 @@ function getServerSnapshot(): ReadonlyArray<RecentlyViewedItem> {
 }
 
 export function ContinueShoppingStrip() {
-  const subscribe_ = useCallback(subscribe, []);
-  const items = useSyncExternalStore(subscribe_, getSnapshot, getServerSnapshot);
+  const items = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   if (items.length === 0) return null;
 
