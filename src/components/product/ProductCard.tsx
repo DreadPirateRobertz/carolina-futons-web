@@ -7,6 +7,7 @@ import { m, useReducedMotion } from "framer-motion";
 import { formatPlpPrice } from "@/lib/product/plp-price";
 import { getPlpCardImages } from "@/lib/product/plp-card-images";
 import { getReviewStats } from "@/lib/product/review-stats";
+import { AddToCompareButton } from "@/components/compare/AddToCompareButton";
 import type { WixProduct } from "@/lib/wix/products";
 
 function hasDiscount(product: WixProduct): boolean {
@@ -155,6 +156,13 @@ export function ProductCard({
           />
         ) : null}
       </Link>
+      {product.slug ? (
+        // Sibling of Link inside m.div so hover-lift carries the button with
+        // the card. bottom-12/right-2 stays within overflow-hidden bounds.
+        <div className="absolute bottom-12 right-2 z-10">
+          <AddToCompareButton slug={product.slug} />
+        </div>
+      ) : null}
     </m.div>
   );
 }

@@ -6,6 +6,7 @@ import {
   AddToCartButton,
   type AddToCartButtonProps,
 } from "@/components/cart/AddToCartButton";
+import { AddToCompareButton } from "@/components/compare/AddToCompareButton";
 import { PdpGallery, type GalleryImage } from "@/components/product/PdpGallery";
 import { PdpShippingEstimate } from "@/components/product/PdpShippingEstimate";
 import { PdpStickyCta } from "@/components/product/PdpStickyCta";
@@ -195,6 +196,7 @@ export function PdpInteractive({
           />
         </div>
         <PdpFinancing unitPriceCents={whiteGlovePriceCents ?? fallbackPriceCents} />
+        <AddToCompareButton slug={productSlug} />
         <PdpWhiteGlove unitPriceCents={whiteGlovePriceCents ?? fallbackPriceCents} />
         <PdpShippingEstimate weightLbs={weightLbs} palletized={palletized} />
       </div>
