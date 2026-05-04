@@ -42,7 +42,10 @@ function makeProduct(
     priceData: {
       price,
       discountedPrice: discountedPrice ?? null,
-      formatted: { price: `$${price.toFixed(2)}` },
+      formatted: {
+        price: `$${price.toFixed(2)}`,
+        ...(discountedPrice != null ? { discountedPrice: `$${discountedPrice.toFixed(2)}` } : {}),
+      },
     },
     priceRange: {
       minValue: price,
