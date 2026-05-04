@@ -157,12 +157,18 @@ describe("POST /api/auth/login — email+password in-app auth", () => {
 
   it("returns 502 when Wix SDK throws during login", async () => {
     loginFn.mockRejectedValue(new Error("network error"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const { POST } = await import("@/app/api/auth/login/route");
     const res = await POST(makeReq({ email: "a@b.com", password: "pw" }) as never);
 
     expect(res.status).toBe(502);
     expect(cookieStore.has("wix-session")).toBe(false);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[auth/login]"),
+      expect.any(Error),
+    );
+    consoleSpy.mockRestore();
   });
 
   it("returns 502 when getMemberTokensForDirectLogin throws", async () => {
@@ -171,11 +177,17 @@ describe("POST /api/auth/login — email+password in-app auth", () => {
       data: { sessionToken: "tok" },
     });
     getMemberTokensForDirectLogin.mockRejectedValue(new Error("token error"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const { POST } = await import("@/app/api/auth/login/route");
     const res = await POST(makeReq({ email: "a@b.com", password: "pw" }) as never);
 
     expect(res.status).toBe(502);
     expect(cookieStore.has("wix-session")).toBe(false);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[auth/login]"),
+      expect.any(Error),
+    );
+    consoleSpy.mockRestore();
   });
 });

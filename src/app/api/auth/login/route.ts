@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
   let state;
   try {
     state = await client.auth.login({ email, password });
-  } catch {
+  } catch (err) {
+    console.error("[auth/login] client.auth.login failed:", err);
     return NextResponse.json(
       { error: "Sign-in failed. Please try again." },
       { status: 502 },
@@ -56,7 +57,8 @@ export async function POST(req: NextRequest) {
       tokens = await client.auth.getMemberTokensForDirectLogin(
         (state as { data: { sessionToken: string } }).data.sessionToken,
       );
-    } catch {
+    } catch (err) {
+      console.error("[auth/login] getMemberTokensForDirectLogin failed:", err);
       return NextResponse.json(
         { error: "Sign-in failed. Please try again." },
         { status: 502 },
