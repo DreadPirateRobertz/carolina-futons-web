@@ -20,11 +20,6 @@ export type HydrateCartResult =
   | { ok: true; lines: CartLineItem[] }
   | { ok: false; error: string };
 
-// Baked at build time — lets E2E tests run against fixture products without
-// a live Wix session. Client cart already has the line (optimistic); returning
-// ok:true keeps it there instead of rolling back.
-const USE_FIXTURE_CART = process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1";
-
 export async function addItemAction(
   input: LineItemInput,
 ): Promise<CartActionResult> {
@@ -32,7 +27,10 @@ export async function addItemAction(
   if (!Number.isInteger(input.quantity) || input.quantity < 1) {
     return { ok: false, error: "Quantity must be a positive integer" };
   }
-  if (USE_FIXTURE_CART) return { ok: true, cart: null };
+  // NEXT_PUBLIC_ vars are baked at build time — read inline so server actions
+  // running in a fixture build short-circuit without hitting Wix.
+  if (process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1")
+    return { ok: true, cart: null };
   try {
     const cart = await addToCart([input]);
     revalidatePath("/cart");
