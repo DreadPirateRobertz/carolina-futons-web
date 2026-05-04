@@ -1,5 +1,7 @@
 // Thin typed accessors for the Wix Stores module.
 // NEXT_PUBLIC_USE_FIXTURE_PRODUCTS=1 enables fixture mode for preview builds.
+import type { Product as WixProductSDK } from "@wix/auto_sdk_stores_products";
+import type { Collection as WixCollectionSDK } from "@wix/auto_sdk_stores_collections";
 import { getWixClient } from "@/lib/wix-client";
 import {
   FIXTURE_PRODUCTS,
@@ -9,6 +11,12 @@ import {
   FIXTURE_COLLECTIONS,
   getFixtureCollectionBySlug,
 } from "@/lib/fixtures/collections";
+
+// Import types directly from the Wix SDK to avoid circular references —
+// inferring WixProduct from listProducts' return type is circular because
+// the fixture cast references WixProduct.
+export type WixProduct = WixProductSDK;
+export type WixCollection = WixCollectionSDK;
 
 const USE_FIXTURES = process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1";
 
@@ -97,5 +105,3 @@ export async function searchProducts(
   return [];
 }
 
-export type WixProduct = Awaited<ReturnType<typeof listProducts>>[number];
-export type WixCollection = Awaited<ReturnType<typeof listCollections>>[number];
