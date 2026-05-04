@@ -54,7 +54,6 @@ beforeEach(() => {
   // Default happy path so render-level tests don't have to repeat fixtures
   getProductBySlugMock.mockImplementation(async (slug: string) => {
     const fixtures: Record<string, ReturnType<typeof product>> = {
-      "ranchero-murphy-cabinet-bed": product("Ranchero Murphy Cabinet Bed", 2978),
       "canby-futon-frame": product("Canby Futon Frame", 737),
       "ekko-futon-frame": product("Ekko Futon Frame", 599),
       "haley-110": product("Haley 110", 829),
@@ -64,8 +63,12 @@ beforeEach(() => {
       "nutmeg-platform-bed": product("Nutmeg Platform Bed", 949),
       "monterey-futon-frame": product("Monterey Futon Frame", 899),
       "kingston-futon-frame": product("Kingston Futon Frame", 619),
+      // murphy-cabinet-beds PLP — all three slugs must appear here so the
+      // invariant suite can resolve them. Ranchero is a Night & Day SKU;
+      // confirm it exists in the live Wix catalog before shipping.
       "asheville-murphy-bed": product("Asheville Murphy Bed", 1899),
       "cube-murphy-cabinet-bed": product("Cube Murphy Cabinet Bed", 2199),
+      "ranchero-murphy-cabinet-bed": product("Ranchero Murphy Cabinet Bed", 2978),
     };
     return fixtures[slug] ?? null;
   });

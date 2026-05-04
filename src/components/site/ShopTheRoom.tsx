@@ -165,6 +165,11 @@ export const FUTON_FRAMES_PLP_HOTSPOT_CONFIGS: ReadonlyArray<HotspotConfig> = [
 
 // /shop/murphy-cabinet-beds PLP. Home-office lifestyle scene showing a
 // murphy cabinet bed open, demonstrating the space-saving transformation.
+// Slugs: asheville-murphy-bed and cube-murphy-cabinet-bed are confirmed in
+// fixtures/videos catalog. ranchero-murphy-cabinet-bed is a Night & Day SKU
+// present in the pre-existing test fixture — verify it exists in the live
+// Wix catalog before merging. ShopTheRoom drops any slug that 404s at
+// request time, so a missing slug degrades to 2 dots rather than crashing.
 export const MURPHY_BEDS_PLP_HERO_PHOTO: HeroPhoto = {
   src: "https://static.wixstatic.com/media/e04e89_818d75df410a41e1a0721207333bc93d~mv2.jpg/v1/fill/w_1920,h_1080,q_90/file.jpg",
   alt: "Murphy cabinet bed open in a home office, transforming the space",
