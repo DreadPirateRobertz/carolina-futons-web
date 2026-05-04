@@ -8,6 +8,9 @@
  *   /shop/platform-beds       — 1 fixture product (Monterey $1,699, in-stock)
  *   /shop/murphy-cabinet-beds — 1 fixture product (Asheville $849, in-stock)
  *   /shop/sofa-beds            — 1 fixture product (Blue Ridge $799, in-stock)
+ *   /shop/sale                — derived / on-sale filter sourcing all-products;
+ *                               3 products (Kingston $399→$319, Monterey $1,699→$1,399,
+ *                               Mesa $119→$89)
  *   /shop/mattresses-sale     — derived / on-sale filter sourcing mattresses;
  *                               1 product (Mesa $119→$89)
  *
@@ -295,5 +298,50 @@ test.describe("/shop/mattresses-sale — fixture mode", () => {
     await page.click("button[type=submit]");
     await page.waitForURL(/inStock=1/);
     await expect(page.locator('[data-slot="product-card"]')).toHaveCount(1);
+  });
+});
+
+// ── /shop/sale PLP (derived / on-sale from all-products) ─────────────────────
+
+test.describe("/shop/sale — fixture mode", () => {
+  test.skip(!isFixtureMode, "requires NEXT_PUBLIC_USE_FIXTURE_PRODUCTS=1");
+  test.setTimeout(30_000);
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/shop/sale");
+    await waitForPlpControls(page);
+  });
+
+  test("renders 3 on-sale fixture products (kingston + monterey + mesa)", async ({ page }) => {
+    const cards = page.locator('[data-slot="product-card"]');
+    await expect(cards).toHaveCount(3);
+    await expect(page.getByText(/kingston/i)).toBeVisible();
+    await expect(page.getByText(/monterey/i)).toBeVisible();
+    await expect(page.getByText(/mesa/i)).toBeVisible();
+  });
+
+  test("product count header shows 3 products", async ({ page }) => {
+    const header = page.locator("p", { hasText: /\d+ products?/ });
+    await expect(header).toBeVisible();
+    expect(parseInt((await header.textContent()) ?? "0", 10)).toBe(3);
+  });
+
+  test("page title contains Sale", async ({ page }) => {
+    await expect(page).toHaveTitle(/sale/i);
+  });
+
+  test("price filter $1000+ keeps only monterey, hides kingston + mesa", async ({ page }) => {
+    await page.fill("input#plp-priceMin", "1000");
+    await page.click("button[type=submit]");
+    await page.waitForURL(/priceMin=1000/);
+    await expect(page.locator('[data-slot="product-card"]')).toHaveCount(1);
+    await expect(page.getByText(/monterey/i)).toBeVisible();
+  });
+
+  test("in-stock filter keeps all 3 on-sale products", async ({ page }) => {
+    await page.check("input#plp-inStock");
+    await page.click("button[type=submit]");
+    await page.waitForURL(/inStock=1/);
+    await expect(page.locator('[data-slot="product-card"]')).toHaveCount(3);
   });
 });
