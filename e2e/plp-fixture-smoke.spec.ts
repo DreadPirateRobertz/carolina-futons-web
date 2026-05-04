@@ -1,10 +1,12 @@
 /**
  * PLP fixture-mode smoke tests — cf-3qt.2.14
  *
- * Covers the four PLPs not tested by the existing plp.spec.ts (futon-frames):
- *   /shop/mattresses          — 1 fixture product (Mesa Foam, $119, in-stock)
- *   /shop/platform-beds       — 1 fixture product (Monterey, $1,699, in-stock)
- *   /shop/murphy-cabinet-beds — 1 fixture product (Asheville, $849, in-stock)
+ * Covers all 5 PLP routes using NEXT_PUBLIC_USE_FIXTURE_PRODUCTS=1:
+ *   /shop/futon-frames        — 2 fixture products (Kingston $399 in-stock,
+ *                               Sedona $549 out-of-stock)
+ *   /shop/mattresses          — 1 fixture product (Mesa Foam $119, in-stock)
+ *   /shop/platform-beds       — 1 fixture product (Monterey $1,699, in-stock)
+ *   /shop/murphy-cabinet-beds — 1 fixture product (Asheville $849, in-stock)
  *   /shop/mattresses-sale     — derived / on-sale filter; 0 fixture products
  *                               (no fixture has discountedPrice < price)
  *
@@ -14,18 +16,78 @@
  * Fixture data: src/lib/fixtures/products.ts + src/lib/fixtures/collections.ts
  */
 
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 const isFixtureMode = process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1";
 
-// Shared wait helper — PLP controls take up to 15s on a cold dev server
 const PLP_TIMEOUT = 15_000;
 
-// ── helpers ──────────────────────────────────────────────────────────────────
-
-async function waitForPlpControls(page: Parameters<typeof test>[1] extends (args: { page: infer P }) => unknown ? P : never) {
+async function waitForPlpControls(page: Page) {
   await page.waitForSelector("select#plp-sort", { timeout: PLP_TIMEOUT });
 }
+
+// ── futon-frames PLP ─────────────────────────────────────────────────────────
+
+test.describe("/shop/futon-frames — fixture mode", () => {
+  test.skip(!isFixtureMode, "requires NEXT_PUBLIC_USE_FIXTURE_PRODUCTS=1");
+  test.setTimeout(30_000);
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/shop/futon-frames");
+    await waitForPlpControls(page);
+  });
+
+  test("renders 2 fixture product cards (kingston + sedona)", async ({ page }) => {
+    const cards = page.locator('[data-slot="product-card"]');
+    await expect(cards).toHaveCount(2);
+    await expect(page.getByText(/kingston/i)).toBeVisible();
+    await expect(page.getByText(/sedona/i)).toBeVisible();
+  });
+
+  test("product count header shows 2 products", async ({ page }) => {
+    const header = page.locator("p", { hasText: /\d+ products?/ });
+    await expect(header).toBeVisible();
+    expect(parseInt((await header.textContent()) ?? "0", 10)).toBe(2);
+  });
+
+  test("sort by price-asc updates URL", async ({ page }) => {
+    await page.selectOption("select#plp-sort", "price-asc");
+    await page.waitForURL(/sort=price-asc/);
+    expect(page.url()).toContain("sort=price-asc");
+    await expect(page.locator('[data-slot="product-card"]')).toHaveCount(2);
+  });
+
+  test("in-stock filter keeps only kingston (sedona is out-of-stock)", async ({
+    page,
+  }) => {
+    await page.check("input#plp-inStock");
+    await page.click("button[type=submit]");
+    await page.waitForURL(/inStock=1/);
+    await expect(page.locator('[data-slot="product-card"]')).toHaveCount(1);
+    await expect(page.getByText(/kingston/i)).toBeVisible();
+  });
+
+  test("price filter $500+ hides kingston ($399), shows sedona ($549)", async ({
+    page,
+  }) => {
+    await page.fill("input#plp-priceMin", "500");
+    await page.click("button[type=submit]");
+    await page.waitForURL(/priceMin=500/);
+    await expect(page.locator('[data-slot="product-card"]')).toHaveCount(1);
+    await expect(page.getByText(/sedona/i)).toBeVisible();
+  });
+
+  test("price filter under $200 hides both fixture frames", async ({ page }) => {
+    await page.fill("input#plp-priceMax", "200");
+    await page.click("button[type=submit]");
+    await page.waitForURL(/priceMax=200/);
+    await expect(page.locator('[data-slot="product-card"]')).toHaveCount(0);
+  });
+
+  test("page title contains Futon Frames", async ({ page }) => {
+    await expect(page).toHaveTitle(/futon frames/i);
+  });
+});
 
 // ── mattresses PLP ───────────────────────────────────────────────────────────
 
@@ -35,7 +97,7 @@ test.describe("/shop/mattresses — fixture mode", () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto("/shop/mattresses");
-    await page.waitForSelector("select#plp-sort", { timeout: PLP_TIMEOUT });
+    await waitForPlpControls(page);
   });
 
   test("renders 1 product card (mesa-foam-mattress)", async ({ page }) => {
@@ -76,7 +138,6 @@ test.describe("/shop/mattresses — fixture mode", () => {
     await page.fill("input#plp-priceMin", "500");
     await page.click("button[type=submit]");
     await page.waitForURL(/priceMin=500/);
-    // No products above $500 in fixture mattresses
     await expect(page.locator('[data-slot="product-card"]')).toHaveCount(0);
   });
 });
@@ -89,7 +150,7 @@ test.describe("/shop/platform-beds — fixture mode", () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto("/shop/platform-beds");
-    await page.waitForSelector("select#plp-sort", { timeout: PLP_TIMEOUT });
+    await waitForPlpControls(page);
   });
 
   test("renders 1 product card (monterey-platform-bed)", async ({ page }) => {
@@ -135,7 +196,7 @@ test.describe("/shop/murphy-cabinet-beds — fixture mode", () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto("/shop/murphy-cabinet-beds");
-    await page.waitForSelector("select#plp-sort", { timeout: PLP_TIMEOUT });
+    await waitForPlpControls(page);
   });
 
   test("renders 1 product card (asheville-murphy-bed)", async ({ page }) => {
@@ -156,6 +217,12 @@ test.describe("/shop/murphy-cabinet-beds — fixture mode", () => {
     await page.waitForURL(/inStock=1/);
     await expect(page.locator('[data-slot="product-card"]')).toHaveCount(1);
   });
+
+  test("sort by name-asc updates URL", async ({ page }) => {
+    await page.selectOption("select#plp-sort", "name-asc");
+    await page.waitForURL(/sort=name-asc/);
+    await expect(page.locator('[data-slot="product-card"]')).toHaveCount(1);
+  });
 });
 
 // ── mattresses-sale PLP (derived / empty in fixture mode) ────────────────────
@@ -168,20 +235,18 @@ test.describe("/shop/mattresses-sale — fixture mode (empty-sale state)", () =>
     page,
   }) => {
     await page.goto("/shop/mattresses-sale");
-    // The derived on-sale filter finds 0 fixture products (no discountedPrice
-    // set on mesa-foam-mattress). Expect the category.emptyStateCopy.
     await expect(
       page.getByText(/no mattresses are on sale right now/i),
     ).toBeVisible({ timeout: PLP_TIMEOUT });
   });
 
-  test("page does not show a product count header when empty", async ({
+  test("page renders without error — no product count header when empty", async ({
     page,
   }) => {
     await page.goto("/shop/mattresses-sale");
     await page.waitForLoadState("networkidle");
-    // No products → no "N products" header rendered
     const header = page.locator("p", { hasText: /\d+ products?/ });
-    await expect(header).not.toBeVisible({ timeout: 5_000 }).catch(() => {});
+    const isVisible = await header.isVisible().catch(() => false);
+    expect(isVisible).toBe(false);
   });
 });
