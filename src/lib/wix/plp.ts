@@ -20,6 +20,10 @@
 import { getWixClient } from "@/lib/wix-client";
 import { logWixFailure, toReaderError, type ReaderError } from "@/lib/wix/errors";
 import type { WixProduct } from "@/lib/wix/products";
+import { FIXTURE_PRODUCTS } from "@/lib/fixtures/products";
+
+// Mirrors the flag in wix/products.ts — baked at build time.
+const USE_FIXTURES = process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1";
 
 // ── Public types ────────────────────────────────────────────────────────────
 
@@ -150,6 +154,12 @@ export async function queryAllProductsByCollection(
   collectionId: string,
   opts: { scanLimit?: number } = {},
 ): Promise<PlpScanResult> {
+  if (USE_FIXTURES) {
+    const items = (FIXTURE_PRODUCTS as unknown as WixProduct[]).filter((p) =>
+      ((p as unknown as { collectionIds?: string[] }).collectionIds ?? []).includes(collectionId),
+    );
+    return { items };
+  }
   const scanLimit = opts.scanLimit ?? DEFAULT_SCAN_LIMIT;
   if (scanLimit <= 0) return { items: [] };
   try {
