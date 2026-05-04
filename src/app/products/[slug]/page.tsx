@@ -29,6 +29,8 @@ import { ProductInfoModal } from "@/components/product/ProductInfoModal";
 import type { SwatchItem } from "@/lib/swatch-request/swatch-request-schema";
 import { formatPlpPrice } from "@/lib/product/plp-price";
 import { getCrossSellProducts } from "@/lib/product/cross-sell";
+import { getAlsoBoughtProducts } from "@/lib/product/also-bought";
+import { PdpAlsoBought } from "@/components/product/PdpAlsoBought";
 import { JsonLd } from "@/components/seo/JsonLd";
 import {
   buildBreadcrumbSchema,
@@ -102,7 +104,10 @@ export default async function PdpPage(props: {
   const variants = (product.variants ?? []) as VariantInput[];
   const galleryImages = buildGallery(product);
   const stock = (product.stock ?? null) as StockBadgeInput | null;
-  const crossSell = await getCrossSellProducts(product);
+  const [crossSell, alsoBought] = await Promise.all([
+    getCrossSellProducts(product),
+    getAlsoBoughtProducts(product),
+  ]);
   const mattresses = isFutonFrame(slug) ? await getMesaMattresses() : [];
   let fabricSwatches: SwatchItem[] = [];
   let fabricSwatchError = false;
@@ -248,6 +253,7 @@ export default async function PdpPage(props: {
       />
 
       <PdpCrossSell products={crossSell.items} error={crossSell.error} />
+      <PdpAlsoBought products={alsoBought.items} error={alsoBought.error} />
     </main>
   );
 }
