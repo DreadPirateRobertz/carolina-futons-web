@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { DashboardShell } from "@/components/member/DashboardShell";
+import { MembershipCard } from "@/components/member/MembershipCard";
 import { getMemberSession } from "@/lib/auth/member";
+import { getMemberPerks } from "@/app/actions/membership";
 import { getWixClientWithTokens } from "@/lib/wix-client";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +15,10 @@ export default async function DashboardPage() {
   if (!session) return null;
 
   const client = getWixClientWithTokens(session.tokens);
-  const { member } = await client.members.getCurrentMember();
+  const [{ member }, perksResult] = await Promise.all([
+    client.members.getCurrentMember(),
+    getMemberPerks().catch(() => ({ success: false as const, error: "fetch_failed" })),
+  ]);
   const fullName = [member?.contact?.firstName, member?.contact?.lastName]
     .filter(Boolean)
     .join(" ");
@@ -28,6 +33,7 @@ export default async function DashboardPage() {
       activeTab="overview"
     >
       <section className="grid gap-6 md:grid-cols-2">
+        <MembershipCard data={perksResult} />
         <EmptyCard
           title="Recent orders"
           body="Your order history will show up here once you've placed your first order."
