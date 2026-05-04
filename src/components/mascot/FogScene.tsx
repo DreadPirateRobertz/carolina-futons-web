@@ -17,8 +17,6 @@ export function FogScene({ className }: FogSceneProps) {
         preserveAspectRatio="xMidYMid slice"
         xmlns="http://www.w3.org/2000/svg"
         style={{ display: "block", width: "100%", height: "100%" }}
-        aria-label="Foggy Blue Ridge mountain ridge at dawn — layered ridgelines fading into warm morning haze with a bear silhouette in the valley"
-        role="img"
       >
         <defs>
           <linearGradient id="hf-sky" x1="0" y1="0" x2="0" y2="1">
