@@ -32,13 +32,18 @@ function makeProduct(
   variants: unknown[],
   collectionIds: string[],
   priceRangeMax?: number,
+  discountedPrice?: number,
 ) {
   return {
     _id: `fixture-${id}`,
     slug,
     name,
     description,
-    priceData: { price, formatted: { price: `$${price.toFixed(2)}` } },
+    priceData: {
+      price,
+      discountedPrice: discountedPrice ?? null,
+      formatted: { price: `$${price.toFixed(2)}` },
+    },
     priceRange: {
       minValue: price,
       maxValue: priceRangeMax ?? price,
@@ -225,7 +230,7 @@ const RANCHERO = makeProduct(
   ["fixture-col-murphy-beds", "fixture-col-all"],
 );
 
-// --- Mesa Foam Mattress (~$119, parcel, in-stock, 1 option) ---
+// --- Mesa Foam Mattress (~$119 → $89 sale, parcel, in-stock, 1 option) ---
 const MESA = makeProduct(
   "mesa-foam-mattress",
   "mesa-foam-mattress",
@@ -259,6 +264,7 @@ const MESA = makeProduct(
   ],
   ["fixture-col-mattresses", "fixture-col-all"],
   139,
+  89,
 );
 
 // --- Monterey Platform Bed (~$1,699, white-glove eligible) ---
