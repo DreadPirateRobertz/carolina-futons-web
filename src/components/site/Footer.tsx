@@ -8,9 +8,9 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { BUSINESS } from "@/lib/business/contact-info";
-import { BotanicalFooterDivider } from "@/components/illustrations/BotanicalFooterDivider";
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 import { LivingFooterBg } from "@/components/site/LivingFooterBg";
+import { LivingFooterScene } from "@/components/site/LivingFooterScene";
 
 type SocialLink = {
   name: string;
@@ -98,10 +98,8 @@ export function Footer() {
     >
       {/* cf-j6ub: time-of-day animated atmosphere — absolute behind all content */}
       <LivingFooterBg />
-      {/* cf-pgec: v2 Botanical ridge divider softens the footer top edge */}
-      <div className="relative z-10">
-        <BotanicalFooterDivider />
-      </div>
+      {/* v3 mascot scene: transparent SVG ridge + sleeping bear over the living background */}
+      <LivingFooterScene />
       <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col gap-4">
