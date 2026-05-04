@@ -163,7 +163,7 @@ describe("/blog/[slug] dynamic page", () => {
     const meta = await generateMetadata({
       params: Promise.resolve({ slug: "wool-care" }),
     });
-    expect(meta.openGraph?.type).toBe("article");
+    expect((meta.openGraph as { type?: string })?.type).toBe("article");
     expect((meta.openGraph as { url?: string })?.url).toContain("/blog/wool-care");
     expect(meta.openGraph?.title).toBe("Wool mattress care");
     expect(meta.openGraph?.description).toContain("Keep it fresh");
@@ -203,7 +203,7 @@ describe("/blog/[slug] dynamic page", () => {
     const meta = await generateMetadata({
       params: Promise.resolve({ slug: "hero-post" }),
     });
-    expect(meta.twitter?.card).toBe("summary_large_image");
+    expect((meta.twitter as { card?: string })?.card).toBe("summary_large_image");
     expect(meta.twitter?.title).toBe("Hero post");
   });
 
@@ -221,7 +221,7 @@ describe("/blog/[slug] dynamic page", () => {
     const meta = await generateMetadata({
       params: Promise.resolve({ slug: "text-post" }),
     });
-    expect(meta.twitter?.card).toBe("summary");
+    expect((meta.twitter as { card?: string })?.card).toBe("summary");
   });
 
   it("generateMetadata falls back to a generic title when the post is missing", async () => {
