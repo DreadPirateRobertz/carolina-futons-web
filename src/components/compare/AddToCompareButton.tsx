@@ -15,13 +15,13 @@ export function AddToCompareButton({
   slug: string;
   className?: string;
 }) {
-  const [slugs, setSlugs] = useState<string[]>([]);
+  // Lazy initializer hydrates from localStorage without an extra render.
+  // getCompareSlugs() guards window access so SSR gets [].
+  const [slugs, setSlugs] = useState<string[]>(() => getCompareSlugs());
 
-  // Hydrate from localStorage on mount and subscribe to cross-component
-  // changes via the custom "cf-compare-change" event so PDP and PLP buttons
-  // stay in sync when both are visible (mobile scroll with sticky CTA).
+  // Subscribe to cross-component changes via the custom "cf-compare-change"
+  // event so PDP and PLP buttons stay in sync (e.g. mobile sticky CTA).
   useEffect(() => {
-    setSlugs(getCompareSlugs());
     const onchange = () => setSlugs(getCompareSlugs());
     window.addEventListener("cf-compare-change", onchange);
     return () => window.removeEventListener("cf-compare-change", onchange);
