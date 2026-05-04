@@ -14,7 +14,10 @@
 import "server-only";
 
 import { makeLineId, type CartLineItem } from "@/lib/cart/cart-state";
-import { getVisitorCartClient } from "./wix-visitor-client";
+import {
+  getExistingVisitorCartClient,
+  getVisitorCartClient,
+} from "./wix-visitor-client";
 
 // Wix Stores app id — constant, used as `catalogReference.appId` for every
 // Stores-sourced line item. This is the same across all Wix sites.
@@ -39,7 +42,13 @@ function toCatalogReference(item: LineItemInput) {
 }
 
 export async function getCurrentCart() {
-  const client = await getVisitorCartClient();
+  // Read-only path: use getExistingVisitorCartClient so we never generate or
+  // set a new session cookie here. This prevents a race between a concurrent
+  // hydrateCartAction (read) and addItemAction (write) where both would
+  // generate distinct visitor tokens and the later Set-Cookie would orphan
+  // the item added by the earlier write. cf-p7la.
+  const client = await getExistingVisitorCartClient();
+  if (!client) return null;
   try {
     return await client.currentCart.getCurrentCart();
   } catch (err) {

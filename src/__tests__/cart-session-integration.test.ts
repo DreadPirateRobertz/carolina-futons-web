@@ -123,11 +123,22 @@ describe("cart session integration", () => {
     expect(mockGetCurrentCart).toHaveBeenCalledOnce();
   });
 
-  it("hydrateCartAction returns empty lines when the session cart is empty", async () => {
-    // First visit — no cookie, tokens generated, empty cart
+  it("hydrateCartAction returns empty lines without a session cookie", async () => {
+    // cf-p7la: no cookie → getExistingVisitorCartClient returns null → no Wix
+    // API call, no token generation. This is the critical half of the race fix.
     const { hydrateCartAction } = await import("@/app/actions/cart");
     const result = await hydrateCartAction();
     expect(result).toEqual({ ok: true, lines: [] });
-    expect(mockGetCurrentCart).toHaveBeenCalledOnce();
+    expect(mockGetCurrentCart).not.toHaveBeenCalled();
+  });
+
+  it("hydrateCartAction does NOT generate visitor tokens or set a cookie (cf-p7la race fix)", async () => {
+    // Without this guarantee, a concurrent addItemAction and hydrateCartAction
+    // both on first visit would each generate distinct visitor tokens. The later
+    // Set-Cookie response would orphan the Wix cart written by the earlier add.
+    const { hydrateCartAction } = await import("@/app/actions/cart");
+    await hydrateCartAction();
+    expect(mockGenerateVisitorTokens).not.toHaveBeenCalled();
+    expect(mockJar.set).not.toHaveBeenCalled();
   });
 });
