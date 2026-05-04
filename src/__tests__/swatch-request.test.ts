@@ -30,6 +30,7 @@ import {
   validateSwatchContactInfo,
   coerceSwatchContactInfo,
   hasSwatchContactErrors,
+  type UsState,
 } from "@/lib/swatch-request/swatch-request-schema";
 
 describe("validateSwatchIds", () => {
@@ -61,7 +62,7 @@ describe("validateSwatchContactInfo", () => {
     email: "jane@example.com",
     address1: "123 Main St",
     city: "Hendersonville",
-    state: "NC",
+    state: "NC" as UsState,
     zip: "28739",
   };
 

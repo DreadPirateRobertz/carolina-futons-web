@@ -8,9 +8,10 @@ import {
   initialSwatchRequestState,
   type SwatchRequestActionState,
 } from "@/app/swatch-request/swatch-request-state";
-import type {
-  SwatchContactErrors,
-  SwatchItem,
+import {
+  US_STATES,
+  type SwatchContactErrors,
+  type SwatchItem,
 } from "@/lib/swatch-request/swatch-request-schema";
 import { TurnstileWidget } from "@/components/captcha/TurnstileWidget";
 
@@ -28,13 +29,6 @@ const EMPTY_CONTACT = {
   zip: "",
 };
 
-const US_STATES = [
-  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA",
-  "HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
-  "MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
-  "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC",
-  "SD","TN","TX","UT","VT","VA","WA","WV","WI","WY",
-];
 
 function contactErrors(state: SwatchRequestActionState): SwatchContactErrors {
   return state.status === "error" ? (state.errors.contact ?? {}) : {};

@@ -10,6 +10,16 @@ export type SwatchItem = {
   imageUrl?: string;
 };
 
+export const US_STATES = [
+  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA",
+  "HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
+  "MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+  "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC",
+  "SD","TN","TX","UT","VT","VA","WA","WV","WI","WY",
+] as const;
+
+export type UsState = (typeof US_STATES)[number];
+
 export type SwatchContactInfo = {
   firstName: string;
   lastName: string;
@@ -18,7 +28,7 @@ export type SwatchContactInfo = {
   address1: string;
   address2?: string;
   city: string;
-  state: string;
+  state: UsState | "";
   zip: string;
 };
 
@@ -46,6 +56,7 @@ function str(v: unknown): string {
 export function coerceSwatchContactInfo(
   obj: Record<string, unknown>,
 ): SwatchContactInfo {
+  const stateVal = str(obj.state);
   return {
     firstName: str(obj.firstName),
     lastName: str(obj.lastName),
@@ -54,7 +65,9 @@ export function coerceSwatchContactInfo(
     address1: str(obj.address1),
     address2: str(obj.address2) || undefined,
     city: str(obj.city),
-    state: str(obj.state),
+    state: ((US_STATES as readonly string[]).includes(stateVal)
+      ? stateVal
+      : "") as UsState | "",
     zip: str(obj.zip),
   };
 }
