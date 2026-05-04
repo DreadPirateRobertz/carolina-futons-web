@@ -410,7 +410,7 @@ function Results({ results, copy, headingRef }: ResultsProps) {
           {results.map(({ product, reason }) => (
             <li
               key={product._id}
-              className="flex items-start gap-4 rounded-lg border border-cf-ink/10 bg-white p-5 shadow-sm"
+              className="flex items-start gap-4 rounded-lg border border-cf-ink/10 bg-white p-5 shadow-sm dark:bg-cf-espresso"
             >
               <div className="min-w-0 flex-1">
                 <h2 className="font-playfair text-xl font-semibold text-cf-ink">

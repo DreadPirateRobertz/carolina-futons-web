@@ -35,7 +35,7 @@ export default function GettingItHomePage() {
 
         <section
           aria-labelledby="gih-form-heading"
-          className="rounded-lg border border-cf-divider bg-white p-6"
+          className="rounded-lg border border-cf-divider bg-white p-6 dark:bg-cf-espresso"
         >
           <h2
             id="gih-form-heading"

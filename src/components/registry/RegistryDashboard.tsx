@@ -85,7 +85,7 @@ export function RegistryDashboard({ initialRegistries }: Props) {
         {registries.map((reg) => (
           <li
             key={reg._id}
-            className="rounded-lg border border-cf-smoke bg-white p-5"
+            className="rounded-lg border border-cf-smoke bg-white p-5 dark:bg-cf-espresso"
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
