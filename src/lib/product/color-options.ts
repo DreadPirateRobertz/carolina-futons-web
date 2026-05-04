@@ -66,7 +66,10 @@ export function extractColorChoices(product: WixProduct): ColorChoice[] {
   const seen = new Set<string>();
   const result: ColorChoice[] = [];
   for (const choice of colorOption.choices) {
-    const label = (choice?.description ?? choice?.value ?? "").trim();
+    // `??` falls through on null/undefined only — empty-string description
+    // (which appears in real Wix payloads) needs `||` so we fall back to
+    // `value` rather than yielding "".
+    const label = (choice?.description || choice?.value || "").trim();
     if (!label || seen.has(label)) continue;
     seen.add(label);
     result.push({ label, hex: colorNameToHex(label) });

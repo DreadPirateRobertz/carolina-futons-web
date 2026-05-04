@@ -15,13 +15,24 @@ type Props = {
   slug: string;
   productName: string;
   onClose: () => void;
+  /**
+   * Optional fetcher override — primarily for tests. Production code calls
+   * the `getQuickViewProductData` server action by default.
+   */
+  fetchProduct?: (slug: string) => Promise<QuickViewProduct | null>;
 };
 
 // Lightweight quick-view: image, name, price, short description, color
 // preview (when applicable), CTA into the full PDP. Deliberately NOT a full
 // AddToCart surface — variant pickers are non-trivial and live on the PDP.
 // Keeps the modal small enough to mount lazily without blocking card render.
-export function QuickViewModal({ open, slug, productName, onClose }: Props) {
+export function QuickViewModal({
+  open,
+  slug,
+  productName,
+  onClose,
+  fetchProduct = getQuickViewProductData,
+}: Props) {
   const [data, setData] = useState<QuickViewProduct | null>(null);
   const [loadState, setLoadState] = useState<"idle" | "loading" | "error">("idle");
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -32,7 +43,7 @@ export function QuickViewModal({ open, slug, productName, onClose }: Props) {
     if (!open || data || loadState === "loading") return;
     let cancelled = false;
     setLoadState("loading");
-    getQuickViewProductData(slug)
+    fetchProduct(slug)
       .then((result) => {
         if (cancelled) return;
         if (!result) {
@@ -49,7 +60,7 @@ export function QuickViewModal({ open, slug, productName, onClose }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [open, slug, data, loadState]);
+  }, [open, slug, data, loadState, fetchProduct]);
 
   // Focus management + Escape-to-close.
   useEffect(() => {
