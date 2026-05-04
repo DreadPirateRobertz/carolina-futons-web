@@ -13,35 +13,29 @@ describe("RoomPlannerCanvas", () => {
     expect(Number(d.value)).toBeGreaterThan(0);
   });
 
-  it("renders futon select with all FUTON_OPTIONS", () => {
+  it("renders all FUTON_OPTIONS as draggable palette items", () => {
     render(<RoomPlannerCanvas />);
-    const select = screen.getByLabelText(/futon.*bed size/i) as HTMLSelectElement;
-    expect(select.options.length).toBe(FUTON_OPTIONS.length);
+    for (const opt of FUTON_OPTIONS) {
+      expect(screen.getByText(opt.shortLabel)).toBeInTheDocument();
+    }
   });
 
-  it("renders an SVG room plan view", () => {
+  it("renders the canvas drop area with application role and accessible label", () => {
     render(<RoomPlannerCanvas />);
-    expect(screen.getByRole("img", { name: /room plan view/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("application", { name: /drag furniture pieces into the room/i }),
+    ).toBeInTheDocument();
   });
 
-  it("shows the dimensions-hint when piece fits the room (default 12×10ft, full futon)", () => {
+  it("shows sleeping/open footprint hint text", () => {
     render(<RoomPlannerCanvas />);
-    expect(screen.getByText(/sleeping\/open footprint/i)).toBeInTheDocument();
-    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByText(/sleeping \/ open footprint/i)).toBeInTheDocument();
   });
 
-  it("shows overflow alert when room is too small for selected piece", () => {
+  it("Share layout button is disabled when no items are placed", () => {
     render(<RoomPlannerCanvas />);
-    const d = screen.getByLabelText(/room depth/i);
-    // queen murphy (64"×87") in a 6ft (72") wide room is borderline —
-    // force overflow by selecting queen murphy (87" depth) in a 6ft (72") deep room
-    const select = screen.getByLabelText(/futon.*bed size/i) as HTMLSelectElement;
-    fireEvent.change(select, { target: { value: "4" } }); // queen murphy 64"×87"
-    // set depth to 6ft = 72" — 87" depth won't fit
-    fireEvent.change(d, { target: { value: "6" } });
-    fireEvent.blur(d);
-    expect(screen.getByRole("alert")).toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent(/wider or deeper/i);
+    const btn = screen.getByRole("button", { name: /share layout/i });
+    expect(btn).toBeDisabled();
   });
 
   it("uses sleeping/open dimensions (depthIn matches label depth)", () => {
@@ -51,10 +45,10 @@ describe("RoomPlannerCanvas", () => {
     expect(twin.shortLabel).toBe("Twin futon");
   });
 
-  it("defaults to DEFAULT_FUTON_IDX option", () => {
+  it("renders the shortLabel of DEFAULT_FUTON_IDX option in the palette", () => {
     render(<RoomPlannerCanvas />);
-    const select = screen.getByLabelText(/futon.*bed size/i) as HTMLSelectElement;
-    expect(Number(select.value)).toBe(DEFAULT_FUTON_IDX);
+    const defaultOpt = FUTON_OPTIONS[DEFAULT_FUTON_IDX]!;
+    expect(screen.getByText(defaultOpt.shortLabel)).toBeInTheDocument();
   });
 
   it("clamps room width to min on blur when value is below minimum", () => {

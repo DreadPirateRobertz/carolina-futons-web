@@ -49,18 +49,19 @@ describe("DesignARoomPage", () => {
     expect(screen.queryByRole("button", { name: /send message/i })).toBeNull();
   });
 
-  it("renders the room planner canvas section with dimension inputs and futon selector", () => {
+  it("renders the room planner canvas section with dimension inputs and drag palette", () => {
     render(<DesignARoomPage />);
     expect(screen.getByLabelText(/room width/i)).toHaveAttribute("type", "number");
     expect(screen.getByLabelText(/room depth/i)).toHaveAttribute("type", "number");
-    const select = screen.getByLabelText(/futon.*bed size/i) as HTMLSelectElement;
-    expect(select.tagName).toBe("SELECT");
-    expect(select.options.length).toBeGreaterThanOrEqual(5);
+    // DnD planner shows a drag palette instead of a select
+    expect(screen.getByText(/drag a piece into the room/i)).toBeInTheDocument();
   });
 
-  it("renders the room planner as an img landmark with accessible label", () => {
+  it("renders the room planner canvas as an application landmark with accessible label", () => {
     render(<DesignARoomPage />);
-    expect(screen.getByRole("img", { name: /room plan view/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("application", { name: /drag furniture pieces into the room/i }),
+    ).toBeInTheDocument();
   });
 
   it("renders a Book a showroom visit heading with link to /contact#appointment-form", () => {
