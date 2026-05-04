@@ -21,6 +21,8 @@ import {
   SHOP_HOTSPOT_CONFIGS,
   FUTON_FRAMES_PLP_HERO_PHOTO,
   FUTON_FRAMES_PLP_HOTSPOT_CONFIGS,
+  MURPHY_BEDS_PLP_HERO_PHOTO,
+  MURPHY_BEDS_PLP_HOTSPOT_CONFIGS,
   type HotspotConfig,
 } from "@/components/site/ShopTheRoom";
 
@@ -62,6 +64,8 @@ beforeEach(() => {
       "nutmeg-platform-bed": product("Nutmeg Platform Bed", 949),
       "monterey-futon-frame": product("Monterey Futon Frame", 899),
       "kingston-futon-frame": product("Kingston Futon Frame", 619),
+      "asheville-murphy-bed": product("Asheville Murphy Bed", 1899),
+      "cube-murphy-cabinet-bed": product("Cube Murphy Cabinet Bed", 2199),
     };
     return fixtures[slug] ?? null;
   });
@@ -75,6 +79,11 @@ const SURFACES = [
     name: "plp-futon-frames",
     photo: FUTON_FRAMES_PLP_HERO_PHOTO,
     configs: FUTON_FRAMES_PLP_HOTSPOT_CONFIGS,
+  },
+  {
+    name: "plp-murphy-cabinet-beds",
+    photo: MURPHY_BEDS_PLP_HERO_PHOTO,
+    configs: MURPHY_BEDS_PLP_HOTSPOT_CONFIGS,
   },
 ] as const;
 

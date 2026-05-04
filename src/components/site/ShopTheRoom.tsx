@@ -163,6 +163,21 @@ export const FUTON_FRAMES_PLP_HOTSPOT_CONFIGS: ReadonlyArray<HotspotConfig> = [
   { id: "ekko-plp", xPct: 50, yPct: 55, productSlug: "ekko-futon-frame" },
 ];
 
+// /shop/murphy-cabinet-beds PLP. Home-office lifestyle scene showing a
+// murphy cabinet bed open, demonstrating the space-saving transformation.
+export const MURPHY_BEDS_PLP_HERO_PHOTO: HeroPhoto = {
+  src: "https://static.wixstatic.com/media/e04e89_818d75df410a41e1a0721207333bc93d~mv2.jpg/v1/fill/w_1920,h_1080,q_90/file.jpg",
+  alt: "Murphy cabinet bed open in a home office, transforming the space",
+  width: 1920,
+  height: 1080,
+} as const;
+
+export const MURPHY_BEDS_PLP_HOTSPOT_CONFIGS: ReadonlyArray<HotspotConfig> = [
+  { id: "asheville-murphy-plp", xPct: 45, yPct: 50, productSlug: "asheville-murphy-bed" },
+  { id: "cube-murphy-plp", xPct: 65, yPct: 55, productSlug: "cube-murphy-cabinet-bed" },
+  { id: "ranchero-murphy-plp", xPct: 30, yPct: 60, productSlug: "ranchero-murphy-cabinet-bed" },
+];
+
 // ── PLP gating ──────────────────────────────────────────────────────────────
 //
 // Map from PLP category slug → ShopTheRoom props. The PLP page reads
@@ -179,6 +194,13 @@ export const PLP_SHOP_THE_ROOM_CONFIGS: Readonly<
     heading: "See the futons in a room",
     heroPhoto: FUTON_FRAMES_PLP_HERO_PHOTO,
     hotspotConfigs: FUTON_FRAMES_PLP_HOTSPOT_CONFIGS,
+  },
+  "murphy-cabinet-beds": {
+    headingId: "plp-murphy-beds-shop-the-room-heading",
+    eyebrow: "Shop the room",
+    heading: "See the cabinet bed in a room",
+    heroPhoto: MURPHY_BEDS_PLP_HERO_PHOTO,
+    hotspotConfigs: MURPHY_BEDS_PLP_HOTSPOT_CONFIGS,
   },
 };
 
