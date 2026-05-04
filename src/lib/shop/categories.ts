@@ -64,6 +64,12 @@ export const SHOP_CATEGORIES: readonly ShopCategory[] = [
     image: "https://static.wixstatic.com/media/e04e89_55ecd0dfe1d5498b8a3f8cb583d5089b~mv2.jpg/v1/fill/w_600,h_400,q_90/file.jpg",
   },
   {
+    slug: "sofa-beds",
+    name: "Sofa Beds",
+    description: "Convertible sofa beds — seat by day, guest bed by night.",
+    collectionSlug: "sofa-beds",
+  },
+  {
     slug: "mattresses-sale",
     name: "Mattresses on Sale",
     description: "Current mattress promotions.",

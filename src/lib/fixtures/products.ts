@@ -11,6 +11,7 @@
 //   ranchero-murphy-cabinet-bed — murphy bed, ~$2,978, LTL freight, in-stock, 1 option (finish)
 //   mesa-foam-mattress          — mattress, ~$119, parcel, in-stock, 1 option (size)
 //   monterey-platform-bed       — platform bed, ~$1,699, white-glove eligible, in-stock
+//   blue-ridge-sofa-bed         — sofa bed, ~$799, parcel/LTL, in-stock, 1 option (upholstery)
 //   sedona-futon-frame-oos      — futon frame, out-of-stock (notify-me flow)
 
 // No import from @/lib/wix/products — that module imports from here and
@@ -298,6 +299,41 @@ const MONTEREY = makeProduct(
   1899,
 );
 
+// --- Blue Ridge Sofa Bed (~$799, parcel/LTL, in-stock) ---
+const BLUE_RIDGE = makeProduct(
+  "blue-ridge-sofa-bed",
+  "blue-ridge-sofa-bed",
+  "Blue Ridge Sofa Bed",
+  "Solid hardwood sofa bed — comfortable seating by day, full guest bed by night. Easy flip mechanism.",
+  799,
+  { trackInventory: true, inStock: true, quantity: 5 },
+  [
+    {
+      name: "Upholstery",
+      optionType: "drop_down" as const,
+      choices: [
+        { description: "Charcoal", value: "Charcoal", inStock: true },
+        { description: "Sage", value: "Sage", inStock: true },
+      ],
+    },
+  ],
+  [
+    {
+      _id: "fixture-var-br1",
+      choices: { Upholstery: "Charcoal" },
+      stock: { trackQuantity: true, inStock: true, quantity: 3 },
+      variant: { priceData: { price: 799 } },
+    },
+    {
+      _id: "fixture-var-br2",
+      choices: { Upholstery: "Sage" },
+      stock: { trackQuantity: true, inStock: true, quantity: 2 },
+      variant: { priceData: { price: 799 } },
+    },
+  ],
+  ["fixture-col-sofa-beds", "fixture-col-all"],
+);
+
 // --- Sedona Futon Frame (out-of-stock — triggers notify-me flow) ---
 const SEDONA = makeProduct(
   "sedona-futon-frame-oos",
@@ -333,6 +369,7 @@ export const FIXTURE_PRODUCTS = [
   RANCHERO,
   MESA,
   MONTEREY,
+  BLUE_RIDGE,
   SEDONA,
 ];
 
