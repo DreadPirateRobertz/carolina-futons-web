@@ -42,8 +42,9 @@ describe("LivingFooterBg — structure", () => {
     expect(layers.length).toBe(4);
   });
 
-  it("active phase layer is fully opaque, others are transparent", () => {
+  it("active phase layer is fully opaque when mounted, others are transparent", () => {
     mockState.phase = "night";
+    mockState.mounted = true;
     const { container } = render(<LivingFooterBg />);
     const root = container.querySelector("[aria-hidden='true']") as HTMLElement;
     const layers = Array.from(root.children).filter(
@@ -53,6 +54,17 @@ describe("LivingFooterBg — structure", () => {
     const hidden = layers.filter((l) => l.style.opacity === "0");
     expect(visible.length).toBe(1);
     expect(hidden.length).toBe(3);
+  });
+
+  it("all gradient layers are transparent before mount (no SSR flash)", () => {
+    mockState.phase = "day";
+    mockState.mounted = false;
+    const { container } = render(<LivingFooterBg />);
+    const root = container.querySelector("[aria-hidden='true']") as HTMLElement;
+    const layers = Array.from(root.children).filter(
+      (c) => (c as HTMLElement).style.background?.startsWith("linear-gradient"),
+    ) as HTMLElement[];
+    expect(layers.filter((l) => l.style.opacity === "1").length).toBe(0);
   });
 });
 
@@ -64,11 +76,12 @@ describe("LivingFooterBg — night stars", () => {
     expect(svg).not.toBeNull();
   });
 
-  it("star SVG is aria-hidden", () => {
+  it("star SVG container is aria-hidden", () => {
     mockState.phase = "night";
     const { container } = render(<LivingFooterBg />);
-    const svg = container.querySelector("svg[viewBox='0 0 100 100']") as SVGElement;
-    expect(svg).not.toBeNull();
+    const root = container.querySelector("[aria-hidden='true']") as HTMLElement;
+    // The outermost wrapper carries aria-hidden — confirms entire animated bg is decorative
+    expect(root?.getAttribute("aria-hidden")).toBe("true");
   });
 
   it("renders 14 star circles", () => {
@@ -158,7 +171,7 @@ describe("LivingFooterBg — dawn/dusk orbs", () => {
   });
 });
 
-describe("LivingFooterBg — day phase gradient animation", () => {
+describe("LivingFooterBg — gradient drift animation", () => {
   it("active gradient layer gets drift animation when motion allowed", () => {
     mockState.phase = "day";
     mockState.reduceMotion = false;
@@ -182,7 +195,47 @@ describe("LivingFooterBg — day phase gradient animation", () => {
         (c as HTMLElement).style.background?.startsWith("linear-gradient") &&
         (c as HTMLElement).style.opacity === "0",
     ) as HTMLElement[];
-    const animated = inactiveLayers.filter((l) => l.style.animation);
-    expect(animated.length).toBe(0);
+    expect(inactiveLayers.filter((l) => l.style.animation).length).toBe(0);
+  });
+
+  it("active gradient layer has no animation under reduced-motion", () => {
+    mockState.phase = "day";
+    mockState.reduceMotion = true;
+    const { container } = render(<LivingFooterBg />);
+    const root = container.querySelector("[aria-hidden='true']") as HTMLElement;
+    const activeLayers = Array.from(root.children).filter(
+      (c) =>
+        (c as HTMLElement).style.background?.startsWith("linear-gradient") &&
+        (c as HTMLElement).style.opacity === "1",
+    ) as HTMLElement[];
+    expect(activeLayers[0]?.style.animation).toBeFalsy();
+  });
+});
+
+describe("LivingFooterBg — orb symmetry", () => {
+  it("only dawn orb is visible during dawn phase", () => {
+    mockState.phase = "dawn";
+    mockState.mounted = true;
+    const { container } = render(<LivingFooterBg />);
+    const root = container.querySelector("[aria-hidden='true']") as HTMLElement;
+    const orbs = Array.from(root.children).filter(
+      (c) => (c as HTMLElement).style.background?.startsWith("radial-gradient"),
+    ) as HTMLElement[];
+    expect(orbs.filter((o) => o.style.opacity === "1").length).toBe(1);
+    expect(orbs.filter((o) => o.style.opacity === "0").length).toBe(1);
+  });
+
+  it("dawn orb is invisible during dusk phase", () => {
+    mockState.phase = "dusk";
+    mockState.mounted = true;
+    const { container } = render(<LivingFooterBg />);
+    const root = container.querySelector("[aria-hidden='true']") as HTMLElement;
+    const orbs = Array.from(root.children).filter(
+      (c) => (c as HTMLElement).style.background?.startsWith("radial-gradient"),
+    ) as HTMLElement[];
+    const visible = orbs.filter((o) => o.style.opacity === "1");
+    const hidden = orbs.filter((o) => o.style.opacity === "0");
+    expect(visible.length).toBe(1);
+    expect(hidden.length).toBe(1);
   });
 });

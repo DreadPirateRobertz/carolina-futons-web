@@ -1,9 +1,9 @@
 "use client";
 
 // cf-j6ub — animated time-of-day background for the site footer.
-// Mirrors the LivingHero atmosphere using the shared useTimeOfDay hook.
-// Stacks four gradient layers (one per phase) and cross-fades between
-// them exactly as LivingHero cross-fades its scene components.
+// Uses the same useTimeOfDay hook logic as LivingHero (no RAF — footer
+// drives CSS animations, not JS-ticked values). Stacks four gradient
+// layers that cross-fade on phase change, matching LivingHero's style.
 
 import { useTimeOfDay } from "@/lib/hooks/useTimeOfDay";
 import type { Phase } from "@/lib/hooks/useTimeOfDay";
@@ -58,13 +58,13 @@ export function LivingFooterBg() {
             style={{
               position: "absolute",
               inset: 0,
-              opacity: phase === p ? 1 : 0,
+              opacity: mounted && phase === p ? 1 : 0,
               transition: mounted ? "opacity 4s ease-in-out" : "none",
               background: `linear-gradient(to bottom, ${from}, ${via}, ${to}, ${via}, ${from})`,
               backgroundSize: "100% 200%",
               backgroundPosition: "0% 0%",
               animation:
-                phase === p && !reduceMotion
+                mounted && phase === p && !reduceMotion
                   ? "cf-footer-drift 14s ease-in-out infinite alternate"
                   : undefined,
             }}
@@ -118,7 +118,7 @@ export function LivingFooterBg() {
             opacity: mounted && phase === p ? 1 : 0,
             transition: mounted ? "opacity 4s ease-in-out" : "none",
             animation:
-              phase === p && !reduceMotion
+              mounted && phase === p && !reduceMotion
                 ? "cf-footer-orb 8s ease-in-out infinite alternate"
                 : undefined,
           }}
