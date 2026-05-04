@@ -50,7 +50,7 @@ export function AddToCartButton({
   className,
   onAdded,
 }: AddToCartButtonProps) {
-  const { addLine, removeLine, openCart } = useCart();
+  const { addLine, removeLine, openCart, beginCartWrite, endCartWrite } = useCart();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,13 +75,23 @@ export function AddToCartButton({
     addLine(line);
     openCart();
     setPending(true);
-    const result = await addItemAction({
-      productId,
-      quantity,
-      variantId,
-      options,
-    });
-    setPending(false);
+    beginCartWrite();
+    let result: Awaited<ReturnType<typeof addItemAction>>;
+    try {
+      result = await addItemAction({
+        productId,
+        quantity,
+        variantId,
+        options,
+      });
+    } catch {
+      removeLine(line.id);
+      setError("Could not add to cart");
+      return;
+    } finally {
+      setPending(false);
+      endCartWrite();
+    }
     if (!result.ok) {
       removeLine(line.id);
       setError(result.error ?? "Could not add to cart");

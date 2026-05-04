@@ -6,9 +6,10 @@ import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { useCart } from "@/components/cart/CartProvider";
 import { formatCents } from "@/lib/cart/cart-state";
 import { trackBeginCheckout } from "@/lib/analytics/ga4-events";
+import { cn } from "@/lib/utils";
 
 export default function CartPage() {
-  const { state, itemCount, subtotalCents, removeLine, setQuantity } = useCart();
+  const { state, itemCount, subtotalCents, isCartPending, removeLine, setQuantity } = useCart();
 
   if (state.lines.length === 0) {
     return (
@@ -172,11 +173,18 @@ export default function CartPage() {
           {/* Plain <a> — not <Link> — so the browser makes a full
               navigation request that properly follows the 307 to the
               Wix-hosted payment page. Next.js <Link> does SPA-style
-              fetch and won't follow an external redirect. */}
+              fetch and won't follow an external redirect.
+              Disabled while isCartPending to prevent navigating before
+              addItemAction has committed the cart to Wix. */}
           <a
             href="/checkout"
+            aria-disabled={isCartPending}
             data-testid="proceed-to-checkout"
-            onClick={() => {
+            onClick={(e) => {
+              if (isCartPending) {
+                e.preventDefault();
+                return;
+              }
               try {
                 trackBeginCheckout(
                   state.lines.map((line) => ({
@@ -192,9 +200,12 @@ export default function CartPage() {
                 console.error("[cart-page] trackBeginCheckout failed", e);
               }
             }}
-            className="mt-5 flex h-12 w-full items-center justify-center rounded-md bg-cf-cta text-sm font-medium text-white transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
+            className={cn(
+              "mt-5 flex h-12 w-full items-center justify-center rounded-md bg-cf-cta text-sm font-medium text-white transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2",
+              isCartPending && "cursor-not-allowed opacity-60",
+            )}
           >
-            Proceed to checkout
+            {isCartPending ? "Saving…" : "Proceed to checkout"}
           </a>
 
           <Link

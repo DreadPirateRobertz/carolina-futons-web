@@ -23,6 +23,7 @@ export function CartDrawer() {
     itemCount,
     subtotalCents,
     isOpen,
+    isCartPending,
     setOpen,
     removeLine,
     setQuantity,
@@ -169,11 +170,17 @@ export function CartDrawer() {
                 {/* Plain <a> — not <Link> — so the browser makes a full
                     navigation request that properly follows the 307 to the
                     Wix-hosted payment page. Next.js <Link> does SPA-style
-                    fetch and won't follow an external redirect. */}
+                    fetch and won't follow an external redirect.
+                    Disabled while isCartPending to prevent navigating before
+                    addItemAction has committed the cart to Wix. */}
                 <a
                   href="/checkout"
+                  aria-disabled={isCartPending}
                   onClick={(e) => {
-                    if (isModifiedClick(e)) return;
+                    if (isCartPending || isModifiedClick(e)) {
+                      e.preventDefault();
+                      return;
+                    }
                     // cf-rfb6: GA4 begin_checkout fires at the moment of
                     // checkout intent — clicking through to /checkout.
                     // No-ops if gtag is unset; wrapped so GA4 errors
@@ -198,9 +205,10 @@ export function CartDrawer() {
                   className={cn(
                     "mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-md bg-cf-cta px-4 text-sm font-semibold text-white transition-colors",
                     "hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2",
+                    isCartPending && "cursor-not-allowed opacity-60",
                   )}
                 >
-                  Go to checkout
+                  {isCartPending ? "Saving…" : "Go to checkout"}
                 </a>
               </footer>
             </>
