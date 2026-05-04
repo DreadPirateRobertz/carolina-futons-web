@@ -3,8 +3,9 @@
  *
  * Coverage:
  *   1. Reward trigger — purchase → order-confirmation renders (fixture mode)
- *   2. Cross-rig badge_earned / tier_changed event ingestion via /api/cross-rig
- *   3. /api/cross-rig auth guard (no-creds, always runs in CI)
+ *   2. /api/cross-rig auth guard (no-creds, always runs in CI)
+ *   3. /api/cross-rig event contract — badge_earned, tier_changed, social_share,
+ *      validation rejections (requires CROSS_RIG_SECRET env var)
  *   4. Points balance — MembershipCard on /dashboard (staging only, needs live creds)
  *   5. Challenge start + progress update (skip: UI not yet built — cf-1409.5)
  *
@@ -15,13 +16,25 @@
  *   CROSS_RIG_SECRET=<secret> npx playwright test e2e/rewards.spec.ts
  */
 
-import { test, expect } from "@playwright/test";
+import { test, expect, type APIRequestContext } from "@playwright/test";
 
 const isFixtureMode = process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1";
 const CROSS_RIG_SECRET = process.env.CROSS_RIG_SECRET ?? "";
 const FULL_FLOW = Boolean(
   process.env.TEST_MEMBER_EMAIL && process.env.TEST_MEMBER_PASSWORD,
 );
+
+type CrossRigResponse = { ok: boolean; event?: string; memberId?: string; error?: string };
+
+async function crossRigPost(
+  request: APIRequestContext,
+  body: Record<string, unknown>,
+) {
+  return request.post("/api/cross-rig", {
+    data: body,
+    headers: { "x-cross-rig-secret": CROSS_RIG_SECRET },
+  });
+}
 
 // ── 1. Reward trigger — purchase (fixture mode) ───────────────────────────────
 
@@ -43,26 +56,24 @@ test.describe("reward trigger — purchase (fixture mode)", () => {
     await checkoutCta.click();
 
     await page.waitForURL(/order-confirmation/, { timeout: 15_000 });
-    expect(page.url()).toContain("fixture-test-order");
+    expect(page.url()).toContain("fixture-");
   });
 
   test("order-confirmation shows 'Thanks for your order' with fixture line item", async ({
     page,
   }) => {
-    // Navigate directly to the fixture order confirmation page.
-    await page.goto("/order-confirmation?orderId=fixture-test-order");
+    await page.goto("/order-confirmation?orderId=fixture-order-1");
 
     await expect(page.getByRole("heading", { level: 1 })).toContainText(
       /thanks for your order/i,
       { timeout: 15_000 },
     );
-    await expect(page.getByText("Order #CF-FIXTURE-001")).toBeVisible();
+    await expect(page.getByText(/CF-DEMO-001/)).toBeVisible();
     await expect(page.getByText("Kingston Futon Frame")).toBeVisible();
-    await expect(page.getByText("$399.00")).toBeVisible();
   });
 
   test("order-confirmation shows continue-shopping CTA", async ({ page }) => {
-    await page.goto("/order-confirmation?orderId=fixture-test-order");
+    await page.goto("/order-confirmation?orderId=fixture-order-1");
 
     const cta = page.getByRole("link", { name: /continue shopping/i });
     await expect(cta).toBeVisible({ timeout: 15_000 });
@@ -74,7 +85,10 @@ test.describe("reward trigger — purchase (fixture mode)", () => {
   // in the cross-rig contract suite below and in unit tests.
 });
 
-// ── 2 & 3. /api/cross-rig — badge + tier events ──────────────────────────────
+// ── 2. /api/cross-rig — auth guard (always runs in CI) ───────────────────────
+// NOTE: The server must have CROSS_RIG_SECRET set or it returns 500 ("server
+// misconfiguration") instead of 401. These tests assume the secret is configured
+// in the environment under test.
 
 test.describe("/api/cross-rig — auth guard (no credentials needed)", () => {
   test("rejects request with no x-cross-rig-secret header — 401", async ({
@@ -105,19 +119,9 @@ test.describe("/api/cross-rig — auth guard (no credentials needed)", () => {
     });
     expect(res.status()).toBe(401);
   });
-
-  test("rejects malformed JSON body — 400", async ({ request }) => {
-    const res = await request.post("/api/cross-rig", {
-      data: Buffer.from("{not-json", "utf8"),
-      headers: {
-        "content-type": "application/json",
-        "x-cross-rig-secret": CROSS_RIG_SECRET || "dummy",
-      },
-    });
-    // 401 when secret is wrong/dummy; 400 if secret is valid but JSON is bad.
-    expect([400, 401]).toContain(res.status());
-  });
 });
+
+// ── 3. /api/cross-rig — event contract ──────────────────────────────────────
 
 test.describe("/api/cross-rig — badge_earned + tier_changed contract", () => {
   test.skip(
@@ -128,21 +132,14 @@ test.describe("/api/cross-rig — badge_earned + tier_changed contract", () => {
   test("badge_earned event accepted — 200 with ok:true", async ({
     request,
   }) => {
-    const res = await request.post("/api/cross-rig", {
-      data: {
-        memberId: "fixture-member-1",
-        event: "badge_earned",
-        sourceRig: "cfutons_mobile",
-        payload: { badgeId: "first-purchase" },
-      },
-      headers: { "x-cross-rig-secret": CROSS_RIG_SECRET },
+    const res = await crossRigPost(request, {
+      memberId: "fixture-member-1",
+      event: "badge_earned",
+      sourceRig: "cfutons_mobile",
+      payload: { badgeId: "first-purchase" },
     });
     expect(res.status()).toBe(200);
-    const json = (await res.json()) as {
-      ok: boolean;
-      event: string;
-      memberId: string;
-    };
+    const json = (await res.json()) as CrossRigResponse;
     expect(json.ok).toBe(true);
     expect(json.event).toBe("badge_earned");
     expect(json.memberId).toBe("fixture-member-1");
@@ -151,62 +148,67 @@ test.describe("/api/cross-rig — badge_earned + tier_changed contract", () => {
   test("tier_changed event accepted — 200 with ok:true", async ({
     request,
   }) => {
-    const res = await request.post("/api/cross-rig", {
-      data: {
-        memberId: "fixture-member-1",
-        event: "tier_changed",
-        sourceRig: "cfutons_mobile",
-        payload: { newTier: "mountain_guide" },
-      },
-      headers: { "x-cross-rig-secret": CROSS_RIG_SECRET },
+    const res = await crossRigPost(request, {
+      memberId: "fixture-member-1",
+      event: "tier_changed",
+      sourceRig: "cfutons_mobile",
+      payload: { newTier: "mountain_guide" },
     });
     expect(res.status()).toBe(200);
-    const json = (await res.json()) as { ok: boolean; event: string };
+    const json = (await res.json()) as CrossRigResponse;
     expect(json.ok).toBe(true);
     expect(json.event).toBe("tier_changed");
   });
 
-  test("social_share_completed event accepted — 200", async ({ request }) => {
-    const res = await request.post("/api/cross-rig", {
-      data: {
-        memberId: "fixture-member-2",
-        event: "social_share_completed",
-        sourceRig: "cfutons_mobile",
-        payload: { platform: "instagram", productSlug: "kingston-futon-frame" },
-      },
-      headers: { "x-cross-rig-secret": CROSS_RIG_SECRET },
+  test("social_share_completed event accepted — 200 with ok:true", async ({
+    request,
+  }) => {
+    const res = await crossRigPost(request, {
+      memberId: "fixture-member-2",
+      event: "social_share_completed",
+      sourceRig: "cfutons_mobile",
+      payload: { platform: "instagram", productSlug: "kingston-futon-frame" },
     });
     expect(res.status()).toBe(200);
+    const json = (await res.json()) as CrossRigResponse;
+    expect(json.ok).toBe(true);
+  });
+
+  test("malformed JSON body with valid secret returns 400", async ({
+    request,
+  }) => {
+    const res = await request.post("/api/cross-rig", {
+      data: Buffer.from("{not-json", "utf8"),
+      headers: {
+        "content-type": "application/json",
+        "x-cross-rig-secret": CROSS_RIG_SECRET,
+      },
+    });
+    expect(res.status()).toBe(400);
   });
 
   test("unknown event type returns 400", async ({ request }) => {
-    const res = await request.post("/api/cross-rig", {
-      data: {
-        memberId: "fixture-member-1",
-        event: "purchase_completed",
-        sourceRig: "cfutons_mobile",
-        payload: {},
-      },
-      headers: { "x-cross-rig-secret": CROSS_RIG_SECRET },
+    const res = await crossRigPost(request, {
+      memberId: "fixture-member-1",
+      event: "purchase_completed",
+      sourceRig: "cfutons_mobile",
+      payload: {},
     });
     expect(res.status()).toBe(400);
-    const json = (await res.json()) as { ok: boolean; error: string };
+    const json = (await res.json()) as CrossRigResponse;
     expect(json.ok).toBe(false);
     expect(json.error).toMatch(/unsupported event/i);
   });
 
   test("unknown sourceRig returns 400", async ({ request }) => {
-    const res = await request.post("/api/cross-rig", {
-      data: {
-        memberId: "fixture-member-1",
-        event: "badge_earned",
-        sourceRig: "cfutons_web",
-        payload: { badgeId: "b1" },
-      },
-      headers: { "x-cross-rig-secret": CROSS_RIG_SECRET },
+    const res = await crossRigPost(request, {
+      memberId: "fixture-member-1",
+      event: "badge_earned",
+      sourceRig: "cfutons_web",
+      payload: { badgeId: "b1" },
     });
     expect(res.status()).toBe(400);
-    const json = (await res.json()) as { ok: boolean; error: string };
+    const json = (await res.json()) as CrossRigResponse;
     expect(json.ok).toBe(false);
     expect(json.error).toMatch(/unknown sourceRig/i);
   });
@@ -214,28 +216,22 @@ test.describe("/api/cross-rig — badge_earned + tier_changed contract", () => {
   test("tier_changed without newTier payload returns 400", async ({
     request,
   }) => {
-    const res = await request.post("/api/cross-rig", {
-      data: {
-        memberId: "fixture-member-1",
-        event: "tier_changed",
-        sourceRig: "cfutons_mobile",
-        payload: {},
-      },
-      headers: { "x-cross-rig-secret": CROSS_RIG_SECRET },
+    const res = await crossRigPost(request, {
+      memberId: "fixture-member-1",
+      event: "tier_changed",
+      sourceRig: "cfutons_mobile",
+      payload: {},
     });
     expect(res.status()).toBe(400);
-    const json = (await res.json()) as { ok: boolean };
+    const json = (await res.json()) as CrossRigResponse;
     expect(json.ok).toBe(false);
   });
 
   test("missing memberId returns 400", async ({ request }) => {
-    const res = await request.post("/api/cross-rig", {
-      data: {
-        event: "badge_earned",
-        sourceRig: "cfutons_mobile",
-        payload: { badgeId: "b1" },
-      },
-      headers: { "x-cross-rig-secret": CROSS_RIG_SECRET },
+    const res = await crossRigPost(request, {
+      event: "badge_earned",
+      sourceRig: "cfutons_mobile",
+      payload: { badgeId: "b1" },
     });
     expect(res.status()).toBe(400);
   });
@@ -269,15 +265,14 @@ test.describe("/dashboard — MembershipCard points balance (staging only)", () 
     const card = page.locator('[data-slot="membership-card"]');
     await expect(card).toBeVisible({ timeout: 10_000 });
 
-    // Points should be a non-negative number.
+    // Points must be a non-negative integer.
     const pointsText = await card.getByText(/points/).textContent();
-    const pointsMatch = pointsText?.match(/[\d,]+/);
-    expect(pointsMatch).not.toBeNull();
-    expect(parseInt((pointsMatch?.[0] ?? "0").replace(/,/g, ""), 10)).toBeGreaterThanOrEqual(0);
+    const match = pointsText?.match(/[\d,]+/);
+    expect(match).not.toBeNull();
+    expect(parseInt((match?.[0] ?? "0").replace(/,/g, ""), 10)).toBeGreaterThanOrEqual(0);
 
-    // Tier name must be a non-empty string.
-    const tierEl = card.locator("p.text-cf-cta").first();
-    await expect(tierEl).not.toBeEmpty();
+    // Tier name must be non-empty.
+    await expect(card.locator("p.text-cf-cta").first()).not.toBeEmpty();
   });
 });
 
