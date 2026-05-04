@@ -73,14 +73,14 @@ describe("globals.css — accessibility", () => {
 
 describe("globals.css — muted-foreground contrast guard (cf-urbq)", () => {
   // --muted-foreground is the semantic token for secondary/placeholder text.
-  // Light: oklch(0.45 0.01 240) ≈ #5f6b7a — ~4.7:1 on white (passes AA 4.5:1)
+  // Light: oklch(0.40 0.01 240) — ~4.9:1 on cf-sand (passes AA 4.5:1; was 0.45 = 3.96:1, failing)
   // Dark:  oklch(0.7 0.01 240)  ≈ #9aaab8 — ~8:1 on dark bg (passes AA 4.5:1)
   // If either value drifts below AA threshold, this test will catch it.
   it("defines --muted-foreground in :root (light mode value)", () => {
     const rootStart = css.indexOf(":root {");
     const rootEnd = css.indexOf("\n}", rootStart);
     const rootSection = css.slice(rootStart, rootEnd);
-    expect(rootSection).toMatch(/--muted-foreground:\s*oklch\(0\.45/);
+    expect(rootSection).toMatch(/--muted-foreground:\s*oklch\(0\.40/);
   });
 
   it("defines --muted-foreground in .dark with high-contrast light value", () => {
