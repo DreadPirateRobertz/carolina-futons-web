@@ -8,7 +8,9 @@ import { formatPlpPrice } from "@/lib/product/plp-price";
 import { getPlpCardImages } from "@/lib/product/plp-card-images";
 import { getReviewStats } from "@/lib/product/review-stats";
 import { AddToCompareButton } from "@/components/compare/AddToCompareButton";
+import { PdpProductBadges } from "@/components/product/PdpProductBadges";
 import type { WixProduct } from "@/lib/wix/products";
+import type { ProductBadgeType } from "@/lib/wix/product-badges";
 
 function hasDiscount(product: WixProduct): boolean {
   const price = product.priceData?.price;
@@ -58,10 +60,12 @@ export function ProductCard({
   product,
   priority = false,
   sizes = DEFAULT_PLP_SIZES,
+  badges,
 }: {
   product: WixProduct;
   priority?: boolean;
   sizes?: string;
+  badges?: readonly ProductBadgeType[];
 }) {
   const prefersReducedMotion = useReducedMotion() ?? false;
   const href = product.slug ? `/products/${product.slug}` : "#";
@@ -120,6 +124,11 @@ export function ProductCard({
         </div>
         <div className="p-4">
           <h2 className="text-base font-medium dark:text-zinc-100">{product.name}</h2>
+          {badges && badges.length > 0 && (
+            <div className="mt-1">
+              <PdpProductBadges badges={badges} />
+            </div>
+          )}
           {showStrikethrough ? (
             <div className="mt-1 flex items-center gap-2 text-sm">
               <span className="line-through text-zinc-400 dark:text-zinc-400">

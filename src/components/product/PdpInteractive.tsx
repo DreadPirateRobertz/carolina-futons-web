@@ -11,6 +11,8 @@ import { PdpGallery, type GalleryImage } from "@/components/product/PdpGallery";
 import { PdpShippingEstimate } from "@/components/product/PdpShippingEstimate";
 import { PdpStickyCta } from "@/components/product/PdpStickyCta";
 import { PdpStockBadge } from "@/components/product/PdpStockBadge";
+import { PdpProductBadges } from "@/components/product/PdpProductBadges";
+import type { ProductBadgeType } from "@/lib/wix/product-badges";
 import { PdpFabricSwatches } from "@/components/product/PdpFabricSwatches";
 import { PdpFinancing } from "@/components/product/PdpFinancing";
 import { PdpNotifyMe } from "@/components/product/PdpNotifyMe";
@@ -58,6 +60,7 @@ export type PdpInteractiveProps = {
   whiteGlovePriceCents?: number;
   galleryImages?: ReadonlyArray<GalleryImage>;
   stock?: StockBadgeInput | null;
+  badges?: readonly ProductBadgeType[];
   fabricSwatches?: SwatchItem[];
   fabricSwatchError?: boolean;
   weightLbs?: number;
@@ -76,6 +79,7 @@ export function PdpInteractive({
   whiteGlovePriceCents,
   galleryImages,
   stock,
+  badges,
   fabricSwatches,
   fabricSwatchError,
   weightLbs,
@@ -168,6 +172,7 @@ export function PdpInteractive({
         <h1 className="font-heading text-3xl font-semibold tracking-tight text-cf-espresso">
           {productName}
         </h1>
+        {badges && badges.length > 0 && <PdpProductBadges badges={badges} />}
         <PdpStockBadge stock={stock} />
         <VariantPicker
           productOptions={productOptions}

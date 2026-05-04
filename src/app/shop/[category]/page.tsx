@@ -17,6 +17,7 @@ import {
 } from "@/lib/wix/errors";
 import { logOverPaginatedRender } from "@/lib/shop/plp-observability";
 import { ProductCard } from "@/components/product/ProductCard";
+import { listAllProductBadges } from "@/lib/wix/product-badges";
 import { HeroReveal } from "@/components/motion/HeroReveal";
 import { PLPControls } from "@/components/plp/PLPControls";
 import { PLPPagination, buildPageUrl } from "@/components/plp/PLPPagination";
@@ -157,6 +158,8 @@ export default async function PlpPage(props: {
           },
         };
 
+  const badgeMap = await listAllProductBadges();
+
   // cf-3qt.6.B silent-failure fix (blaidd PR #35): an errored scan returns
   // items=[] but it is NOT an empty collection. We MUST render distinct outage
   // copy rather than "No products found" to avoid a bounce trap during Wix
@@ -280,7 +283,11 @@ export default async function PlpPage(props: {
               {/* cf-pdp-lcp-fetchpriority: first 4 cards are above-the-fold
                   on the 4-col PLP grid; primary image of card #1 is the
                   LCP element per Lighthouse trace on /shop/futon-frames. */}
-              <ProductCard product={product} priority={i < 4} />
+              <ProductCard
+                product={product}
+                priority={i < 4}
+                badges={badgeMap.get(product.slug ?? "") ?? []}
+              />
             </HeroReveal>
           ))}
         </ul>
