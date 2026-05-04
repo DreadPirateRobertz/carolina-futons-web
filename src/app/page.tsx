@@ -20,6 +20,7 @@ import {
 import { getVideoCatalog } from "@/lib/videos/catalog";
 import { HomeFeaturedCollections } from "@/components/home/HomeFeaturedCollections";
 import { HomeSaleStrip } from "@/components/home/HomeSaleStrip";
+import { ContinueShoppingStrip } from "@/components/home/ContinueShoppingStrip";
 
 export const metadata: Metadata = {
   title: "Carolina Futons — Hardwood Frames & Mattresses | Hendersonville, NC",
@@ -72,6 +73,9 @@ export default async function HomePage() {
 
       {/* ── Featured collections grid (cf-3qt.2.6) ── */}
       <HomeFeaturedCollections />
+
+      {/* ── Continue Shopping — localStorage LRU, hidden for first-time visitors (cf-l6aj.7) ── */}
+      <ContinueShoppingStrip />
 
       {/* ── Video showcase strip ── */}
       {featuredVideos.length > 0 && (
