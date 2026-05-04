@@ -2,8 +2,71 @@ import "server-only";
 import type { Tokens } from "@wix/sdk";
 import { getWixClient, getWixClientWithTokens } from "@/lib/wix-client";
 
+const USE_FIXTURES = process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1";
+
+// Synthetic order returned in fixture mode when orderId starts with "fixture-".
+// Shaped to satisfy every field OrderConfirmationPage reads (priceSummary,
+// lineItems, shippingInfo, billingInfo, currency, number).
+const FIXTURE_ORDER = {
+  _id: "fixture-order-1",
+  number: "CF-DEMO-001",
+  status: "APPROVED",
+  paymentStatus: "PAID",
+  fulfillmentStatus: "NOT_FULFILLED",
+  currency: "USD",
+  priceSummary: {
+    subtotal: { amount: "399.00", formattedAmount: "$399.00" },
+    shipping: { amount: "0.00", formattedAmount: "$0.00" },
+    tax: { amount: "29.93", formattedAmount: "$29.93" },
+    total: { amount: "428.93", formattedAmount: "$428.93" },
+  },
+  lineItems: [
+    {
+      _id: "fixture-li-1",
+      productName: { original: "Kingston Futon Frame" },
+      catalogReference: { catalogItemId: "fixture-kingston-futon-frame" },
+      quantity: 1,
+      price: { amount: "399.00", formattedAmount: "$399.00" },
+      priceBeforeDiscounts: { amount: "399.00" },
+      image:
+        "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&auto=format&fit=crop",
+    },
+  ],
+  shippingInfo: {
+    logistics: {
+      shippingDestination: {
+        address: {
+          addressLine: "123 Demo Street",
+          city: "Hendersonville",
+          subdivision: "NC",
+          postalCode: "28739",
+          country: "US",
+        },
+      },
+    },
+  },
+  billingInfo: {
+    address: {
+      addressLine: "123 Demo Street",
+      city: "Hendersonville",
+      subdivision: "NC",
+      postalCode: "28739",
+      country: "US",
+    },
+  },
+};
+
 export async function getOrder(orderId: string) {
   if (!orderId) return null;
+  if (USE_FIXTURES && orderId.startsWith("fixture-")) {
+    return FIXTURE_ORDER as unknown as NonNullable<
+      Awaited<ReturnType<typeof _getOrderFromWix>>
+    >;
+  }
+  return _getOrderFromWix(orderId);
+}
+
+async function _getOrderFromWix(orderId: string) {
   const client = getWixClient();
   try {
     return await client.orders.getOrder(orderId);
