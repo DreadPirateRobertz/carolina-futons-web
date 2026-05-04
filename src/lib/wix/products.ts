@@ -186,6 +186,21 @@ export async function searchProducts(
     .slice(0, limit);
 }
 
+export async function listGiftCards(): Promise<WixProduct[]> {
+  try {
+    const client = getWixClient();
+    const result = await client.products
+      .queryProducts()
+      .eq("productType", "gift_card")
+      .limit(20)
+      .find();
+    return result.items;
+  } catch (err) {
+    await logWixFailure("wix", "listGiftCards", err);
+    return [];
+  }
+}
+
 export type WixProduct = NonNullable<
   Awaited<ReturnType<typeof listProducts>>
 >[number];
