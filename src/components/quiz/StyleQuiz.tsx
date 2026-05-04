@@ -13,6 +13,8 @@ import type {
   QuizOptions,
   QuizRecommendation,
 } from "@/lib/wix/style-quiz";
+import { encodeResultToken } from "@/lib/quiz/result-token";
+import { QuizResult } from "@/components/quiz/QuizResult";
 
 const QUESTIONS = [
   {
@@ -64,6 +66,7 @@ export function StyleQuiz({ initialOptions }: Props) {
   const [emailError, setEmailError] = useState("");
   const [results, setResults] = useState<QuizRecommendation[]>([]);
   const [copy, setCopy] = useState("");
+  const [shareHref, setShareHref] = useState<string | undefined>(undefined);
   const [started, setStarted] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -104,6 +107,7 @@ export function StyleQuiz({ initialOptions }: Props) {
     ]);
     setResults(recs);
     setCopy(personalizedCopy.copy);
+    setShareHref(`/style-quiz/result/${encodeResultToken(finalAnswers)}`);
     setPhase("results");
   }
 
@@ -173,7 +177,14 @@ export function StyleQuiz({ initialOptions }: Props) {
   }
 
   if (phase === "results") {
-    return <Results results={results} copy={copy} headingRef={headingRef} />;
+    return (
+      <QuizResult
+        results={results}
+        copy={copy}
+        shareHref={shareHref}
+        headingRef={headingRef}
+      />
+    );
   }
 
   if (phase === "email") {
@@ -371,75 +382,3 @@ function EmailGate({
   );
 }
 
-type ResultsProps = {
-  results: QuizRecommendation[];
-  copy: string;
-  headingRef: React.RefObject<HTMLHeadingElement | null>;
-};
-
-function Results({ results, copy, headingRef }: ResultsProps) {
-  return (
-    <div className="mx-auto max-w-3xl px-4 py-12 font-source-sans sm:px-6">
-      <header className="mb-10 space-y-3">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
-          Your results
-        </p>
-        <h1
-          ref={headingRef}
-          tabIndex={-1}
-          className="font-playfair text-3xl font-semibold tracking-tight text-cf-ink outline-none sm:text-4xl"
-        >
-          Your perfect futon matches
-        </h1>
-        {copy && (
-          <p className="max-w-prose text-base leading-relaxed text-cf-muted">
-            {copy}
-          </p>
-        )}
-      </header>
-
-      {results.length === 0 ? (
-        <div className="space-y-3 text-cf-muted">
-          <p>We could not find an exact match right now.</p>
-          <Link href="/shop" className="text-cf-cta underline underline-offset-2">
-            Browse our full collection
-          </Link>
-        </div>
-      ) : (
-        <ul role="list" className="space-y-4">
-          {results.map(({ product, reason }) => (
-            <li
-              key={product._id}
-              className="flex items-start gap-4 rounded-lg border border-cf-ink/10 bg-white dark:bg-cf-cream dark:border-cf-ink/30 p-5 shadow-sm"
-            >
-              <div className="min-w-0 flex-1">
-                <h2 className="font-playfair text-xl font-semibold text-cf-ink">
-                  {product.name}
-                </h2>
-                <p className="mt-0.5 text-sm text-cf-muted">{reason}</p>
-                <p className="mt-2 font-medium text-cf-ink">
-                  {product.formattedPrice}
-                </p>
-                <Link
-                  href={`/products/${product.slug}`}
-                  className="mt-3 inline-block text-sm font-medium text-cf-cta underline underline-offset-2 hover:text-cf-cta/80"
-                >
-                  View product &rarr;
-                </Link>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <div className="mt-10 border-t border-cf-ink/10 pt-8 text-center">
-        <p className="text-sm text-cf-muted">
-          Want to explore more?{" "}
-          <Link href="/shop" className="text-cf-cta underline underline-offset-2">
-            Browse the full collection
-          </Link>
-        </p>
-      </div>
-    </div>
-  );
-}
