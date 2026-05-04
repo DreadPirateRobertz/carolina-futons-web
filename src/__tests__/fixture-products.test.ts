@@ -9,8 +9,8 @@ import {
 } from "@/lib/fixtures/collections";
 
 describe("fixture products", () => {
-  it("exports 7 products", () => {
-    expect(FIXTURE_PRODUCTS).toHaveLength(7);
+  it("exports 8 products", () => {
+    expect(FIXTURE_PRODUCTS).toHaveLength(8);
   });
 
   it("all products have required PDP fields", () => {
@@ -68,8 +68,8 @@ describe("fixture products", () => {
 });
 
 describe("fixture collections", () => {
-  it("exports 5 collections", () => {
-    expect(FIXTURE_COLLECTIONS).toHaveLength(5);
+  it("exports 6 collections", () => {
+    expect(FIXTURE_COLLECTIONS).toHaveLength(6);
   });
 
   it("getFixtureCollectionBySlug returns matching collection", () => {
