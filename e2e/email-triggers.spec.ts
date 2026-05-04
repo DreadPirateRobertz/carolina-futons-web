@@ -230,6 +230,11 @@ test.describe("POST /api/email/trigger — API contract", () => {
     expect(res.status()).toBe(400);
   });
 
+  test('returns 400 when items missing for cart-recovery', async ({ request }) => {
+    const res = await request.post('/api/email/trigger', { data: { type: 'cart-recovery' } });
+    expect(res.status()).toBe(400);
+  });
+
   test("returns 200 ok:true in fixture mode", async ({ request }) => {
     test.skip(
       process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS !== "1",

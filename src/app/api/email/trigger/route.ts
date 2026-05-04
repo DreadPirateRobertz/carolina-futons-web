@@ -20,18 +20,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid json" }, { status: 400 });
   }
 
-  if (
-    typeof body !== "object" ||
-    body === null ||
-    typeof (body as Record<string, unknown>).type !== "string" ||
-    typeof (body as Record<string, unknown>).email !== "string"
-  ) {
-    return NextResponse.json(
-      { error: "type and email are required" },
-      { status: 400 },
-    );
+  if (typeof body !== "object" || body === null) {
+    return NextResponse.json({ error: "invalid body" }, { status: 400 });
   }
 
+  const b = body as Record<string, unknown>;
+  const type = b['type'];
+  if (type !== 'welcome' && type !== 'cart-recovery') {
+    return NextResponse.json({ error: "type must be 'welcome' or 'cart-recovery'" }, { status: 400 });
+  }
+  if (type === 'welcome' && typeof b['email'] !== 'string') {
+    return NextResponse.json({ error: 'email is required for welcome triggers' }, { status: 400 });
+  }
+  if (type === 'cart-recovery' && (!Array.isArray(b['items']) || (b['items'] as unknown[]).length === 0)) {
+    return NextResponse.json({ error: 'items[] is required for cart-recovery triggers' }, { status: 400 });
+  }
   const payload = body as EmailTriggerPayload;
 
   if (isFixtureMode) {
