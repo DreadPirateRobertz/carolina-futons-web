@@ -210,6 +210,15 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* cf-ydny: CTA button surface in dark mode.
+   --cf-cta (#7ab8d0) is intentionally light for link/text use (~7:1 on dark bg).
+   As a button bg with white text it gives only 2.18:1 — WCAG AA fail.
+   Override bg-cf-cta in dark to the light-mode teal (oklch(0.47 0.053 232)
+   ≈ #3e6b7e, ~5.26:1 with white). text-cf-cta link usages are unaffected. */
+.dark .bg-cf-cta {
+  background-color: oklch(0.47 0.053 232);
+}
+
 /* cf-j6ub Living Footer ambient animations */
 @keyframes cf-star-twinkle {
   0%, 100% { opacity: 0.3; transform: scale(0.8); }
