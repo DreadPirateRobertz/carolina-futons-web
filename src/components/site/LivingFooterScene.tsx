@@ -31,8 +31,7 @@ export function LivingFooterScene() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none relative z-10 w-full"
-      style={{ height: 120, marginBottom: -2 }}
+      className="pointer-events-none absolute top-0 left-0 z-10 h-[120px] w-full"
     >
       <svg
         viewBox="0 0 1920 120"

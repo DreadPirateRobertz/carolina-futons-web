@@ -100,7 +100,7 @@ export function Footer() {
       <LivingFooterBg />
       {/* v3 mascot scene: transparent SVG ridge + sleeping bear over the living background */}
       <LivingFooterScene />
-      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 pt-32 pb-12 sm:px-6 lg:px-8">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col gap-4">
             <Link href="/" className="inline-flex w-fit items-center gap-3">
