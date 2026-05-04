@@ -7,23 +7,47 @@
 // errors (programmer bugs, etc.) are still caught to keep the page up, but
 // are flagged as "unexpected" in Sentry so they don't hide inside Wix-outage
 // noise.
+//
+// NEXT_PUBLIC_USE_FIXTURE_PRODUCTS=1 bakes fixture data at build time so
+// Vercel preview builds can exercise cart/checkout/shipping flows without
+// touching the production Wix catalog. This flag MUST NOT be set in prod.
 import * as Sentry from "@sentry/nextjs";
+import type { Product as WixProductSDK } from "@wix/auto_sdk_stores_products";
+import type { Collection as WixCollectionSDK } from "@wix/auto_sdk_stores_collections";
 import { getWixClient } from "@/lib/wix-client";
 import { isProductOnSale } from "@/lib/product/on-sale";
 import { logWixFailure } from "@/lib/wix/errors";
+import {
+  FIXTURE_PRODUCTS,
+  getFixtureProductBySlug,
+} from "@/lib/fixtures/products";
+import {
+  FIXTURE_COLLECTIONS,
+  getFixtureCollectionBySlug,
+} from "@/lib/fixtures/collections";
 
-export async function listProducts(limit = 24) {
+// WixProduct/WixCollection import directly from the Wix SDK package types
+// rather than being inferred from the function return types — this avoids a
+// circular type reference now that the functions can return fixture data.
+export type WixProduct = WixProductSDK;
+export type WixCollection = WixCollectionSDK;
+
+const USE_FIXTURES = process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1";
+
+export async function listProducts(limit = 24): Promise<WixProduct[]> {
+  if (USE_FIXTURES) return FIXTURE_PRODUCTS.slice(0, limit) as unknown as WixProduct[];
   try {
     const client = getWixClient();
     const result = await client.products.queryProducts().limit(limit).find();
-    return result.items;
+    return result.items as WixProduct[];
   } catch (err) {
     await logWixFailure("wix", "listProducts", err);
     return [];
   }
 }
 
-export async function getProductBySlug(slug: string) {
+export async function getProductBySlug(slug: string): Promise<WixProduct | null> {
+  if (USE_FIXTURES) return getFixtureProductBySlug(slug) as unknown as WixProduct | null;
   try {
     const client = getWixClient();
     // Two-step fetch: slug query resolves the _id, then getProduct(_id) returns
@@ -63,7 +87,12 @@ export async function getProductBySlug(slug: string) {
 export async function listProductsByCollectionId(
   collectionId: string,
   limit = 48,
-) {
+): Promise<WixProduct[]> {
+  if (USE_FIXTURES) {
+    return FIXTURE_PRODUCTS.filter((p) =>
+      (p.collectionIds as string[] | undefined)?.includes(collectionId),
+    ).slice(0, limit) as unknown as WixProduct[];
+  }
   try {
     const client = getWixClient();
     const result = await client.products
@@ -71,7 +100,7 @@ export async function listProductsByCollectionId(
       .hasSome("collectionIds", [collectionId])
       .limit(limit)
       .find();
-    return result.items;
+    return result.items as WixProduct[];
   } catch (err) {
     await logWixFailure("wix", `listProductsByCollectionId(${collectionId})`, err);
     return [];
@@ -84,7 +113,12 @@ export async function listProductsByCollectionId(
 const SALE_SCAN_LIMIT = 500;
 const SALE_PAGE_SIZE = 100;
 
-export async function listProductsOnSale(collectionId: string) {
+export async function listProductsOnSale(collectionId: string): Promise<WixProduct[]> {
+  if (USE_FIXTURES) {
+    return FIXTURE_PRODUCTS.filter((p) =>
+      (p.collectionIds as string[] | undefined)?.includes(collectionId),
+    ).filter(isProductOnSale as (p: unknown) => boolean) as unknown as WixProduct[];
+  }
   try {
     const client = getWixClient();
     const all: WixProduct[] = [];
@@ -120,25 +154,27 @@ export async function listProductsOnSale(collectionId: string) {
   }
 }
 
-export async function getCollectionBySlug(slug: string) {
+export async function getCollectionBySlug(slug: string): Promise<WixCollection | null> {
+  if (USE_FIXTURES) return getFixtureCollectionBySlug(slug) as unknown as WixCollection | null;
   try {
     const client = getWixClient();
     const result = await client.collections.getCollectionBySlug(slug);
-    return result.collection ?? null;
+    return (result.collection ?? null) as WixCollection | null;
   } catch (err) {
     await logWixFailure("wix", `getCollectionBySlug(${slug})`, err);
     return null;
   }
 }
 
-export async function listCollections(limit = 25) {
+export async function listCollections(limit = 25): Promise<WixCollection[]> {
+  if (USE_FIXTURES) return FIXTURE_COLLECTIONS.slice(0, limit) as unknown as WixCollection[];
   try {
     const client = getWixClient();
     const result = await client.collections
       .queryCollections()
       .limit(limit)
       .find();
-    return result.items;
+    return result.items as WixCollection[];
   } catch (err) {
     await logWixFailure("wix", "listCollections", err);
     return [];
@@ -180,6 +216,11 @@ export async function searchProducts(
   const trimmed = q.trim();
   if (!trimmed) return [];
   const lower = trimmed.toLowerCase();
+  if (USE_FIXTURES) {
+    return FIXTURE_PRODUCTS
+      .filter((p) => (p.name as string | undefined ?? "").toLowerCase().includes(lower))
+      .slice(0, limit) as unknown as WixProduct[];
+  }
   const all = await getAllProductsForSearch();
   return all
     .filter((p) => (p.name ?? "").toLowerCase().includes(lower))
@@ -187,6 +228,7 @@ export async function searchProducts(
 }
 
 export async function listGiftCards(): Promise<WixProduct[]> {
+  if (USE_FIXTURES) return [];
   try {
     const client = getWixClient();
     const result = await client.products
@@ -194,16 +236,9 @@ export async function listGiftCards(): Promise<WixProduct[]> {
       .eq("productType", "gift_card")
       .limit(20)
       .find();
-    return result.items;
+    return result.items as WixProduct[];
   } catch (err) {
     await logWixFailure("wix", "listGiftCards", err);
     return [];
   }
 }
-
-export type WixProduct = NonNullable<
-  Awaited<ReturnType<typeof listProducts>>
->[number];
-export type WixCollection = NonNullable<
-  Awaited<ReturnType<typeof listCollections>>
->[number];
