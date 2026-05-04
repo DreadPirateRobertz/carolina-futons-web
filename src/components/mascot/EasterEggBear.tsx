@@ -9,10 +9,11 @@ const DISCOUNT_CODE = "BEAR10";
 const emptySubscribe = () => () => {};
 
 // Shared positioning: fixed, centered, above mobile browser chrome + safe area.
-// Portal to document.body so position:fixed isn't trapped inside any CSS-transformed
-// ancestor (framer-motion on LivingHero / MascotWorldHero creates such ancestors).
+// Portal to document.body so position:fixed escapes any CSS-transformed ancestor
+// in the page tree (transforms create a new containing block for fixed elements).
 const PORTAL_BASE: React.CSSProperties = {
   position: "fixed",
+  // 80px ≈ mobile browser chrome height; safe-area-inset-bottom handles notch.
   bottom: "calc(80px + env(safe-area-inset-bottom, 0px))",
   left: "50%",
   width: "min(320px, 90vw)",
@@ -22,7 +23,7 @@ const PORTAL_BASE: React.CSSProperties = {
 export function EasterEggBear() {
   const [found, setFound] = useState(false);
   const [claimed, setClaimed] = useState(false);
-  // false on SSR, true after hydration — createPortal requires document.body.
+  // false on SSR (document undefined), true after hydration — portal is client-only.
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   return (
@@ -91,6 +92,7 @@ export function EasterEggBear() {
                 {DISCOUNT_CODE}
               </code>
               <button
+                type="button"
                 onClick={() => setClaimed(true)}
                 style={{
                   width: "100%",
@@ -110,7 +112,7 @@ export function EasterEggBear() {
             <motion.div
               key="bear-confirmed"
               initial={{ x: "-50%", opacity: 0 }}
-              animate={{ x: "-50%", opacity: 1 }}
+              animate={{ x: "-50%", opacity: 0.6 }}
               exit={{ x: "-50%", opacity: 0 }}
               style={{
                 ...PORTAL_BASE,

@@ -10,9 +10,19 @@ vi.mock("framer-motion", async () => {
     AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     motion: {
       ...actual.motion,
-      div: ({ children, style, ...rest }: React.HTMLAttributes<HTMLDivElement>) => (
-        <div style={style} {...rest}>{children}</div>
-      ),
+      // Destructure framer-motion animation props so they don't land on the
+      // real <div> as unknown DOM attributes and produce React warnings.
+      div: ({
+        children,
+        style,
+        initial: _i,
+        animate: _a,
+        exit: _e,
+        transition: _t,
+        ...rest
+      }: React.HTMLAttributes<HTMLDivElement> & {
+        initial?: unknown; animate?: unknown; exit?: unknown; transition?: unknown;
+      }) => <div style={style} {...rest}>{children}</div>,
     },
   };
 });
@@ -73,5 +83,15 @@ describe("EasterEggBear", () => {
     fireEvent.click(screen.getByRole("button", { name: /dismiss/i }));
     expect(within(container).queryByText(/code saved/i)).toBeNull();
     expect(within(document.body).getByText(/code saved/i)).toBeInTheDocument();
+  });
+
+  it("re-clicking bear after claiming does not re-show modal", () => {
+    render(<EasterEggBear />);
+    fireEvent.click(screen.getByRole("button", { name: /peek-a-boo bear/i }));
+    fireEvent.click(screen.getByRole("button", { name: /dismiss/i }));
+    // claimed is true, so found&&!claimed is still false even after another click.
+    fireEvent.click(screen.getByRole("button", { name: /peek-a-boo bear/i }));
+    expect(screen.queryByText("BEAR10")).toBeNull();
+    expect(screen.getByText(/code saved/i)).toBeInTheDocument();
   });
 });
