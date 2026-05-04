@@ -76,9 +76,6 @@ export function ProductCard({
   const reviewStats = getReviewStats(product.slug);
 
   return (
-    // Outer wrapper is the positioning context for AddToCompareButton so it
-    // sits outside the m.div's overflow-hidden and is never clipped by it.
-    <div className="relative">
     <m.div
       data-slot="product-card"
       data-has-secondary={hasSecondary ? "true" : "false"}
@@ -159,15 +156,13 @@ export function ProductCard({
           />
         ) : null}
       </Link>
+      {product.slug ? (
+        // Sibling of Link inside m.div so hover-lift carries the button with
+        // the card. bottom-12/right-2 stays within overflow-hidden bounds.
+        <div className="absolute bottom-12 right-2 z-10">
+          <AddToCompareButton slug={product.slug} />
+        </div>
+      ) : null}
     </m.div>
-    {product.slug ? (
-      // Rendered as a sibling of m.div (outside overflow-hidden) so it can
-      // never be clipped by the card's rounded corners. Positioned absolute
-      // relative to the outer wrapper div (bottom-12 = 48px up from card base).
-      <div className="absolute bottom-12 right-2 z-10">
-        <AddToCompareButton slug={product.slug} />
-      </div>
-    ) : null}
-    </div>
   );
 }

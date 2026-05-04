@@ -45,6 +45,7 @@ export function AddToCompareButton({
       type="button"
       onClick={handleClick}
       disabled={atMax}
+      aria-disabled={atMax}
       aria-pressed={isComparing}
       data-testid="add-to-compare"
       title={
