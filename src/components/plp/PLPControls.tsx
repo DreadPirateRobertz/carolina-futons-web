@@ -66,7 +66,7 @@ export function PLPControls({
     <div className="flex flex-col gap-4 rounded-lg border border-zinc-200 p-4 sm:flex-row sm:items-end sm:gap-6 dark:border-zinc-700 dark:bg-zinc-800">
       {/* Sort */}
       <div className="flex flex-col gap-1">
-        <label htmlFor="plp-sort" className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+        <label htmlFor="plp-sort" className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
           Sort by
         </label>
         <select
@@ -91,7 +91,7 @@ export function PLPControls({
         <div className="flex flex-col gap-1">
           <label
             htmlFor="plp-priceMin"
-            className="text-xs font-medium text-zinc-500 dark:text-zinc-400"
+            className="text-xs font-medium text-zinc-600 dark:text-zinc-400"
           >
             Min price ($)
           </label>
@@ -110,7 +110,7 @@ export function PLPControls({
         <div className="flex flex-col gap-1">
           <label
             htmlFor="plp-priceMax"
-            className="text-xs font-medium text-zinc-500 dark:text-zinc-400"
+            className="text-xs font-medium text-zinc-600 dark:text-zinc-400"
           >
             Max price ($)
           </label>
@@ -150,7 +150,7 @@ export function PLPControls({
         </button>
       </form>
 
-      <p className="ml-auto text-sm text-zinc-500 sm:self-end dark:text-zinc-400">
+      <p className="ml-auto text-sm text-zinc-600 sm:self-end dark:text-zinc-400">
         {totalFiltered} {totalFiltered === 1 ? "product" : "products"}
       </p>
     </div>
