@@ -1,5 +1,5 @@
 import { V3_PAL as c } from "./MascotPalette";
-import { Bear, Pine } from "./MascotCharacters";
+import { Bear } from "./MascotCharacters";
 
 export function MascotFooterDivider({ className }: { className?: string }) {
   return (
