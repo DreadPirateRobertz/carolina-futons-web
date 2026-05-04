@@ -1,52 +1,59 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { HomeFeaturedCollections } from "@/components/home/HomeFeaturedCollections";
+import {
+  HomeFeaturedCollections,
+  FEATURED_CATEGORY_SLUGS,
+} from "@/components/home/HomeFeaturedCollections";
+
+vi.mock("@/components/site/CategoryCardImage", () => ({
+  CategoryCardImage: ({ slug }: { slug: string }) => (
+    <div data-testid={`cat-img-${slug}`} />
+  ),
+}));
 
 describe("HomeFeaturedCollections", () => {
-  it("renders section with accessible heading", () => {
+  it("renders accessible section heading", () => {
     render(<HomeFeaturedCollections />);
     expect(screen.getByRole("heading", { name: "Shop by category" })).toBeInTheDocument();
   });
 
-  it("shows exactly 4 category cards", () => {
+  it("renders exactly 4 cards", () => {
     render(<HomeFeaturedCollections />);
-    const links = screen.getAllByRole("link");
-    expect(links).toHaveLength(4);
+    expect(screen.getAllByRole("link")).toHaveLength(4);
   });
 
-  it("links to correct PLP paths", () => {
+  it("renders cards in FEATURED_CATEGORY_SLUGS order with correct hrefs", () => {
     render(<HomeFeaturedCollections />);
-    expect(screen.getByRole("link", { name: /Futon Frames/i })).toHaveAttribute(
-      "href",
-      "/shop/futon-frames",
-    );
-    expect(screen.getByRole("link", { name: /Murphy Cabinet Beds/i })).toHaveAttribute(
-      "href",
-      "/shop/murphy-cabinet-beds",
-    );
-    expect(screen.getByRole("link", { name: /Platform Beds/i })).toHaveAttribute(
-      "href",
-      "/shop/platform-beds",
-    );
-    expect(screen.getByRole("link", { name: /Mattresses/i })).toHaveAttribute(
-      "href",
-      "/shop/mattresses",
-    );
+    const links = screen.getAllByRole("link");
+    FEATURED_CATEGORY_SLUGS.forEach((slug, i) => {
+      expect(links[i]).toHaveAttribute("href", `/shop/${slug}`);
+    });
   });
 
   it("excludes the derived sale category", () => {
     render(<HomeFeaturedCollections />);
-    expect(
-      screen.queryByRole("link", { name: /Sale/i }),
-    ).not.toBeInTheDocument();
+    const hrefs = screen.getAllByRole("link").map((l) => l.getAttribute("href"));
+    expect(hrefs).not.toContain("/shop/mattresses-sale");
   });
 
-  it("renders category names as headings inside links", () => {
+  it("renders category names as card headings", () => {
     render(<HomeFeaturedCollections />);
     expect(screen.getByText("Futon Frames")).toBeInTheDocument();
     expect(screen.getByText("Murphy Cabinet Beds")).toBeInTheDocument();
     expect(screen.getByText("Platform Beds")).toBeInTheDocument();
     expect(screen.getByText("Mattresses")).toBeInTheDocument();
+  });
+
+  it("renders CategoryCardImage for categories with images", () => {
+    render(<HomeFeaturedCollections />);
+    expect(screen.getByTestId("cat-img-futon-frames")).toBeInTheDocument();
+    expect(screen.getByTestId("cat-img-mattresses")).toBeInTheDocument();
+  });
+
+  it("links have focus-visible ring for WCAG 2.4.7", () => {
+    render(<HomeFeaturedCollections />);
+    const link = screen.getAllByRole("link")[0]!;
+    expect(link.className).toContain("focus-visible:ring-2");
   });
 });

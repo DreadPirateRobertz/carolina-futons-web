@@ -1,9 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 
-import { SHOP_CATEGORIES } from "@/lib/shop/categories";
+import { findCategory } from "@/lib/shop/categories";
+import { CategoryCardImage } from "@/components/site/CategoryCardImage";
 
-const FEATURED_SLUGS = [
+export const FEATURED_CATEGORY_SLUGS = [
   "futon-frames",
   "murphy-cabinet-beds",
   "platform-beds",
@@ -11,9 +11,15 @@ const FEATURED_SLUGS = [
 ] as const;
 
 export function HomeFeaturedCollections() {
-  const featured = SHOP_CATEGORIES.filter((c) =>
-    (FEATURED_SLUGS as readonly string[]).includes(c.slug),
+  const featured = FEATURED_CATEGORY_SLUGS.map((slug) => findCategory(slug)).filter(
+    (c) => c !== undefined,
   );
+
+  if (process.env.NODE_ENV !== "production" && featured.length < FEATURED_CATEGORY_SLUGS.length) {
+    console.warn(
+      `[HomeFeaturedCollections] ${FEATURED_CATEGORY_SLUGS.length - featured.length} featured slug(s) not found in SHOP_CATEGORIES`,
+    );
+  }
 
   return (
     <section
@@ -32,19 +38,11 @@ export function HomeFeaturedCollections() {
           <li key={category.slug}>
             <Link
               href={`/shop/${category.slug}`}
-              className="group block overflow-hidden rounded-lg border border-cf-divider bg-white shadow-sm transition hover:shadow-md dark:bg-cf-cream"
-              aria-label={`Shop ${category.name}`}
+              className="group block overflow-hidden rounded-lg border border-cf-divider bg-white shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 dark:bg-cf-cream"
             >
               <div className="relative aspect-[3/2] overflow-hidden bg-cf-sand/30">
                 {category.image ? (
-                  <Image
-                    src={category.image}
-                    alt={category.name}
-                    fill
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
-                    className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                    unoptimized
-                  />
+                  <CategoryCardImage src={category.image} slug={category.slug} />
                 ) : (
                   <div className="h-full w-full bg-cf-sand" />
                 )}
