@@ -142,7 +142,7 @@ export function FilterFirst({ categories }: { categories: ThemeDCategory[] }) {
       <section aria-label="Products" className="mx-auto w-full max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
         {filtered.length === 0 ? (
           <div className="flex min-h-[240px] items-center justify-center rounded-xl border border-dashed border-cf-divider">
-            <p className="text-sm text-cf-charcoal/50">
+            <p className="text-sm text-muted-foreground">
               Try a different category or price range
             </p>
           </div>

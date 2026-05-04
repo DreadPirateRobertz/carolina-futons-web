@@ -117,4 +117,23 @@ describe("VideoGallery", () => {
       "https://video.wixstatic.com/asheville.mp4",
     );
   });
+
+  // cf-urbq: thumbnail fallback (no posterUrl) must use text-muted-foreground
+  it("thumbnail fallback div uses text-muted-foreground when no posterUrl", () => {
+    const noPoster: VideoEntry[] = [
+      {
+        id: "vid-np",
+        title: "No Poster",
+        description: "No poster.",
+        category: "futon",
+        source: "wix",
+        videoUrl: "https://video.wixstatic.com/noposter.mp4",
+        sortOrder: 99,
+      },
+    ];
+    const { container } = render(<VideoGallery videos={noPoster} />);
+    const fallback = container.querySelector(".text-muted-foreground");
+    expect(fallback).not.toBeNull();
+    expect(fallback).toHaveClass("text-muted-foreground");
+  });
 });

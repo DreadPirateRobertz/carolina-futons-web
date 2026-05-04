@@ -122,6 +122,7 @@ export default function CartPage() {
                     </button>
                   </div>
 
+                  {/* icon-only interactive — WCAG 1.4.11 non-text contrast, 3:1 threshold; passes at ~4:1 */}
                   <button
                     type="button"
                     aria-label={`Remove ${line.productName}`}
@@ -166,7 +167,7 @@ export default function CartPage() {
             </div>
           </dl>
 
-          <p className="mt-2 text-xs text-cf-charcoal/50">
+          <p className="mt-2 text-xs text-muted-foreground">
             Shipping and taxes calculated at checkout.
           </p>
 

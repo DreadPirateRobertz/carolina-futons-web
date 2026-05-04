@@ -71,6 +71,30 @@ describe("globals.css — accessibility", () => {
   });
 });
 
+describe("globals.css — muted-foreground contrast guard (cf-urbq)", () => {
+  // --muted-foreground is the semantic token for secondary/placeholder text.
+  // Light: oklch(0.40 0.01 240) — ~4.9:1 on cf-sand (passes AA 4.5:1; was 0.45 = 3.96:1, failing)
+  // Dark:  oklch(0.7 0.01 240)  ≈ #9aaab8 — ~8:1 on dark bg (passes AA 4.5:1)
+  // If either value drifts below AA threshold, this test will catch it.
+  it("defines --muted-foreground in :root (light mode value)", () => {
+    const rootStart = css.indexOf(":root {");
+    const rootEnd = css.indexOf("\n}", rootStart);
+    const rootSection = css.slice(rootStart, rootEnd);
+    expect(rootSection).toMatch(/--muted-foreground:\s*oklch\(0\.40/);
+  });
+
+  it("defines --muted-foreground in .dark with high-contrast light value", () => {
+    const darkStart = css.indexOf(".dark {");
+    const darkEnd = css.indexOf("\n}", darkStart);
+    const darkSection = css.slice(darkStart, darkEnd);
+    expect(darkSection).toMatch(/--muted-foreground:\s*oklch\(0\.7/);
+  });
+
+  it("wires --color-muted-foreground via @theme for Tailwind class use", () => {
+    expect(css).toMatch(/--color-muted-foreground:\s*var\(--muted-foreground\)/);
+  });
+});
+
 describe("globals.css — dark mode CF brand token overrides (cf-uyeq)", () => {
   // Guards that the .dark block flips text-color tokens to light values so
   // text-cf-ink / text-cf-charcoal / text-cf-espresso pass WCAG AA contrast
