@@ -113,13 +113,13 @@ export default async function PublicRegistryPage({
                       ${item.productPrice.toFixed(2)}
                     </p>
                   )}
-                  <p className="mt-1 text-xs text-cf-charcoal/50">
+                  <p className="mt-1 text-xs text-cf-charcoal/70">
                     {remaining > 0
                       ? `${remaining} of ${item.quantity} still needed`
                       : "Fully purchased"}
                   </p>
                   {item.notes && (
-                    <p className="mt-1 text-xs text-cf-charcoal/50 italic">{item.notes}</p>
+                    <p className="mt-1 text-xs text-cf-charcoal/70 italic">{item.notes}</p>
                   )}
                   {item.productSlug && (
                     <Link
