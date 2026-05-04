@@ -28,7 +28,9 @@ export async function addItemAction(
     return { ok: false, error: "Quantity must be a positive integer" };
   }
   // NEXT_PUBLIC_ vars are baked at build time — read inline so server actions
-  // running in a fixture build short-circuit without hitting Wix.
+  // running in a fixture build short-circuit without hitting Wix. cart:null is
+  // fine because the client already has the line (optimistic update); ok:true
+  // keeps it instead of rolling back.
   if (process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1")
     return { ok: true, cart: null };
   try {
