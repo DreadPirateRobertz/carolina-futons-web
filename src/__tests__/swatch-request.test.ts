@@ -347,6 +347,8 @@ describe("submitSwatchRequestAction", () => {
   });
 
   it("returns generic transport error on 500", async () => {
+    const { captureException } = await import("@sentry/nextjs");
+    const captureSpy = vi.mocked(captureException);
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
@@ -360,9 +362,12 @@ describe("submitSwatchRequestAction", () => {
     if (result.status === "error") {
       expect(result.transportError).toBeTruthy();
     }
+    expect(captureSpy).toHaveBeenCalledOnce();
   });
 
   it("returns generic error on fetch throw", async () => {
+    const { captureException } = await import("@sentry/nextjs");
+    const captureSpy = vi.mocked(captureException);
     mockFetch.mockRejectedValueOnce(new Error("network down"));
     const { submitSwatchRequestAction } = await import(
       "@/app/actions/swatch-request"
@@ -372,6 +377,7 @@ describe("submitSwatchRequestAction", () => {
     if (result.status === "error") {
       expect(result.transportError).toBeTruthy();
     }
+    expect(captureSpy).toHaveBeenCalledOnce();
   });
 
   it("returns generic error on 400 (Velo error not echoed to user)", async () => {
@@ -433,6 +439,8 @@ describe("submitSwatchRequestAction", () => {
   });
 
   it("returns network-error copy when Turnstile verify fetch throws", async () => {
+    const { captureException } = await import("@sentry/nextjs");
+    const captureSpy = vi.mocked(captureException);
     process.env.TURNSTILE_SECRET_KEY = "secret-key";
     mockFetch.mockRejectedValueOnce(new Error("network down"));
     const fd = makeFormData();
@@ -445,9 +453,12 @@ describe("submitSwatchRequestAction", () => {
     if (result.status === "error") {
       expect(result.transportError).toMatch(/couldn't verify/i);
     }
+    expect(captureSpy).toHaveBeenCalledOnce();
   });
 
   it("hard-fails in production when TURNSTILE_SECRET_KEY is missing", async () => {
+    const { captureException } = await import("@sentry/nextjs");
+    const captureSpy = vi.mocked(captureException);
     vi.stubEnv("NODE_ENV", "production");
     const { submitSwatchRequestAction } = await import(
       "@/app/actions/swatch-request"
@@ -455,6 +466,7 @@ describe("submitSwatchRequestAction", () => {
     const result = await submitSwatchRequestAction(null, makeFormData());
     expect(result.status).toBe("error");
     expect(mockFetch).not.toHaveBeenCalled();
+    expect(captureSpy).toHaveBeenCalledOnce();
     vi.unstubAllEnvs();
   });
 
@@ -494,6 +506,8 @@ describe("submitSwatchRequestAction", () => {
   });
 
   it("falls back to generic error when Velo error body is not JSON", async () => {
+    const { captureException } = await import("@sentry/nextjs");
+    const captureSpy = vi.mocked(captureException);
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
@@ -507,6 +521,8 @@ describe("submitSwatchRequestAction", () => {
     if (result.status === "error") {
       expect(result.transportError).toMatch(/couldn't submit/i);
     }
+    // parseVeloError + veloRejected each call captureWithId
+    expect(captureSpy).toHaveBeenCalledTimes(2);
   });
 
   it("includes productSlug in payload when provided", async () => {
