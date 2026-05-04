@@ -38,7 +38,8 @@ export async function getMemberSession(): Promise<MemberSession | null> {
   try {
     const memberId = await resolveMemberId(tokens);
     return { tokens, accessToken: tokens.accessToken.value, memberId };
-  } catch {
+  } catch (err) {
+    console.error("[auth] getMemberSession: resolveMemberId failed:", err);
     return null;
   }
 }

@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
   let state;
   try {
     state = await client.auth.register({ email, password });
-  } catch {
+  } catch (err) {
+    console.error("[auth/register] client.auth.register failed:", err);
     return NextResponse.json(
       { error: "Sign-up failed. Please try again." },
       { status: 502 },
@@ -47,9 +48,11 @@ export async function POST(req: NextRequest) {
       tokens = await client.auth.getMemberTokensForDirectLogin(
         (state as { data: { sessionToken: string } }).data.sessionToken,
       );
-    } catch {
-      // Registration succeeded but session exchange failed. Ask the user to
-      // sign in — the wixMembers_onMemberCreated hook has already fired.
+    } catch (err) {
+      // Registration succeeded but session exchange failed — member created,
+      // wixMembers_onMemberCreated has fired. Log for observability then ask
+      // the user to sign in manually.
+      console.error("[auth/register] getMemberTokensForDirectLogin failed (member created):", err);
       return NextResponse.json(
         { state: "registered_sign_in_required" },
         { status: 200 },

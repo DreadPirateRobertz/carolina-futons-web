@@ -226,12 +226,18 @@ describe("POST /api/auth/register", () => {
 
   it("returns 502 when client.auth.register throws", async () => {
     mockRegister.mockRejectedValueOnce(new Error("network error"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const res = await callRegister({
       email: "a@b.com",
       password: "password123",
     });
     expect(res.status).toBe(502);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[auth/register]"),
+      expect.any(Error),
+    );
+    consoleSpy.mockRestore();
   });
 
   it("returns registered_sign_in_required when getMemberTokensForDirectLogin throws", async () => {
@@ -242,6 +248,7 @@ describe("POST /api/auth/register", () => {
     mockGetMemberTokensForDirectLogin.mockRejectedValueOnce(
       new Error("token exchange failed"),
     );
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const res = await callRegister({
       email: "a@b.com",
@@ -251,5 +258,10 @@ describe("POST /api/auth/register", () => {
     const data = await res.json();
     expect(data.state).toBe("registered_sign_in_required");
     expect(mockCookiesSet).not.toHaveBeenCalled();
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[auth/register]"),
+      expect.any(Error),
+    );
+    consoleSpy.mockRestore();
   });
 });
