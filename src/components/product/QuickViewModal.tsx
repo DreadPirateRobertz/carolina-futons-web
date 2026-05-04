@@ -39,8 +39,11 @@ export function QuickViewModal({
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // Lazy-fetch when first opened. Subsequent re-opens reuse cached data.
+  // `loadState` is intentionally excluded from deps — including it would
+  // re-run cleanup right after `setLoadState("loading")`, marking the
+  // in-flight fetch as cancelled before its `.then` resolves.
   useEffect(() => {
-    if (!open || data || loadState === "loading") return;
+    if (!open || data) return;
     let cancelled = false;
     setLoadState("loading");
     fetchProduct(slug)
@@ -60,7 +63,7 @@ export function QuickViewModal({
     return () => {
       cancelled = true;
     };
-  }, [open, slug, data, loadState, fetchProduct]);
+  }, [open, slug, data, fetchProduct]);
 
   // Focus management + Escape-to-close.
   useEffect(() => {
