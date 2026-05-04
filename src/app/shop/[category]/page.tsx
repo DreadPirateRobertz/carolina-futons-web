@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
@@ -28,13 +27,6 @@ import {
   ShopTheRoom,
   PLP_SHOP_THE_ROOM_CONFIGS,
 } from "@/components/site/ShopTheRoom";
-import { FutonsCategory } from "@/components/illustrations/FutonsCategory";
-import { MurphyCategory } from "@/components/illustrations/MurphyCategory";
-import { PlatformCategory } from "@/components/illustrations/PlatformCategory";
-import { MattressesCategory } from "@/components/illustrations/MattressesCategory";
-import { getCurrentSeason } from "@/components/illustrations/botanical";
-import type { Season } from "@/components/illustrations/botanical";
-
 export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
@@ -68,18 +60,6 @@ export async function generateMetadata(props: {
     return { title: "Shop — Carolina Futons" };
   }
 }
-
-const CATEGORY_ILLUSTRATIONS: Record<
-  string,
-  React.ComponentType<{ season?: Season; className?: string }>
-> = {
-  "futon-frames": FutonsCategory,
-  "sofa-beds": FutonsCategory,
-  "murphy-cabinet-beds": MurphyCategory,
-  "platform-beds": PlatformCategory,
-  mattresses: MattressesCategory,
-  "mattresses-sale": MattressesCategory,
-};
 
 const VALID_SORTS = new Set<PlpSort>([
   "featured",
@@ -235,19 +215,6 @@ export default async function PlpPage(props: {
         </h1>
         <p className="mt-2 text-zinc-600 dark:text-zinc-400">{category.description}</p>
       </header>
-
-      {(() => {
-        const IllustrationComponent = CATEGORY_ILLUSTRATIONS[categorySlug];
-        if (!IllustrationComponent) return null;
-        return (
-          <div className="mx-auto mt-6 h-48 w-full max-w-7xl" aria-hidden="true">
-            <IllustrationComponent
-              season={getCurrentSeason()}
-              className="h-full w-full"
-            />
-          </div>
-        );
-      })()}
 
       <div className="mt-6">
         <Suspense>
