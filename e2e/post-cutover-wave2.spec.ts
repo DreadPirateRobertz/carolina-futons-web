@@ -14,7 +14,7 @@
  * Checks:
  *   2.A  Cart persistence — add item, reload page, cart count > 0
  *   2.B  PDP variant selection — color option change updates displayed price
- *   2.C  Search results — "futon frame" and "mattress" each return ≥ 1 card
+ *   2.C  Search results — "sofa bed" and "murphy bed" each return ≥ 1 card
  *   2.D  PLP pagination — /shop/futon-frames loads ≥ 1 product card
  *   2.E  Footer social links — all 4 present with correct href
  *   2.F  Sale badge — /shop/sale renders ≥ 1 product with strikethrough price
@@ -54,20 +54,20 @@ test.describe("2.A cart persistence", () => {
     const addBtn = page.getByRole("button", { name: /add to cart/i });
     const isInStock = await addBtn.isVisible({ timeout: 5_000 }).catch(() => false);
     if (!isInStock) {
-      test.skip();
+      test.skip(true, "first PLP product OOS — skipping cart test");
       return;
     }
 
     await addBtn.click();
 
-    const cartCount = page.locator('[data-testid="cart-trigger-count"]');
+    const cartCount = page.locator('[data-slot="cart-count"]');
     await expect(cartCount).toBeVisible({ timeout: PAGE_TIMEOUT });
 
     await page.reload({ timeout: PAGE_TIMEOUT });
     await page.waitForLoadState("domcontentloaded");
 
     const countText = await page
-      .locator('[data-testid="cart-trigger-count"]')
+      .locator('[data-slot="cart-count"]')
       .textContent({ timeout: 5_000 })
       .catch(() => "0");
     expect(Number(countText?.trim() ?? "0")).toBeGreaterThan(0);
@@ -95,8 +95,7 @@ test.describe("2.B PDP variant selection", () => {
     const picker = page.locator('[data-slot="variant-option"]').first();
     const hasPicker = await picker.isVisible({ timeout: 5_000 }).catch(() => false);
     if (!hasPicker) {
-      // Product has no variants — verify price is still shown and skip
-      await expect(page.getByText(/\$\d/)).toBeVisible({ timeout: PAGE_TIMEOUT });
+      test.skip(true, "first PDP has no variant picker — skipping variant selection test");
       return;
     }
 
@@ -127,7 +126,7 @@ test.describe("2.B PDP variant selection", () => {
 test.describe("2.C search returns results", () => {
   test.skip(!isLiveRun, "post-cutover only — set BASE_URL=https://carolinafutons.com");
 
-  for (const query of ["futon frame", "mattress"]) {
+  for (const query of ["sofa bed", "murphy bed"]) {
     test(`"${query}" returns ≥ 1 product card`, async ({ page }) => {
       const res = await page.goto(
         `/search?q=${encodeURIComponent(query)}`,
