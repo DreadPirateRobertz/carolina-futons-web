@@ -161,7 +161,7 @@ function DrawerTree({
       {open && (
         <div
           aria-hidden="true"
-          className="fixed inset-0 z-40 bg-cf-charcoal/40 md:hidden"
+          className="fixed inset-0 z-[55] bg-cf-charcoal/40 md:hidden"
         />
       )}
 
@@ -174,7 +174,7 @@ function DrawerTree({
         aria-label="Navigation menu"
         data-state={open ? "open" : "closed"}
         className={[
-          "fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-gradient-to-b from-cf-header-start to-cf-header-end shadow-xl transition-transform duration-200 md:hidden",
+          "fixed inset-y-0 left-0 z-[56] flex w-72 flex-col bg-gradient-to-b from-cf-header-start to-cf-header-end shadow-xl transition-transform duration-200 md:hidden",
           open ? "translate-x-0" : "-translate-x-full",
         ].join(" ")}
       >
