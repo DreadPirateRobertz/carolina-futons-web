@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 
 function safeNext(next: string | undefined): string {
-  if (next && /^\/[^/]/.test(next)) return next;
+  if (next && /^\/[^/\\]/.test(next)) return next;
   return "/dashboard";
 }
 
@@ -49,7 +49,7 @@ export function AccountSignIn({ next }: { next?: string }) {
         return;
       }
       if (data.ok) {
-        window.location.href = typeof data.redirectTo === "string" ? data.redirectTo : dest;
+        window.location.href = typeof data.redirectTo === "string" ? data.redirectTo : "/dashboard";
         return;
       }
       throw new Error("unexpected_response");

@@ -343,4 +343,29 @@ describe("AccountPage — ?next= redirect (cf-w5ks)", () => {
     const sent = JSON.parse(init.body as string) as { callbackUrl: string };
     expect(sent.callbackUrl).toBe("/dashboard");
   });
+
+  it("rejects backslash-prefixed ?next= to block browser slash-normalization bypass", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      json: async () => ({ ok: true }),
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+    await renderPage("/\\evil.example.com");
+    fillAndSubmit();
+    await waitFor(() => expect(window.location.href).toBe("/dashboard"));
+    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    const sent = JSON.parse(init.body as string) as { callbackUrl: string };
+    expect(sent.callbackUrl).toBe("/dashboard");
+  });
+
+  it("falls back to /dashboard when server returns ok:true without redirectTo", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => ({ ok: true }),
+      }),
+    );
+    await renderPage("/dashboard/wishlist");
+    fillAndSubmit();
+    await waitFor(() => expect(window.location.href).toBe("/dashboard"));
+  });
 });
