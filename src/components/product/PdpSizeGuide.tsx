@@ -36,6 +36,7 @@ function DimensionDiagram({
   unit: Unit;
   position: "closed" | "open";
 }) {
+  const uid = useId().replace(/:/g, "");
   const pos = position === "open" ? dims.open : dims.closed;
   const w = fmt(pos.width, unit);
   const d = fmt(pos.depth, unit);
@@ -54,19 +55,19 @@ function DimensionDiagram({
       {/* furniture box */}
       <rect x="50" y="40" width="200" height="120" fill="none" stroke="#2C1A0E" strokeWidth="1.5" rx="4" />
       {/* width arrow */}
-      <line x1="50" y1="178" x2="250" y2="178" stroke="#2C1A0E" strokeWidth="1.2" markerStart="url(#al)" markerEnd="url(#ar)" />
+      <line x1="50" y1="178" x2="250" y2="178" stroke="#2C1A0E" strokeWidth="1.2" markerStart={`url(#${uid}al)`} markerEnd={`url(#${uid}ar)`} />
       <text x="150" y="194" textAnchor="middle">{w} W</text>
       {/* height arrow */}
-      <line x1="268" y1="40" x2="268" y2="160" stroke="#2C1A0E" strokeWidth="1.2" markerStart="url(#au)" markerEnd="url(#ad)" />
+      <line x1="268" y1="40" x2="268" y2="160" stroke="#2C1A0E" strokeWidth="1.2" markerStart={`url(#${uid}au)`} markerEnd={`url(#${uid}ad)`} />
       <text x="278" y="104" textAnchor="start">{h} H</text>
       {/* depth arrow */}
-      <line x1="50" y1="22" x2="250" y2="22" stroke="#2C1A0E" strokeWidth="1.2" markerStart="url(#al)" markerEnd="url(#ar)" />
+      <line x1="50" y1="22" x2="250" y2="22" stroke="#2C1A0E" strokeWidth="1.2" markerStart={`url(#${uid}al)`} markerEnd={`url(#${uid}ar)`} />
       <text x="150" y="16" textAnchor="middle">{d} D</text>
       <defs>
-        <marker id="ar" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#2C1A0E" /></marker>
-        <marker id="al" markerWidth="8" markerHeight="6" refX="0" refY="3" orient="auto"><path d="M8,0 L0,3 L8,6" fill="#2C1A0E" /></marker>
-        <marker id="au" markerWidth="6" markerHeight="8" refX="3" refY="0" orient="auto"><path d="M0,8 L3,0 L6,8" fill="#2C1A0E" /></marker>
-        <marker id="ad" markerWidth="6" markerHeight="8" refX="3" refY="8" orient="auto"><path d="M0,0 L3,8 L6,0" fill="#2C1A0E" /></marker>
+        <marker id={`${uid}ar`} markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#2C1A0E" /></marker>
+        <marker id={`${uid}al`} markerWidth="8" markerHeight="6" refX="0" refY="3" orient="auto"><path d="M8,0 L0,3 L8,6" fill="#2C1A0E" /></marker>
+        <marker id={`${uid}au`} markerWidth="6" markerHeight="8" refX="3" refY="0" orient="auto"><path d="M0,8 L3,0 L6,8" fill="#2C1A0E" /></marker>
+        <marker id={`${uid}ad`} markerWidth="6" markerHeight="8" refX="3" refY="8" orient="auto"><path d="M0,0 L3,8 L6,0" fill="#2C1A0E" /></marker>
       </defs>
     </svg>
   );
@@ -88,7 +89,9 @@ const VERDICT_ICONS: Record<RoomFitVerdict, string> = {
   unknown: "?",
 };
 
-function RoomFitChecker({ dims }: { dims: ProductDimensions }) {
+const CM_PER_IN = 2.54;
+
+function RoomFitChecker({ dims, unit }: { dims: ProductDimensions; unit: Unit }) {
   const widthId = useId();
   const depthId = useId();
   const resultId = useId();
@@ -97,6 +100,9 @@ function RoomFitChecker({ dims }: { dims: ProductDimensions }) {
   const [roomDepth, setRoomDepth] = useState("");
   const [result, setResult] = useState<ReturnType<typeof checkRoomFit> | null>(null);
   const [error, setError] = useState("");
+
+  const unitLabel = unit === "cm" ? "centimetres" : "inches";
+  const placeholder = unit === "cm" ? "e.g. 305" : "e.g. 120";
 
   const handleCheck = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -108,7 +114,9 @@ function RoomFitChecker({ dims }: { dims: ProductDimensions }) {
       return;
     }
     setError("");
-    setResult(checkRoomFit(dims, w, d));
+    // checkRoomFit always works in inches — convert if user is in cm mode
+    const toIn = (v: number) => unit === "cm" ? v / CM_PER_IN : v;
+    setResult(checkRoomFit(dims, toIn(w), toIn(d)));
   };
 
   return (
@@ -118,36 +126,36 @@ function RoomFitChecker({ dims }: { dims: ProductDimensions }) {
         <div className="flex flex-wrap gap-3">
           <div className="flex flex-col gap-1">
             <label htmlFor={widthId} className="text-xs text-cf-espresso/70">
-              Room width (inches)
+              Room width ({unit})
             </label>
             <input
               id={widthId}
               type="number"
               min="1"
-              max="999"
+              max="9999"
               step="1"
               value={roomWidth}
               onChange={(e) => setRoomWidth(e.target.value)}
-              placeholder="e.g. 120"
+              placeholder={placeholder}
               className="w-28 rounded border border-cf-sand px-2 py-1.5 text-sm"
-              aria-label="Room width in inches"
+              aria-label={`Room width in ${unitLabel}`}
             />
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor={depthId} className="text-xs text-cf-espresso/70">
-              Room depth (inches)
+              Room depth ({unit})
             </label>
             <input
               id={depthId}
               type="number"
               min="1"
-              max="999"
+              max="9999"
               step="1"
               value={roomDepth}
               onChange={(e) => setRoomDepth(e.target.value)}
-              placeholder="e.g. 144"
+              placeholder={placeholder}
               className="w-28 rounded border border-cf-sand px-2 py-1.5 text-sm"
-              aria-label="Room depth in inches"
+              aria-label={`Room depth in ${unitLabel}`}
             />
           </div>
           <div className="flex items-end">
@@ -325,7 +333,7 @@ export function PdpSizeGuide({ productName, dimensions, careGuide }: PdpSizeGuid
       </div>
 
       {/* Room-fit checker */}
-      <RoomFitChecker dims={dimensions} />
+      <RoomFitChecker dims={dimensions} unit={unit} />
 
       {/* Care guide inline (if available) */}
       {careGuide && (
