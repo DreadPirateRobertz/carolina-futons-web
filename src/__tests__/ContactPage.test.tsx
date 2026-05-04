@@ -63,10 +63,8 @@ describe("ContactPage — rendering", () => {
     expect(container.querySelector("article")?.className).toMatch(/max-w-\[65ch\]/);
   });
 
-  // cf-93rb A.2: sunrise hero band sits above the contact body. Meaningful
-  // illustration — alt mirrors the source SVG title (sunrise skyline).
-  it("renders the ContactHero sunrise band above the article", () => {
-    render(<ContactPage />);
-    expect(screen.getByAltText(/sunrise/i)).toBeInTheDocument();
+  it("renders the FogScene hero above the article", () => {
+    const { container } = render(<ContactPage />);
+    expect(container.querySelector("[data-slot='fog-scene']")).not.toBeNull();
   });
 });
