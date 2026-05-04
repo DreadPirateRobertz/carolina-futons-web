@@ -149,6 +149,81 @@ describe("/blog/[slug] dynamic page", () => {
     expect(meta.openGraph?.images).toBeTruthy();
   });
 
+  it("generateMetadata sets OG type=article, url, title, and description", async () => {
+    getPostBySlug.mockResolvedValueOnce({
+      _id: "p2",
+      slug: "wool-care",
+      title: "Wool mattress care",
+      excerpt: "Keep it fresh.",
+      heroImageUrl: null,
+      firstPublishedDate: null,
+      minutesToRead: null,
+      contentText: "",
+    });
+    const meta = await generateMetadata({
+      params: Promise.resolve({ slug: "wool-care" }),
+    });
+    expect((meta.openGraph as { type?: string })?.type).toBe("article");
+    expect((meta.openGraph as { url?: string })?.url).toContain("/blog/wool-care");
+    expect(meta.openGraph?.title).toBe("Wool mattress care");
+    expect(meta.openGraph?.description).toContain("Keep it fresh");
+  });
+
+  it("generateMetadata sets publishedTime from firstPublishedDate", async () => {
+    const date = new Date("2025-03-01T12:00:00Z");
+    getPostBySlug.mockResolvedValueOnce({
+      _id: "p3",
+      slug: "spring-care",
+      title: "Spring care",
+      excerpt: "Tips.",
+      heroImageUrl: null,
+      firstPublishedDate: date,
+      minutesToRead: null,
+      contentText: "",
+    });
+    const meta = await generateMetadata({
+      params: Promise.resolve({ slug: "spring-care" }),
+    });
+    expect((meta.openGraph as { publishedTime?: string })?.publishedTime).toBe(
+      "2025-03-01T12:00:00.000Z",
+    );
+  });
+
+  it("generateMetadata sets twitter card summary_large_image when hero image present", async () => {
+    getPostBySlug.mockResolvedValueOnce({
+      _id: "p4",
+      slug: "hero-post",
+      title: "Hero post",
+      excerpt: "Has image.",
+      heroImageUrl: "https://img/hero.jpg",
+      firstPublishedDate: null,
+      minutesToRead: null,
+      contentText: "",
+    });
+    const meta = await generateMetadata({
+      params: Promise.resolve({ slug: "hero-post" }),
+    });
+    expect((meta.twitter as { card?: string })?.card).toBe("summary_large_image");
+    expect(meta.twitter?.title).toBe("Hero post");
+  });
+
+  it("generateMetadata sets twitter card summary when no hero image", async () => {
+    getPostBySlug.mockResolvedValueOnce({
+      _id: "p5",
+      slug: "text-post",
+      title: "Text post",
+      excerpt: "No image.",
+      heroImageUrl: null,
+      firstPublishedDate: null,
+      minutesToRead: null,
+      contentText: "",
+    });
+    const meta = await generateMetadata({
+      params: Promise.resolve({ slug: "text-post" }),
+    });
+    expect((meta.twitter as { card?: string })?.card).toBe("summary");
+  });
+
   it("generateMetadata falls back to a generic title when the post is missing", async () => {
     getPostBySlug.mockResolvedValueOnce(null);
     const meta = await generateMetadata({
