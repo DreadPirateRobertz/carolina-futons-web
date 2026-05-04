@@ -28,7 +28,7 @@ export function HomeFeaturedCollections() {
     >
       <h2
         id="home-collections-heading"
-        className="font-playfair text-2xl font-semibold tracking-tight text-cf-espresso sm:text-3xl"
+        className="font-heading text-2xl font-semibold tracking-tight text-cf-espresso sm:text-3xl"
       >
         Shop by category
       </h2>
@@ -38,7 +38,7 @@ export function HomeFeaturedCollections() {
           <li key={category.slug}>
             <Link
               href={`/shop/${category.slug}`}
-              className="group block overflow-hidden rounded-lg border border-cf-divider bg-white shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 dark:bg-cf-cream"
+              className="group block overflow-hidden rounded-lg border border-cf-divider bg-cf-cream shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <div className="relative aspect-[3/2] overflow-hidden bg-cf-sand/30">
                 {category.image ? (
@@ -48,7 +48,7 @@ export function HomeFeaturedCollections() {
                 )}
               </div>
               <div className="px-3 py-3 sm:px-4 sm:py-4">
-                <h3 className="font-playfair text-sm font-semibold text-cf-espresso sm:text-base">
+                <h3 className="font-heading text-sm font-semibold text-cf-espresso sm:text-base">
                   {category.name}
                 </h3>
                 <p className="mt-0.5 text-xs text-cf-charcoal/70 line-clamp-2">
