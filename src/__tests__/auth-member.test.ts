@@ -54,10 +54,16 @@ describe("getMemberSession", () => {
   });
 
   it("returns null if getCurrentMember throws (token may be expired)", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     cookieStore.set("wix-session", { value: JSON.stringify(memberTokens) });
     getCurrentMember.mockRejectedValueOnce(new Error("401"));
     const mod = await import("@/lib/auth/member");
     expect(await mod.getMemberSession()).toBeNull();
+    expect(warnSpy).toHaveBeenCalledWith(
+      "[getMemberSession] resolveMemberId threw:",
+      expect.any(Error),
+    );
+    warnSpy.mockRestore();
   });
 });
 

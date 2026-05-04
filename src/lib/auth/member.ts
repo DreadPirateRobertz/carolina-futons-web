@@ -38,7 +38,9 @@ export async function getMemberSession(): Promise<MemberSession | null> {
   try {
     const memberId = await resolveMemberId(tokens);
     return { tokens, accessToken: tokens.accessToken.value, memberId };
-  } catch {
+  } catch (err) {
+    // Fires routinely for expired/stale tokens — warn, not error, to avoid log noise.
+    console.warn("[getMemberSession] resolveMemberId threw:", err);
     return null;
   }
 }

@@ -8,6 +8,7 @@ import {
   serializeSessionTokens,
   safeCallbackUrl,
 } from "@/lib/auth/session";
+import { logWixFailure } from "@/lib/wix/errors";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,8 @@ export async function POST(req: NextRequest) {
   let state;
   try {
     state = await client.auth.login({ email, password });
-  } catch {
+  } catch (err) {
+    await logWixFailure("auth/login", "client.auth.login", err);
     return NextResponse.json(
       { error: "Sign-in failed. Please try again." },
       { status: 502 },
@@ -56,7 +58,8 @@ export async function POST(req: NextRequest) {
       tokens = await client.auth.getMemberTokensForDirectLogin(
         (state as { data: { sessionToken: string } }).data.sessionToken,
       );
-    } catch {
+    } catch (err) {
+      await logWixFailure("auth/login", "getMemberTokensForDirectLogin", err);
       return NextResponse.json(
         { error: "Sign-in failed. Please try again." },
         { status: 502 },

@@ -25,6 +25,9 @@ vi.mock("@/lib/wix-client", () => ({
   }),
 }));
 
+const logWixFailureMock = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+vi.mock("@/lib/wix/errors", () => ({ logWixFailure: (...args: unknown[]) => logWixFailureMock(...args) }));
+
 const TOKENS: Tokens = {
   accessToken: { value: "access-tok", expiresAt: 9_999_999_999 },
   refreshToken: { value: "refresh-tok", role: "member" as Tokens["refreshToken"]["role"] },
@@ -163,6 +166,7 @@ describe("POST /api/auth/login — email+password in-app auth", () => {
 
     expect(res.status).toBe(502);
     expect(cookieStore.has("wix-session")).toBe(false);
+    expect(logWixFailureMock).toHaveBeenCalledWith("auth/login", "client.auth.login", expect.any(Error));
   });
 
   it("returns 502 when getMemberTokensForDirectLogin throws", async () => {
@@ -177,5 +181,6 @@ describe("POST /api/auth/login — email+password in-app auth", () => {
 
     expect(res.status).toBe(502);
     expect(cookieStore.has("wix-session")).toBe(false);
+    expect(logWixFailureMock).toHaveBeenCalledWith("auth/login", "getMemberTokensForDirectLogin", expect.any(Error));
   });
 });
