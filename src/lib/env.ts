@@ -22,7 +22,7 @@ type RequiredKey = (typeof _REQUIRED)[number];
 type OptionalKey = keyof typeof OPTIONAL_WITH_DEFAULT;
 
 export function env(key: RequiredKey): string {
-  const value = process.env[key];
+  const value = process.env[key]?.trim();
   if (!value) {
     throw new Error(
       `Missing required env var: ${key}. Add to .env.local (local) or Vercel env (deploys).`,
