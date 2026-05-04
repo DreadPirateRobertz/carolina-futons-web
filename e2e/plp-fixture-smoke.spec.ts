@@ -4,11 +4,11 @@
  * Covers all 5 PLP routes using NEXT_PUBLIC_USE_FIXTURE_PRODUCTS=1:
  *   /shop/futon-frames        — 2 fixture products (Kingston $399 in-stock,
  *                               Sedona $549 out-of-stock)
- *   /shop/mattresses          — 1 fixture product (Mesa Foam $119, in-stock)
+ *   /shop/mattresses          — 1 fixture product (Mesa Futon Mattress $119, in-stock)
  *   /shop/platform-beds       — 1 fixture product (Monterey $1,699, in-stock)
  *   /shop/murphy-cabinet-beds — 1 fixture product (Asheville $849, in-stock)
  *   /shop/mattresses-sale     — derived / on-sale filter; 0 fixture products
- *                               (no fixture has discountedPrice < price)
+ *                               (no fixture defines discountedPrice)
  *
  * Run with:
  *   NEXT_PUBLIC_USE_FIXTURE_PRODUCTS=1 npx playwright test e2e/plp-fixture-smoke.spec.ts
@@ -53,7 +53,6 @@ test.describe("/shop/futon-frames — fixture mode", () => {
   test("sort by price-asc updates URL", async ({ page }) => {
     await page.selectOption("select#plp-sort", "price-asc");
     await page.waitForURL(/sort=price-asc/);
-    expect(page.url()).toContain("sort=price-asc");
     await expect(page.locator('[data-slot="product-card"]')).toHaveCount(2);
   });
 
@@ -240,13 +239,14 @@ test.describe("/shop/mattresses-sale — fixture mode (empty-sale state)", () =>
     ).toBeVisible({ timeout: PLP_TIMEOUT });
   });
 
-  test("page renders without error — no product count header when empty", async ({
-    page,
-  }) => {
+  test("count header shows 0 products on empty-sale page", async ({ page }) => {
     await page.goto("/shop/mattresses-sale");
-    await page.waitForLoadState("networkidle");
+    // Wait for empty-state copy as load anchor (PLPControls always renders count)
+    await expect(
+      page.getByText(/no mattresses are on sale right now/i),
+    ).toBeVisible({ timeout: PLP_TIMEOUT });
     const header = page.locator("p", { hasText: /\d+ products?/ });
-    const isVisible = await header.isVisible().catch(() => false);
-    expect(isVisible).toBe(false);
+    await expect(header).toBeVisible();
+    expect(parseInt((await header.textContent()) ?? "-1", 10)).toBe(0);
   });
 });
