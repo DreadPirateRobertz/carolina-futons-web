@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { V3_PAL as c } from "./MascotPalette";
 import { Bear, Deer, Fox, Owl } from "./MascotCharacters";
 
@@ -28,6 +28,7 @@ const CARD_VARIANTS = {
 
 export function MascotCategoryCard({ title, subtitle, animal, accent, href }: Props) {
   const [hover, setHover] = useState(false);
+  const prefersReducedMotion = useReducedMotion() ?? false;
   const filterId = `mcc-${title.replace(/\s+/g, "-").toLowerCase()}-grain`;
 
   return (
@@ -36,7 +37,7 @@ export function MascotCategoryCard({ title, subtitle, animal, accent, href }: Pr
       data-slot="category-card"
       variants={CARD_VARIANTS}
       initial="rest"
-      animate={hover ? "hover" : "rest"}
+      animate={prefersReducedMotion ? undefined : hover ? "hover" : "rest"}
       transition={{ type: "spring", stiffness: 300, damping: 22 }}
       onHoverStart={() => setHover(true)}
       onHoverEnd={() => setHover(false)}
@@ -91,7 +92,8 @@ export function MascotCategoryCard({ title, subtitle, animal, accent, href }: Pr
         <path d="M 0 310 Q 200 295 400 305 Q 500 310 600 295 L 600 400 L 0 400 Z" fill={c.ridge1} />
         {/* Animal slides up from below on hover — spring physics via Framer Motion */}
         <motion.g
-          animate={{ y: hover ? 320 : 460 }}
+          initial={{ y: 460 }}
+          animate={prefersReducedMotion ? undefined : { y: hover ? 320 : 460 }}
           transition={{ type: "spring", stiffness: 180, damping: 20 }}
           style={{ x: 300 }}
         >
@@ -137,7 +139,8 @@ export function MascotCategoryCard({ title, subtitle, animal, accent, href }: Pr
         {title}
       </div>
       <motion.div
-        animate={{ opacity: hover ? 1 : 0, x: hover ? 0 : -6 }}
+        initial={{ opacity: 0, x: -6 }}
+        animate={prefersReducedMotion ? undefined : { opacity: hover ? 1 : 0, x: hover ? 0 : -6 }}
         transition={{ duration: 0.25 }}
         style={{
           position: "absolute",
