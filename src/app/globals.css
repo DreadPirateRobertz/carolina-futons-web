@@ -200,6 +200,7 @@
   --cf-sand:     #1e2a3a;   /* page bg on dark (matches --background) */
   --cf-cream:    #263545;   /* card surface on dark */
   --cf-divider:  oklch(1 0 0 / 12%);  /* hairline on dark */
+  --cf-smoke:    oklch(1 0 0 / 15%);  /* card/form borders on dark — slightly more prominent than divider */
   --cf-header-start: #1a2535;
   --cf-header-end:   var(--cf-sand);
 
