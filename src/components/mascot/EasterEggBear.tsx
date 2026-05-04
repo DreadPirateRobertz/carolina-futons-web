@@ -13,10 +13,12 @@ export function EasterEggBear() {
 
   async function handleDismiss() {
     try {
-      await navigator.clipboard.writeText(DISCOUNT_CODE);
-      setCopied(true);
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(DISCOUNT_CODE);
+        setCopied(true);
+      }
     } catch {
-      // clipboard denied — dismiss silently
+      // clipboard write failed; setClaimed below always runs
     }
     setClaimed(true);
   }

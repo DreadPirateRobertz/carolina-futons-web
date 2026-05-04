@@ -72,6 +72,22 @@ describe("EasterEggBear", () => {
     expect(screen.queryByText("Copied to clipboard ✓")).toBeNull();
   });
 
+  it("dismisses without error when navigator.clipboard is unavailable", async () => {
+    Object.defineProperty(navigator, "clipboard", {
+      value: undefined,
+      writable: true,
+      configurable: true,
+    });
+    render(<EasterEggBear />);
+    fireEvent.click(screen.getByLabelText("Peek-a-boo bear"));
+    fireEvent.click(screen.getByText("Copy & dismiss"));
+
+    await waitFor(() =>
+      expect(screen.queryByText("You found the bear! 🐻")).toBeNull(),
+    );
+    expect(screen.queryByText("Copied to clipboard ✓")).toBeNull();
+  });
+
   it("does not show popup or confirmation before bear is clicked", () => {
     render(<EasterEggBear />);
     expect(screen.queryByText("BEAR10")).toBeNull();
