@@ -23,25 +23,28 @@ export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   return slugs.map((slug) => ({ slug }));
 }
 
+// NEXT_PUBLIC_SITE_URL is baked in at build time for ISR (revalidate=300).
+// For fully-dynamic pages, call resolveSiteUrl() inside the render function.
+const SITE_URL = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+
+function postDescription(post: BlogPost): string {
+  return (post.excerpt || post.contentText).slice(0, 160);
+}
+
 export async function generateMetadata(props: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await props.params;
   const post = await getPostBySlug(slug);
   if (!post) return { title: "Post — Carolina Futons" };
-  const description = post.excerpt
-    ? post.excerpt.slice(0, 160)
-    : post.contentText.slice(0, 160);
   return {
     title: `${post.title} — Carolina Futons`,
-    description,
+    description: postDescription(post),
     openGraph: post.heroImageUrl
       ? { images: [{ url: post.heroImageUrl }] }
       : undefined,
   };
 }
-
-const SITE_URL = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
 
 export default async function BlogPostPage(props: {
   params: Promise<{ slug: string }>;
@@ -52,9 +55,7 @@ export default async function BlogPostPage(props: {
 
   const articleSchema = buildArticleSchema({
     title: post.title,
-    description: post.excerpt
-      ? post.excerpt.slice(0, 160)
-      : post.contentText.slice(0, 160),
+    description: postDescription(post),
     canonicalUrl: `${SITE_URL}/blog/${post.slug}`,
     siteUrl: SITE_URL,
     publishedDate: post.firstPublishedDate,

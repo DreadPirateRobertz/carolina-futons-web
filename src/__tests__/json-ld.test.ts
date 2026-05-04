@@ -235,15 +235,31 @@ describe("buildArticleSchema", () => {
     );
   });
 
-  it("sets author and publisher to Carolina Futons Organization", () => {
+  it("sets author and publisher to BUSINESS.name Organization (not hardcoded string)", () => {
     const schema = buildArticleSchema(base);
     const expected = {
       "@type": "Organization",
-      name: "Carolina Futons",
+      name: BUSINESS.name,
       url: base.siteUrl,
     };
     expect(schema.author).toEqual(expected);
     expect(schema.publisher).toEqual(expected);
+  });
+
+  it("author and publisher are separate objects — mutation of one does not affect the other", () => {
+    const schema = buildArticleSchema(base);
+    expect(schema.author).not.toBe(schema.publisher);
+  });
+
+  it("truncates headline to 110 chars — Google BlogPosting requirement", () => {
+    const longTitle = "A".repeat(120);
+    expect(buildArticleSchema({ ...base, title: longTitle }).headline).toBe(
+      "A".repeat(110),
+    );
+  });
+
+  it("preserves headline as-is when 110 chars or fewer", () => {
+    expect(buildArticleSchema(base).headline).toBe(base.title);
   });
 
   it("includes image when heroImageUrl is provided", () => {
