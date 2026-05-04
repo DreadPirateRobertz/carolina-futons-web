@@ -128,10 +128,9 @@ export async function submitSwatchRequestAction(
     };
   }
 
-  // Gate on TURNSTILE_SECRET_KEY (server secret). In production, a missing
-  // secret is a deployment misconfiguration — hard-fail so prod never accepts
-  // unverified submissions. In dev/test the bypass lets local work proceed
-  // without keys configured.
+  // Gate on TURNSTILE_SECRET_KEY (server secret). In production, missing key =
+  // deployment misconfiguration — hard-fail. In dev/test, no key configured is
+  // expected; submissions proceed without challenge.
   const turnstileToken = formData.get("cf-turnstile-response");
   const hasSecret = !!process.env.TURNSTILE_SECRET_KEY;
   if (!hasSecret && process.env.NODE_ENV === "production") {
@@ -189,9 +188,8 @@ export async function submitSwatchRequestAction(
     return transportFailure(contactInfo, selectedIds, TRANSPORT_ERROR_RATE_LIMIT);
   }
 
-  // Never echo raw Velo error strings to the user — Velo may return internal
-  // detail that is not safe for user display. Log + capture for ops and always
-  // return the generic copy.
+  // Never surface the raw Velo error string — it may contain internal detail
+  // (stack traces, DB ids) inappropriate for user display. Log for ops only.
   let veloErrorForLog: string | undefined;
   try {
     const body = (await res.json()) as VeloResponse;
