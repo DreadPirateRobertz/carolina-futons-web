@@ -6,6 +6,23 @@ const trackBeginCheckout = vi.fn();
 vi.mock("@/lib/analytics/ga4-events", () => ({
   trackBeginCheckout: (...args: unknown[]) => trackBeginCheckout(...args),
 }));
+// Sentinel: renders Next.js Links as <a data-nextlink="true"> so tests can
+// assert the checkout CTA is a plain <a> that won't drop cross-origin 307s.
+vi.mock("next/link", () => ({
+  default: ({
+    children,
+    href,
+    onClick,
+    ...rest
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+    href: string;
+    children: React.ReactNode;
+  }) => (
+    <a href={href} onClick={onClick} data-nextlink="true" {...rest}>
+      {children}
+    </a>
+  ),
+}));
 
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { CartProvider, useCart } from "@/components/cart/CartProvider";
@@ -108,6 +125,15 @@ describe("CartDrawer (cf-3qt.2.3)", () => {
     const cta = screen.getByTestId("cart-checkout-cta");
     expect(cta).toHaveAttribute("href", "/checkout");
     expect(cta).toHaveTextContent(/go to checkout/i);
+  });
+
+  it("checkout CTA is a plain <a>, not a Next.js <Link>", () => {
+    // Guards against regression: <Link> silently drops cross-origin 307s to
+    // the Wix-hosted payment page. The next/link sentinel mock marks all Link
+    // elements with data-nextlink="true"; the checkout CTA must not carry it.
+    renderWith([lineA]);
+    fireEvent.click(screen.getByTestId("cart-trigger"));
+    expect(screen.getByTestId("cart-checkout-cta")).not.toHaveAttribute("data-nextlink");
   });
 
   it("increments quantity via the + button and updates subtotal", () => {
