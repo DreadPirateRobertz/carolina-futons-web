@@ -112,4 +112,12 @@ describe("FilterFirst (Theme D)", () => {
     // "All" view should show the shared product only once
     expect(screen.getByText(/1 product$/i)).toBeInTheDocument();
   });
+
+  // cf-urbq: empty-state hint must use text-muted-foreground for WCAG contrast
+  it("empty-state hint uses text-muted-foreground", () => {
+    render(<FilterFirst categories={[frames, mattresses]} />);
+    fireEvent.click(screen.getByRole("button", { name: /mattresses/i }));
+    fireEvent.click(screen.getByRole("button", { name: /\$2,000\+/i }));
+    expect(screen.getByText(/try a different category/i)).toHaveClass("text-muted-foreground");
+  });
 });

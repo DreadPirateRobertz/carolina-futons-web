@@ -97,4 +97,22 @@ describe("PdpLoading", () => {
     const skeletons = gallery!.querySelectorAll("[data-slot='skeleton']");
     expect(skeletons.length).toBe(5);
   });
+
+  // cf-urbq: breadcrumb skeleton wrapper must use text-muted-foreground
+  it("breadcrumb skeleton wrapper uses text-muted-foreground", () => {
+    const { container } = render(<PdpLoading />);
+    const main = container.querySelector("[data-slot='pdp-loading']");
+    expect(main!.querySelector(".text-muted-foreground")).not.toBeNull();
+    expect(main!.querySelector(".text-muted-foreground")).toHaveClass("text-muted-foreground");
+  });
+});
+
+describe("PlpLoading — breadcrumb contrast (cf-urbq)", () => {
+  // cf-urbq: breadcrumb skeleton wrapper must use text-muted-foreground
+  it("breadcrumb skeleton wrapper uses text-muted-foreground", () => {
+    const { container } = render(<PlpLoading />);
+    const main = container.querySelector("[data-slot='plp-loading']");
+    expect(main!.querySelector(".text-muted-foreground")).not.toBeNull();
+    expect(main!.querySelector(".text-muted-foreground")).toHaveClass("text-muted-foreground");
+  });
 });
