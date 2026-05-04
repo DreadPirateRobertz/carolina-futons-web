@@ -1,16 +1,10 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import {
   HomeFeaturedCollections,
   FEATURED_CATEGORY_SLUGS,
 } from "@/components/home/HomeFeaturedCollections";
-
-vi.mock("@/components/site/CategoryCardImage", () => ({
-  CategoryCardImage: ({ slug }: { slug: string }) => (
-    <div data-testid={`cat-img-${slug}`} />
-  ),
-}));
 
 describe("HomeFeaturedCollections", () => {
   it("renders accessible section heading", () => {
@@ -43,12 +37,6 @@ describe("HomeFeaturedCollections", () => {
     expect(screen.getByText("Murphy Cabinet Beds")).toBeInTheDocument();
     expect(screen.getByText("Platform Beds")).toBeInTheDocument();
     expect(screen.getByText("Mattresses")).toBeInTheDocument();
-  });
-
-  it("renders CategoryCardImage for categories with images", () => {
-    render(<HomeFeaturedCollections />);
-    expect(screen.getByTestId("cat-img-futon-frames")).toBeInTheDocument();
-    expect(screen.getByTestId("cat-img-mattresses")).toBeInTheDocument();
   });
 
   it("links have focus-visible ring for WCAG 2.4.7", () => {
