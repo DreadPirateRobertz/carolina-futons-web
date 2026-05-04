@@ -23,6 +23,7 @@ import { HomeSaleStrip } from "@/components/home/HomeSaleStrip";
 import { ContinueShoppingStrip } from "@/components/home/ContinueShoppingStrip";
 import { SocialFeeds } from "@/components/home/SocialFeeds";
 import { enrichProductsWithColorChoices } from "@/lib/product/enrich-colors";
+import { GiftCardPromo } from "@/components/home/GiftCardPromo";
 
 export const metadata: Metadata = {
   title: "Carolina Futons — Hardwood Frames & Mattresses | Hendersonville, NC",
@@ -125,6 +126,9 @@ export default async function HomePage() {
 
       {/* ── Social feeds — consent-gated IG/TikTok/Pinterest embeds (cf-l6aj.5) ── */}
       <SocialFeeds />
+
+      {/* ── Gift Card promo section (cf-l6aj.10) ── */}
+      <GiftCardPromo />
 
       {/* ── Value props ── */}
       <section className="border-t border-cf-divider bg-cf-sand/40">
