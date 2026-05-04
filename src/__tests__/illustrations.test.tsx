@@ -6,15 +6,14 @@ import { LivingSky } from "@/components/illustrations/LivingSky";
 import { LivingSkyClient } from "@/components/illustrations/LivingSkyClient";
 import { MountainSkyline } from "@/components/illustrations/MountainSkyline";
 import { BlueRidgeTimeline } from "@/components/illustrations/BlueRidgeTimeline";
-import { ContactHero } from "@/components/illustrations/ContactHero";
+import { FogScene } from "@/components/mascot/FogScene";
 import { LIVING_SKY_SVG_BODY } from "@/lib/illustrations/living-sky-svg";
 
 // cf-93rb Phase A: contract tests for the illustration wrappers.
 // Decorative components (FooterMountainDivider, MountainSkyline) must
 // remain hidden from AT to avoid noisy alt-text in the SR linearization.
-// Meaningful components (LivingSky, BlueRidgeTimeline, ContactHero) ship
-// with a default alt that mirrors the source SVG <title> and accept an
-// override for placement-specific descriptions.
+// Meaningful components (LivingSky, BlueRidgeTimeline, FogScene) ship
+// with a default alt/aria-label describing the scene.
 
 function srcOf(node: HTMLElement): string {
   return decodeURIComponent(node.getAttribute("src") ?? "");
@@ -94,11 +93,17 @@ describe("BlueRidgeTimeline", () => {
   });
 });
 
-describe("ContactHero", () => {
-  it("renders the sunrise alt by default", () => {
-    render(<ContactHero />);
-    const img = screen.getByAltText(/sunrise/i);
-    expect(srcOf(img as HTMLElement)).toContain("contact-hero.svg");
+describe("FogScene", () => {
+  it("renders an SVG with the fog-scene slot", () => {
+    const { container } = render(<FogScene />);
+    expect(container.querySelector("[data-slot='fog-scene']")).not.toBeNull();
+    expect(container.querySelector("svg")).not.toBeNull();
+  });
+
+  it("accepts a className prop", () => {
+    const { container } = render(<FogScene className="absolute inset-x-0 bottom-0" />);
+    const el = container.querySelector("[data-slot='fog-scene']");
+    expect(el?.className).toContain("absolute");
   });
 });
 

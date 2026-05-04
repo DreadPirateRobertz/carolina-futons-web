@@ -105,12 +105,8 @@ describe("PressPage", () => {
     expect(subject.defaultValue).toBe("[Press] ");
   });
 
-  it("renders the ContactHero illustration in the hero section", () => {
-    render(<PressPage />);
-    // ContactHero wraps an <Image> with descriptive alt text — assert via
-    // the image role so a future hero swap fails the test instead of
-    // silently dropping the visual.
-    const hero = screen.getByRole("img", { name: /blue ridge/i });
-    expect(hero).toBeTruthy();
+  it("renders the FogScene illustration in the hero section", () => {
+    const { container } = render(<PressPage />);
+    expect(container.querySelector("[data-slot='fog-scene']")).not.toBeNull();
   });
 });

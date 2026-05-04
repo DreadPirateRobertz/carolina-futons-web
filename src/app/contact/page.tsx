@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { AppointmentForm } from "@/components/contact/AppointmentForm";
 import { ContactForm } from "@/components/contact/ContactForm";
-import { ContactHero } from "@/components/illustrations/ContactHero";
+import { FogScene } from "@/components/mascot/FogScene";
 import { BUSINESS } from "@/lib/business/contact-info";
 
 export const metadata: Metadata = {
@@ -14,9 +14,7 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <main className="w-full">
-      {/* cf-93rb A.2: sunrise band above the contact form — sets the tone
-          for the page (warm, inviting) without competing with the form. */}
-      <ContactHero />
+      <FogScene />
       <div className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
         <article className="mx-auto max-w-[65ch] space-y-10 font-source-sans text-cf-ink">
         <header className="space-y-3">

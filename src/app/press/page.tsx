@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { ContactForm } from "@/components/contact/ContactForm";
-import { ContactHero } from "@/components/illustrations/ContactHero";
+import { FogScene } from "@/components/mascot/FogScene";
 import { BUSINESS } from "@/lib/business/contact-info";
 
 // cf-3qt.5.6: hero + press inquiries CTA + media-contact form. The form
@@ -39,7 +39,7 @@ export default function PressPage() {
         aria-labelledby="press-headline"
         className="relative overflow-hidden bg-cf-cream"
       >
-        <ContactHero className="absolute inset-x-0 bottom-0" />
+        <FogScene className="absolute inset-x-0 bottom-0" />
         <div className="relative mx-auto w-full max-w-[65ch] px-4 pb-24 pt-12 sm:px-6 sm:pb-32 sm:pt-16">
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
             Press
