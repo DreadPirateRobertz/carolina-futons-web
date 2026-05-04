@@ -31,6 +31,7 @@ import { formatPlpPrice } from "@/lib/product/plp-price";
 import { getCrossSellProducts } from "@/lib/product/cross-sell";
 import { getAlsoBoughtProducts } from "@/lib/product/also-bought";
 import { PdpAlsoBought } from "@/components/product/PdpAlsoBought";
+import { getProductBadges } from "@/lib/wix/product-badges";
 import { JsonLd } from "@/components/seo/JsonLd";
 import {
   buildBreadcrumbSchema,
@@ -104,9 +105,10 @@ export default async function PdpPage(props: {
   const variants = (product.variants ?? []) as VariantInput[];
   const galleryImages = buildGallery(product);
   const stock = (product.stock ?? null) as StockBadgeInput | null;
-  const [crossSell, alsoBought] = await Promise.all([
+  const [crossSell, alsoBought, productBadges] = await Promise.all([
     getCrossSellProducts(product),
     getAlsoBoughtProducts(product),
+    getProductBadges(slug),
   ]);
   const mattresses = isFutonFrame(slug) ? await getMesaMattresses() : [];
   let fabricSwatches: SwatchItem[] = [];
@@ -199,6 +201,7 @@ export default async function PdpPage(props: {
           whiteGlovePriceCents={whiteGlovePriceCents}
           galleryImages={galleryImages}
           stock={stock}
+          badges={productBadges}
           fabricSwatches={fabricSwatches}
           fabricSwatchError={fabricSwatchError}
           weightLbs={product.weight ?? 0}
