@@ -8,8 +8,8 @@
  *   /shop/platform-beds       — 1 fixture product (Monterey $1,699, in-stock)
  *   /shop/murphy-cabinet-beds — 1 fixture product (Asheville $849, in-stock)
  *   /shop/sofa-beds            — 1 fixture product (Blue Ridge $799, in-stock)
- *   /shop/mattresses-sale     — derived / on-sale filter; 0 fixture products
- *                               (no fixture defines discountedPrice)
+ *   /shop/mattresses-sale     — derived / on-sale filter sourcing mattresses;
+ *                               1 product (Mesa $119→$89)
  *
  * Run with:
  *   NEXT_PUBLIC_USE_FIXTURE_PRODUCTS=1 npx playwright test e2e/plp-fixture-smoke.spec.ts
@@ -267,29 +267,33 @@ test.describe("/shop/sofa-beds — fixture mode", () => {
   });
 });
 
-// ── mattresses-sale PLP (derived / empty in fixture mode) ────────────────────
+// ── mattresses-sale PLP (derived / mesa on sale) ─────────────────────────────
 
-test.describe("/shop/mattresses-sale — fixture mode (empty-sale state)", () => {
+test.describe("/shop/mattresses-sale — fixture mode", () => {
   test.skip(!isFixtureMode, "requires NEXT_PUBLIC_USE_FIXTURE_PRODUCTS=1");
   test.setTimeout(30_000);
 
-  test("shows empty-sale copy when no fixture mattresses are discounted", async ({
-    page,
-  }) => {
+  test.beforeEach(async ({ page }) => {
     await page.goto("/shop/mattresses-sale");
-    await expect(
-      page.getByText(/no mattresses are on sale right now/i),
-    ).toBeVisible({ timeout: PLP_TIMEOUT });
+    await waitForPlpControls(page);
   });
 
-  test("count header shows 0 products on empty-sale page", async ({ page }) => {
-    await page.goto("/shop/mattresses-sale");
-    // Wait for empty-state copy as load anchor (PLPControls always renders count)
-    await expect(
-      page.getByText(/no mattresses are on sale right now/i),
-    ).toBeVisible({ timeout: PLP_TIMEOUT });
+  test("renders 1 on-sale mattress (mesa $119→$89)", async ({ page }) => {
+    const cards = page.locator('[data-slot="product-card"]');
+    await expect(cards).toHaveCount(1);
+    await expect(page.getByText(/mesa/i)).toBeVisible();
+  });
+
+  test("product count header shows 1 product", async ({ page }) => {
     const header = page.locator("p", { hasText: /\d+ products?/ });
     await expect(header).toBeVisible();
-    expect(parseInt((await header.textContent()) ?? "-1", 10)).toBe(0);
+    expect(parseInt((await header.textContent()) ?? "0", 10)).toBe(1);
+  });
+
+  test("in-stock filter keeps the 1 in-stock sale mattress", async ({ page }) => {
+    await page.check("input#plp-inStock");
+    await page.click("button[type=submit]");
+    await page.waitForURL(/inStock=1/);
+    await expect(page.locator('[data-slot="product-card"]')).toHaveCount(1);
   });
 });
