@@ -1,5 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+
+vi.mock("@/components/home/LivingHero", () => ({
+  LivingHero: () => <div data-slot="living-hero" data-testid="living-hero-stub" />,
+}));
 
 import { Header } from "@/components/site/Header";
 import { CartProvider } from "@/components/cart/CartProvider";
@@ -90,10 +94,10 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
     expect(header?.className).toContain("h-cf-header");
   });
 
-  // cf-f0rx: LivingSky backdrop wired in header (every page)
-  it("renders the LivingSky backdrop inside the header", () => {
+  // cf-etv3: LivingHero wired into header backdrop
+  it("renders the LivingHero inside the header backdrop", () => {
     const { container } = renderHeader();
-    expect(container.querySelector('[data-slot="living-sky-svg"]')).not.toBeNull();
+    expect(container.querySelector('[data-slot="living-hero"]')).not.toBeNull();
   });
 
   it("LivingSky backdrop wrapper is aria-hidden and pointer-events-none", () => {
@@ -112,7 +116,4 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
     expect(backdrop?.className).toContain("overflow-hidden");
   });
 
-  // cf-9cgu: LivingSkyClient is wrapped in LivingSkyErrorBoundary — a
-  // decorative sky crash must not take down the storefront. Boundary
-  // behavior tested in LivingSkyErrorBoundary.test.tsx.
 });

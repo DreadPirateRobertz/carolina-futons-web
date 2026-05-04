@@ -4,6 +4,10 @@ import { act, cleanup, render } from "@testing-library/react";
 import { Header } from "@/components/site/Header";
 import { CartProvider } from "@/components/cart/CartProvider";
 
+vi.mock("@/components/home/LivingHero", () => ({
+  LivingHero: () => <div data-slot="living-hero" />,
+}));
+
 // Mock useReducedMotion so the reduced-motion branch is deterministically
 // exercisable. All other framer-motion exports stay live.
 vi.mock("framer-motion", async () => {
