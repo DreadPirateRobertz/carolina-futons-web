@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+// useSyncExternalStore pattern (not useEffect+setState): the consent cookie is
+// an external store. getServerSnapshot returns false so SSR and the first
+// hydration frame are identical. The "focus" listener re-checks when the user
+// returns from another tab where they may have accepted the banner.
+
+import { useSyncExternalStore } from "react";
 
 import {
   SOCIAL_EMBEDS,
@@ -13,13 +18,39 @@ import {
   parseConsentCookie,
 } from "@/lib/consent/consent-state";
 
-function readConsentCookie(): boolean {
+// ── Consent store ────────────────────────────────────────────────────────────
+
+let cachedCookieRaw: string | undefined;
+let cachedGranted = false;
+
+function readConsentFromCookie(): boolean {
+  if (typeof document === "undefined") return false;
   const raw = document.cookie
     .split("; ")
     .find((row) => row.startsWith(`${CONSENT_COOKIE_NAME}=`))
     ?.split("=")[1];
-  return parseConsentCookie(decodeURIComponent(raw ?? "")) === "granted";
+  const decoded = raw ? decodeURIComponent(raw) : undefined;
+  if (decoded === cachedCookieRaw) return cachedGranted;
+  cachedCookieRaw = decoded;
+  cachedGranted = parseConsentCookie(decoded) === "granted";
+  return cachedGranted;
 }
+
+function subscribeToConsent(cb: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener("focus", cb);
+  return () => window.removeEventListener("focus", cb);
+}
+
+function getConsentSnapshot(): boolean {
+  return readConsentFromCookie();
+}
+
+function getConsentServerSnapshot(): boolean {
+  return false;
+}
+
+// ── Sub-components ───────────────────────────────────────────────────────────
 
 function Placeholder({ embed }: { embed: SocialEmbed }) {
   const color = PLATFORM_COLORS[embed.platform];
@@ -80,7 +111,9 @@ function PinterestCard({ embed }: { embed: SocialEmbed }) {
         <p className="font-heading text-base font-semibold text-cf-navy">
           Our Pinterest board
         </p>
-        <p className="mt-1 text-sm text-cf-charcoal/70">Futon frame ideas &amp; inspiration</p>
+        <p className="mt-1 text-sm text-cf-charcoal/70">
+          Futon frame ideas &amp; inspiration
+        </p>
       </div>
       <a
         href={embed.profileUrl}
@@ -95,24 +128,26 @@ function PinterestCard({ embed }: { embed: SocialEmbed }) {
   );
 }
 
-function EmbedCell({ embed, consented }: { embed: SocialEmbed; consented: boolean }) {
+function EmbedCell({
+  embed,
+  consented,
+}: {
+  embed: SocialEmbed;
+  consented: boolean;
+}) {
   if (!consented) return <Placeholder embed={embed} />;
   if (embed.platform === "pinterest") return <PinterestCard embed={embed} />;
   return <IframeEmbed embed={embed} />;
 }
 
+// ── Main component ───────────────────────────────────────────────────────────
+
 export function SocialFeeds() {
-  const [consented, setConsented] = useState(false);
-
-  useEffect(() => {
-    setConsented(readConsentCookie());
-
-    function onFocus() {
-      setConsented(readConsentCookie());
-    }
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, []);
+  const consented = useSyncExternalStore(
+    subscribeToConsent,
+    getConsentSnapshot,
+    getConsentServerSnapshot,
+  );
 
   return (
     <section
