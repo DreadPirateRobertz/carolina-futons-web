@@ -20,19 +20,6 @@ export function MascotFooterDivider({ className }: { className?: string }) {
           <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves={3} seed={2} />
           <feColorMatrix values="0 0 0 0 0.18  0 0 0 0 0.10  0 0 0 0 0.06  0 0 0 0.14 0" />
         </filter>
-        <style>{`
-          @keyframes v3fd-float {
-            0%, 100% { transform: translateY(0px); }
-            50%       { transform: translateY(-6px); }
-          }
-          @media (prefers-reduced-motion: no-preference) {
-            .v3fd-bear-float {
-              transform-box: fill-box;
-              transform-origin: center bottom;
-              animation: v3fd-float 4s ease-in-out infinite;
-            }
-          }
-        `}</style>
       </defs>
       <rect width="1920" height="200" fill="url(#v3fd-sky)" />
       <circle cx="1620" cy="60" r="30" fill={c.cream} opacity="0.85" />
@@ -52,11 +39,9 @@ export function MascotFooterDivider({ className }: { className?: string }) {
         })}
       </g>
       <path d="M 0 160 Q 240 150 480 156 Q 720 162 960 150 Q 1200 138 1440 155 Q 1680 175 1920 158 L 1920 200 L 0 200 Z" fill={c.ridge1} />
-      {/* Sleeping bear — outer g positions, inner g floats */}
+      {/* Sleeping bear in the foreground curve */}
       <g transform="translate(960 145)">
-        <g className="v3fd-bear-float">
-          <Bear pose="sleeping" scale={0.7} />
-        </g>
+        <Bear pose="sleeping" scale={0.7} />
       </g>
       <rect
         width="1920"
