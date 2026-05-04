@@ -77,10 +77,11 @@ export async function listSwatchesAction(): Promise<SwatchListResult> {
     >("FabricSwatches", 100);
     return {
       items: items
+        .filter(({ _id, swatchName }) => !!_id && !!swatchName)
         .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
         .map(({ _id, swatchName, colorFamily, colorHex }) => ({
-          _id: _id ?? "",
-          swatchName: swatchName ?? "",
+          _id: _id as string,
+          swatchName: swatchName as string,
           colorFamily,
           colorHex,
         })),
@@ -162,7 +163,10 @@ export async function submitSwatchRequestAction(
   try {
     res = await fetch(endpoint, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        "x-idempotency-key": crypto.randomUUID(),
+      },
       body: JSON.stringify({
         swatchIds: selectedIds,
         contactInfo,
