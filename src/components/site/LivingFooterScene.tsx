@@ -17,6 +17,30 @@ const PINE_POSITIONS = [
   { x: 1520, y: 163, h: 24, w: 8 },
 ];
 
+// Mist particles rise from the near-ridge floor — ambient valley fog.
+// Color: ridge5 (lightest Blue Ridge mist) at 40% alpha. Distinct from the
+// header's warm amber orbs and white/silver star field.
+const MIST_FILL = c.ridge5 + "66"; // hex alpha 66 ≈ 40 % opacity
+const MIST_PARTICLES: ReadonlyArray<{
+  cx: number;
+  cy: number;
+  r: number;
+  mx: number;
+  dur: string;
+  delay: string;
+}> = [
+  { cx: 200,  cy: 93, r: 2.5, mx: -6,  dur: "5.8s", delay: "0.0s" },
+  { cx: 480,  cy: 91, r: 2.0, mx: 5,   dur: "6.4s", delay: "1.3s" },
+  { cx: 760,  cy: 94, r: 2.8, mx: -7,  dur: "5.2s", delay: "0.6s" },
+  { cx: 960,  cy: 88, r: 2.0, mx: 4,   dur: "7.1s", delay: "2.2s" },
+  { cx: 1160, cy: 92, r: 2.3, mx: -5,  dur: "6.0s", delay: "0.9s" },
+  { cx: 1380, cy: 90, r: 2.7, mx: 6,   dur: "5.5s", delay: "1.7s" },
+  { cx: 1600, cy: 93, r: 2.1, mx: -8,  dur: "6.8s", delay: "0.3s" },
+  { cx: 640,  cy: 95, r: 2.4, mx: 7,   dur: "5.9s", delay: "2.8s" },
+  { cx: 1100, cy: 89, r: 1.8, mx: -4,  dur: "6.3s", delay: "0.5s" },
+  { cx: 1520, cy: 92, r: 2.6, mx: 3,   dur: "5.7s", delay: "1.4s" },
+];
+
 function PineTree({ x, y, h, w }: { x: number; y: number; h: number; w: number }) {
   return (
     <polygon
@@ -45,11 +69,20 @@ export function LivingFooterScene() {
               0%, 100% { transform: scale(1); }
               50% { transform: scale(1.03); }
             }
+            @keyframes lfs-mist-rise {
+              0%   { transform: translate(0px, 0px); opacity: 0; }
+              12%  { opacity: 0.55; }
+              88%  { opacity: 0.2; }
+              100% { transform: translate(var(--mx), -64px); opacity: 0; }
+            }
             @media (prefers-reduced-motion: no-preference) {
               .lfs-bear-breathe {
                 transform-box: fill-box;
                 transform-origin: center;
                 animation: lfs-bear-breathe 3s ease-in-out infinite;
+              }
+              .lfs-mist {
+                animation: lfs-mist-rise var(--md) ease-in-out var(--ml) infinite;
               }
             }
           `}</style>
@@ -75,6 +108,25 @@ export function LivingFooterScene() {
           d="M 0 96 Q 240 88 480 94 Q 720 100 960 90 Q 1200 80 1440 94 Q 1680 110 1920 96 L 1920 120 L 0 120 Z"
           fill={c.ridge1}
         />
+        {/* Valley mist particles: cool blue-white (ridge5) rising from the near
+            ridge floor. Distinct from the header's warm amber orbs and white stars. */}
+        {MIST_PARTICLES.map((p, i) => (
+          <circle
+            key={i}
+            className="lfs-mist"
+            cx={p.cx}
+            cy={p.cy}
+            r={p.r}
+            fill={MIST_FILL}
+            style={
+              {
+                "--mx": `${p.mx}px`,
+                "--md": p.dur,
+                "--ml": p.delay,
+              } as React.CSSProperties
+            }
+          />
+        ))}
         {/* Sleeping bear: outer g positions, inner g animates (avoids CSS transform fighting SVG translate) */}
         <g transform="translate(960 90)">
           <g className="lfs-bear-breathe">
