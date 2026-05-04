@@ -195,3 +195,19 @@ describe("PdpFinancing — accessibility", () => {
     expect(screen.getByTestId("afterpay-teaser")).toBeInTheDocument();
   });
 });
+
+describe("PdpFinancing — variant-priced products (cf-d3hc)", () => {
+  it("renders when unitPriceCents comes from priceRange.maxValue (manageVariants products)", () => {
+    // manageVariants products have priceData.price=0 but priceRange.maxValue may be non-zero.
+    // PdpInteractive passes whiteGlovePriceCents ?? fallbackPriceCents so financing shows
+    // correctly for these products instead of being gated out by the zero base price.
+    render(<PdpFinancing unitPriceCents={cents(750)} />);
+    expect(screen.getByTestId("pdp-financing")).toBeInTheDocument();
+    expect(screen.getByText(/as low as/i)).toBeInTheDocument();
+  });
+
+  it("does not render when both fallback and range price are below gate", () => {
+    const { container } = render(<PdpFinancing unitPriceCents={cents(200)} />);
+    expect(container.firstChild).toBeNull();
+  });
+});
