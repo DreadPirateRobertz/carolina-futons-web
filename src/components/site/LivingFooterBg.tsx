@@ -22,26 +22,6 @@ const ORB_GRADIENT: Record<"dawn" | "dusk", string> = {
   dusk: "radial-gradient(ellipse at center, rgba(220,100,40,0.16) 0%, transparent 70%)",
 };
 
-// Night stars — stable seeded positions for consistent SSR/CSR output.
-const STARS: ReadonlyArray<{
-  cx: number; cy: number; r: number; delay: string;
-}> = [
-  { cx: 8,  cy: 22, r: 1.2, delay: "0s"   },
-  { cx: 18, cy: 65, r: 0.8, delay: "1.1s" },
-  { cx: 27, cy: 32, r: 1.5, delay: "0.5s" },
-  { cx: 38, cy: 78, r: 0.9, delay: "1.8s" },
-  { cx: 47, cy: 14, r: 1.1, delay: "0.3s" },
-  { cx: 56, cy: 55, r: 1.3, delay: "2.2s" },
-  { cx: 65, cy: 38, r: 0.7, delay: "0.9s" },
-  { cx: 73, cy: 82, r: 1.0, delay: "1.5s" },
-  { cx: 82, cy: 28, r: 1.4, delay: "0.2s" },
-  { cx: 91, cy: 68, r: 0.8, delay: "1.7s" },
-  { cx: 95, cy: 48, r: 1.2, delay: "0.6s" },
-  { cx: 14, cy: 88, r: 0.9, delay: "2.0s" },
-  { cx: 44, cy: 92, r: 1.1, delay: "1.3s" },
-  { cx: 76, cy: 10, r: 0.7, delay: "0.4s" },
-];
-
 const PHASES: readonly Phase[] = ["night", "dawn", "day", "dusk"];
 
 export function LivingFooterBg() {
@@ -71,36 +51,6 @@ export function LivingFooterBg() {
           />
         );
       })}
-
-      {/* Night: twinkling star field */}
-      <svg
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          opacity: mounted && phase === "night" ? 1 : 0,
-          transition: mounted ? "opacity 4s ease-in-out" : "none",
-          pointerEvents: "none",
-        }}
-        viewBox="0 0 100 100"
-        preserveAspectRatio="xMidYMid slice"
-      >
-        {STARS.map((s) => (
-          <circle
-            key={`${s.cx}-${s.cy}`}
-            cx={s.cx}
-            cy={s.cy}
-            r={s.r}
-            fill="white"
-            style={
-              reduceMotion
-                ? { opacity: 0.5 }
-                : { animation: `cf-star-twinkle 3s ease-in-out ${s.delay} infinite` }
-            }
-          />
-        ))}
-      </svg>
 
       {/* Dawn / dusk: ambient horizon glow */}
       {(["dawn", "dusk"] as const).map((p) => (
