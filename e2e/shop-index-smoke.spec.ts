@@ -23,7 +23,7 @@ test.describe("/shop index hub", () => {
     await expect(heading).toBeVisible();
 
     // Scope to <main> so footer ul > li elements don't contaminate the count.
-    const cards = page.locator("main ul > li");
+    const cards = page.locator('main ul > li [data-slot="category-card"]');
     await expect(cards.first()).toBeVisible();
     const count = await cards.count();
     expect(count).toBeGreaterThanOrEqual(5);
@@ -32,15 +32,32 @@ test.describe("/shop index hub", () => {
   test("each category card links into /shop/[category]", async ({ page }) => {
     await page.goto("/shop");
 
-    const links = page.locator("main ul > li a");
-    await expect(links.first()).toBeVisible();
+    const cards = page.locator('main ul > li [data-slot="category-card"]');
+    await expect(cards.first()).toBeVisible();
 
-    const hrefs = await links.evaluateAll((anchors: HTMLAnchorElement[]) =>
+    const hrefs = await cards.evaluateAll((anchors: HTMLAnchorElement[]) =>
       anchors.map((a) => a.getAttribute("href")),
     );
     expect(hrefs.length).toBeGreaterThanOrEqual(5);
     for (const href of hrefs) {
       expect(href).toMatch(/^\/shop\/.+/);
     }
+  });
+
+  test("clicking first card navigates to its /shop/<slug> PLP with a visible H1", async ({
+    page,
+  }) => {
+    await page.goto("/shop");
+
+    const firstCard = page.locator('main ul > li [data-slot="category-card"]').first();
+    await expect(firstCard).toBeVisible();
+
+    const href = await firstCard.getAttribute("href");
+    expect(href).toMatch(/^\/shop\/.+/);
+
+    await firstCard.click();
+    await page.waitForURL(href!);
+
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 });

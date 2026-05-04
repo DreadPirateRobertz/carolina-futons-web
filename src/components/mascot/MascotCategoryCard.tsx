@@ -33,6 +33,7 @@ export function MascotCategoryCard({ title, subtitle, animal, accent, href }: Pr
   return (
     <motion.a
       href={href}
+      data-slot="category-card"
       variants={CARD_VARIANTS}
       initial="rest"
       animate={hover ? "hover" : "rest"}
