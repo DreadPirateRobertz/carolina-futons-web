@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { HeroReveal } from "@/components/motion/HeroReveal";
 import { RoomPlannerCanvas } from "@/components/design-a-room/RoomPlannerCanvas";
+import { RoomSceneViewer } from "@/components/design-a-room/RoomSceneViewer";
 import { BotanicalDesignARoom } from "@/components/illustrations/BotanicalDesignARoom";
 import { BUSINESS } from "@/lib/business/contact-info";
 import { DESIGN_STEPS } from "@/lib/design-a-room/steps";
@@ -39,6 +40,22 @@ export default function DesignARoomPage() {
         </HeroReveal>
 
         <HeroReveal delay={0.08}>
+          <section className="space-y-6" aria-labelledby="room-scene-heading">
+            <h2
+              id="room-scene-heading"
+              className="font-playfair text-2xl font-semibold tracking-tight"
+            >
+              See it in a room
+            </h2>
+            <p className="text-sm leading-relaxed text-cf-muted">
+              Explore how a futon frame, murphy bed, or platform bed looks inside
+              a styled room. Switch styles to find a look that fits your space.
+            </p>
+            <RoomSceneViewer />
+          </section>
+        </HeroReveal>
+
+        <HeroReveal delay={0.10}>
           <section className="space-y-6" aria-labelledby="planner-heading">
             <h2
               id="planner-heading"
