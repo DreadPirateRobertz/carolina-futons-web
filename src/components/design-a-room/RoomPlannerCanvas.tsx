@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 
 import {
   FUTON_OPTIONS,
@@ -12,7 +12,6 @@ import {
   pxToRoomIn,
   roomInToPx,
   scaleForRoom,
-  encodeLayout,
   decodeLayout,
   buildShareUrl,
   type PlacedItem,
@@ -41,10 +40,24 @@ type DragPayload =
 const INPUT_CLS =
   "mt-1 rounded-md border border-cf-divider bg-white px-3 py-2 text-sm shadow-sm focus:border-cf-cta focus:outline-none focus:ring-1 focus:ring-cf-cta";
 
+// Read layout from ?layout= query param at mount time (client-only; SSR returns null).
+function readUrlLayout(): LayoutState | null {
+  if (typeof window === "undefined") return null;
+  const encoded = new URLSearchParams(window.location.search).get("layout");
+  if (!encoded) return null;
+  return decodeLayout(encoded);
+}
+
 export function RoomPlannerCanvas() {
-  const [roomWStr, setRoomWStr] = useState(String(ROOM_DEFAULT_W));
-  const [roomDStr, setRoomDStr] = useState(String(ROOM_DEFAULT_D));
-  const [items, setItems] = useState<PlacedItem[]>([]);
+  const [roomWStr, setRoomWStr] = useState(() => {
+    const l = readUrlLayout();
+    return l ? String(l.roomWFt) : String(ROOM_DEFAULT_W);
+  });
+  const [roomDStr, setRoomDStr] = useState(() => {
+    const l = readUrlLayout();
+    return l ? String(l.roomDFt) : String(ROOM_DEFAULT_D);
+  });
+  const [items, setItems] = useState<PlacedItem[]>(() => readUrlLayout()?.items ?? []);
   const [shareMsg, setShareMsg] = useState("");
   const canvasRef = useRef<HTMLDivElement>(null);
   const dragPayload = useRef<DragPayload | null>(null);
@@ -63,18 +76,6 @@ export function RoomPlannerCanvas() {
   // Room origin: center the room in the canvas
   const roomOriginX = (CANVAS_W - roomPxW) / 2;
   const roomOriginY = (CANVAS_H - roomPxD) / 2;
-
-  // Load from ?layout= on mount
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const encoded = params.get("layout");
-    if (!encoded) return;
-    const state = decodeLayout(encoded);
-    if (!state) return;
-    setRoomWStr(String(state.roomWFt));
-    setRoomDStr(String(state.roomDFt));
-    setItems(state.items);
-  }, []);
 
   function canvasRelative(e: React.DragEvent): { x: number; y: number } | null {
     const rect = canvasRef.current?.getBoundingClientRect();
