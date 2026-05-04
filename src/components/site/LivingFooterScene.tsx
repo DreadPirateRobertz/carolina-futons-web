@@ -41,15 +41,15 @@ export function LivingFooterScene() {
       >
         <defs>
           <style>{`
-            @keyframes bear-breathe {
+            @keyframes lfs-bear-breathe {
               0%, 100% { transform: scale(1); }
               50% { transform: scale(1.03); }
             }
             @media (prefers-reduced-motion: no-preference) {
-              .bear-breathe {
+              .lfs-bear-breathe {
                 transform-box: fill-box;
                 transform-origin: center;
-                animation: bear-breathe 3s ease-in-out infinite;
+                animation: lfs-bear-breathe 3s ease-in-out infinite;
               }
             }
           `}</style>
@@ -77,7 +77,7 @@ export function LivingFooterScene() {
         />
         {/* Sleeping bear: outer g positions, inner g animates (avoids CSS transform fighting SVG translate) */}
         <g transform="translate(960 90)">
-          <g className="bear-breathe">
+          <g className="lfs-bear-breathe">
             <Bear pose="sleeping" scale={0.55} />
           </g>
         </g>
