@@ -18,6 +18,7 @@ import {
   listProductsByCollectionId,
 } from "@/lib/wix/products";
 import { getVideoCatalog } from "@/lib/videos/catalog";
+import { HomeFeaturedCollections } from "@/components/home/HomeFeaturedCollections";
 import { HomeSaleStrip } from "@/components/home/HomeSaleStrip";
 
 export const metadata: Metadata = {
@@ -69,7 +70,10 @@ export default async function HomePage() {
       {/* ── Time-of-day living hero (dawn/day/dusk/night) ── */}
       <LivingHero />
 
-      {/* ── Video showcase strip — immediately below the fold ── */}
+      {/* ── Featured collections grid (cf-3qt.2.6) ── */}
+      <HomeFeaturedCollections />
+
+      {/* ── Video showcase strip ── */}
       {featuredVideos.length > 0 && (
         <VideoShowcaseStrip videos={featuredVideos} />
       )}
