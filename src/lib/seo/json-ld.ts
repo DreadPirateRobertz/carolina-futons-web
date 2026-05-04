@@ -236,3 +236,57 @@ export function buildFaqPageSchema(
     })),
   };
 }
+
+// cf-3qt.7: BlogPosting JSON-LD for blog post pages. Required for the
+// Rich Results Test to pass on /blog/[slug]. author + publisher as
+// Organization satisfies Google's structured data requirements.
+export type ArticleSchemaInput = {
+  title: string;
+  description: string;
+  canonicalUrl: string;
+  siteUrl: string;
+  publishedDate: Date | null;
+  heroImageUrl?: string | null;
+};
+
+type AuthorOrg = {
+  "@type": "Organization";
+  name: string;
+  url: string;
+};
+
+export type ArticleSchema = {
+  "@context": "https://schema.org";
+  "@type": "BlogPosting";
+  headline: string;
+  description: string;
+  url: string;
+  author: AuthorOrg;
+  publisher: AuthorOrg;
+  datePublished?: string;
+  image?: string;
+};
+
+export function buildArticleSchema(input: ArticleSchemaInput): ArticleSchema {
+  const author: AuthorOrg = {
+    "@type": "Organization",
+    name: "Carolina Futons",
+    url: input.siteUrl,
+  };
+  const schema: ArticleSchema = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: input.title,
+    description: input.description,
+    url: input.canonicalUrl,
+    author,
+    publisher: author,
+  };
+  if (input.publishedDate) {
+    schema.datePublished = input.publishedDate.toISOString();
+  }
+  if (input.heroImageUrl) {
+    schema.image = input.heroImageUrl;
+  }
+  return schema;
+}

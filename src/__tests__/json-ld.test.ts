@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildArticleSchema,
   buildBreadcrumbSchema,
   buildOrganizationSchema,
   buildProductSchema,
@@ -197,5 +198,75 @@ describe("buildBreadcrumbSchema", () => {
   it("returns an empty itemListElement for an empty crumb trail", () => {
     const schema = buildBreadcrumbSchema([]);
     expect(schema.itemListElement).toEqual([]);
+  });
+});
+
+describe("buildArticleSchema", () => {
+  const base = {
+    title: "Choosing the Right Futon Frame",
+    description: "A guide to picking the perfect futon for your home.",
+    canonicalUrl:
+      "https://carolinafutons.com/blog/choosing-the-right-futon-frame",
+    siteUrl: "https://carolinafutons.com",
+    publishedDate: new Date("2026-02-01T12:00:00Z"),
+  };
+
+  it("emits @context schema.org and @type BlogPosting", () => {
+    const schema = buildArticleSchema(base);
+    expect(schema["@context"]).toBe("https://schema.org");
+    expect(schema["@type"]).toBe("BlogPosting");
+  });
+
+  it("sets headline from title", () => {
+    expect(buildArticleSchema(base).headline).toBe(base.title);
+  });
+
+  it("sets description", () => {
+    expect(buildArticleSchema(base).description).toBe(base.description);
+  });
+
+  it("sets url to canonicalUrl", () => {
+    expect(buildArticleSchema(base).url).toBe(base.canonicalUrl);
+  });
+
+  it("formats datePublished as ISO 8601", () => {
+    expect(buildArticleSchema(base).datePublished).toBe(
+      "2026-02-01T12:00:00.000Z",
+    );
+  });
+
+  it("sets author and publisher to Carolina Futons Organization", () => {
+    const schema = buildArticleSchema(base);
+    const expected = {
+      "@type": "Organization",
+      name: "Carolina Futons",
+      url: base.siteUrl,
+    };
+    expect(schema.author).toEqual(expected);
+    expect(schema.publisher).toEqual(expected);
+  });
+
+  it("includes image when heroImageUrl is provided", () => {
+    const schema = buildArticleSchema({
+      ...base,
+      heroImageUrl: "https://static.wixstatic.com/media/hero.jpg",
+    });
+    expect(schema.image).toBe("https://static.wixstatic.com/media/hero.jpg");
+  });
+
+  it("omits image when heroImageUrl is null", () => {
+    expect(
+      buildArticleSchema({ ...base, heroImageUrl: null }).image,
+    ).toBeUndefined();
+  });
+
+  it("omits image entirely when heroImageUrl is not passed", () => {
+    expect(buildArticleSchema(base).image).toBeUndefined();
+  });
+
+  it("omits datePublished when publishedDate is null", () => {
+    expect(
+      buildArticleSchema({ ...base, publishedDate: null }).datePublished,
+    ).toBeUndefined();
   });
 });

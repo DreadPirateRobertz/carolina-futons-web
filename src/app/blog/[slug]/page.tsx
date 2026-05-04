@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
 import { CfLink } from "@/components/ui/cf-link";
 import { notFound } from "next/navigation";
 
@@ -9,6 +8,8 @@ import {
   listAllPostSlugs,
   type BlogPost,
 } from "@/lib/wix/blog";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildArticleSchema, resolveSiteUrl } from "@/lib/seo/json-ld";
 
 // cf-l11g: dynamic blog post route. ISR-compatible — generateStaticParams
 // pre-renders the latest published posts at build time so they're indexable
@@ -40,6 +41,8 @@ export async function generateMetadata(props: {
   };
 }
 
+const SITE_URL = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+
 export default async function BlogPostPage(props: {
   params: Promise<{ slug: string }>;
 }) {
@@ -47,8 +50,20 @@ export default async function BlogPostPage(props: {
   const post = await getPostBySlug(slug);
   if (!post) notFound();
 
+  const articleSchema = buildArticleSchema({
+    title: post.title,
+    description: post.excerpt
+      ? post.excerpt.slice(0, 160)
+      : post.contentText.slice(0, 160),
+    canonicalUrl: `${SITE_URL}/blog/${post.slug}`,
+    siteUrl: SITE_URL,
+    publishedDate: post.firstPublishedDate,
+    heroImageUrl: post.heroImageUrl,
+  });
+
   return (
     <main className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
+      <JsonLd id="jsonld-article" schema={articleSchema} />
       <article className="mx-auto max-w-[65ch] space-y-8 font-source-sans text-cf-ink">
         <Header post={post} />
         {post.heroImageUrl ? (
@@ -135,7 +150,9 @@ function Body({ text }: { text: string }) {
 function BackLink() {
   return (
     <p>
-      <CfLink href="/blog" className="text-sm">← Back to the journal</CfLink>
+      <CfLink href="/blog" className="text-sm">
+        ← Back to the journal
+      </CfLink>
     </p>
   );
 }
