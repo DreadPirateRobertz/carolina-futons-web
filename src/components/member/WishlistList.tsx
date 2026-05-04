@@ -45,7 +45,7 @@ export function WishlistList({ initialItems }: WishlistListProps) {
     return (
       <div
         data-slot="wishlist-empty"
-        className="rounded-lg border border-cf-divider bg-white p-8 text-center"
+        className="rounded-lg border border-cf-divider bg-white p-8 text-center dark:bg-cf-cream"
       >
         <p className="text-sm text-cf-muted">
           Your wishlist is empty. Add a piece you love from any product
@@ -102,7 +102,7 @@ function WishlistRow({
     <article
       data-slot="wishlist-row"
       data-product-id={item.productId}
-      className="flex items-center gap-4 rounded-lg border border-cf-divider bg-white p-4"
+      className="flex items-center gap-4 rounded-lg border border-cf-divider bg-white p-4 dark:bg-cf-cream"
     >
       {item.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element

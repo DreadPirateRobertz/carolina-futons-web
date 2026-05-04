@@ -126,7 +126,7 @@ function AggregateRating({ stats }: { stats: ReviewStats }) {
 
 function ReviewCard({ review }: { review: Review }) {
   return (
-    <li className="rounded-md border border-cf-divider bg-white/60 p-4">
+    <li className="rounded-md border border-cf-divider bg-white/60 p-4 dark:bg-cf-cream/60">
       <div className="flex items-baseline justify-between gap-3">
         <p className="font-medium text-cf-espresso">{review.title}</p>
         <p

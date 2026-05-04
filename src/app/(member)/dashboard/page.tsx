@@ -57,7 +57,7 @@ function EmptyCard({
   ctaHref: string;
 }) {
   return (
-    <article className="rounded-lg border border-cf-divider bg-white p-6">
+    <article className="rounded-lg border border-cf-divider bg-white p-6 dark:bg-cf-cream">
       <h2 className="mb-2 text-lg font-semibold text-cf-ink">{title}</h2>
       <p className="mb-4 text-sm text-cf-muted">{body}</p>
       <Link

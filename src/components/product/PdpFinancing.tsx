@@ -150,7 +150,7 @@ function FinancingModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-cf-cream">
         <div className="flex items-center justify-between mb-4">
           <h3 id={titleId} className="font-heading text-lg font-semibold text-cf-espresso">
             Financing &amp; payment options

@@ -43,7 +43,7 @@ export default async function DashboardCatchAllPage({
       memberEmail={memberEmail}
       activeTab={activeTab}
     >
-      <section className="rounded-lg border border-cf-divider bg-white p-8 text-center">
+      <section className="rounded-lg border border-cf-divider bg-white p-8 text-center dark:bg-cf-cream">
         <h2 className="mb-2 text-lg font-semibold text-cf-ink">
           Coming soon
         </h2>

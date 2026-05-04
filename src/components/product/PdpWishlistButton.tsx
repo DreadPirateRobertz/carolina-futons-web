@@ -80,7 +80,7 @@ export function PdpWishlistButton({
         aria-pressed={state.kind === "added"}
         aria-label={label}
         data-state={state.kind}
-        className="inline-flex h-12 items-center justify-center gap-2 rounded-md border border-cf-divider bg-white px-5 text-sm font-medium text-cf-ink transition-colors hover:bg-cf-cream/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 data-[state=added]:border-cf-cta data-[state=added]:text-cf-cta"
+        className="inline-flex h-12 items-center justify-center gap-2 rounded-md border border-cf-divider bg-white px-5 text-sm font-medium text-cf-ink transition-colors hover:bg-cf-cream/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 data-[state=added]:border-cf-cta data-[state=added]:text-cf-cta dark:bg-cf-cream dark:hover:bg-cf-sand/60"
       >
         <span aria-hidden="true">
           {state.kind === "added" ? "♥" : "♡"}

@@ -76,7 +76,7 @@ export function PdpStickyCta({
   };
 
   const wrapperClass =
-    "fixed inset-x-0 bottom-0 z-40 border-t border-cf-sand/60 bg-white/95 px-4 pb-3 pt-5 backdrop-blur safe-area-inset-bottom print:hidden " +
+    "fixed inset-x-0 bottom-0 z-40 border-t border-cf-sand/60 bg-white/95 px-4 pb-3 pt-5 backdrop-blur safe-area-inset-bottom print:hidden dark:bg-cf-cream/95 " +
     // Mobile bottom-sheet treatment; desktop reverts to the flat bar.
     "rounded-t-xl shadow-lg md:rounded-none md:shadow-[0_-4px_12px_rgba(0,0,0,0.06)] md:pt-3";
 
@@ -150,7 +150,7 @@ function QuantityStepper({
   return (
     <div
       data-testid="pdp-sticky-qty"
-      className="flex items-center gap-1 rounded-md border border-cf-sand/60 bg-white px-1 md:hidden"
+      className="flex items-center gap-1 rounded-md border border-cf-sand/60 bg-white px-1 md:hidden dark:bg-cf-cream"
     >
       <button
         type="button"

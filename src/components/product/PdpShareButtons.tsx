@@ -72,7 +72,7 @@ export function PdpShareButtons({
         target="_blank"
         rel="noopener noreferrer"
         onClick={openPopup(facebookUrl)}
-        className="inline-flex items-center gap-2 rounded-md border border-cf-divider bg-white px-3 py-2 text-sm font-medium text-cf-espresso transition hover:bg-cf-sand/40"
+        className="inline-flex items-center gap-2 rounded-md border border-cf-divider bg-white px-3 py-2 text-sm font-medium text-cf-espresso transition hover:bg-cf-sand/40 dark:bg-cf-cream dark:hover:bg-cf-sand/20"
       >
         <svg
           aria-hidden="true"
@@ -90,7 +90,7 @@ export function PdpShareButtons({
         target="_blank"
         rel="noopener noreferrer"
         onClick={openPopup(pinterestUrl)}
-        className="inline-flex items-center gap-2 rounded-md border border-cf-divider bg-white px-3 py-2 text-sm font-medium text-cf-espresso transition hover:bg-cf-sand/40"
+        className="inline-flex items-center gap-2 rounded-md border border-cf-divider bg-white px-3 py-2 text-sm font-medium text-cf-espresso transition hover:bg-cf-sand/40 dark:bg-cf-cream dark:hover:bg-cf-sand/20"
       >
         <svg
           aria-hidden="true"

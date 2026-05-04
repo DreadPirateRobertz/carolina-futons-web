@@ -12,7 +12,7 @@ export function OrderHistoryList({ orders }: OrderHistoryListProps) {
     return (
       <div
         data-slot="order-history-empty"
-        className="rounded-lg border border-cf-divider bg-white p-8 text-center"
+        className="rounded-lg border border-cf-divider bg-white p-8 text-center dark:bg-cf-cream"
       >
         <p className="text-sm text-cf-muted">
           You haven&rsquo;t placed an order yet. Once you do, the receipt
@@ -43,7 +43,7 @@ function OrderHistoryCard({ order }: { order: MemberOrderSummary }) {
     <article
       data-slot="order-history-card"
       data-order-id={order.id}
-      className="rounded-lg border border-cf-divider bg-white p-5"
+      className="rounded-lg border border-cf-divider bg-white p-5 dark:bg-cf-cream"
     >
       <header className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
