@@ -121,7 +121,7 @@ export const HOME_HERO_PHOTO: HeroPhoto = LIFESTYLE_FUTON_FRAMES_PHOTO;
 export const HOME_HOTSPOT_CONFIGS: ReadonlyArray<HotspotConfig> = [
   { id: "monterey", xPct: 38, yPct: 70, productSlug: "monterey-futon-frame" },
   { id: "kingston", xPct: 60, yPct: 65, productSlug: "kingston-futon-frame" },
-  { id: "canby", xPct: 50, yPct: 55, productSlug: "canby-mattress" },
+  { id: "canby", xPct: 50, yPct: 55, productSlug: "canby-futon-frame" },
 ];
 
 export const ABOUT_HERO_PHOTO: HeroPhoto = {
@@ -134,7 +134,7 @@ export const ABOUT_HERO_PHOTO: HeroPhoto = {
 export const ABOUT_HOTSPOT_CONFIGS: ReadonlyArray<HotspotConfig> = [
   { id: "charleston", xPct: 50, yPct: 65, productSlug: "charleston-platform-bed" },
   { id: "nutmeg", xPct: 30, yPct: 70, productSlug: "nutmeg-platform-bed" },
-  { id: "portofino", xPct: 50, yPct: 45, productSlug: "portofino-mattress" },
+  { id: "portofino", xPct: 50, yPct: 45, productSlug: "portofino" },
 ];
 
 export const SHOP_HERO_PHOTO: HeroPhoto = {
@@ -145,9 +145,9 @@ export const SHOP_HERO_PHOTO: HeroPhoto = {
 } as const;
 
 export const SHOP_HOTSPOT_CONFIGS: ReadonlyArray<HotspotConfig> = [
-  { id: "solstice", xPct: 50, yPct: 50, productSlug: "solstice-mattress" },
-  { id: "portofino-shop", xPct: 30, yPct: 60, productSlug: "portofino-mattress" },
-  { id: "canby-shop", xPct: 70, yPct: 60, productSlug: "canby-mattress" },
+  { id: "haley", xPct: 50, yPct: 50, productSlug: "haley-110" },
+  { id: "moonshadow", xPct: 30, yPct: 60, productSlug: "pulsar" },
+  { id: "canby-shop", xPct: 70, yPct: 60, productSlug: "canby-futon-frame" },
 ];
 
 // /shop/futon-frames PLP. Reuses the shared LIFESTYLE_FUTON_FRAMES_PHOTO

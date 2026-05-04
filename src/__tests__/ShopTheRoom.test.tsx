@@ -53,12 +53,13 @@ beforeEach(() => {
   getProductBySlugMock.mockImplementation(async (slug: string) => {
     const fixtures: Record<string, ReturnType<typeof product>> = {
       "ranchero-murphy-cabinet-bed": product("Ranchero Murphy Cabinet Bed", 2978),
-      "canby-mattress": product("Canby Mattress", 737),
+      "canby-futon-frame": product("Canby Futon Frame", 737),
       "ekko-futon-frame": product("Ekko Futon Frame", 599),
-      "solstice-mattress": product("Solstice Mattress", 829),
+      "haley-110": product("Haley 110", 829),
+      "pulsar": product("Moonshadow", 859),
+      "portofino": product("Portofino", 599),
       "charleston-platform-bed": product("Charleston Platform Bed", 1099),
       "nutmeg-platform-bed": product("Nutmeg Platform Bed", 949),
-      "portofino-mattress": product("Portofino Mattress", 859),
       "monterey-futon-frame": product("Monterey Futon Frame", 899),
       "kingston-futon-frame": product("Kingston Futon Frame", 619),
     };
@@ -142,7 +143,7 @@ describe("ShopTheRoom (live data resolution)", () => {
 
   it("drops a hotspot whose slug 404s in the catalog (no broken PDP link rendered)", async () => {
     getProductBySlugMock.mockImplementation(async (slug: string) =>
-      slug === "canby-mattress" ? null : product("X", 100),
+      slug === "canby-futon-frame" ? null : product("X", 100),
     );
     const hotspots = await __TEST__.resolveHotspots(HOME_HOTSPOT_CONFIGS);
     expect(hotspots.find((h) => h.id === "canby")).toBeUndefined();
@@ -150,7 +151,7 @@ describe("ShopTheRoom (live data resolution)", () => {
 
   it("drops a hotspot whose product has no usable price (variant-priced products)", async () => {
     getProductBySlugMock.mockImplementation(async (slug: string) =>
-      slug === "canby-mattress"
+      slug === "canby-futon-frame"
         ? { name: "Canby", priceData: { price: 0 } } // variant-priced sentinel
         : product("X", 100),
     );
@@ -214,7 +215,7 @@ describe("ShopTheRoom (render — home defaults)", () => {
       screen.getByRole("button", { name: /shop kingston futon frame/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /shop canby mattress/i }),
+      screen.getByRole("button", { name: /shop canby futon frame/i }),
     ).toBeInTheDocument();
   });
 
