@@ -53,7 +53,7 @@ export function ReviewFilter() {
         <ul className="space-y-6">
           {filtered.map((review) => (
             <li key={review.id}>
-              <article className="space-y-3 rounded-lg border border-cf-ink/10 bg-white p-6 dark:bg-cf-espresso">
+              <article className="space-y-3 rounded-lg border border-cf-ink/10 bg-white p-6 dark:bg-cf-cream">
                 <div
                   aria-label={`${review.rating} out of 5 stars`}
                   className="flex gap-1"

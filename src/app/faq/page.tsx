@@ -73,7 +73,8 @@ export default async function FaqPage() {
                 <ul className="space-y-2">
                   {group.items.map((item, i) => (
                     <li key={`${group.category}-${i}-${item.question}`}>
-                      <details className="group rounded-md border border-cf-divider bg-white px-4 py-3 transition-colors open:border-cf-cta/40 open:bg-cf-cream dark:bg-cf-espresso dark:open:bg-cf-espresso/80">
+                      {/* Two-state bg: closed=white/dark-slate, open=cream/dark-slate-80 — mirrors light→dark tonal shift */}
+                      <details className="group rounded-md border border-cf-divider bg-white px-4 py-3 transition-colors open:border-cf-cta/40 open:bg-cf-cream dark:bg-cf-cream dark:open:bg-cf-cream/80">
                         <summary className="cursor-pointer list-none text-base font-medium text-cf-ink marker:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                           <span className="flex items-center justify-between gap-3">
                             <span>{item.question}</span>

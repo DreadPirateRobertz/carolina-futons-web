@@ -92,7 +92,7 @@ export default async function WinbackPage(props: {
 
       <section
         aria-labelledby="winback-values"
-        className="bg-white py-16 md:py-20 dark:bg-cf-espresso"
+        className="bg-white py-16 md:py-20 dark:bg-cf-cream"
       >
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
           <h2

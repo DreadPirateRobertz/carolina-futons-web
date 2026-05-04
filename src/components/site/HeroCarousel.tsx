@@ -137,7 +137,7 @@ function HeroCarouselInner({ slides }: { slides: ReadonlyArray<HeroSlide> }) {
       onFocus={onFocusIn}
       onBlur={onBlurOut}
       onKeyDown={onKeyDown}
-      className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-cf-divider bg-white shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:bg-cf-espresso"
+      className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-cf-divider bg-white shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:bg-cf-cream"
     >
       {/* Slide images — stacked, crossfade via opacity transition.
           Reduced-motion: omit duration-700 so Tailwind's 150ms default applies

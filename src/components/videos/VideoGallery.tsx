@@ -106,7 +106,7 @@ function VideoCard({
   onPlay: () => void;
 }) {
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-lg border border-cf-charcoal/10 bg-white shadow-sm transition hover:shadow-md dark:bg-cf-espresso">
+    <article className="flex h-full flex-col overflow-hidden rounded-lg border border-cf-charcoal/10 bg-white shadow-sm transition hover:shadow-md dark:bg-cf-cream">
       <button
         type="button"
         onClick={onPlay}

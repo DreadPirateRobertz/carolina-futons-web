@@ -138,7 +138,7 @@ export function ProductInfoModal({
         ref={dialogRef}
         aria-labelledby={titleId}
         onClick={handleDialogClick}
-        className="m-auto w-full max-w-lg rounded-xl bg-white p-0 shadow-2xl backdrop:bg-black/40 open:animate-[fadeIn_0.15s_ease] dark:bg-cf-espresso"
+        className="m-auto w-full max-w-lg rounded-xl bg-white p-0 shadow-2xl backdrop:bg-black/40 open:animate-[fadeIn_0.15s_ease] dark:bg-cf-cream"
         data-slot="product-info-modal"
       >
         {/* Header */}

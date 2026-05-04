@@ -91,7 +91,7 @@ export default async function PublicRegistryPage({
             return (
               <li
                 key={item._id}
-                className="overflow-hidden rounded-lg border border-cf-smoke bg-white dark:bg-cf-espresso"
+                className="overflow-hidden rounded-lg border border-cf-smoke bg-white dark:bg-cf-cream"
                 data-testid="registry-item"
               >
                 {item.imageUrl ? (
