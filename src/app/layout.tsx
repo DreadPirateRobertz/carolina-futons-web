@@ -6,6 +6,7 @@ import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { BotanicalFooterDivider } from "@/components/illustrations/BotanicalFooterDivider";
 import { CartProvider } from "@/components/cart/CartProvider";
+import { CartAbandonmentTracker } from "@/components/cart/CartAbandonmentTracker";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { CartHydrator } from "@/components/cart/CartHydrator";
 import { LenisProvider } from "@/components/motion/LenisProvider";
@@ -117,6 +118,7 @@ export default async function RootLayout({
           <RouteProgressBar />
           <CartProvider>
             <CartHydrator />
+            <CartAbandonmentTracker />
             <Header />
             <main id="main" className="flex-1">
               <PageTransition>{children}</PageTransition>
