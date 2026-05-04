@@ -4,7 +4,6 @@ import { DEFAULT_OG_IMAGE } from "@/lib/og";
 import "./globals.css";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
-import { BotanicalFooterDivider } from "@/components/illustrations/BotanicalFooterDivider";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { CartAbandonmentTracker } from "@/components/cart/CartAbandonmentTracker";
 import { CartDrawer } from "@/components/cart/CartDrawer";
@@ -123,9 +122,6 @@ export default async function RootLayout({
             <main id="main" className="flex-1">
               <PageTransition>{children}</PageTransition>
             </main>
-            <div className="h-[88px] w-full" aria-hidden="true">
-              <BotanicalFooterDivider className="h-full w-full" />
-            </div>
             <Footer />
             <CartDrawer />
             <BackToTop />
