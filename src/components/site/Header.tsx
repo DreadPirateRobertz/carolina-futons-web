@@ -18,6 +18,7 @@ import { AnnouncementBarCartAware } from "@/components/site/AnnouncementBarCartA
 import { CartTrigger } from "@/components/cart/CartTrigger";
 import { HeaderMobileMenu } from "@/components/site/HeaderMobileMenu";
 import { LivingSkyClient } from "@/components/illustrations/LivingSkyClient";
+import { LivingSkyErrorBoundary } from "@/components/illustrations/LivingSkyErrorBoundary";
 import { ThemeToggle } from "@/components/site/ThemeToggle";
 
 const PRIMARY_NAV = [
@@ -85,7 +86,9 @@ export function Header() {
         className="pointer-events-none absolute inset-0 overflow-hidden"
       >
         <div className="absolute top-0 left-0 z-0 w-full">
-          <LivingSkyClient />
+          <LivingSkyErrorBoundary>
+            <LivingSkyClient />
+          </LivingSkyErrorBoundary>
         </div>
         <div className="absolute inset-0 z-10 bg-white/10" />
       </div>

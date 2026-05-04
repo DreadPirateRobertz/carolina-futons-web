@@ -111,4 +111,8 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
     const backdrop = container.querySelector('[data-slot="living-sky-backdrop"]');
     expect(backdrop?.className).toContain("overflow-hidden");
   });
+
+  // cf-9cgu: LivingSkyClient is wrapped in LivingSkyErrorBoundary — a
+  // decorative sky crash must not take down the storefront. Boundary
+  // behavior tested in LivingSkyErrorBoundary.test.tsx.
 });
