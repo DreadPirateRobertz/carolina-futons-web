@@ -43,6 +43,14 @@ describe("isProductOnSale", () => {
     expect(isProductOnSale({ priceData: null })).toBe(false);
   });
 
+  it("returns false when discountedPrice exceeds price (bad Wix data)", () => {
+    expect(
+      isProductOnSale({
+        priceData: { price: 500, discountedPrice: 750 },
+      }),
+    ).toBe(false);
+  });
+
   it("rejects non-numeric price/discount values", () => {
     expect(
       isProductOnSale({
