@@ -4,7 +4,6 @@
 // Used by LivingHero during dawn (h≈5-7) and dusk (h≈17-19.5) phases.
 // 24 radiating rays from sun at horizon, tall mountain silhouettes below.
 
-import { useRef } from "react";
 
 const DAWN = {
   sky0: "#18182A",
@@ -56,12 +55,19 @@ function buildRays(sx: number, sy: number, color: string, time: number) {
     // perpendicular base offset
     const perpX = Math.cos(rad) * RAY_BASE_HALF;
     const perpY = Math.sin(rad) * RAY_BASE_HALF;
-    // subtle pulse: alternate rays breathe slightly
-    const pulse = 1 + 0.04 * Math.sin(time * 0.25 + i * 0.4);
+    // Skip Math.sin when time===0 (SSR + initial hydration frame) to avoid
+    // a Node.js/browser V8 precision difference on sin(8.4 rad) that causes
+    // a React hydration mismatch on i=21. Pulse kicks in after first RAF tick.
+    const pulse = time === 0 ? 1 : 1 + 0.04 * Math.sin(time * 0.25 + i * 0.4);
     const op = (i % 2 === 0 ? 0.28 : 0.18) * pulse;
     return (
       <polygon
         key={i}
+        // Ray tip tx/ty use Math.sin/cos(rad) which differs by ~1 ULP between
+        // Node.js and browser V8 for some angles — suppressHydrationWarning
+        // silences the mismatch warning. React uses server HTML as-is (correct
+        // behaviour) and the sub-pixel difference is invisible.
+        suppressHydrationWarning
         points={`${sx - perpX},${sy - perpY} ${sx + perpX},${sy + perpY} ${tx},${ty}`}
         fill={color}
         opacity={op}
