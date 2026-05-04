@@ -130,7 +130,7 @@ export function FilterFirst({ categories }: { categories: ThemeDCategory[] }) {
         <p
           aria-live="polite"
           aria-atomic="true"
-          className="mt-5 text-sm font-medium tabular-nums text-cf-charcoal/60"
+          className="mt-5 text-sm font-medium tabular-nums text-cf-charcoal/70"
         >
           {filtered.length === 0
             ? "No products match those filters"
