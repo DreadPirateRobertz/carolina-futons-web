@@ -26,7 +26,9 @@ export function serializeSessionTokens(tokens: Tokens): string {
 
 export function safeCallbackUrl(raw: string | null | undefined): string {
   if (!raw) return "/dashboard";
-  if (!raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
+  // Reject protocol-relative (//evil.com) and backslash-bypass (/\evil.com —
+  // some browsers normalize /\ to // on navigation).
+  if (!/^\/[^/\\]/.test(raw)) return "/dashboard";
   return raw;
 }
 

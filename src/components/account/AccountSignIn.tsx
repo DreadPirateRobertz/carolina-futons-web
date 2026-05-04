@@ -3,10 +3,19 @@
 import { useState } from "react";
 import Link from "next/link";
 
+// Rejects protocol-relative (//evil.com), backslash-bypass (/\evil.com —
+// browsers normalize /\ to // on window.location assignment), and absolute
+// URLs. Applied to both the outgoing callbackUrl and the incoming redirectTo
+// so neither leg can carry an open-redirect payload.
+function safeNext(next: string | undefined): string {
+  if (next && /^\/[^/\\]/.test(next)) return next;
+  return "/dashboard";
+}
+
 // Client-only sign-in widget. Extracted from the `/account` page so the page
 // itself can be a server component and export `metadata` (Next.js app-router
 // disallows metadata exports from `"use client"` modules — cf-3qt.8.A.F1).
-export function AccountSignIn() {
+export function AccountSignIn({ next }: { next?: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,10 +27,11 @@ export function AccountSignIn() {
     setLoading(true);
     setError(null);
     try {
+      const dest = safeNext(next);
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, callbackUrl: "/dashboard" }),
+        body: JSON.stringify({ email, password, callbackUrl: dest }),
       });
       const data = (await res.json()) as {
         ok?: boolean;
@@ -42,8 +52,8 @@ export function AccountSignIn() {
         setLoading(false);
         return;
       }
-      if (data.ok && typeof data.redirectTo === "string") {
-        window.location.href = data.redirectTo;
+      if (data.ok) {
+        window.location.href = safeNext(typeof data.redirectTo === "string" ? data.redirectTo : undefined);
         return;
       }
       throw new Error("unexpected_response");
