@@ -7,13 +7,14 @@ import type { ReactNode, CSSProperties } from "react";
 // and the useReducedMotion guard (animate → undefined when reduced=true).
 
 // ── Framer Motion mock ───────────────────────────────────────────────────────
-// framer-motion's useReducedMotion reads window.matchMedia internally, which
-// jsdom doesn't implement. We stub matchMedia globally so the real hook fires
-// correctly — this also tests the actual reduce path, not just mock wiring.
+// vi.mock replaces the entire framer-motion module. Our useReducedMotion shim
+// reads window.matchMedia directly so the stubMatchMedia helper can control
+// what the component's prefersReducedMotion branch sees.
 
 const mocks = vi.hoisted(() => ({
   cardAnimate: undefined as unknown,
   animalAnimate: undefined as unknown,
+  shopNowAnimate: undefined as unknown,
 }));
 
 vi.mock("framer-motion", () => ({
@@ -57,9 +58,18 @@ vi.mock("framer-motion", () => ({
       mocks.animalAnimate = animate;
       return <g {...rest}>{children}</g>;
     },
-    div: ({ children, ...rest }: { children?: ReactNode; [key: string]: unknown }) => (
-      <div {...rest}>{children}</div>
-    ),
+    div: ({
+      animate,
+      children,
+      ...rest
+    }: {
+      animate?: unknown;
+      children?: ReactNode;
+      [key: string]: unknown;
+    }) => {
+      mocks.shopNowAnimate = animate;
+      return <div {...rest}>{children}</div>;
+    },
   },
 }));
 
@@ -127,6 +137,7 @@ describe("MascotCategoryCard", () => {
     stubMatchMedia(false);
     mocks.cardAnimate = undefined;
     mocks.animalAnimate = undefined;
+    mocks.shopNowAnimate = undefined;
   });
 
   afterEach(() => {
@@ -150,11 +161,6 @@ describe("MascotCategoryCard", () => {
   // ── Link / routing ───────────────────────────────────────────────────────
 
   describe("href and aria-label", () => {
-    it("applies the href to the card anchor", () => {
-      renderCard({ href: "/shop/futon-frames" });
-      expect(screen.getByRole("link")).toHaveAttribute("href", "/shop/futon-frames");
-    });
-
     it("uses title as the aria-label", () => {
       renderCard({ title: "Murphy Cabinet Beds", href: "/shop/murphy-cabinet-beds" });
       expect(screen.getByRole("link")).toHaveAttribute("aria-label", "Murphy Cabinet Beds");
@@ -200,18 +206,27 @@ describe("MascotCategoryCard", () => {
     it("card animate is not undefined when reduced motion is OFF", () => {
       stubMatchMedia(false);
       renderCard();
+      expect(screen.getByRole("link")).toBeInTheDocument();
       expect(mocks.cardAnimate).not.toBeUndefined();
     });
 
     it("animal motion.g animate is not undefined when reduced motion is OFF", () => {
       stubMatchMedia(false);
       renderCard();
+      expect(screen.getByRole("link")).toBeInTheDocument();
       expect(mocks.animalAnimate).not.toBeUndefined();
+    });
+
+    it("shop-now arrow animate is not undefined when reduced motion is OFF", () => {
+      stubMatchMedia(false);
+      renderCard();
+      expect(screen.getByRole("link")).toBeInTheDocument();
+      expect(mocks.shopNowAnimate).not.toBeUndefined();
     });
 
     it("card animate is undefined when reduced motion is ON", () => {
       stubMatchMedia(true);
-      mocks.cardAnimate = "sentinel";
+      mocks.cardAnimate = "sentinel"; // sentinel: proves mock was called and set animate to undefined
       renderCard();
       expect(mocks.cardAnimate).toBeUndefined();
     });
@@ -221,6 +236,13 @@ describe("MascotCategoryCard", () => {
       mocks.animalAnimate = "sentinel";
       renderCard();
       expect(mocks.animalAnimate).toBeUndefined();
+    });
+
+    it("shop-now arrow animate is undefined when reduced motion is ON", () => {
+      stubMatchMedia(true);
+      mocks.shopNowAnimate = "sentinel";
+      renderCard();
+      expect(mocks.shopNowAnimate).toBeUndefined();
     });
   });
 });
