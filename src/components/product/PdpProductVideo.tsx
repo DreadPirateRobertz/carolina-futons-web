@@ -28,7 +28,7 @@ export function PdpProductVideo({ video }: PdpProductVideoProps) {
       data-slot="pdp-product-video"
       className="mt-8 max-w-2xl"
     >
-      <div className="overflow-hidden rounded-lg border border-cf-charcoal/10 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-lg border border-cf-charcoal/10 bg-white shadow-sm dark:bg-cf-cream">
         {/* Thumbnail / inline player */}
         <div className="relative aspect-video w-full bg-cf-charcoal/5">
           {!playing ? (

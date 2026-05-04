@@ -78,7 +78,7 @@ export function PreferencesForm({ initial }: PreferencesFormProps) {
         {PREFERENCE_CATEGORIES.map((category) => (
           <label
             key={category}
-            className="flex items-start gap-3 rounded-lg border border-cf-divider bg-white p-4"
+            className="flex items-start gap-3 rounded-lg border border-cf-divider bg-white p-4 dark:bg-cf-cream"
           >
             <input
               type="checkbox"

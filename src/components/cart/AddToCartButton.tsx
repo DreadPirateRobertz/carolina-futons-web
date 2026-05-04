@@ -125,7 +125,7 @@ export function AddToCartButton({
       {disabledReason && !error ? (
         <p
           id="add-to-cart-status"
-          className="mt-2 text-sm text-zinc-600"
+          className="mt-2 text-sm text-zinc-600 dark:text-zinc-400"
           role="status"
         >
           {disabledReason}

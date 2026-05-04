@@ -46,7 +46,7 @@ export function PdpMattressBundle({
           <li
             key={m.id}
             data-comfort={m.comfort.toLowerCase()}
-            className="flex flex-col rounded-lg border border-cf-divider bg-white p-4 shadow-sm"
+            className="flex flex-col rounded-lg border border-cf-divider bg-white p-4 shadow-sm dark:bg-cf-cream"
           >
             {m.imageUrl ? (
               <div className="relative mb-3 aspect-[4/3] w-full overflow-hidden rounded-md bg-cf-sand">
