@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import {
   getSeason,
+  MIDNIGHT_MINUTES,
   NOON_MINUTES,
   totalMinutesNow,
   computeLivingSky,
@@ -142,6 +143,39 @@ describe("computeLivingSky — seasonal ridge tint", () => {
     const winterNow = new Date("2026-12-15T12:00:00Z");
     const s = computeLivingSky(NOON_MINUTES, { now: winterNow });
     expect(s.ridgeColors.r1.startsWith("rgb(")).toBe(true);
+  });
+});
+
+describe("MIDNIGHT_MINUTES — dark-mode forced night state (cf-wzl3)", () => {
+  it("is 0 (midnight)", () => {
+    expect(MIDNIGHT_MINUTES).toBe(0);
+  });
+
+  it("produces a night sky with stars visible", () => {
+    const s = computeLivingSky(MIDNIGHT_MINUTES, baseOpts);
+    expect(s.starOpacity).toBeGreaterThan(0.5);
+  });
+
+  it("produces a night sky with moon visible", () => {
+    const s = computeLivingSky(MIDNIGHT_MINUTES, baseOpts);
+    expect(s.moonPos.opacity).toBeGreaterThan(0.5);
+  });
+
+  it("produces a night sky with sun hidden", () => {
+    const s = computeLivingSky(MIDNIGHT_MINUTES, baseOpts);
+    expect(s.sunPos.opacity).toBe(0);
+  });
+
+  it("produces a night sky with fireflies visible", () => {
+    const s = computeLivingSky(MIDNIGHT_MINUTES, baseOpts);
+    expect(s.fireflyOpacity).toBeGreaterThan(0);
+  });
+
+  it("differs meaningfully from the noon state (dark vs light)", () => {
+    const night = computeLivingSky(MIDNIGHT_MINUTES, baseOpts);
+    const noon = computeLivingSky(NOON_MINUTES, baseOpts);
+    expect(night.starOpacity).toBeGreaterThan(noon.starOpacity);
+    expect(night.sunPos.opacity).toBeLessThan(noon.sunPos.opacity);
   });
 });
 

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { LIVING_SKY_SVG_BODY } from "@/lib/illustrations/living-sky-svg";
 import {
+  MIDNIGHT_MINUTES,
   NOON_MINUTES,
   totalMinutesNow,
   computeLivingSky,
@@ -27,6 +28,10 @@ import {
 // 4. prefers-reduced-motion → skip the interval, freeze on the noon
 //    state matching the SSR baseline (no surprise jumps for users with
 //    motion sensitivity, no flicker on mount).
+// 5. cf-wzl3: dark mode → freeze on midnight regardless of wall clock so
+//    the sky always shows night sky when the site dark theme is active.
+//    A MutationObserver on <html>.classList re-triggers the effect when
+//    the user toggles the theme toggle in the header.
 //
 // We deliberately use document.getElementById-style queries scoped to
 // the container ref rather than React refs per element — the SVG body
@@ -112,6 +117,11 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 }
 
+function isDarkMode(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.documentElement.classList.contains("dark");
+}
+
 export function LivingSkyClient() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   // Track reduced-motion as state so a user toggle in OS settings is
@@ -120,6 +130,10 @@ export function LivingSkyClient() {
   // hydration is already correct — no setState-in-effect needed for the
   // initial value.
   const [reduced, setReduced] = useState<boolean>(prefersReducedMotion);
+  // cf-wzl3: track dark mode so the sky freezes on night state when
+  // the user has the dark theme active. Seeds from current DOM state
+  // so hydration matches server render intent.
+  const [dark, setDark] = useState<boolean>(isDarkMode);
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return;
@@ -127,6 +141,20 @@ export function LivingSkyClient() {
     const handler = () => setReduced(mq.matches);
     mq.addEventListener?.("change", handler);
     return () => mq.removeEventListener?.("change", handler);
+  }, []);
+
+  // cf-wzl3: watch <html> classList changes so toggling the theme
+  // toggle in the header re-runs the sky effect immediately.
+  useEffect(() => {
+    if (typeof MutationObserver === "undefined") return;
+    const observer = new MutationObserver(() => {
+      setDark(document.documentElement.classList.contains("dark"));
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -140,12 +168,19 @@ export function LivingSkyClient() {
       return;
     }
 
+    if (dark) {
+      // Dark mode: freeze on midnight — full stars, fireflies, owl, moon.
+      applyState(root, computeLivingSky(MIDNIGHT_MINUTES));
+      svg?.pauseAnimations?.();
+      return;
+    }
+
     svg?.unpauseAnimations?.();
     const tick = () => applyState(root, computeLivingSky(totalMinutesNow()));
     tick();
     const id = window.setInterval(tick, TICK_INTERVAL_MS);
     return () => window.clearInterval(id);
-  }, [reduced]);
+  }, [reduced, dark]);
 
   return (
     <div

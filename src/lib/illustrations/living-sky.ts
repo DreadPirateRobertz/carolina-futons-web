@@ -403,3 +403,8 @@ export function totalMinutesNow(now: Date = new Date()): number {
 // the SSR/static fallback and as the frozen state when the user
 // prefers-reduced-motion. 720 minutes = 12:00.
 export const NOON_MINUTES = 720;
+
+// Dark-mode: midnight maps to the deepest night state — full stars,
+// fireflies, owl, moon. Used when the site dark mode is active so
+// LivingSky always shows night sky regardless of wall clock.
+export const MIDNIGHT_MINUTES = 0;
