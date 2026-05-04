@@ -35,7 +35,7 @@ export function StatsStrip() {
             data-testid="stat"
             className="flex flex-col items-center"
           >
-            <span className="font-heading text-4xl font-bold leading-none text-cf-cream dark:text-cf-ink sm:text-5xl">
+            <span className="font-heading text-4xl font-bold leading-none sm:text-5xl">
               {stat.value}
             </span>
             <span className="mt-3 text-sm font-medium uppercase tracking-[0.14em] text-cf-cream/80 dark:text-cf-ink/80">
