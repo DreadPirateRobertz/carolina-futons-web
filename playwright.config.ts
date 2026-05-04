@@ -15,9 +15,34 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [
+    // ── Auth setup ──────────────────────────────────────────────────────────
+    // Runs auth.setup.ts once before the "member" project. Saves a session
+    // cookie to playwright/.auth/member.json (gitignored). When staging env
+    // vars are absent it writes an empty storageState so the file always exists.
+    {
+      name: "setup",
+      testMatch: /auth\.setup\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+
+    // ── Unauthenticated (visitor) ────────────────────────────────────────────
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+      testIgnore: /member\.spec\.ts/,
+    },
+
+    // ── Authenticated (member) ───────────────────────────────────────────────
+    // Depends on "setup" so auth.setup.ts always runs first. Specs that should
+    // only run as a logged-in member live in e2e/member.spec.ts.
+    {
+      name: "member",
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: "playwright/.auth/member.json",
+      },
+      testMatch: /member\.spec\.ts/,
+      dependencies: ["setup"],
     },
   ],
   // Skip local webServer when pointing at an external URL (prod/staging)

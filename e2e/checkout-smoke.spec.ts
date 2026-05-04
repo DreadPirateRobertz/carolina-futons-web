@@ -40,10 +40,9 @@ test.describe("checkout smoke — fixture mode", () => {
     await expect(addBtn).toBeVisible({ timeout: 15_000 });
     await expect(addBtn).toBeEnabled();
 
-    // In-stock PDP must show the status element and must not say "out of stock"
+    // In-stock PDP: no status element in DOM (only rendered on disabledReason || error)
     const status = page.locator("#add-to-cart-status");
-    await expect(status).toBeVisible({ timeout: 5_000 });
-    await expect(status).not.toContainText(/out of stock/i);
+    await expect(status).toHaveCount(0);
   });
 
   // ── 2. OOS state ──────────────────────────────────────────────────────────

@@ -17,38 +17,5 @@ test.describe("/dashboard — member gate (no live Wix creds needed)", () => {
   });
 });
 
-// Full login → dashboard round-trip. Requires a real OAuth App clientId in env
-// plus a seeded test member. Skipped by default; flip on when staging env is
-// configured with WIX_CLIENT_ID_HEADLESS + TEST_MEMBER_EMAIL / TEST_MEMBER_PASSWORD.
-const FULL_FLOW = Boolean(
-  process.env.TEST_MEMBER_EMAIL && process.env.TEST_MEMBER_PASSWORD,
-);
-
-test.describe("dashboard round-trip (staging only)", () => {
-  test.skip(
-    !FULL_FLOW,
-    "Set TEST_MEMBER_EMAIL + TEST_MEMBER_PASSWORD to run the full login → dashboard flow.",
-  );
-
-  test("logged-in member lands on the dashboard shell", async ({ page }) => {
-    // Kick the OAuth flow via the same POST the UI will hit.
-    const post = await page.request.post("/api/auth/session", {
-      data: { callbackUrl: "/dashboard" },
-    });
-    expect(post.ok()).toBeTruthy();
-    const { authUrl } = (await post.json()) as { authUrl: string };
-
-    await page.goto(authUrl);
-    await page.getByLabel(/email/i).fill(process.env.TEST_MEMBER_EMAIL!);
-    await page.getByLabel(/password/i).fill(process.env.TEST_MEMBER_PASSWORD!);
-    await page.getByRole("button", { name: /sign in|log in/i }).click();
-
-    await expect(page).toHaveURL(/\/dashboard$/);
-    await expect(page.getByRole("heading", { level: 1 })).toContainText(
-      /Welcome back/i,
-    );
-    await expect(
-      page.getByRole("navigation", { name: "Account sections" }),
-    ).toBeVisible();
-  });
-});
+// Full login → dashboard round-trip is now covered by e2e/member.spec.ts
+// running under the "member" Playwright project (storageState from auth.setup.ts).
