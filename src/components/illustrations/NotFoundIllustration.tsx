@@ -2,20 +2,7 @@
 // "Lost but peaceful" — the heading copy handles the 404 message; this
 // illustration carries warmth so the page doesn't feel punishing.
 
-const NIGHT = {
-  sky0: "#0E1838",
-  sky1: "#1F2A4A",
-  r1: "#06091A",
-  r2: "#0E1424",
-  r3: "#1A2440",
-  r4: "#2A3658",
-  star: "#FAE8B0",
-  moon: "#FAF2DE",
-  // Moonlit fur — lighter than day palette so bear reads on dark ridges.
-  fur: "#5A3828",
-  muzzle: "#A8806A",
-  nose: "#2A1810",
-};
+import { V3_NIGHT as NIGHT } from "@/components/mascot/MascotPalette";
 
 export function NotFoundIllustration({ className }: { className?: string }) {
   return (
