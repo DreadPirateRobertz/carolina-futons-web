@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 
 import { ProductCard } from "@/components/product/ProductCard";
 import type { WixProduct } from "@/lib/wix/products";
+import type { ColorChoice } from "@/lib/product/color-options";
 import { formatPlpPrice } from "@/lib/product/plp-price";
 
 export type ThemeDCategory = {
@@ -30,7 +31,18 @@ function matchesPrice(p: WixProduct, rangeIdx: number): boolean {
   return price >= min && price <= max;
 }
 
-export function FilterFirst({ categories }: { categories: ThemeDCategory[] }) {
+export function FilterFirst({
+  categories,
+  colorChoicesByProductId,
+}: {
+  categories: ThemeDCategory[];
+  /**
+   * Map of `product._id` → color choices, populated server-side via
+   * `enrichProductsWithColorChoices`. Optional — when absent, ProductCard
+   * skips the swatch row gracefully.
+   */
+  colorChoicesByProductId?: ReadonlyMap<string, ReadonlyArray<ColorChoice>>;
+}) {
   const [categorySlug, setCategorySlug] = useState<string>("all");
   const [priceIdx, setPriceIdx] = useState(0);
 
@@ -150,7 +162,15 @@ export function FilterFirst({ categories }: { categories: ThemeDCategory[] }) {
           <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {filtered.map((product, i) => (
               <li key={product._id}>
-                <ProductCard product={product} priority={i < 4} />
+                <ProductCard
+                  product={product}
+                  priority={i < 4}
+                  colorChoices={
+                    product._id
+                      ? colorChoicesByProductId?.get(product._id)
+                      : undefined
+                  }
+                />
               </li>
             ))}
           </ul>

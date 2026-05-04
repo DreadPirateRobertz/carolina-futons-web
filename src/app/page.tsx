@@ -22,6 +22,7 @@ import { HomeFeaturedCollections } from "@/components/home/HomeFeaturedCollectio
 import { HomeSaleStrip } from "@/components/home/HomeSaleStrip";
 import { ContinueShoppingStrip } from "@/components/home/ContinueShoppingStrip";
 import { SocialFeeds } from "@/components/home/SocialFeeds";
+import { enrichProductsWithColorChoices } from "@/lib/product/enrich-colors";
 
 export const metadata: Metadata = {
   title: "Carolina Futons — Hardwood Frames & Mattresses | Hendersonville, NC",
@@ -59,6 +60,22 @@ export default async function HomePage() {
     }),
   );
 
+  // cf-l6aj.3: enrich each unique product with its color choices for the
+  // "Available in N colors" badge + dot strip on FilterFirst cards. Wix's
+  // queryProducts response strips productOptions, so we batch a getProduct
+  // fetch per unique slug. Behind Next.js's route-level cache; the cost is
+  // bounded to N <= category count * 24.
+  const uniqueProducts = Array.from(
+    new Map(
+      categories
+        .flatMap((c) => c.products)
+        .filter((p) => p._id)
+        .map((p) => [p._id as string, p]),
+    ).values(),
+  );
+  const colorChoicesByProductId =
+    await enrichProductsWithColorChoices(uniqueProducts);
+
   const allVideos = getVideoCatalog();
   const featuredVideos = SHOWCASE_IDS.flatMap((id) => {
     const v = allVideos.find((e) => e.id === id);
@@ -86,7 +103,10 @@ export default async function HomePage() {
       {/* ── Filter-first product browser (Theme D) ── */}
       <link rel="preconnect" href="https://api.fontshare.com" />
       <link rel="stylesheet" href={FONTSHARE_URL} />
-      <FilterFirst categories={categories} />
+      <FilterFirst
+        categories={categories}
+        colorChoicesByProductId={colorChoicesByProductId}
+      />
 
       {/* ── Sale strip — collapses to nothing when no sale products ── */}
       <HomeSaleStrip />
