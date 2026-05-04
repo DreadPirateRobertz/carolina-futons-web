@@ -23,11 +23,11 @@ export async function HomeSaleStrip() {
   const { products } = data;
 
   return (
-    <section className="border-t border-cf-divider bg-red-50/60 py-12">
+    <section className="border-t border-cf-divider bg-red-50/60 py-12 dark:bg-cf-sand">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-6 flex items-baseline justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-red-600">
+            <p className="text-xs font-semibold uppercase tracking-widest text-red-600 dark:text-red-400">
               On Sale Now
             </p>
             <h2 className="mt-1 font-heading text-2xl font-bold text-cf-espresso">

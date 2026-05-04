@@ -23,7 +23,7 @@ export function StatsStrip() {
       data-testid="stats-strip"
       role="region"
       aria-label="By the numbers"
-      className="bg-cf-navy text-cf-cream"
+      className="bg-cf-navy text-cf-cream dark:bg-cf-sand dark:text-cf-ink"
     >
       <ul
         data-testid="stats-strip-list"
@@ -35,10 +35,10 @@ export function StatsStrip() {
             data-testid="stat"
             className="flex flex-col items-center"
           >
-            <span className="font-heading text-4xl font-bold leading-none text-cf-cream sm:text-5xl">
+            <span className="font-heading text-4xl font-bold leading-none sm:text-5xl">
               {stat.value}
             </span>
-            <span className="mt-3 text-sm font-medium uppercase tracking-[0.14em] text-cf-cream/80">
+            <span className="mt-3 text-sm font-medium uppercase tracking-[0.14em] text-cf-cream/80 dark:text-cf-ink/80">
               {stat.label}
             </span>
           </li>
