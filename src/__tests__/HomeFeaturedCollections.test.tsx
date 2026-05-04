@@ -39,9 +39,11 @@ describe("HomeFeaturedCollections", () => {
     expect(screen.getByText("Mattresses")).toBeInTheDocument();
   });
 
-  it("links have focus-visible ring for WCAG 2.4.7", () => {
+  it("each card link has an aria-label for WCAG 2.4.6", () => {
     render(<HomeFeaturedCollections />);
-    const link = screen.getAllByRole("link")[0]!;
-    expect(link.className).toContain("focus-visible:ring-2");
+    const links = screen.getAllByRole("link");
+    links.forEach((link) => {
+      expect(link).toHaveAttribute("aria-label");
+    });
   });
 });
