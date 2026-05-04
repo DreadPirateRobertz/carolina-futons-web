@@ -56,12 +56,16 @@ export function SignUpForm() {
       }
       if (data.ok && typeof data.redirectTo === "string") {
         // Fire welcome email trigger — best-effort, must not block redirect.
-        fetch("/api/email/trigger", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ type: "welcome", email }),
-          keepalive: true,
-        }).catch(() => undefined);
+        try {
+          void fetch("/api/email/trigger", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ type: "welcome", email }),
+            keepalive: true,
+          });
+        } catch {
+          // intentionally swallowed — trigger must never block the redirect
+        }
         window.location.href = data.redirectTo;
         return;
       }
