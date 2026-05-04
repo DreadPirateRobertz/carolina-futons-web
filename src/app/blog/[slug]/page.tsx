@@ -37,12 +37,29 @@ export async function generateMetadata(props: {
   const { slug } = await props.params;
   const post = await getPostBySlug(slug);
   if (!post) return { title: "Post — Carolina Futons" };
+  const description = postDescription(post);
+  const canonicalUrl = `${SITE_URL}/blog/${post.slug}`;
   return {
     title: `${post.title} — Carolina Futons`,
-    description: postDescription(post),
-    openGraph: post.heroImageUrl
-      ? { images: [{ url: post.heroImageUrl }] }
-      : undefined,
+    description,
+    openGraph: {
+      type: "article",
+      title: post.title,
+      description,
+      url: canonicalUrl,
+      ...(post.firstPublishedDate && {
+        publishedTime: post.firstPublishedDate instanceof Date
+          ? post.firstPublishedDate.toISOString()
+          : String(post.firstPublishedDate),
+      }),
+      ...(post.heroImageUrl && { images: [{ url: post.heroImageUrl }] }),
+    },
+    twitter: {
+      card: post.heroImageUrl ? "summary_large_image" : "summary",
+      title: post.title,
+      description,
+      ...(post.heroImageUrl && { images: [post.heroImageUrl] }),
+    },
   };
 }
 
