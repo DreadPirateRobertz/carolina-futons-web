@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useId } from "react";
+import { useActionState, useEffect, useId } from "react";
 import { useFormStatus } from "react-dom";
 
 import { submitSwatchRequestAction } from "@/app/actions/swatch-request";
@@ -83,6 +83,15 @@ export function SwatchRequestForm({ swatches, productSlug }: Props) {
     submitSwatchRequestAction,
     initialSwatchRequestState,
   );
+
+  // Reset the Turnstile widget after each submission so the next attempt gets
+  // a fresh token. The token is single-use — without reset the widget stays
+  // "verified" but Cloudflare will reject the stale token on the next POST.
+  useEffect(() => {
+    if (state.status === "idle") return;
+    const w = window as unknown as { turnstile?: { reset(): void } };
+    w.turnstile?.reset();
+  }, [state]);
 
   const firstNameId = useId();
   const lastNameId = useId();
