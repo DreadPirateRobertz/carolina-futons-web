@@ -1,6 +1,5 @@
-import Link from "next/link";
-
 import { findCategory } from "@/lib/shop/categories";
+import { MascotCategoryCard } from "@/components/mascot/MascotCategoryCard";
 
 export const FEATURED_CATEGORY_SLUGS = [
   "futon-frames",
@@ -8,6 +7,15 @@ export const FEATURED_CATEGORY_SLUGS = [
   "platform-beds",
   "mattresses",
 ] as const;
+
+type AnimalKey = "bear" | "fox" | "deer" | "owl";
+
+const CATEGORY_META: Record<string, { subtitle: string; animal: AnimalKey; accent: string }> = {
+  "futon-frames":        { subtitle: "Solid hardwood", animal: "bear", accent: "#F5C97A" },
+  "murphy-cabinet-beds": { subtitle: "Space-saving",   animal: "deer", accent: "#8BB5C9" },
+  "platform-beds":       { subtitle: "Low & modern",   animal: "fox",  accent: "#E8845C" },
+  mattresses:            { subtitle: "Made in USA",    animal: "owl",  accent: "#6B8A4A" },
+};
 
 export function HomeFeaturedCollections() {
   const featured = FEATURED_CATEGORY_SLUGS.map((slug) => findCategory(slug)).filter(
@@ -33,26 +41,21 @@ export function HomeFeaturedCollections() {
       </h2>
 
       <ul className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        {featured.map((category) => (
-          <li key={category.slug}>
-            <Link
-              href={`/shop/${category.slug}`}
-              className="group block overflow-hidden rounded-lg border border-cf-divider bg-cf-cream shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              <div className="relative aspect-[3/2] overflow-hidden bg-cf-sand/30">
-                <div className="h-full w-full bg-cf-sand" />
-              </div>
-              <div className="px-3 py-3 sm:px-4 sm:py-4">
-                <h3 className="font-heading text-sm font-semibold text-cf-espresso sm:text-base">
-                  {category.name}
-                </h3>
-                <p className="mt-0.5 text-xs text-cf-charcoal/70 line-clamp-2">
-                  {category.description}
-                </p>
-              </div>
-            </Link>
-          </li>
-        ))}
+        {featured.map((category) => {
+          const meta = CATEGORY_META[category.slug];
+          if (!meta) return null;
+          return (
+            <li key={category.slug}>
+              <MascotCategoryCard
+                title={category.name}
+                subtitle={meta.subtitle}
+                animal={meta.animal}
+                accent={meta.accent}
+                href={`/shop/${category.slug}`}
+              />
+            </li>
+          );
+        })}
       </ul>
     </section>
   );
