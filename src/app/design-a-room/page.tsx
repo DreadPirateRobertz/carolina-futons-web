@@ -146,7 +146,7 @@ export default function DesignARoomPage() {
               Other ways to start
             </h2>
             <ul className="grid gap-4 sm:grid-cols-3">
-              <li className="flex flex-col gap-2 rounded-md border border-cf-ink/10 bg-white p-4">
+              <li className="flex flex-col gap-2 rounded-md border border-cf-ink/10 bg-white dark:bg-cf-cream dark:border-cf-ink/30 p-4">
                 <h3 className="font-playfair text-base font-semibold tracking-tight">
                   Call the showroom
                 </h3>
@@ -160,7 +160,7 @@ export default function DesignARoomPage() {
                   Fastest way to get on a sales associate&rsquo;s calendar.
                 </p>
               </li>
-              <li className="flex flex-col gap-2 rounded-md border border-cf-ink/10 bg-white p-4">
+              <li className="flex flex-col gap-2 rounded-md border border-cf-ink/10 bg-white dark:bg-cf-cream dark:border-cf-ink/30 p-4">
                 <h3 className="font-playfair text-base font-semibold tracking-tight">
                   Email a sketch
                 </h3>
@@ -174,7 +174,7 @@ export default function DesignARoomPage() {
                   Send photos, dimensions, and what the room needs to do.
                 </p>
               </li>
-              <li className="flex flex-col gap-2 rounded-md border border-cf-ink/10 bg-white p-4">
+              <li className="flex flex-col gap-2 rounded-md border border-cf-ink/10 bg-white dark:bg-cf-cream dark:border-cf-ink/30 p-4">
                 <h3 className="font-playfair text-base font-semibold tracking-tight">
                   Visit in person
                 </h3>

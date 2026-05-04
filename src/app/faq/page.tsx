@@ -73,7 +73,7 @@ export default async function FaqPage() {
                 <ul className="space-y-2">
                   {group.items.map((item, i) => (
                     <li key={`${group.category}-${i}-${item.question}`}>
-                      <details className="group rounded-md border border-cf-divider bg-white px-4 py-3 transition-colors open:border-cf-cta/40 open:bg-cf-cream">
+                      <details className="group rounded-md border border-cf-divider bg-white dark:bg-cf-cream dark:border-cf-ink/30 px-4 py-3 transition-colors open:border-cf-cta/40 open:bg-cf-cream">
                         <summary className="cursor-pointer list-none text-base font-medium text-cf-ink marker:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                           <span className="flex items-center justify-between gap-3">
                             <span>{item.question}</span>

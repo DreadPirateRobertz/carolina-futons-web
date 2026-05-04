@@ -43,7 +43,7 @@ export default async function GuidesIndexPage() {
               <HeroReveal delay={index * CARD_STAGGER_SECONDS}>
                 <Link
                   href={`/guides/${guide.slug}`}
-                  className="group flex h-full flex-col gap-3 rounded-lg border border-cf-ink/10 bg-white p-6 transition hover:border-cf-cta/40 hover:shadow-sm"
+                  className="group flex h-full flex-col gap-3 rounded-lg border border-cf-ink/10 bg-white dark:bg-cf-cream dark:border-cf-ink/30 p-6 transition hover:border-cf-cta/40 hover:shadow-sm"
                 >
                   <div
                     aria-hidden="true"

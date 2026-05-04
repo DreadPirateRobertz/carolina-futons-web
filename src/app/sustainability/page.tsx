@@ -298,7 +298,8 @@ export default async function SustainabilityPage() {
           {materials.map((mat) => (
             <li
               key={mat.title}
-              className="overflow-hidden rounded-md border border-cf-divider bg-white/60 dark:bg-cf-cream"
+              className="overflow-hidden rounded-md border border-cf-divider bg-white/60 dark:bg-cf-cream dark:border-cf-ink/30"
+
             >
               {mat.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -382,7 +383,8 @@ export default async function SustainabilityPage() {
           {certifications.map((cert) => (
             <li
               key={cert.name}
-              className="rounded-md border border-cf-divider bg-white/60 dark:bg-cf-cream p-4"
+              className="rounded-md border border-cf-divider bg-white/60 dark:bg-cf-cream dark:border-cf-ink/30 p-4"
+
             >
               <p className="font-medium text-cf-ink">{cert.name}</p>
               <p className="mt-2 text-sm text-cf-muted">{cert.body}</p>
@@ -412,7 +414,8 @@ export default async function SustainabilityPage() {
           {TRADE_IN_STEPS.map((s) => (
             <li
               key={s.step}
-              className="rounded-md border border-cf-divider bg-white/60 dark:bg-cf-cream p-6"
+              className="rounded-md border border-cf-divider bg-white/60 dark:bg-cf-cream dark:border-cf-ink/30 p-6"
+
             >
               <span
                 className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-cf-cta/10 text-sm font-semibold text-cf-cta"

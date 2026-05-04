@@ -67,7 +67,7 @@ export function ConsentBanner({ initialChoice }: ConsentBannerProps) {
       role="region"
       aria-label="Privacy preferences"
       data-slot="consent-banner"
-      className="fixed inset-x-2 bottom-2 z-50 mx-auto max-w-3xl rounded-lg border border-cf-divider bg-white p-4 shadow-lg sm:inset-x-auto sm:right-4 sm:left-auto sm:w-[28rem]"
+      className="fixed inset-x-2 bottom-2 z-50 mx-auto max-w-3xl rounded-lg border border-cf-divider bg-white dark:bg-cf-cream dark:border-cf-ink/30 p-4 shadow-lg sm:inset-x-auto sm:right-4 sm:left-auto sm:w-[28rem]"
     >
       <p className="text-sm text-cf-ink">
         We use cookies to understand how this site is used and to improve your
