@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { findCategory } from "@/lib/shop/categories";
-import { CategoryCardImage } from "@/components/site/CategoryCardImage";
 
 export const FEATURED_CATEGORY_SLUGS = [
   "futon-frames",
@@ -41,11 +40,7 @@ export function HomeFeaturedCollections() {
               className="group block overflow-hidden rounded-lg border border-cf-divider bg-cf-cream shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <div className="relative aspect-[3/2] overflow-hidden bg-cf-sand/30">
-                {category.image ? (
-                  <CategoryCardImage src={category.image} slug={category.slug} />
-                ) : (
-                  <div className="h-full w-full bg-cf-sand" />
-                )}
+                <div className="h-full w-full bg-cf-sand" />
               </div>
               <div className="px-3 py-3 sm:px-4 sm:py-4">
                 <h3 className="font-heading text-sm font-semibold text-cf-espresso sm:text-base">
