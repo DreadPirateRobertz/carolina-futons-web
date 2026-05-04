@@ -1,8 +1,11 @@
 /**
  * /shop index hub smoke test — cf-3qt.13
  *
- * Verifies the collection-grid hub renders all category cards and that
- * each card links to a /shop/[category] PLP.
+ * Verifies the collection-grid hub renders at least 5 category cards and
+ * that each card links to a /shop/[category] PLP.
+ *
+ * Page implementation landed in prior beads (cf-shop-mascot, cf-delight).
+ * This file adds the E2E acceptance gate.
  *
  * Run with:
  *   npx playwright test e2e/shop-index-smoke.spec.ts
@@ -10,36 +13,33 @@
 
 import { test, expect } from "@playwright/test";
 
-const SHOP_TIMEOUT = 15_000;
-
 test.describe("/shop index hub", () => {
   test.setTimeout(30_000);
 
   test("renders heading and >= 5 category cards", async ({ page }) => {
     await page.goto("/shop");
-    await page.waitForSelector("h1", { timeout: SHOP_TIMEOUT });
 
     const heading = page.getByRole("heading", { level: 1, name: /^shop$/i });
     await expect(heading).toBeVisible();
 
-    const cards = page.locator("ul > li");
-    await expect(cards).toHaveCount(
-      await cards.count().then((n) => Math.max(n, 5)),
-    );
+    // Scope to <main> so footer ul > li elements don't contaminate the count.
+    const cards = page.locator("main ul > li");
+    await expect(cards.first()).toBeVisible();
     const count = await cards.count();
     expect(count).toBeGreaterThanOrEqual(5);
   });
 
   test("each category card links into /shop/[category]", async ({ page }) => {
     await page.goto("/shop");
-    await page.waitForSelector("ul > li a", { timeout: SHOP_TIMEOUT });
 
-    const links = page.locator("ul > li a");
-    const count = await links.count();
-    expect(count).toBeGreaterThanOrEqual(5);
+    const links = page.locator("main ul > li a");
+    await expect(links.first()).toBeVisible();
 
-    for (let i = 0; i < count; i++) {
-      const href = await links.nth(i).getAttribute("href");
+    const hrefs = await links.evaluateAll((anchors: HTMLAnchorElement[]) =>
+      anchors.map((a) => a.getAttribute("href")),
+    );
+    expect(hrefs.length).toBeGreaterThanOrEqual(5);
+    for (const href of hrefs) {
       expect(href).toMatch(/^\/shop\/.+/);
     }
   });
