@@ -157,6 +157,7 @@ describe("MattressesCategory — instanceKey deduplication", () => {
 describe("CATEGORY_ILLUSTRATION coverage", () => {
   const ILLUSTRATED_SLUGS = new Set([
     "futon-frames",
+    "sofa-beds",
     "murphy-cabinet-beds",
     "platform-beds",
     "mattresses",

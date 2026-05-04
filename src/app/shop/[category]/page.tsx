@@ -74,6 +74,7 @@ const CATEGORY_ILLUSTRATIONS: Record<
   React.ComponentType<{ season?: Season; className?: string }>
 > = {
   "futon-frames": FutonsCategory,
+  "sofa-beds": FutonsCategory,
   "murphy-cabinet-beds": MurphyCategory,
   "platform-beds": PlatformCategory,
   mattresses: MattressesCategory,

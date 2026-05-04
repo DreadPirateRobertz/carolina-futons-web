@@ -7,6 +7,7 @@
  *   /shop/mattresses          — 1 fixture product (Mesa Futon Mattress $119, in-stock)
  *   /shop/platform-beds       — 1 fixture product (Monterey $1,699, in-stock)
  *   /shop/murphy-cabinet-beds — 1 fixture product (Asheville $849, in-stock)
+ *   /shop/sofa-beds            — 1 fixture product (Blue Ridge $799, in-stock)
  *   /shop/mattresses-sale     — derived / on-sale filter; 0 fixture products
  *                               (no fixture defines discountedPrice)
  *
@@ -221,6 +222,48 @@ test.describe("/shop/murphy-cabinet-beds — fixture mode", () => {
     await page.selectOption("select#plp-sort", "name-asc");
     await page.waitForURL(/sort=name-asc/);
     await expect(page.locator('[data-slot="product-card"]')).toHaveCount(1);
+  });
+});
+
+// ── sofa-beds PLP ─────────────────────────────────────────────────────────────
+
+test.describe("/shop/sofa-beds — fixture mode", () => {
+  test.skip(!isFixtureMode, "requires NEXT_PUBLIC_USE_FIXTURE_PRODUCTS=1");
+  test.setTimeout(30_000);
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/shop/sofa-beds");
+    await waitForPlpControls(page);
+  });
+
+  test("renders 1 product card (blue-ridge-sofa-bed)", async ({ page }) => {
+    const cards = page.locator('[data-slot="product-card"]');
+    await expect(cards).toHaveCount(1);
+    await expect(cards.first()).toContainText(/blue ridge/i);
+  });
+
+  test("product count header shows 1 product", async ({ page }) => {
+    const header = page.locator("p", { hasText: /\d+ products?/ });
+    await expect(header).toBeVisible();
+    expect(parseInt((await header.textContent()) ?? "0", 10)).toBe(1);
+  });
+
+  test("page title contains Sofa Beds", async ({ page }) => {
+    await expect(page).toHaveTitle(/sofa beds/i);
+  });
+
+  test("in-stock filter keeps the 1 in-stock product", async ({ page }) => {
+    await page.check("input#plp-inStock");
+    await page.click("button[type=submit]");
+    await page.waitForURL(/inStock=1/);
+    await expect(page.locator('[data-slot="product-card"]')).toHaveCount(1);
+  });
+
+  test("price filter under $500 hides blue ridge ($799)", async ({ page }) => {
+    await page.fill("input#plp-priceMax", "500");
+    await page.click("button[type=submit]");
+    await page.waitForURL(/priceMax=500/);
+    await expect(page.locator('[data-slot="product-card"]')).toHaveCount(0);
   });
 });
 
