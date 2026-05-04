@@ -85,7 +85,7 @@ export function Header() {
         data-slot="living-sky-backdrop"
         className="pointer-events-none absolute inset-0 overflow-hidden"
       >
-        <div className="absolute top-0 left-0 z-0 w-full">
+        <div className="absolute top-0 left-0 z-0 h-full w-full">
           <LivingSkyErrorBoundary>
             <LivingSkyClient />
           </LivingSkyErrorBoundary>

@@ -186,7 +186,7 @@ export function LivingSkyClient() {
     <div
       ref={containerRef}
       data-slot="living-sky-svg"
-      className="pointer-events-none w-full select-none leading-none"
+      className="pointer-events-none h-full w-full select-none leading-none"
       // The SVG body comes from a TS string constant lifted verbatim
       // from the Velo source; it is fully developer-controlled, no user
       // input flows into it.
