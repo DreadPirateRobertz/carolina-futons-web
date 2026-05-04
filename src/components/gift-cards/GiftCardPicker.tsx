@@ -138,7 +138,7 @@ export function GiftCardPicker({ cards }: Props) {
         {pending ? "Adding…" : `Add ${formattedPrice} gift card to cart`}
       </button>
 
-      <p className="text-xs text-cf-charcoal/50">
+      <p className="text-xs text-cf-charcoal/70">
         Gift cards are delivered digitally and can be applied at checkout.
         Non-refundable. No cash value.
       </p>

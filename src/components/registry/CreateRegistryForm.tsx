@@ -70,7 +70,7 @@ export function CreateRegistryForm({ onCreated }: Props) {
       <div>
         <label htmlFor="reg-eventDate" className="mb-1 block text-sm font-medium text-cf-charcoal">
           Event date{" "}
-          <span className="font-normal text-cf-charcoal/50 text-xs">(optional)</span>
+          <span className="font-normal text-cf-charcoal/70 text-xs">(optional)</span>
         </label>
         <input
           id="reg-eventDate"
@@ -83,7 +83,7 @@ export function CreateRegistryForm({ onCreated }: Props) {
       <div>
         <label htmlFor="reg-message" className="mb-1 block text-sm font-medium text-cf-charcoal">
           Message to guests{" "}
-          <span className="font-normal text-cf-charcoal/50 text-xs">(optional)</span>
+          <span className="font-normal text-cf-charcoal/70 text-xs">(optional)</span>
         </label>
         <textarea
           id="reg-message"

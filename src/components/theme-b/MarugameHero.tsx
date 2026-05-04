@@ -14,10 +14,10 @@ export function MarugameHero(): React.ReactElement {
 
       {/* Top label row */}
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-medium uppercase tracking-[0.25em] text-cf-charcoal/50">
+        <span className="text-[11px] font-medium uppercase tracking-[0.25em] text-cf-charcoal/70">
           Carolina Futons
         </span>
-        <span className="text-[11px] font-medium uppercase tracking-[0.25em] text-cf-charcoal/50">
+        <span className="text-[11px] font-medium uppercase tracking-[0.25em] text-cf-charcoal/70">
           Est. 1991
         </span>
       </div>

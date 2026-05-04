@@ -127,7 +127,7 @@ export default function CartPage() {
                     type="button"
                     aria-label={`Remove ${line.productName}`}
                     onClick={() => removeLine(line.id)}
-                    className="flex h-9 w-9 items-center justify-center rounded-md text-cf-charcoal/50 transition-colors hover:bg-cf-sand hover:text-cf-error"
+                    className="flex h-9 w-9 items-center justify-center rounded-md text-cf-charcoal/70 transition-colors hover:bg-cf-sand hover:text-cf-error"
                   >
                     <Trash2 className="size-4" aria-hidden="true" />
                   </button>

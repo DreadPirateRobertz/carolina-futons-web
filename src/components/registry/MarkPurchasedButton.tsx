@@ -64,7 +64,7 @@ export function MarkPurchasedButton({ itemId, remaining }: Props) {
           <button
             type="button"
             onClick={() => setShowForm(false)}
-            className="text-xs text-cf-charcoal/50 underline-offset-2 hover:underline"
+            className="text-xs text-cf-charcoal/70 underline-offset-2 hover:underline"
           >
             Cancel
           </button>

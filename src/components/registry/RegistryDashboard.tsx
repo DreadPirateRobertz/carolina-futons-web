@@ -58,7 +58,7 @@ export function RegistryDashboard({ initialRegistries }: Props) {
           <button
             type="button"
             onClick={() => setShowCreate(false)}
-            className="mt-3 text-xs text-cf-charcoal/50 underline-offset-2 hover:underline"
+            className="mt-3 text-xs text-cf-charcoal/70 underline-offset-2 hover:underline"
           >
             Cancel
           </button>
@@ -139,7 +139,7 @@ export function RegistryDashboard({ initialRegistries }: Props) {
               </div>
             </div>
 
-            <div className="mt-3 text-xs text-cf-charcoal/50">
+            <div className="mt-3 text-xs text-cf-charcoal/70">
               Share link:{" "}
               <span className="font-mono">
                 {SITE_ORIGIN}/registry/{reg.slug}

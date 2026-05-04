@@ -49,7 +49,7 @@ export function PdpProductVideo({ video }: PdpProductVideoProps) {
                   unoptimized
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-sm text-cf-charcoal/50">
+                <div className="flex h-full w-full items-center justify-center text-sm text-cf-charcoal/70">
                   {video.title}
                 </div>
               )}
