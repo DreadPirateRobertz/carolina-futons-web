@@ -13,7 +13,7 @@ export function TurnstileWidget() {
   if (!SITE_KEY) {
     if (process.env.NODE_ENV === "production") {
       return (
-        <p role="alert" className="text-sm text-amber-700">
+        <p role="alert" className="text-sm text-amber-700 dark:text-amber-400">
           Security verification is temporarily unavailable. You may submit
           without completing a CAPTCHA — our team will review your request.
         </p>

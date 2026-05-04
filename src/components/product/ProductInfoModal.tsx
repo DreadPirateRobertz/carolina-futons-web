@@ -68,7 +68,7 @@ function CareGuideContent({ guide }: { guide: CareGuide }) {
       )}
       {guide.warningNotes && (
         <div>
-          <p className="text-xs font-medium text-amber-700 uppercase tracking-wide mb-1">⚠ Warnings</p>
+          <p className="text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wide mb-1">⚠ Warnings</p>
           <p className="text-sm text-cf-espresso/80 whitespace-pre-line">{guide.warningNotes}</p>
         </div>
       )}

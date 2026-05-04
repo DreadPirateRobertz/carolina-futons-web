@@ -127,7 +127,7 @@ function WishlistRow({
         <p className="mt-0.5 text-sm text-cf-muted">
           {formatPrice(item.price)}
           {!item.inStock ? (
-            <span className="ml-2 text-xs uppercase tracking-wide text-amber-700">
+            <span className="ml-2 text-xs uppercase tracking-wide text-amber-700 dark:text-amber-400">
               Out of stock
             </span>
           ) : null}
