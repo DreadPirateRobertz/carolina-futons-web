@@ -2,8 +2,6 @@ import "server-only";
 import type { Tokens } from "@wix/sdk";
 import { getWixClient, getWixClientWithTokens } from "@/lib/wix-client";
 
-const USE_FIXTURES = process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1";
-
 // Synthetic order returned in fixture mode when orderId starts with "fixture-".
 // Shaped to satisfy every field OrderConfirmationPage reads (priceSummary,
 // lineItems, shippingInfo, billingInfo, currency, number).
@@ -58,7 +56,7 @@ const FIXTURE_ORDER = {
 
 export async function getOrder(orderId: string) {
   if (!orderId) return null;
-  if (USE_FIXTURES && orderId.startsWith("fixture-")) {
+  if (process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1" && orderId.startsWith("fixture-")) {
     return FIXTURE_ORDER as unknown as NonNullable<
       Awaited<ReturnType<typeof _getOrderFromWix>>
     >;

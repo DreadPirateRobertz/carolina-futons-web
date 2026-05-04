@@ -19,8 +19,6 @@ import {
   getVisitorCartClient,
 } from "./wix-visitor-client";
 
-const USE_FIXTURES = process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1";
-
 // Wix Stores app id — constant, used as `catalogReference.appId` for every
 // Stores-sourced line item. This is the same across all Wix sites.
 export const WIX_STORES_APP_ID = "215238eb-22a5-4c36-9e7b-e7c08025e04e";
@@ -66,10 +64,10 @@ export async function addToCart(items: LineItemInput[]) {
   if (items.length === 0) {
     throw new Error("addToCart called with empty items array");
   }
-  // In fixture mode the product IDs are not real Wix catalog IDs — Wix would
-  // reject them. Return null so addItemAction returns { ok: true } and the
-  // optimistic client-side line stays in CartProvider.
-  if (USE_FIXTURES) return null;
+  // Fixture product IDs (fixture-*) are not real Wix catalog IDs — Wix rejects
+  // them. Short-circuit so addItemAction returns { ok: true } and the optimistic
+  // client-side line stays in CartProvider instead of rolling back.
+  if (items.every((i) => i.productId.startsWith("fixture-"))) return null;
   const client = await getVisitorCartClient();
   const result = await client.currentCart.addToCurrentCart({
     lineItems: items.map((item) => ({
