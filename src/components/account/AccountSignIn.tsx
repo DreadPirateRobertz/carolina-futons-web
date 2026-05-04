@@ -3,6 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 
+// Rejects protocol-relative (//evil.com), backslash-bypass (/\evil.com —
+// browsers normalize /\ to // on window.location assignment), and absolute
+// URLs. Applied to both the outgoing callbackUrl and the incoming redirectTo
+// so neither leg can carry an open-redirect payload.
 function safeNext(next: string | undefined): string {
   if (next && /^\/[^/\\]/.test(next)) return next;
   return "/dashboard";
@@ -49,7 +53,7 @@ export function AccountSignIn({ next }: { next?: string }) {
         return;
       }
       if (data.ok) {
-        window.location.href = typeof data.redirectTo === "string" ? data.redirectTo : "/dashboard";
+        window.location.href = safeNext(typeof data.redirectTo === "string" ? data.redirectTo : undefined);
         return;
       }
       throw new Error("unexpected_response");

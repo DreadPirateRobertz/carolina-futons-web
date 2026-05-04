@@ -358,14 +358,28 @@ describe("AccountPage — ?next= redirect (cf-w5ks)", () => {
   });
 
   it("falls back to /dashboard when server returns ok:true without redirectTo", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        json: async () => ({ ok: true }),
-      }),
-    );
+    const fetchSpy = vi.fn().mockResolvedValue({
+      json: async () => ({ ok: true }),
+    });
+    vi.stubGlobal("fetch", fetchSpy);
     await renderPage("/dashboard/wishlist");
     fillAndSubmit();
     await waitFor(() => expect(window.location.href).toBe("/dashboard"));
+    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    const sent = JSON.parse(init.body as string) as { callbackUrl: string };
+    expect(sent.callbackUrl).toBe("/dashboard/wishlist");
+  });
+
+  it("rejects a malicious redirectTo from the server response (defense in depth)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => ({ ok: true, redirectTo: "https://evil.example.com" }),
+      }),
+    );
+    await renderPage("/dashboard");
+    fillAndSubmit();
+    await waitFor(() => expect(window.location.href).toBeTruthy());
+    expect(window.location.href).toBe("/dashboard");
   });
 });
