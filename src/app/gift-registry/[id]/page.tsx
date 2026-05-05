@@ -22,6 +22,7 @@ export default function RegistryPublicPage({
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage unavailable during SSR
     setRegistry(getRegistry(window.localStorage, params.id));
   }, [params.id]);
 

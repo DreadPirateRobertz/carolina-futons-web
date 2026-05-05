@@ -16,6 +16,7 @@ export default function GiftRegistryPage() {
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage unavailable during SSR
     setRegistries(readRegistries(window.localStorage));
   }, []);
 
