@@ -3,6 +3,7 @@ import type { MetadataRoute } from "next";
 import { SHOP_CATEGORIES } from "@/lib/shop/categories";
 import { listAllPostSlugs } from "@/lib/wix/blog";
 import { listProducts } from "@/lib/wix/products";
+import { SEO_CITIES } from "@/lib/seo/cities";
 
 // Site-wide sitemap (cf-sitemap). Next.js serves this at /sitemap.xml.
 // Static routes are the canonical CF marketing + policy pages; dynamic
@@ -91,10 +92,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: now,
   }));
 
+  const cityEntries: MetadataRoute.Sitemap = SEO_CITIES.map((city) => ({
+    url: `${base}/near/${city.slug}`,
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.5,
+  }));
+
   return [
     ...staticEntries,
     ...categoryEntries,
     ...productEntries,
     ...postEntries,
+    ...cityEntries,
   ];
 }
