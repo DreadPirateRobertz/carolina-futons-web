@@ -16,6 +16,7 @@ import type { ProductBadgeType } from "@/lib/wix/product-badges";
 import { PdpFabricSwatches } from "@/components/product/PdpFabricSwatches";
 import { PdpFinancing } from "@/components/product/PdpFinancing";
 import { PdpNotifyMe } from "@/components/product/PdpNotifyMe";
+import { PriceLockGuarantee } from "@/components/product/PriceLockGuarantee";
 import { PdpWhiteGlove } from "@/components/product/PdpWhiteGlove";
 import { PdpWishlistButton } from "@/components/product/PdpWishlistButton";
 import { VariantPicker } from "@/components/product/VariantPicker";
@@ -193,6 +194,7 @@ export function PdpInteractive({
           fallbackPrice={fallbackPrice}
           onSelectionChange={(next) => setSelection(next)}
         />
+        <PriceLockGuarantee productSlug={productSlug} />
         {(fabricSwatches && fabricSwatches.length > 0) || fabricSwatchError ? (
           <PdpFabricSwatches
             swatches={fabricSwatches ?? []}
