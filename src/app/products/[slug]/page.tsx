@@ -15,6 +15,8 @@ import {
 import { PdpRecentlyViewed } from "@/components/product/PdpRecentlyViewed";
 import { ShowroomCta } from "@/components/product/ShowroomCta";
 import { PdpReviews, pickPdpReviews } from "@/components/product/PdpReviews";
+import { CustomerVideoReviewGrid } from "@/components/product/CustomerVideoReviewGrid";
+import { getCustomerVideoReviewsByProductSlug } from "@/lib/discovery/customer-video-reviews";
 import { PdpShareButtons } from "@/components/product/PdpShareButtons";
 import { PdpViewItemTracker } from "@/components/product/PdpViewItemTracker";
 import { loadReviews } from "@/lib/discovery/google-reviews";
@@ -264,6 +266,10 @@ export default async function PdpPage(props: {
         reviews={loadedReviews.reviews}
         stats={locationStats}
         error={!loadedReviews.ok}
+      />
+
+      <CustomerVideoReviewGrid
+        videos={getCustomerVideoReviewsByProductSlug(slug)}
       />
 
       <PdpShareButtons
