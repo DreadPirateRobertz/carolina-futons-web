@@ -566,3 +566,90 @@ describe("PdpGallery — image comparison (cf-delight #10)", () => {
     expect(screen.queryByTestId("pdp-compare-toggle")).toBeNull();
   });
 });
+
+// cfw-x3w: 360°-spin viewer toggle on the gallery. Static gallery is the
+// initial render path so LCP and CLS are unaffected; the user opts in.
+describe("PdpGallery — 360 spin toggle (cfw-x3w)", () => {
+  const SPIN_FRAMES = Array.from({ length: 12 }, (_, i) => `https://cdn/spin-${i}.jpg`);
+
+  it("does not render the spin toggle when spinImages is empty/undefined", () => {
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    expect(screen.queryByTestId("pdp-spin-toggle")).toBeNull();
+  });
+
+  it("renders the 360 toggle when spinImages are provided", () => {
+    render(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        spinImages={SPIN_FRAMES}
+      />,
+    );
+    expect(screen.getByTestId("pdp-spin-toggle")).toBeInTheDocument();
+  });
+
+  it("starts on the static gallery — spin viewer hidden by default (no CLS)", () => {
+    render(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        spinImages={SPIN_FRAMES}
+      />,
+    );
+    expect(screen.getByTestId("pdp-main-image-zoom-trigger")).toBeInTheDocument();
+    expect(screen.queryByTestId("product-spin-viewer")).toBeNull();
+  });
+
+  it("clicking the toggle swaps the static main image for the spin viewer", () => {
+    render(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        spinImages={SPIN_FRAMES}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("pdp-spin-toggle"));
+    expect(screen.getByTestId("product-spin-viewer")).toBeInTheDocument();
+    expect(screen.queryByTestId("pdp-main-image-zoom-trigger")).toBeNull();
+  });
+
+  it("clicking the toggle a second time returns to the static gallery", () => {
+    render(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        spinImages={SPIN_FRAMES}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("pdp-spin-toggle"));
+    fireEvent.click(screen.getByTestId("pdp-spin-toggle"));
+    expect(screen.getByTestId("pdp-main-image-zoom-trigger")).toBeInTheDocument();
+    expect(screen.queryByTestId("product-spin-viewer")).toBeNull();
+  });
+
+  it("opening spin viewer closes the comparison view (mutually exclusive)", () => {
+    render(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        spinImages={SPIN_FRAMES}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("pdp-compare-toggle"));
+    expect(screen.getByTestId("pdp-image-comparison")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("pdp-spin-toggle"));
+    expect(screen.queryByTestId("pdp-image-comparison")).toBeNull();
+    expect(screen.getByTestId("product-spin-viewer")).toBeInTheDocument();
+  });
+
+  it("toggle still appears for a single-image gallery when spin frames exist", () => {
+    render(
+      <PdpGallery
+        images={[multiImages[0]!]}
+        productName="Kingston Futon"
+        spinImages={SPIN_FRAMES}
+      />,
+    );
+    expect(screen.getByTestId("pdp-spin-toggle")).toBeInTheDocument();
+  });
+});

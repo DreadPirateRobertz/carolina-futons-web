@@ -11,6 +11,7 @@ import {
 } from "framer-motion";
 import { PdpImageLightbox } from "./PdpImageLightbox";
 import { PdpImageComparison } from "./PdpImageComparison";
+import { ProductSpinViewer } from "./ProductSpinViewer";
 
 // cf-3qt.6.F.1 + cf-3qt.7.O.1: multi-image gallery for the PDP.
 //
@@ -56,6 +57,10 @@ export type PdpGalleryProps = {
   images: ReadonlyArray<GalleryImage>;
   productName: string;
   activeUrl?: string;
+  // cfw-x3w: when 12+ spin frames are detected (extractSpinFrames upstream),
+  // render a "View 360°" toggle that swaps the main image for ProductSpinViewer.
+  // When undefined or empty, the gallery falls back to its static behavior.
+  spinImages?: ReadonlyArray<string>;
 };
 
 // Detects document.startViewTransition synchronously on both server and client.
@@ -79,7 +84,7 @@ function useSupportsViewTransition() {
   );
 }
 
-export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) {
+export function PdpGallery({ images, productName, activeUrl, spinImages }: PdpGalleryProps) {
   // Initialize from activeUrl so the default variant's image is shown first.
   const [selectedIndex, setSelectedIndex] = useState(() => {
     if (!activeUrl) return 0;
@@ -105,6 +110,11 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
   const [brokenSrcs, setBrokenSrcs] = useState<ReadonlySet<string>>(new Set());
   const [zoomOpen, setZoomOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
+  // cfw-x3w: spin viewer is opt-in — default OFF so initial paint matches the
+  // static gallery (preserves the LCP candidate and avoids CLS from a different
+  // intrinsic size). Only available when spinImages were extracted upstream.
+  const [spinOpen, setSpinOpen] = useState(false);
+  const hasSpinFrames = Array.isArray(spinImages) && spinImages.length > 0;
 
   const reduce = useReducedMotion();
   const supportsVT = useSupportsViewTransition();
@@ -201,7 +211,9 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
 
   return (
     <div data-slot="pdp-gallery" className="space-y-3">
-      {compareOpen && images.length >= 2 ? (
+      {spinOpen && hasSpinFrames ? (
+        <ProductSpinViewer spinImages={[...spinImages!]} productName={productName} />
+      ) : compareOpen && images.length >= 2 ? (
         <PdpImageComparison
           before={{ url: resolvedSrc(images[0]!.url), alt: images[0]!.alt }}
           after={{ url: resolvedSrc(images[1]!.url), alt: images[1]!.alt }}
@@ -287,6 +299,46 @@ export function PdpGallery({ images, productName, activeUrl }: PdpGalleryProps) 
               Compare
             </button>
           ) : null}
+          {hasSpinFrames ? (
+            <button
+              type="button"
+              aria-pressed={spinOpen}
+              aria-label={spinOpen ? "Show photo gallery" : "View 360° spin"}
+              data-testid="pdp-spin-toggle"
+              onClick={() => {
+                setSpinOpen((v) => !v);
+                // Mutually exclusive with compare; opening one closes the other.
+                if (!spinOpen) setCompareOpen(false);
+              }}
+              className={
+                "shrink-0 rounded border px-2 py-1 text-xs transition " +
+                (spinOpen
+                  ? "border-cf-espresso bg-cf-espresso text-white"
+                  : "border-cf-sand text-cf-muted hover:border-cf-espresso/40")
+              }
+            >
+              {spinOpen ? "Photos" : "360°"}
+            </button>
+          ) : null}
+        </div>
+      ) : hasSpinFrames ? (
+        // Single-image gallery still gets the spin toggle when frames exist.
+        <div className="flex">
+          <button
+            type="button"
+            aria-pressed={spinOpen}
+            aria-label={spinOpen ? "Show photo gallery" : "View 360° spin"}
+            data-testid="pdp-spin-toggle"
+            onClick={() => setSpinOpen((v) => !v)}
+            className={
+              "ml-auto shrink-0 rounded border px-2 py-1 text-xs transition " +
+              (spinOpen
+                ? "border-cf-espresso bg-cf-espresso text-white"
+                : "border-cf-sand text-cf-muted hover:border-cf-espresso/40")
+            }
+          >
+            {spinOpen ? "Photos" : "360°"}
+          </button>
         </div>
       ) : null}
     </div>

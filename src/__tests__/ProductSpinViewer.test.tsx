@@ -289,6 +289,67 @@ describe("ProductSpinViewer", () => {
     });
   });
 
+  // cfw-x3w: continuous auto-rotate toggle (separate from the 3-rotation
+  // mount auto-spin). Runs at 100 ms/frame, indefinitely, until pressed again.
+  describe("auto-rotate toggle (cfw-x3w)", () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it("renders with aria-pressed=false when off", () => {
+      renderSpin();
+      expect(screen.getByTestId("spin-auto-rotate-toggle")).toHaveAttribute(
+        "aria-pressed",
+        "false",
+      );
+    });
+
+    it("flips aria-pressed to true on click", () => {
+      renderSpin();
+      fireEvent.click(screen.getByTestId("spin-auto-rotate-toggle"));
+      expect(screen.getByTestId("spin-auto-rotate-toggle")).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+    });
+
+    it("advances frames at 100 ms cadence when on", () => {
+      renderSpin();
+      // Cancel mount auto-spin so it doesn't interleave with the toggle's interval.
+      fireEvent.click(screen.getByTestId("spin-auto-rotate-toggle"));
+      const startSrc = screen.getByTestId("spin-frame-img").getAttribute("src");
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
+      expect(screen.getByTestId("spin-frame-img").getAttribute("src")).not.toBe(startSrc);
+    });
+
+    it("clicking off stops the rotation loop", () => {
+      renderSpin();
+      const toggle = screen.getByTestId("spin-auto-rotate-toggle");
+      fireEvent.click(toggle); // on
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
+      fireEvent.click(toggle); // off
+      const srcAfterOff = screen.getByTestId("spin-frame-img").getAttribute("src");
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(screen.getByTestId("spin-frame-img")).toHaveAttribute("src", srcAfterOff!);
+    });
+
+    it("user drag cancels active auto-rotate (mousedown stops the toggle)", () => {
+      renderSpin();
+      fireEvent.click(screen.getByTestId("spin-auto-rotate-toggle"));
+      const viewer = screen.getByTestId("product-spin-viewer");
+      fireEvent.mouseDown(viewer, { clientX: 0 });
+      expect(screen.getByTestId("spin-auto-rotate-toggle")).toHaveAttribute(
+        "aria-pressed",
+        "false",
+      );
+    });
+  });
+
   describe("native touch (non-passive touchmove path)", () => {
     it("registers touchmove listener with passive:false", () => {
       const spy = vi.spyOn(HTMLDivElement.prototype, "addEventListener");

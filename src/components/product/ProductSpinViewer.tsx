@@ -4,6 +4,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 const AUTO_SPIN_ROTATIONS = 3;
 const AUTO_SPIN_INTERVAL_MS = 60;
+// cfw-x3w: continuous user-toggle auto-rotate uses 100 ms/frame per the spec.
+const AUTO_ROTATE_INTERVAL_MS = 100;
 const PX_PER_FRAME = 8;
 
 // ── Pure helpers — frame math and spin sequencing ─────────────────────────────
@@ -42,6 +44,10 @@ type Props = {
 export function ProductSpinViewer({ spinImages, productName = "product" }: Props) {
   const [frame, setFrame] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  // cfw-x3w: continuous auto-rotate toggle. Distinct from the mount auto-spin
+  // (which runs once for AUTO_SPIN_ROTATIONS); this loops indefinitely until
+  // the user toggles it off or interacts with the viewer.
+  const [autoRotate, setAutoRotate] = useState(false);
   // Lazy init reads matchMedia synchronously so reduced-motion users never see even one auto-spin tick
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -58,6 +64,7 @@ export function ProductSpinViewer({ spinImages, productName = "product" }: Props
   // Mirrors `frame` state so non-React handlers read the current value without stale closures
   const frameRef = useRef(0);
   const autoSpinTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoRotateTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const totalFrames = spinImages.length;
 
@@ -128,7 +135,28 @@ export function ProductSpinViewer({ spinImages, productName = "product" }: Props
       clearInterval(autoSpinTimerRef.current);
       autoSpinTimerRef.current = null;
     }
+    if (autoRotateTimerRef.current !== null) {
+      clearInterval(autoRotateTimerRef.current);
+      autoRotateTimerRef.current = null;
+    }
+    if (autoRotate) setAutoRotate(false);
   }
+
+  // cfw-x3w: continuous auto-rotate driven by the toggle button. Reduced-motion
+  // users can still flip it on intentionally — the mount auto-spin honors the
+  // OS preference, but a user-initiated toggle is an explicit consent.
+  useEffect(() => {
+    if (!autoRotate) return;
+    if (totalFrames <= 0) return;
+    const timer = setInterval(() => {
+      setFrame((f) => (f + 1) % totalFrames);
+    }, AUTO_ROTATE_INTERVAL_MS);
+    autoRotateTimerRef.current = timer;
+    return () => {
+      clearInterval(timer);
+      autoRotateTimerRef.current = null;
+    };
+  }, [autoRotate, totalFrames]);
 
   function handleMouseDown(e: React.MouseEvent) {
     cancelAutoSpin();
@@ -180,7 +208,7 @@ export function ProductSpinViewer({ spinImages, productName = "product" }: Props
       aria-label={`360° interactive view of ${productName}. Drag or use arrow keys to rotate.`}
       tabIndex={0}
       data-testid="product-spin-viewer"
-      className="relative select-none overflow-hidden rounded-lg bg-cf-sand/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      className="relative aspect-square w-full select-none overflow-hidden rounded-lg bg-cf-sand/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       style={{ cursor: isDragging ? "grabbing" : "grab" }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -195,7 +223,7 @@ export function ProductSpinViewer({ spinImages, productName = "product" }: Props
         src={currentSrc}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none w-full object-contain"
+        className="pointer-events-none h-full w-full object-cover"
         draggable={false}
         data-testid="spin-frame-img"
       />
@@ -213,6 +241,20 @@ export function ProductSpinViewer({ spinImages, productName = "product" }: Props
       >
         Drag to rotate
       </span>
+      <button
+        type="button"
+        aria-pressed={autoRotate}
+        aria-label={autoRotate ? "Stop auto-rotate" : "Start auto-rotate"}
+        data-testid="spin-auto-rotate-toggle"
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          setAutoRotate((v) => !v);
+        }}
+        className="absolute right-3 top-3 rounded-full bg-cf-navy/80 px-3 py-1 text-xs font-semibold text-cf-cream hover:bg-cf-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      >
+        {autoRotate ? "Pause" : "Auto-rotate"}
+      </button>
     </div>
   );
 }

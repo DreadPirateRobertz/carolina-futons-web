@@ -67,6 +67,9 @@ export type PdpInteractiveProps = {
   // cfw-88r: raw Wix media.items[] passed through so getSelectedImageUrl can
   // fall back to title/altText matching when per-choice media is missing.
   mediaItems?: ReadonlyArray<GalleryMediaItem>;
+  // cfw-x3w: 360° spin frames (sorted by index) extracted upstream from
+  // mediaItems via extractSpinFrames. Empty/undefined disables the toggle.
+  spinImages?: ReadonlyArray<string>;
   stock?: StockBadgeInput | null;
   badges?: readonly ProductBadgeType[];
   fabricSwatches?: SwatchItem[];
@@ -87,6 +90,7 @@ export function PdpInteractive({
   whiteGlovePriceCents,
   galleryImages,
   mediaItems,
+  spinImages,
   stock,
   badges,
   fabricSwatches,
@@ -177,6 +181,7 @@ export function PdpInteractive({
             images={galleryImages}
             productName={productName}
             activeUrl={imageUrl}
+            spinImages={spinImages}
           />
         ) : imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element

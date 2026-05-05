@@ -49,6 +49,7 @@ import type {
   ProductOptionInput,
   VariantInput,
 } from "@/lib/product/variant-selection";
+import { extractSpinFrames } from "@/lib/product/spin-frames";
 
 export const dynamic = "force-dynamic"; // Phase 2: per-request until facets + caching tags wired
 
@@ -115,6 +116,10 @@ export default async function PdpPage(props: {
   // selected option values against image title/altText when admin hasn't
   // populated per-choice media on productOptions.
   const mediaItems = (product.media?.items ?? []) as GalleryMediaItem[];
+  // cfw-x3w: detect 360°-spin frames (12+ images titled "spin-NN") so the
+  // gallery can offer the spin-viewer toggle. Static gallery is preserved as
+  // the default render path so the LCP candidate doesn't change.
+  const spinImages = extractSpinFrames(mediaItems);
   const stock = (product.stock ?? null) as StockBadgeInput | null;
   const [crossSell, alsoBought, productBadges] = await Promise.all([
     getCrossSellProducts(product),
@@ -219,6 +224,7 @@ export default async function PdpPage(props: {
           whiteGlovePriceCents={whiteGlovePriceCents}
           galleryImages={galleryImages}
           mediaItems={mediaItems}
+          spinImages={spinImages}
           stock={stock}
           badges={productBadges}
           fabricSwatches={fabricSwatches}

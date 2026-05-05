@@ -81,8 +81,17 @@ function makeProduct(
   };
 }
 
+// cfw-x3w: 12 spin-frame media items so fixture mode exercises the
+// 360°-spin toggle path on /products/kingston-futon-frame. URLs reuse the
+// natural-finish photo so fixture rendering stays deterministic.
+const KINGSTON_SPIN_FRAMES = Array.from({ length: 12 }, (_, i) => ({
+  image: { url: KINGSTON_NATURAL_IMG, width: 800, height: 600 },
+  title: `spin-${String(i + 1).padStart(3, "0")}`,
+  mediaType: "image",
+}));
+
 // --- Kingston Futon Frame (~$399 → $319 sale, parcel, in-stock, 2 options) ---
-const KINGSTON = makeProduct(
+const KINGSTON_BASE = makeProduct(
   "kingston-futon-frame",
   "kingston-futon-frame",
   "Kingston Futon Frame",
@@ -147,6 +156,17 @@ const KINGSTON = makeProduct(
   undefined,
   319,
 );
+
+const KINGSTON = {
+  ...KINGSTON_BASE,
+  media: {
+    ...KINGSTON_BASE.media,
+    items: [
+      ...(KINGSTON_BASE.media?.items ?? []),
+      ...KINGSTON_SPIN_FRAMES,
+    ],
+  },
+};
 
 // --- Asheville Murphy Bed (~$849, LTL freight, in-stock, 1 option) ---
 const ASHEVILLE = makeProduct(
