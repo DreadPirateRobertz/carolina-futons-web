@@ -19,6 +19,7 @@ import { CartTrigger } from "@/components/cart/CartTrigger";
 import { HeaderMobileMenu } from "@/components/site/HeaderMobileMenu";
 import { LivingHero } from "@/components/home/LivingHero";
 import { ThemeToggle } from "@/components/site/ThemeToggle";
+import { MegaMenuItem } from "@/components/site/MegaMenu";
 
 const PRIMARY_NAV = [
   { label: "Futons", href: "/shop/futon-frames" },
@@ -123,13 +124,7 @@ export function Header() {
               className="hidden flex-1 items-center justify-center gap-6 md:flex"
             >
               {PRIMARY_NAV.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="text-sm font-medium text-cf-charcoal transition-colors hover:text-cf-cta focus-visible:outline-none focus-visible:text-cf-cta"
-                >
-                  {item.label}
-                </Link>
+                <MegaMenuItem key={item.href} label={item.label} href={item.href} />
               ))}
             </nav>
 
