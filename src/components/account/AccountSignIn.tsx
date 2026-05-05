@@ -134,6 +134,14 @@ export function AccountSignIn({ next }: { next?: string }) {
               className="mt-1 block w-full rounded-md border border-cf-charcoal/20 bg-white px-3 py-2 text-sm text-cf-espresso placeholder-cf-charcoal/40 shadow-sm focus:border-cf-cta focus:outline-none focus:ring-1 focus:ring-cf-cta dark:bg-cf-cream dark:text-cf-ink dark:placeholder-cf-muted"
               placeholder="••••••••"
             />
+            <div className="mt-2 text-right">
+              <Link
+                href="/account/forgot-password"
+                className="text-xs text-cf-cta hover:underline"
+              >
+                Forgot your password?
+              </Link>
+            </div>
           </div>
 
           {error && (
