@@ -10,11 +10,7 @@ const stubRoutes: Array<{
   methods: HandlerName[];
   load: () => Promise<Record<string, unknown>>;
 }> = [
-  {
-    path: "/api/newsletter",
-    methods: ["POST"],
-    load: () => import("@/app/api/newsletter/route"),
-  },
+  // cfw-98s: /api/newsletter now implemented; covered by api-newsletter.test.ts
   // cf-w2my: /api/delivery-zone now implemented; covered by api-delivery-zone.test.ts
   {
     path: "/api/cart",
