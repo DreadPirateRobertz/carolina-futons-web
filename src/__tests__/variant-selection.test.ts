@@ -280,6 +280,136 @@ describe("getSelectedImageUrl", () => {
       ),
     ).toBe("https://img/full-linen.jpg");
   });
+
+  // cfw-88r Bug 1: production Wix admin frequently leaves choice.media empty
+  // and instead uploads gallery photos with the color name in their title or
+  // alt text. The selector must recognize that and swap the gallery anyway.
+  it("matches media.items[*].title against the selected choice value (case-insensitive substring)", () => {
+    const optionsNoChoiceMedia: ProductOptionInput[] = [
+      {
+        name: "Color",
+        choices: [
+          { value: "Cherry", description: "Cherry" },
+          { value: "Walnut", description: "Walnut" },
+        ],
+      },
+    ];
+    const variantsNoMedia: VariantInput[] = [
+      { _id: "v1", choices: { Color: "Cherry" }, stock: { inStock: true } },
+      { _id: "v2", choices: { Color: "Walnut" }, stock: { inStock: true } },
+    ];
+    const mediaItems = [
+      { image: { url: "https://img/photo-cherry-front.jpg" }, title: "Cherry front view", mediaType: "image" },
+      { image: { url: "https://img/photo-walnut-front.jpg" }, title: "Walnut front view", mediaType: "image" },
+    ];
+    expect(
+      getSelectedImageUrl(
+        variantsNoMedia,
+        { Color: "Cherry" },
+        "https://fallback",
+        optionsNoChoiceMedia,
+        mediaItems,
+      ),
+    ).toBe("https://img/photo-cherry-front.jpg");
+    expect(
+      getSelectedImageUrl(
+        variantsNoMedia,
+        { Color: "Walnut" },
+        "https://fallback",
+        optionsNoChoiceMedia,
+        mediaItems,
+      ),
+    ).toBe("https://img/photo-walnut-front.jpg");
+  });
+
+  it("matches against image.altText when title is empty", () => {
+    const optionsNoChoiceMedia: ProductOptionInput[] = [
+      {
+        name: "Color",
+        choices: [{ value: "Espresso", description: "Espresso" }],
+      },
+    ];
+    const mediaItems = [
+      { image: { url: "https://img/a.jpg", altText: "Kingston frame in espresso finish" }, mediaType: "image" },
+    ];
+    expect(
+      getSelectedImageUrl(
+        [],
+        { Color: "Espresso" },
+        "https://fallback",
+        optionsNoChoiceMedia,
+        mediaItems,
+      ),
+    ).toBe("https://img/a.jpg");
+  });
+
+  it("matches against the choice description when value is unhelpful", () => {
+    // Wix sometimes uses an internal SKU code as `value` and a human label as
+    // `description`. The fallback must consider both so admins can title their
+    // photos with the visible color name.
+    const optionsNoChoiceMedia: ProductOptionInput[] = [
+      {
+        name: "Color",
+        choices: [{ value: "C-001", description: "Black Walnut" }],
+      },
+    ];
+    const mediaItems = [
+      { image: { url: "https://img/walnut.jpg" }, title: "Black Walnut", mediaType: "image" },
+    ];
+    expect(
+      getSelectedImageUrl(
+        [],
+        { Color: "C-001" },
+        "https://fallback",
+        optionsNoChoiceMedia,
+        mediaItems,
+      ),
+    ).toBe("https://img/walnut.jpg");
+  });
+
+  it("prefers per-choice media over media.items[] title matches", () => {
+    // If admin set per-choice media, that's the canonical mapping — don't let
+    // an incidentally-named gallery photo override it.
+    const options: ProductOptionInput[] = [
+      {
+        name: "Color",
+        choices: [
+          {
+            value: "Cherry",
+            description: "Cherry",
+            media: { mainMedia: { image: { url: "https://img/canonical-cherry.jpg" } } },
+          },
+        ],
+      },
+    ];
+    const mediaItems = [
+      { image: { url: "https://img/cherry-also.jpg" }, title: "Cherry alternate", mediaType: "image" },
+    ];
+    expect(
+      getSelectedImageUrl(
+        [],
+        { Color: "Cherry" },
+        "https://fallback",
+        options,
+        mediaItems,
+      ),
+    ).toBe("https://img/canonical-cherry.jpg");
+  });
+
+  it("skips non-image media items in the title-match fallback", () => {
+    // Some Wix products have a video first in media.items[]; the fallback
+    // should not match a video URL just because its title contains the color.
+    const options: ProductOptionInput[] = [
+      { name: "Color", choices: [{ value: "Cherry", description: "Cherry" }] },
+    ];
+    const mediaItems = [
+      { image: { url: "https://video/cherry.mp4" }, title: "Cherry", mediaType: "video" },
+      { image: { url: "https://img/cherry.jpg" }, title: "Cherry", mediaType: "image" },
+    ];
+    expect(
+      getSelectedImageUrl([], { Color: "Cherry" }, "https://fallback", options, mediaItems),
+    ).toBe("https://img/cherry.jpg");
+  });
 });
 
 describe("initialSelection", () => {

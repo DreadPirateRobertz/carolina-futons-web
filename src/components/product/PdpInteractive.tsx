@@ -30,6 +30,7 @@ import {
   isSelectionComplete,
   isVariantInStock,
   type ChoiceSelection,
+  type GalleryMediaItem,
   type ProductOptionInput,
   type VariantInput,
 } from "@/lib/product/variant-selection";
@@ -60,6 +61,9 @@ export type PdpInteractiveProps = {
   // so the white-glove widget shows for high-end variant products (cf-kcnu GAP-2).
   whiteGlovePriceCents?: number;
   galleryImages?: ReadonlyArray<GalleryImage>;
+  // cfw-88r: raw Wix media.items[] passed through so getSelectedImageUrl can
+  // fall back to title/altText matching when per-choice media is missing.
+  mediaItems?: ReadonlyArray<GalleryMediaItem>;
   stock?: StockBadgeInput | null;
   badges?: readonly ProductBadgeType[];
   fabricSwatches?: SwatchItem[];
@@ -79,6 +83,7 @@ export function PdpInteractive({
   fallbackPriceCents,
   whiteGlovePriceCents,
   galleryImages,
+  mediaItems,
   stock,
   badges,
   fabricSwatches,
@@ -115,7 +120,13 @@ export function PdpInteractive({
     return () => observer.disconnect();
   }, []);
 
-  const imageUrl = getSelectedImageUrl(variants, selection, fallbackImageUrl, productOptions);
+  const imageUrl = getSelectedImageUrl(
+    variants,
+    selection,
+    fallbackImageUrl,
+    productOptions,
+    mediaItems,
+  );
   const selectedPrice = getSelectedPrice(variants, selection, fallbackPrice);
   const selectedPriceCents = getSelectedPriceCents(variants, selection, fallbackPriceCents);
   const selectedVariant = findMatchingVariant(variants, selection);

@@ -42,6 +42,7 @@ import { AppDownloadBanner } from "@/components/site/AppDownloadBanner";
 import { ArModelViewer } from "@/components/product/ArModelViewer";
 import type { StockBadgeInput } from "@/lib/product/stock-badge-state";
 import type {
+  GalleryMediaItem,
   ProductOptionInput,
   VariantInput,
 } from "@/lib/product/variant-selection";
@@ -107,6 +108,10 @@ export default async function PdpPage(props: {
   // so the picker's variant-resolved imageUrl resolves to a real gallery index
   // and PdpGallery actually swaps the main image when a color is selected.
   const galleryImages = buildGallery(product, productOptions);
+  // cfw-88r: pass raw media.items[] through so PdpInteractive can match
+  // selected option values against image title/altText when admin hasn't
+  // populated per-choice media on productOptions.
+  const mediaItems = (product.media?.items ?? []) as GalleryMediaItem[];
   const stock = (product.stock ?? null) as StockBadgeInput | null;
   const [crossSell, alsoBought, productBadges] = await Promise.all([
     getCrossSellProducts(product),
@@ -203,6 +208,7 @@ export default async function PdpPage(props: {
           fallbackPriceCents={fallbackPriceCents}
           whiteGlovePriceCents={whiteGlovePriceCents}
           galleryImages={galleryImages}
+          mediaItems={mediaItems}
           stock={stock}
           badges={productBadges}
           fabricSwatches={fabricSwatches}

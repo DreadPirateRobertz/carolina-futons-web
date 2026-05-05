@@ -43,6 +43,16 @@ export type VariantInput = {
   media?: ChoiceMedia;
 };
 
+// cfw-88r: gallery-item shape for the alt-text fallback. Matches the subset of
+// Wix MediaItem we read — title and image.altText — so a poorly-configured
+// catalog (no per-choice media) can still drive the variant→image swap when
+// gallery photos were uploaded with the color name in their title or alt text.
+export type GalleryMediaItem = {
+  image?: { url?: string | null; altText?: string | null } | null;
+  title?: string | null;
+  mediaType?: string | null;
+};
+
 export type ChoiceSelection = Record<string, string>;
 
 export function isVariantInStock(variant: VariantInput | null | undefined): boolean {
@@ -144,6 +154,7 @@ export function getSelectedImageUrl(
   selection: ChoiceSelection,
   fallbackUrl: string | undefined,
   productOptions?: ReadonlyArray<ProductOptionInput>,
+  mediaItems?: ReadonlyArray<GalleryMediaItem>,
 ): string | undefined {
   // Wix Stores v1: per-choice swatch media (e.g. each color's product photo)
   // is attached to productOptions[*].choices[*].media. The Variant itself has
@@ -158,6 +169,37 @@ export function getSelectedImageUrl(
       const choice = option.choices?.find((c) => c.value === value);
       const url = choice?.media?.mainMedia?.image?.url;
       if (url) return url;
+    }
+  }
+  // cfw-88r: when admin hasn't attached per-choice media (a common state in
+  // real Wix catalogs), fall back to matching the selected choice's value or
+  // description against product.media.items[*].title or image.altText. Lets
+  // the gallery swap fire as long as the photos were named after the color.
+  if (mediaItems && mediaItems.length > 0 && productOptions) {
+    for (const option of productOptions) {
+      const optionName = option.name;
+      if (!optionName) continue;
+      const value = selection[optionName];
+      if (!value) continue;
+      const choice = option.choices?.find((c) => c.value === value);
+      const candidates = [value, choice?.description]
+        .filter((s): s is string => typeof s === "string" && s.length > 0)
+        .map((s) => s.toLowerCase());
+      if (candidates.length === 0) continue;
+      for (const item of mediaItems) {
+        if (item?.mediaType && item.mediaType !== "image") continue;
+        const title = (item?.title ?? "").toLowerCase();
+        const altText = (item?.image?.altText ?? "").toLowerCase();
+        const matched = candidates.some(
+          (c) =>
+            (title.length > 0 && title.includes(c)) ||
+            (altText.length > 0 && altText.includes(c)),
+        );
+        if (matched) {
+          const url = item?.image?.url;
+          if (url) return url;
+        }
+      }
     }
   }
   // Back-compat: variant-level media for fixtures/tests that pre-date the
