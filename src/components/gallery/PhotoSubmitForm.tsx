@@ -22,11 +22,13 @@ function TextInput({
   placeholder,
   required,
   maxLength,
+  defaultValue,
 }: {
   name: string;
   placeholder?: string;
   required?: boolean;
   maxLength?: number;
+  defaultValue?: string;
 }) {
   return (
     <input
@@ -35,12 +37,13 @@ function TextInput({
       required={required}
       maxLength={maxLength}
       placeholder={placeholder}
+      defaultValue={defaultValue}
       className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-cf-espresso placeholder:text-gray-400 focus:border-cf-espresso focus:outline-none focus:ring-1 focus:ring-cf-espresso"
     />
   );
 }
 
-export function PhotoSubmitForm() {
+export function PhotoSubmitForm({ defaultProductSlug }: { defaultProductSlug?: string } = {}) {
   const [state, action, isPending] = useActionState(submitCommunityPhoto, INITIAL);
 
   if (state.status === "success") {
@@ -89,9 +92,15 @@ export function PhotoSubmitForm() {
 
       <div>
         <FieldLabel>Product (optional)</FieldLabel>
-        <TextInput name="productSlug" placeholder="asheville-futon-frame" maxLength={100} />
+        <TextInput
+          name="productSlug"
+          placeholder="asheville-futon-frame"
+          maxLength={100}
+          defaultValue={defaultProductSlug}
+        />
         <p className="mt-1 text-xs text-cf-espresso/60">
           The product slug from the URL, e.g. <code>asheville-futon-frame</code>.
+          {defaultProductSlug ? " Pre-filled from the product page you came from." : ""}
         </p>
       </div>
 

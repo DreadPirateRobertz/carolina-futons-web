@@ -8,7 +8,15 @@ export const metadata: Metadata = {
     "Show us your Carolina Futons setup. Submit a photo and we may feature it in our community gallery.",
 };
 
-export default function GallerySubmitPage() {
+export default async function GallerySubmitPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const raw = params.productSlug;
+  const productSlug = typeof raw === "string" ? raw : undefined;
+
   return (
     <main className="mx-auto w-full max-w-xl px-4 py-12 sm:px-6 sm:py-16">
       <div className="space-y-8">
@@ -31,7 +39,7 @@ export default function GallerySubmitPage() {
           </p>
         </header>
 
-        <PhotoSubmitForm />
+        <PhotoSubmitForm defaultProductSlug={productSlug} />
       </div>
     </main>
   );

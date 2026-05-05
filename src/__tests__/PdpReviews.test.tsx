@@ -130,6 +130,36 @@ describe("<PdpReviews />", () => {
     expect(within(list).getAllByRole("listitem").length).toBeGreaterThan(0);
   });
 
+  it("renders a Share-Your-Photo CTA linking to /community-gallery/submit with the productSlug query", () => {
+    render(
+      <PdpReviews productSlug="monterey-futon" productName="Monterey Futon" />,
+    );
+    const link = screen.getByRole("link", { name: /share your photo/i });
+    expect(link.getAttribute("href")).toBe(
+      "/community-gallery/submit?productSlug=monterey-futon",
+    );
+  });
+
+  it("renders the Share-Your-Photo CTA in the empty-reviews state too", () => {
+    render(
+      <PdpReviews productSlug="wool-throw-pillow" productName="Wool Throw Pillow" />,
+    );
+    const link = screen.getByRole("link", { name: /share your photo/i });
+    expect(link.getAttribute("href")).toBe(
+      "/community-gallery/submit?productSlug=wool-throw-pillow",
+    );
+  });
+
+  it("URL-encodes productSlugs that contain unsafe characters in the CTA", () => {
+    render(
+      <PdpReviews productSlug="space slug" productName="Monterey Futon" />,
+    );
+    const link = screen.getByRole("link", { name: /share your photo/i });
+    expect(link.getAttribute("href")).toBe(
+      "/community-gallery/submit?productSlug=space%20slug",
+    );
+  });
+
   it("emits a machine-readable <time dateTime> for each review date", () => {
     const { container } = render(
       <PdpReviews productSlug="monterey-futon" productName="Monterey Futon" />,

@@ -71,6 +71,7 @@ export function PdpReviews({ productSlug, productName }: PdpReviewsProps) {
           </Link>
           .
         </p>
+        <SharePhotoCta productSlug={productSlug} />
       </section>
     );
   }
@@ -102,7 +103,31 @@ export function PdpReviews({ productSlug, productName }: PdpReviewsProps) {
           See all customer reviews
         </Link>
       </p>
+
+      <SharePhotoCta productSlug={productSlug} />
     </section>
+  );
+}
+
+// Hooks the PDP to the community gallery: prefills the productSlug field via
+// query string so the submitted photo is linked back to this product page.
+// Copy stays aligned with the gallery page's primary action and the submit
+// page heading ("Share your photo") so the journey reads as one flow.
+function SharePhotoCta({ productSlug }: { productSlug: string }) {
+  const href = productSlug
+    ? `/community-gallery/submit?productSlug=${encodeURIComponent(productSlug)}`
+    : "/community-gallery/submit";
+  return (
+    <p className="mt-6 text-sm text-cf-espresso/80" data-slot="pdp-share-photo-cta">
+      Got this in your home?{" "}
+      <Link
+        href={href}
+        className="font-medium text-cf-espresso underline hover:no-underline"
+      >
+        Share your photo
+      </Link>{" "}
+      and we may feature it in our community gallery.
+    </p>
   );
 }
 
