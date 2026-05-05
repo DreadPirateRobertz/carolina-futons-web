@@ -11,6 +11,7 @@ import { PdpGallery, type GalleryImage } from "@/components/product/PdpGallery";
 import { PdpShippingEstimate } from "@/components/product/PdpShippingEstimate";
 import { PdpStickyCta } from "@/components/product/PdpStickyCta";
 import { PdpStockBadge } from "@/components/product/PdpStockBadge";
+import { ProductInventoryBadge } from "@/components/product/ProductInventoryBadge";
 import { PdpProductBadges } from "@/components/product/PdpProductBadges";
 import type { ProductBadgeType } from "@/lib/wix/product-badges";
 import { PdpFabricSwatches } from "@/components/product/PdpFabricSwatches";
@@ -134,6 +135,12 @@ export function PdpInteractive({
   const selectionComplete =
     productOptions.length === 0 || isSelectionComplete(productOptions, selection);
   const inStock = resolveInStock(selectedVariant, productOptions, stock);
+  // cfw-6bp: low-stock urgency cue. Prefers the selected variant's
+  // stockStatus.quantity; falls back to product-level when the product has no
+  // variants. Stays null when nothing tracked, which makes the badge a no-op.
+  const lowStockQuantity =
+    selectedVariant?.stock?.quantity ??
+    (productOptions.length === 0 ? stock?.quantity ?? null : null);
   const variantLabel = Object.entries(selection)
     .map(([k, v]) => `${k}: ${v}`)
     .join(", ");
@@ -188,6 +195,7 @@ export function PdpInteractive({
         </h1>
         {badges && badges.length > 0 && <PdpProductBadges badges={badges} />}
         <PdpStockBadge stock={stock} />
+        {inStock ? <ProductInventoryBadge quantity={lowStockQuantity} /> : null}
         <VariantPicker
           productOptions={productOptions}
           variants={variants}
