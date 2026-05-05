@@ -83,22 +83,23 @@ export function QuickViewModal({
     return () => dialog.removeEventListener("close", onClose);
   }, []);
 
-  // Lazy fetch on first open. Re-fetch on retry from the error state.
+  // Lazy fetch on first open. Re-fetch on retry from the error state. A
+  // request nonce guards against stale resolutions when the user closes +
+  // reopens before the previous fetch settles — without it the previous
+  // payload would clobber the fresh state.
+  const fetchIdRef = useRef(0);
   useEffect(() => {
     if (!open || load.kind !== "idle") return;
-    let cancelled = false;
+    const myId = ++fetchIdRef.current;
     setLoad({ kind: "loading" });
     fetchQuickViewProduct(productSlug).then((result) => {
-      if (cancelled) return;
+      if (myId !== fetchIdRef.current) return;
       if (result.ok) {
         setLoad({ kind: "loaded", product: result.product });
       } else {
         setLoad({ kind: "error" });
       }
     });
-    return () => {
-      cancelled = true;
-    };
   }, [open, load.kind, productSlug]);
 
   const handleBackdrop = (e: React.MouseEvent<HTMLDialogElement>) => {

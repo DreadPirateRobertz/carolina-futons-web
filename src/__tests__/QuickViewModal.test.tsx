@@ -182,10 +182,18 @@ describe("QuickViewModal", () => {
     );
   });
 
-  it("close button has an accessible label", () => {
+  it("close button has an accessible label once the dialog is open", async () => {
+    fetchQuickViewProduct.mockResolvedValue({
+      ok: true,
+      product: SIMPLE_PRODUCT,
+    });
+    const user = userEvent.setup();
     render(<QuickViewModal productSlug="rio-futon" productName="Rio Futon" />);
-    expect(
-      screen.getByRole("button", { name: /close quick view/i }),
-    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /quick view/i }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /close quick view/i }),
+      ).toBeInTheDocument(),
+    );
   });
 });
