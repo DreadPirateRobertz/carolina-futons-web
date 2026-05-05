@@ -89,6 +89,7 @@ export function SpinWheel() {
       // Wheel needs to land with the prize segment at top (pointer at 12 o'clock)
       const stopAt = 360 - targetSegmentCenter;
       const finalRotation = SPIN_REVOLUTIONS * 360 + stopAt;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- spin animation kicks off only on success state transition
       setAnimating(true);
       setRotation((prev) => prev + finalRotation);
       const dur = SPIN_REVOLUTIONS * 500;
