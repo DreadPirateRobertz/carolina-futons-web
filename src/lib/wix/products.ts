@@ -46,6 +46,29 @@ export async function listProducts(limit = 24): Promise<WixProduct[]> {
   }
 }
 
+// cfw-3l9: pick the longer media.items[] across the two-step Wix fetch.
+// queryProducts and getProduct don't return identical shapes — getProduct
+// occasionally drops items[] entirely. Merging keeps mainMedia + per-choice
+// media intact and only swaps in the alternate items[] when it has more
+// entries (the only signal we have that it's the truer list).
+export function mergeProductMedia<T extends WixProduct>(full: T, stub: WixProduct): T {
+  const fullItems = full.media?.items ?? [];
+  const stubItems = stub.media?.items ?? [];
+  const fullMain = full.media?.mainMedia;
+  const stubMain = stub.media?.mainMedia;
+  const needsItems = stubItems.length > fullItems.length;
+  const needsMain = !fullMain && Boolean(stubMain);
+  if (!needsItems && !needsMain) return full;
+  return {
+    ...full,
+    media: {
+      ...(full.media ?? {}),
+      mainMedia: fullMain ?? stubMain,
+      items: needsItems ? stubItems : fullItems,
+    },
+  };
+}
+
 export async function getProductBySlug(slug: string): Promise<WixProduct | null> {
   if (USE_FIXTURES) return getFixtureProductBySlug(slug) as unknown as WixProduct | null;
   try {
@@ -77,7 +100,14 @@ export async function getProductBySlug(slug: string): Promise<WixProduct | null>
       );
       return null;
     }
-    return full.product;
+    // cfw-3l9: getProduct(_id) returns the full product including
+    // productOptions/variants — but in practice it returns an empty
+    // media.items[], while the queryProducts stub carries the populated
+    // items[] (Stilgar repro: PDP gallery renders only mainMedia, no thumbs).
+    // Prefer whichever response has more image items so the gallery surfaces
+    // every Wix-uploaded photo. Use queryProducts' mainMedia too when the
+    // full response is missing it.
+    return mergeProductMedia(full.product, stub);
   } catch (err) {
     await logWixFailure("wix", `getProductBySlug(${slug})`, err);
     return null;
