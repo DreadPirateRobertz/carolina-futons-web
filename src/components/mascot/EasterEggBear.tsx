@@ -6,6 +6,7 @@ import { V3_PAL as c } from "./MascotPalette";
 import { Bear } from "./MascotCharacters";
 
 const DISCOUNT_CODE = "BEAR10";
+const STORAGE_KEY = "cf-bear-code";
 const emptySubscribe = () => () => {};
 
 // Shared positioning: fixed, centered, above mobile browser chrome + safe area.
@@ -20,14 +21,33 @@ const PORTAL_BASE: React.CSSProperties = {
   zIndex: 9999,
 };
 
+function readPersistedClaim(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return Boolean(window.localStorage.getItem(STORAGE_KEY));
+  } catch {
+    // localStorage unavailable (private mode, SecurityError) — modal will just re-show
+    return false;
+  }
+}
+
 export function EasterEggBear() {
   const [found, setFound] = useState(false);
-  const [claimed, setClaimed] = useState(false);
+  // Lazy initializer reads localStorage on first client render so a returning
+  // visitor skips the modal. Server always returns false; no mismatch since
+  // the modal portal only renders when `found` (also false initially) is true.
+  const [claimed, setClaimed] = useState(readPersistedClaim);
   const [copied, setCopied] = useState(false);
   // false on SSR (document undefined), true after hydration — portal is client-only.
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   async function handleDismiss() {
+    // Persist first so "saved" is true even if clipboard rejects.
+    try {
+      window.localStorage.setItem(STORAGE_KEY, DISCOUNT_CODE);
+    } catch {
+      // localStorage unavailable — fall through to clipboard attempt
+    }
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       try {
         await navigator.clipboard.writeText(DISCOUNT_CODE);

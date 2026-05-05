@@ -41,6 +41,7 @@ beforeEach(() => {
     writable: true,
     configurable: true,
   });
+  window.localStorage.clear();
 });
 
 describe("EasterEggBear", () => {
@@ -113,6 +114,33 @@ describe("EasterEggBear", () => {
     await waitFor(() => expect(screen.queryByText("BEAR10")).toBeNull());
     expect(writeText).not.toHaveBeenCalled();
     expect(screen.queryByText(/copied to clipboard/i)).toBeNull();
+  });
+
+  it("persists discount code to localStorage on dismiss", async () => {
+    render(<EasterEggBear />);
+    fireEvent.click(screen.getByRole("button", { name: /peek-a-boo bear/i }));
+    fireEvent.click(screen.getByRole("button", { name: /copy & dismiss/i }));
+    await waitFor(() =>
+      expect(window.localStorage.getItem("cf-bear-code")).toBe("BEAR10"),
+    );
+  });
+
+  it("persists code even when clipboard rejects", async () => {
+    writeText.mockRejectedValue(new DOMException("NotAllowedError"));
+    render(<EasterEggBear />);
+    fireEvent.click(screen.getByRole("button", { name: /peek-a-boo bear/i }));
+    fireEvent.click(screen.getByRole("button", { name: /copy & dismiss/i }));
+    await waitFor(() =>
+      expect(window.localStorage.getItem("cf-bear-code")).toBe("BEAR10"),
+    );
+  });
+
+  it("does not re-show modal when localStorage already has the code", async () => {
+    window.localStorage.setItem("cf-bear-code", "BEAR10");
+    render(<EasterEggBear />);
+    fireEvent.click(screen.getByRole("button", { name: /peek-a-boo bear/i }));
+    await waitFor(() => expect(screen.queryByText("BEAR10")).toBeNull());
+    expect(screen.queryByText(/you found the bear/i)).toBeNull();
   });
 
   it("re-clicking bear after claiming does not re-show modal", async () => {
