@@ -17,7 +17,7 @@ import { MascotWorldHero } from "@/components/mascot/MascotWorldHero";
 import { VintageSunRays } from "@/components/mascot/VintageSunRays";
 import { StargazingHero } from "@/components/mascot/StargazingHero";
 
-export function LivingHero() {
+export function LivingHero({ compact = false }: { compact?: boolean } = {}) {
   const { phase, time, mounted, reduceMotion } = useTimeOfDay({ trackTime: true });
 
   return (
@@ -44,7 +44,7 @@ export function LivingHero() {
           pointerEvents: phase === "night" ? "auto" : "none",
         }}
       >
-        <StargazingHero time={time} reduceMotion={reduceMotion} />
+        <StargazingHero time={time} reduceMotion={reduceMotion} compact={compact} />
       </div>
 
       {/* Dawn — vintage sunburst */}
