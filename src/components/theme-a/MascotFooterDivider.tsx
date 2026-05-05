@@ -1,9 +1,19 @@
+"use client";
+
+// cf-c8dc: theme-a variant — keeps the dawn/cream palette appropriate for
+// the theme-a exploration route, but mirrors the animation contract from
+// the production divider (breathing sleeping bear, gentle moon pulse).
+
+import { motion, useReducedMotion } from "framer-motion";
 import { V3_PAL as c } from "./MascotPalette";
-import { Bear, Pine } from "./MascotCharacters";
+import { Bear } from "./MascotCharacters";
 
 export function MascotFooterDivider({ className }: { className?: string }) {
+  const reduce = useReducedMotion() ?? false;
+
   return (
     <svg
+      data-slot="mascot-footer-divider"
       viewBox="0 0 1920 200"
       xmlns="http://www.w3.org/2000/svg"
       preserveAspectRatio="xMidYMid slice"
@@ -22,7 +32,22 @@ export function MascotFooterDivider({ className }: { className?: string }) {
         </filter>
       </defs>
       <rect width="1920" height="200" fill="url(#v3fd-sky)" />
-      <circle cx="1620" cy="60" r="30" fill={c.cream} opacity="0.85" />
+
+      {/* Moon — gentle pulse */}
+      <motion.circle
+        cx={1620}
+        cy={60}
+        r={30}
+        fill={c.cream}
+        initial={{ opacity: 0.85 }}
+        animate={reduce ? { opacity: 0.85 } : { opacity: [0.85, 1, 0.85] }}
+        transition={{
+          duration: 5,
+          repeat: reduce ? 0 : Infinity,
+          ease: "easeInOut",
+        }}
+      />
+
       <path d="M 0 100 Q 240 80 480 90 Q 720 100 960 75 Q 1200 50 1440 95 Q 1680 140 1920 105 L 1920 200 L 0 200 Z" fill={c.ridge3} />
       <path d="M 0 130 Q 200 110 400 120 Q 600 130 800 110 Q 1040 85 1240 125 Q 1480 165 1680 135 L 1920 130 L 1920 200 L 0 200 Z" fill={c.ridge2} />
       <g fill={c.ridge1}>
@@ -39,10 +64,18 @@ export function MascotFooterDivider({ className }: { className?: string }) {
         })}
       </g>
       <path d="M 0 160 Q 240 150 480 156 Q 720 162 960 150 Q 1200 138 1440 155 Q 1680 175 1920 158 L 1920 200 L 0 200 Z" fill={c.ridge1} />
-      {/* Sleeping bear in the foreground curve */}
-      <g transform="translate(960 145)">
+
+      {/* Sleeping bear — chest breathes */}
+      <motion.g
+        data-slot="footer-bear"
+        transform="translate(960 145)"
+        style={{ transformOrigin: "0px 20px", transformBox: "fill-box" }}
+        animate={reduce ? undefined : { scaleY: [1, 1.045, 1] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+      >
         <Bear pose="sleeping" scale={0.7} />
-      </g>
+      </motion.g>
+
       <rect
         width="1920"
         height="200"
