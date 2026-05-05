@@ -10,7 +10,7 @@ vi.mock("@sentry/nextjs", () => ({
 }));
 vi.mock("@/lib/wix-client", () => ({ getWixClient: vi.fn() }));
 vi.mock("@/lib/wix/products", () => ({
-  listProducts: vi.fn(),
+  listAllProducts: vi.fn(),
 }));
 vi.mock("@/lib/wix/blog", () => ({
   listAllPostSlugs: vi.fn(),
@@ -24,14 +24,14 @@ vi.mock("@/lib/shop/categories", () => ({
 
 import sitemap from "@/app/sitemap";
 import robots from "@/app/robots";
-import { listProducts } from "@/lib/wix/products";
+import { listAllProducts } from "@/lib/wix/products";
 import { listAllPostSlugs } from "@/lib/wix/blog";
 
 const ORIGINAL_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL;
 
 beforeEach(() => {
   process.env.NEXT_PUBLIC_SITE_URL = "https://www.carolinafutons.com";
-  vi.mocked(listProducts).mockResolvedValue([]);
+  vi.mocked(listAllProducts).mockResolvedValue([]);
   vi.mocked(listAllPostSlugs).mockResolvedValue([]);
 });
 
@@ -80,7 +80,7 @@ describe("sitemap()", () => {
   });
 
   it("adds one entry per product slug returned by listProducts", async () => {
-    vi.mocked(listProducts).mockResolvedValueOnce([
+    vi.mocked(listAllProducts).mockResolvedValueOnce([
       { _id: "p1", slug: "oak-loft" },
       { _id: "p2", slug: "maple-daybed" },
     ] as never);
@@ -92,8 +92,27 @@ describe("sitemap()", () => {
     );
   });
 
+  // cfw-upa: regression — listAllProducts paginates past the Wix 100-cap.
+  // Previously sitemap.ts called listProducts(1000), the SDK rejected the
+  // 1000 limit, the catch returned [] and the sitemap silently dropped
+  // every product URL. listAllProducts is expected to surface ALL of them.
+  it("emits one entry per product even when the catalog exceeds the Wix 100-per-call cap", async () => {
+    const big = Array.from({ length: 150 }, (_, i) => ({
+      _id: `p${i}`,
+      slug: `sku-${i}`,
+    }));
+    vi.mocked(listAllProducts).mockResolvedValueOnce(big as never);
+    const entries = await sitemap();
+    const urls = entries.map((e) => e.url);
+    for (let i = 0; i < 150; i += 1) {
+      expect(urls).toContain(
+        `https://www.carolinafutons.com/products/sku-${i}`,
+      );
+    }
+  });
+
   it("skips products with missing/empty slug (defensive — the PDP route needs one)", async () => {
-    vi.mocked(listProducts).mockResolvedValueOnce([
+    vi.mocked(listAllProducts).mockResolvedValueOnce([
       { _id: "good", slug: "good" },
       { _id: "no-slug", slug: "" },
       { _id: "no-slug-2" },
