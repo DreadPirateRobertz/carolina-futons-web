@@ -45,6 +45,7 @@ export function QuickViewModal({
   useEffect(() => {
     if (!open || data) return;
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag must be set before async fetchProduct fires
     setLoadState("loading");
     fetchProduct(slug)
       .then((result) => {
