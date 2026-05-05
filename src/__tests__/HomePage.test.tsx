@@ -2,7 +2,21 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 
-vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));
+// `flush` is now invoked from logWixFailure (Sentry serverless-ship pattern);
+// mocking only `captureException` was an existing gap. Surfaced when the new
+// CMS-backed enrich-colors path landed and exercised the all-rows-dropped
+// observability branch under the HomePage render.
+vi.mock("@sentry/nextjs", () => ({
+  captureException: vi.fn(),
+  flush: vi.fn().mockResolvedValue(true),
+}));
+
+// HomePage isn't testing the swatches data layer — short-circuit it so the
+// default unmocked Wix client doesn't fan out to fixture rows and trigger
+// the new observability path.
+vi.mock("@/lib/product/enrich-colors", () => ({
+  enrichProductsWithColorChoices: vi.fn().mockResolvedValue(new Map()),
+}));
 
 // ShopTheRoom is an async server component — stub it synchronously for tests.
 vi.mock("@/components/site/ShopTheRoom", () => ({
