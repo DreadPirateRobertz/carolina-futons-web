@@ -3,16 +3,13 @@ import "server-only";
 import { listCollectionItems, queryCollectionWhere } from "@/lib/wix/data";
 import { logWixFailure } from "@/lib/wix/errors";
 
-// cf-l6aj.3: per-product colour-swatch metadata for PLP cards.
-// Schema mirrors cf-l6aj.2 / ProductBadges (slug→array). One CMS row per
-// product; component derives count + visible-dot slice.
-//
-// Schema (mailed to melania for dallas cross-rig parity check before wiring):
+// CMS contract — the TypeScript types below don't capture the Wix collection
+// shape, so it lives here:
 //   collection: ProductSwatches
-//   productSlug: Text (unique key, matches Wix product.slug)
-//   swatches:    Array<Object>  — ordered, top-down preference
-//     name: Text  e.g. "Slate Grey"
-//     hex:  Text  7-char hex e.g. "#5A5F66"
+//   productSlug: Text   (unique key — matches Wix product.slug)
+//   swatches:    Array<Object>
+//     name: Text   e.g. "Slate Grey"
+//     hex:  Text   7-char hex e.g. "#5A5F66"
 
 export type ProductSwatch = {
   name: string;
@@ -21,16 +18,21 @@ export type ProductSwatch = {
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 
-function isSwatchObject(v: unknown): v is { name: unknown; hex: unknown } {
-  return typeof v === "object" && v !== null && "name" in v && "hex" in v;
-}
-
 function parseSwatch(raw: unknown): ProductSwatch | null {
-  if (!isSwatchObject(raw)) return null;
-  const name = typeof raw.name === "string" ? raw.name.trim() : "";
-  const hex = typeof raw.hex === "string" ? raw.hex.trim() : "";
-  if (!name) return null;
-  if (!HEX_RE.test(hex)) return null;
+  if (typeof raw !== "object" || raw === null) return null;
+  const r = raw as { name?: unknown; hex?: unknown };
+  const name = typeof r.name === "string" ? r.name.trim() : "";
+  const hex = typeof r.hex === "string" ? r.hex.trim() : "";
+  if (!name || !HEX_RE.test(hex)) {
+    // Visible signal so a content editor entering "blue" instead of "#0000ff"
+    // doesn't silently disappear from the grid.
+    if (typeof console !== "undefined") {
+      console.warn(
+        `[product-swatches] dropping malformed swatch row: name=${JSON.stringify(r.name)} hex=${JSON.stringify(r.hex)}`,
+      );
+    }
+    return null;
+  }
   return { name, hex };
 }
 
@@ -52,7 +54,6 @@ function parseRow(row: SwatchRow): ProductSwatch[] {
 
 const COLLECTION = "ProductSwatches";
 
-/** Single-slug fetch — used on PDP if/when we surface swatches there. */
 export async function getProductSwatches(
   slug: string,
 ): Promise<ProductSwatch[]> {
@@ -70,7 +71,6 @@ export async function getProductSwatches(
   }
 }
 
-/** Batch fetch — used on PLP / Featured strip. Same pattern as listAllProductBadges. */
 export async function listAllProductSwatches(): Promise<
   Map<string, ProductSwatch[]>
 > {
@@ -79,10 +79,22 @@ export async function listAllProductSwatches(): Promise<
     const map = new Map<string, ProductSwatch[]>();
     for (const row of rows) {
       if (!row.productSlug) continue;
-      const swatches = parseRow(row);
-      if (swatches.length > 0) {
-        map.set(row.productSlug, swatches);
-      }
+      // Don't pre-filter empty results — the consumer (enrich-colors) does its
+      // own empty check, and pre-filtering hides "all rows dropped" outages.
+      map.set(row.productSlug, parseRow(row));
+    }
+    // Three indistinguishable observations otherwise: empty collection /
+    // all-rows-dropped / thrown error. The thrown error is logged via the
+    // catch block — this signal covers the all-rows-dropped case (someone
+    // renamed the productSlug field, wiped the collection, etc.).
+    if (rows.length > 0 && map.size === 0) {
+      await logWixFailure(
+        "wix-cms",
+        "listAllProductSwatches",
+        new Error(
+          `received ${rows.length} rows but every row was dropped (missing productSlug or all swatches malformed) — check CMS schema`,
+        ),
+      );
     }
     return map;
   } catch (err) {

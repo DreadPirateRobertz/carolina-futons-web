@@ -1,16 +1,7 @@
-// Server-side helper to enrich a list of products with their color choices.
-//
-// Background: `client.products.queryProducts()` (used by every PLP/home grid
-// fetcher) strips productOptions from its response — see
-// src/lib/wix/products.ts:54. The original cf-l6aj.3 wiring (#447) covered
-// the gap by issuing N parallel `getProductBySlug` calls (one per card) and
-// flagged it as a perf-followup.
-//
-// This now reads from a denormalized CMS collection instead — one batch call
-// to `listAllProductSwatches()` returns a slug→swatches map, which we project
-// onto the product list. One Wix Data round trip vs N getProduct round trips.
-// The CMS row is the source of truth for both name and hex, so we no longer
-// guess hex via colorNameToHex on the home grid.
+// Wix's `client.products.queryProducts()` (every PLP/home grid fetcher uses
+// it) strips productOptions from its response, so the home grid can't reach
+// per-product color metadata directly. Fix: read it from a denormalized
+// `ProductSwatches` CMS table — one batch call instead of N getProduct calls.
 
 import { listAllProductSwatches } from "@/lib/wix/product-swatches";
 import { type ColorChoice } from "@/lib/product/color-options";

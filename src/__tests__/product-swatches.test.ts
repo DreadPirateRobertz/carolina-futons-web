@@ -106,6 +106,18 @@ describe("getProductSwatches", () => {
     expect(await getProductSwatches("x")).toEqual([]);
   });
 
+  it.each([
+    ["undefined", undefined],
+    ["null", null],
+    ["plain object", {}],
+    ["number", 42],
+  ])("returns [] when swatches field is %s", async (_label, value) => {
+    queryCollectionWhere.mockResolvedValue([
+      { productSlug: "x", swatches: value },
+    ]);
+    expect(await getProductSwatches("x")).toEqual([]);
+  });
+
   it("trims whitespace from name and hex before validating", async () => {
     queryCollectionWhere.mockResolvedValue([
       {
@@ -159,20 +171,53 @@ describe("listAllProductSwatches", () => {
     expect(map.get("ok")).toEqual([{ name: "Z", hex: "#222222" }]);
   });
 
-  it("skips rows whose swatches all fail validation", async () => {
+  it("keeps rows with productSlug even when every swatch is malformed (downstream filters)", async () => {
+    // Per-row visibility for malformed swatches comes from parseSwatch's
+    // console.warn — pre-filtering at this layer hides "all swatches dropped"
+    // outages from the all-rows-dropped warning below. Consumers
+    // (enrich-colors.ts) re-check for empty arrays.
     listCollectionItems.mockResolvedValue([
-      {
-        productSlug: "all-bad",
-        swatches: [{ name: "", hex: "blue" }],
-      },
-      {
-        productSlug: "good",
-        swatches: [{ name: "OK", hex: "#abcdef" }],
-      },
+      { productSlug: "all-bad", swatches: [{ name: "", hex: "blue" }] },
+      { productSlug: "good", swatches: [{ name: "OK", hex: "#abcdef" }] },
     ]);
     const map = await listAllProductSwatches();
-    expect(map.has("all-bad")).toBe(false);
+    expect(map.get("all-bad")).toEqual([]);
     expect(map.get("good")).toEqual([{ name: "OK", hex: "#abcdef" }]);
+  });
+
+  it("last-write-wins on duplicate productSlug rows (Wix doesn't enforce uniqueness)", async () => {
+    listCollectionItems.mockResolvedValue([
+      { productSlug: "rio", swatches: [{ name: "Old", hex: "#111111" }] },
+      { productSlug: "rio", swatches: [{ name: "New", hex: "#222222" }] },
+    ]);
+    const map = await listAllProductSwatches();
+    expect(map.size).toBe(1);
+    expect(map.get("rio")).toEqual([{ name: "New", hex: "#222222" }]);
+  });
+
+  it("logs an all-rows-dropped warning when productSlug is missing on every row", async () => {
+    // Triggered if a content editor renames the productSlug field or wipes
+    // the column — without this signal the home grid silently shows zero
+    // swatches with no log trail.
+    listCollectionItems.mockResolvedValue([
+      { swatches: [{ name: "X", hex: "#000000" }] },
+      { productSlug: "", swatches: [{ name: "Y", hex: "#111111" }] },
+    ]);
+    const map = await listAllProductSwatches();
+    expect(map.size).toBe(0);
+    expect(logWixFailure).toHaveBeenCalledWith(
+      "wix-cms",
+      "listAllProductSwatches",
+      expect.objectContaining({
+        message: expect.stringContaining("every row was dropped"),
+      }),
+    );
+  });
+
+  it("does not fire the all-rows-dropped warning when the collection is genuinely empty", async () => {
+    listCollectionItems.mockResolvedValue([]);
+    await listAllProductSwatches();
+    expect(logWixFailure).not.toHaveBeenCalled();
   });
 
   it("returns an empty map and logs when the fetch throws", async () => {

@@ -95,6 +95,15 @@ describe("enrichProductsWithColorChoices", () => {
     expect(map.get("rio-id")).toBeDefined();
   });
 
+  it("contract-locks: relies on listAllProductSwatches to swallow throws and return Map (no try/catch in caller)", async () => {
+    // If anyone ever flips listAllProductSwatches to rethrow, this test fails
+    // FAST instead of letting a Wix outage 500 the home page on cold render.
+    listAllProductSwatches.mockRejectedValue(new Error("CMS down"));
+    await expect(
+      enrichProductsWithColorChoices([product("p1", "rio")]),
+    ).rejects.toThrow("CMS down");
+  });
+
   it("skips products whose CMS row has an empty swatches array", async () => {
     listAllProductSwatches.mockResolvedValue(
       new Map<string, Array<{ name: string; hex: string }>>([
