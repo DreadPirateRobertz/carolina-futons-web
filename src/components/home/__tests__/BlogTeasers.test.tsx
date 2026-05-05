@@ -7,7 +7,7 @@ import type { BlogPostSummary } from "@/lib/wix/blog";
 const listPostsMock = vi.fn<() => Promise<BlogPostSummary[]>>();
 
 vi.mock("@/lib/wix/blog", () => ({
-  listPosts: (...args: unknown[]) => listPostsMock(...args),
+  listPosts: () => listPostsMock(),
 }));
 
 // next/image → plain <img> in jsdom
