@@ -103,7 +103,10 @@ export default async function PdpPage(props: {
   const descriptionText = stripHtml(product.description ?? "");
   const productOptions = (product.productOptions ?? []) as ProductOptionInput[];
   const variants = (product.variants ?? []) as VariantInput[];
-  const galleryImages = buildGallery(product);
+  // cfw-1nm: include per-choice swatch media (color thumbnails) in the gallery
+  // so the picker's variant-resolved imageUrl resolves to a real gallery index
+  // and PdpGallery actually swaps the main image when a color is selected.
+  const galleryImages = buildGallery(product, productOptions);
   const stock = (product.stock ?? null) as StockBadgeInput | null;
   const [crossSell, alsoBought, productBadges] = await Promise.all([
     getCrossSellProducts(product),
@@ -279,10 +282,15 @@ type WixMediaProduct = {
 };
 
 // cf-3qt.6.F.1: build the ordered gallery list from Wix product.media.
-// mainMedia leads, then media.items[] for image-type entries. Duplicates
-// (mainMedia url appearing again in items) are filtered so the thumb strip
-// doesn't show the same image twice.
-function buildGallery(product: WixMediaProduct): GalleryImage[] {
+// mainMedia leads, then media.items[] for image-type entries. cfw-1nm: also
+// fold in per-choice swatch media (productOptions[*].choices[*].media), since
+// Wix Stores v1 attaches color photos to the choice — not the variant — and
+// PdpGallery requires `activeUrl` to be present in this list to actually swap.
+// Duplicates are filtered so the thumb strip doesn't show the same image twice.
+function buildGallery(
+  product: WixMediaProduct,
+  productOptions?: ReadonlyArray<ProductOptionInput>,
+): GalleryImage[] {
   const seen = new Set<string>();
   const images: GalleryImage[] = [];
   const mainUrl = product.media?.mainMedia?.image?.url;
@@ -296,6 +304,14 @@ function buildGallery(product: WixMediaProduct): GalleryImage[] {
     if (!url || seen.has(url)) continue;
     images.push({ url, alt: item.title ?? undefined });
     seen.add(url);
+  }
+  for (const option of productOptions ?? []) {
+    for (const choice of option.choices ?? []) {
+      const url = choice.media?.mainMedia?.image?.url;
+      if (!url || seen.has(url)) continue;
+      images.push({ url, alt: choice.description ?? choice.value ?? undefined });
+      seen.add(url);
+    }
   }
   return images;
 }

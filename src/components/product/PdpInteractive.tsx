@@ -25,6 +25,7 @@ import {
   findMatchingVariant,
   getSelectedImageUrl,
   getSelectedPrice,
+  getSelectedPriceCents,
   initialSelection,
   isSelectionComplete,
   isVariantInStock,
@@ -114,8 +115,9 @@ export function PdpInteractive({
     return () => observer.disconnect();
   }, []);
 
-  const imageUrl = getSelectedImageUrl(variants, selection, fallbackImageUrl);
+  const imageUrl = getSelectedImageUrl(variants, selection, fallbackImageUrl, productOptions);
   const selectedPrice = getSelectedPrice(variants, selection, fallbackPrice);
+  const selectedPriceCents = getSelectedPriceCents(variants, selection, fallbackPriceCents);
   const selectedVariant = findMatchingVariant(variants, selection);
   const selectionComplete =
     productOptions.length === 0 || isSelectionComplete(productOptions, selection);
@@ -141,7 +143,7 @@ export function PdpInteractive({
     options: selection,
     imageUrl,
     productUrl: `/products/${productSlug}`,
-    unitPriceCents: fallbackPriceCents,
+    unitPriceCents: selectedPriceCents,
     formattedUnitPrice: selectedPrice,
     disabled: !selectionComplete || !inStock,
     disabledReason,

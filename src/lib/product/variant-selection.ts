@@ -2,25 +2,45 @@
 // Framework-free so it can be unit-tested without render setup, and reused
 // by cf-3qt.2.2 AddToCart + cf-3qt.2.3 Cart Drawer.
 
+// Per-Wix v1 schema, image-bearing media for swatch-style options lives on
+// productOptions[*].choices[*].media — NOT on the Variant. The PDP variant
+// picker honors that hierarchy first; Variant.media is kept on VariantInput
+// only as a back-compat path for fixtures and pre-existing tests.
+type ChoiceMedia = {
+  mainMedia?: { image?: { url?: string | null } | null } | null;
+} | null;
+
 export type ProductOptionInput = {
   name?: string | null;
-  choices?: ReadonlyArray<{ value?: string | null; description?: string | null }> | null;
+  choices?:
+    | ReadonlyArray<{
+        value?: string | null;
+        description?: string | null;
+        media?: ChoiceMedia;
+      }>
+    | null;
 };
 
 export type VariantInput = {
   _id?: string | null;
   choices?: Record<string, string> | null;
   variant?: {
-    priceData?: { formatted?: { price?: string | null } | null } | null;
+    priceData?: {
+      // `formatted.price` is the localized display string (e.g. "$619.00").
+      // Wix returns the raw `price` number reliably; `formatted` is sometimes
+      // omitted on per-variant data, so the picker formats from `price` itself
+      // as a fallback before giving up to the product-level fallback.
+      price?: number | null;
+      currency?: string | null;
+      formatted?: { price?: string | null } | null;
+    } | null;
   } | null;
   stock?: {
     trackQuantity?: boolean | null;
     inStock?: boolean | null;
     quantity?: number | null;
   } | null;
-  media?: {
-    mainMedia?: { image?: { url?: string | null } | null } | null;
-  } | null;
+  media?: ChoiceMedia;
 };
 
 export type ChoiceSelection = Record<string, string>;
@@ -96,19 +116,68 @@ export function getSelectedPrice(
   selection: ChoiceSelection,
   fallback: string,
 ): string {
-  const variant = findMatchingVariant(variants, selection);
-  const price = variant?.variant?.priceData?.formatted?.price;
-  return price ?? fallback;
+  const priceData = findMatchingVariant(variants, selection)?.variant?.priceData;
+  const formatted = priceData?.formatted?.price;
+  if (formatted) return formatted;
+  if (typeof priceData?.price === "number" && priceData.price > 0) {
+    return formatVariantCurrency(priceData.price, priceData.currency ?? "USD");
+  }
+  return fallback;
+}
+
+// Returns the variant-specific unit price in cents so the cart line carries
+// the price the customer saw on the PDP. Falls back to the product-level cents
+// when the variant has no usable priceData (manageVariants=false products, or
+// transient catalog states).
+export function getSelectedPriceCents(
+  variants: ReadonlyArray<VariantInput>,
+  selection: ChoiceSelection,
+  fallbackCents: number,
+): number {
+  const price = findMatchingVariant(variants, selection)?.variant?.priceData?.price;
+  if (typeof price === "number" && price > 0) return Math.round(price * 100);
+  return fallbackCents;
 }
 
 export function getSelectedImageUrl(
   variants: ReadonlyArray<VariantInput>,
   selection: ChoiceSelection,
   fallbackUrl: string | undefined,
+  productOptions?: ReadonlyArray<ProductOptionInput>,
 ): string | undefined {
-  const variant = findMatchingVariant(variants, selection);
-  const url = variant?.media?.mainMedia?.image?.url;
+  // Wix Stores v1: per-choice swatch media (e.g. each color's product photo)
+  // is attached to productOptions[*].choices[*].media. The Variant itself has
+  // no media field, so reading it never swaps the gallery. Walk the options
+  // and return the first choice-media URL matching the current selection.
+  if (productOptions) {
+    for (const option of productOptions) {
+      const optionName = option.name;
+      if (!optionName) continue;
+      const value = selection[optionName];
+      if (!value) continue;
+      const choice = option.choices?.find((c) => c.value === value);
+      const url = choice?.media?.mainMedia?.image?.url;
+      if (url) return url;
+    }
+  }
+  // Back-compat: variant-level media for fixtures/tests that pre-date the
+  // choice-media path.
+  const url = findMatchingVariant(variants, selection)?.media?.mainMedia?.image?.url;
   return url ?? fallbackUrl;
+}
+
+function formatVariantCurrency(amount: number, currency: string): string {
+  const isWhole = Number.isInteger(amount);
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: isWhole ? 0 : 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return isWhole ? `$${amount}` : `$${amount.toFixed(2)}`;
+  }
 }
 
 export function initialSelection(

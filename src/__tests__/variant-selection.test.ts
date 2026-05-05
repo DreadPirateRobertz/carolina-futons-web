@@ -3,6 +3,7 @@ import {
   findMatchingVariant,
   getSelectedImageUrl,
   getSelectedPrice,
+  getSelectedPriceCents,
   initialSelection,
   isChoiceAvailable,
   isSelectionComplete,
@@ -136,6 +137,59 @@ describe("getSelectedPrice", () => {
   it("falls back when no variant matches", () => {
     expect(getSelectedPrice(variants, { Size: "King" }, "from $799")).toBe("from $799");
   });
+
+  // cfw-1nm Bug 2: Wix Stores often returns priceData.price (number) without
+  // priceData.formatted on per-variant data — the picker must format it itself
+  // rather than fall back to the product-level fallback.
+  it("formats from raw priceData.price when formatted.price is absent", () => {
+    const noFormatted: VariantInput[] = [
+      {
+        _id: "v",
+        choices: { Size: "King" },
+        variant: { priceData: { price: 899, currency: "USD" } },
+        stock: { inStock: true },
+      },
+    ];
+    expect(getSelectedPrice(noFormatted, { Size: "King" }, "$0")).toBe("$899");
+  });
+});
+
+describe("getSelectedPriceCents", () => {
+  it("returns the matching variant's price in cents", () => {
+    const v: VariantInput[] = [
+      {
+        _id: "v",
+        choices: { Size: "King" },
+        variant: { priceData: { price: 1899, currency: "USD" } },
+        stock: { inStock: true },
+      },
+    ];
+    expect(getSelectedPriceCents(v, { Size: "King" }, 0)).toBe(189_900);
+  });
+
+  it("falls back when variant has no priceData.price", () => {
+    expect(getSelectedPriceCents(variants, { Size: "King" }, 79_900)).toBe(79_900);
+    expect(
+      getSelectedPriceCents(
+        [{ _id: "v", choices: { Size: "Full" } }],
+        { Size: "Full" },
+        50_000,
+      ),
+    ).toBe(50_000);
+  });
+
+  // Avoid floating-point drift: 12.99 * 100 === 1299.0000000000002 in JS.
+  it("rounds to integer cents for fractional prices", () => {
+    const v: VariantInput[] = [
+      {
+        _id: "v",
+        choices: { Size: "Full" },
+        variant: { priceData: { price: 12.99 } },
+        stock: { inStock: true },
+      },
+    ];
+    expect(getSelectedPriceCents(v, { Size: "Full" }, 0)).toBe(1299);
+  });
 });
 
 describe("getSelectedImageUrl", () => {
@@ -155,6 +209,76 @@ describe("getSelectedImageUrl", () => {
     expect(
       getSelectedImageUrl(variants, { Size: "King" }, "https://fallback"),
     ).toBe("https://fallback");
+  });
+
+  // cfw-1nm Bug 1: Wix Stores v1 puts swatch images on
+  // productOptions[*].choices[*].media — never on the Variant. The picker
+  // must read choice media so color selection swaps the gallery.
+  it("returns the selected choice's media when productOptions carry per-choice media", () => {
+    const optionsWithMedia: ProductOptionInput[] = [
+      {
+        name: "Color",
+        choices: [
+          {
+            value: "Cherry",
+            description: "Cherry",
+            media: { mainMedia: { image: { url: "https://img/cherry.jpg" } } },
+          },
+          {
+            value: "Walnut",
+            description: "Walnut",
+            media: { mainMedia: { image: { url: "https://img/walnut.jpg" } } },
+          },
+        ],
+      },
+    ];
+    const variantsNoMedia: VariantInput[] = [
+      { _id: "v1", choices: { Color: "Cherry" }, stock: { inStock: true } },
+      { _id: "v2", choices: { Color: "Walnut" }, stock: { inStock: true } },
+    ];
+    expect(
+      getSelectedImageUrl(variantsNoMedia, { Color: "Cherry" }, "https://fallback", optionsWithMedia),
+    ).toBe("https://img/cherry.jpg");
+    expect(
+      getSelectedImageUrl(variantsNoMedia, { Color: "Walnut" }, "https://fallback", optionsWithMedia),
+    ).toBe("https://img/walnut.jpg");
+  });
+
+  it("uses choice media in preference to variant media when both are present", () => {
+    const optionsWithMedia: ProductOptionInput[] = [
+      {
+        name: "Size",
+        choices: [
+          {
+            value: "Full",
+            description: "Full",
+            media: { mainMedia: { image: { url: "https://img/choice-full.jpg" } } },
+          },
+        ],
+      },
+    ];
+    expect(
+      getSelectedImageUrl(
+        variants,
+        { Size: "Full", Fabric: "Linen" },
+        "https://fallback",
+        optionsWithMedia,
+      ),
+    ).toBe("https://img/choice-full.jpg");
+  });
+
+  it("falls through to variant media when the selected choice has none", () => {
+    const optionsNoMedia: ProductOptionInput[] = [
+      { name: "Size", choices: [{ value: "Full", description: "Full" }] },
+    ];
+    expect(
+      getSelectedImageUrl(
+        variants,
+        { Size: "Full", Fabric: "Linen" },
+        "https://fallback",
+        optionsNoMedia,
+      ),
+    ).toBe("https://img/full-linen.jpg");
   });
 });
 

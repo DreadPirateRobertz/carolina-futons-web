@@ -21,6 +21,14 @@
 const PLACEHOLDER =
   "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&auto=format&fit=crop";
 
+// Distinct per-color photos so PDP variant→image binding is exercised in
+// fixture mode (cfw-1nm). Real Wix puts these on
+// productOptions[*].choices[*].media.mainMedia.image.url.
+const KINGSTON_NATURAL_IMG =
+  "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=800&auto=format&fit=crop";
+const KINGSTON_ESPRESSO_IMG =
+  "https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=800&auto=format&fit=crop";
+
 function makeProduct(
   id: string,
   slug: string,
@@ -86,8 +94,18 @@ const KINGSTON = makeProduct(
       name: "Frame Color",
       optionType: "color" as const,
       choices: [
-        { description: "Natural", value: "Natural", inStock: true },
-        { description: "Espresso", value: "Espresso", inStock: true },
+        {
+          description: "Natural",
+          value: "Natural",
+          inStock: true,
+          media: { mainMedia: { image: { url: KINGSTON_NATURAL_IMG } } },
+        },
+        {
+          description: "Espresso",
+          value: "Espresso",
+          inStock: true,
+          media: { mainMedia: { image: { url: KINGSTON_ESPRESSO_IMG } } },
+        },
       ],
     },
     {

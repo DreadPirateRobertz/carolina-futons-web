@@ -441,6 +441,94 @@ describe("PdpInteractive (cf-3qt.2.1 + 2.2 integration)", () => {
     });
   });
 
+  // cfw-1nm: variant state must drive both gallery image (choice media) and
+  // cart unit price (variant priceData) — production saw 5 colors clicked
+  // with a single image src, and Full/Queen/King with one stuck price.
+  describe("variant→media + variant→price binding (cfw-1nm)", () => {
+    it("swaps the gallery image when a different color choice is selected (choice media)", async () => {
+      const colorOptions: ProductOptionInput[] = [
+        {
+          name: "Color",
+          choices: [
+            {
+              value: "Cherry",
+              description: "Cherry",
+              media: { mainMedia: { image: { url: "https://img/cherry.jpg" } } },
+            },
+            {
+              value: "Walnut",
+              description: "Walnut",
+              media: { mainMedia: { image: { url: "https://img/walnut.jpg" } } },
+            },
+          ],
+        },
+      ];
+      const colorVariants: VariantInput[] = [
+        { _id: "vc", choices: { Color: "Cherry" }, stock: { inStock: true } },
+        { _id: "vw", choices: { Color: "Walnut" }, stock: { inStock: true } },
+      ];
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Kingston Futon Frame"
+          productOptions={colorOptions}
+          variants={colorVariants}
+          fallbackImageUrl="https://img/fallback.jpg"
+          fallbackPrice="$619"
+        />,
+      );
+      expect(screen.getByTestId("pdp-main-image")).toHaveAttribute(
+        "src",
+        "https://img/cherry.jpg",
+      );
+      fireEvent.click(screen.getByRole("radio", { name: /color: walnut/i }));
+      expect(screen.getByTestId("pdp-main-image")).toHaveAttribute(
+        "src",
+        "https://img/walnut.jpg",
+      );
+    });
+
+    it("PDP price reflects the selected variant's price (formatted from raw priceData.price)", () => {
+      const sizeOptions: ProductOptionInput[] = [
+        {
+          name: "Size",
+          choices: [
+            { value: "Full", description: "Full" },
+            { value: "King", description: "King" },
+          ],
+        },
+      ];
+      const sizeVariants: VariantInput[] = [
+        {
+          _id: "vfull",
+          choices: { Size: "Full" },
+          variant: { priceData: { price: 619, currency: "USD" } },
+          stock: { inStock: true },
+        },
+        {
+          _id: "vking",
+          choices: { Size: "King" },
+          variant: { priceData: { price: 899, currency: "USD" } },
+          stock: { inStock: true },
+        },
+      ];
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Kingston Futon Frame"
+          productOptions={sizeOptions}
+          variants={sizeVariants}
+          fallbackImageUrl="https://img/fallback.jpg"
+          fallbackPrice="$619"
+          fallbackPriceCents={61_900}
+        />,
+      );
+      expect(screen.getByTestId("variant-price")).toHaveTextContent("$619");
+      fireEvent.click(screen.getByRole("radio", { name: /size: king/i }));
+      expect(screen.getByTestId("variant-price")).toHaveTextContent("$899");
+    });
+  });
+
   describe("white-glove widget visibility", () => {
     it("hides white-glove widget when fallbackPriceCents below threshold", () => {
       const { container } = render(
