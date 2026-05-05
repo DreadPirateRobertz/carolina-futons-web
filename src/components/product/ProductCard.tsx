@@ -9,6 +9,9 @@ import { getPlpCardImages } from "@/lib/product/plp-card-images";
 import { getReviewStats } from "@/lib/product/review-stats";
 import { AddToCompareButton } from "@/components/compare/AddToCompareButton";
 import { PdpProductBadges } from "@/components/product/PdpProductBadges";
+import { ProductCardSwatchRow } from "@/components/product/ProductCardSwatchRow";
+import { QuickViewButton } from "@/components/product/QuickViewButton";
+import type { ColorChoice } from "@/lib/product/color-options";
 import type { WixProduct } from "@/lib/wix/products";
 import type { ProductBadgeType } from "@/lib/wix/product-badges";
 
@@ -61,11 +64,19 @@ export function ProductCard({
   priority = false,
   sizes = DEFAULT_PLP_SIZES,
   badges,
+  colorChoices,
 }: {
   product: WixProduct;
   priority?: boolean;
   sizes?: string;
   badges?: readonly ProductBadgeType[];
+  /**
+   * Optional color choices for the "Available in N colors" badge + dot strip.
+   * Server-side enrichment (see lib/product/enrich-colors.ts) populates this
+   * for surfaces that want it; PLP grids without enrichment leave it
+   * undefined and the badge is omitted.
+   */
+  colorChoices?: ReadonlyArray<ColorChoice>;
 }) {
   const prefersReducedMotion = useReducedMotion() ?? false;
   const href = product.slug ? `/products/${product.slug}` : "#";
@@ -153,6 +164,9 @@ export function ProductCard({
               {reviewStats.count === 1 ? "review" : "reviews"})
             </p>
           ) : null}
+          {colorChoices && colorChoices.length > 0 ? (
+            <ProductCardSwatchRow choices={colorChoices} />
+          ) : null}
         </div>
         {/* cf-cta accent strip: scales from 0 → full width on hover/focus,
             reveal-on-intent. Under reduced-motion we render nothing so the
@@ -170,6 +184,13 @@ export function ProductCard({
         // the card. bottom-12/right-2 stays within overflow-hidden bounds.
         <div className="absolute bottom-12 right-2 z-10">
           <AddToCompareButton slug={product.slug} />
+        </div>
+      ) : null}
+      {product.slug ? (
+        // Top-right quick-view trigger; sibling of Link to avoid nested-anchor
+        // semantics and to keep card-click → PDP navigation intact.
+        <div className="absolute right-2 top-2 z-10">
+          <QuickViewButton slug={product.slug} productName={product.name ?? ""} />
         </div>
       ) : null}
     </m.div>
