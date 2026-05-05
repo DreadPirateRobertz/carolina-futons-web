@@ -21,6 +21,7 @@ import { getVideoCatalog } from "@/lib/videos/catalog";
 import { HomeFeaturedCollections } from "@/components/home/HomeFeaturedCollections";
 import { HomeSaleStrip } from "@/components/home/HomeSaleStrip";
 import { ContinueShoppingStrip } from "@/components/home/ContinueShoppingStrip";
+import { RecentlyViewedStrip } from "@/components/home/RecentlyViewedStrip";
 import { SocialFeeds } from "@/components/home/SocialFeeds";
 import { enrichProductsWithColorChoices } from "@/lib/product/enrich-colors";
 import { GiftCardPromo } from "@/components/home/GiftCardPromo";
@@ -108,6 +109,9 @@ export default async function HomePage() {
         categories={categories}
         colorChoicesByProductId={colorChoicesByProductId}
       />
+
+      {/* ── Recently Viewed — localStorage LRU, hidden for first-time visitors (cf-l6aj.8) ── */}
+      <RecentlyViewedStrip />
 
       {/* ── Sale strip — collapses to nothing when no sale products ── */}
       <HomeSaleStrip />
