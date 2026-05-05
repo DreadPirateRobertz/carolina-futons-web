@@ -13,6 +13,7 @@ import {
   isFutonFrame,
 } from "@/lib/product/mattress-bundle";
 import { PdpRecentlyViewed } from "@/components/product/PdpRecentlyViewed";
+import { ShowroomCta } from "@/components/product/ShowroomCta";
 import { PdpReviews, pickPdpReviews } from "@/components/product/PdpReviews";
 import { PdpShareButtons } from "@/components/product/PdpShareButtons";
 import { PdpViewItemTracker } from "@/components/product/PdpViewItemTracker";
@@ -223,6 +224,8 @@ export default async function PdpPage(props: {
           weightLbs={product.weight ?? 0}
         />
       </div>
+
+      <ShowroomCta />
 
       {productVideo ? <PdpProductVideo video={productVideo} /> : null}
 
