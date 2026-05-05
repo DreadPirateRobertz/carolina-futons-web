@@ -62,10 +62,14 @@ function buildCompactStars(): StarDef[] {
   }));
 }
 
-function CompactBear() {
+function CompactBear({ t = 0 }: { t?: number }) {
   const c = SKY;
+  // Subtle breathing — chest rises ~3% over a slow cycle so the bear feels
+  // alive without animating to motion-sickness levels.
+  const breath = 1 + 0.03 * Math.sin(t * 0.7);
+  const lookUp = -0.15 * Math.sin(t * 0.5);
   return (
-    <g transform="translate(960 210) scale(1.3)">
+    <g transform={`translate(960 ${210 + lookUp}) scale(1.3 ${1.3 * breath})`}>
       {/* Body */}
       <ellipse cx="0" cy="0" rx="58" ry="13" fill={c.bear} />
       {/* Head */}
@@ -239,7 +243,7 @@ export function StargazingHero({
 
         {/* Bear stargazing on hill */}
         <g data-slot="stargazing-bear">
-          <CompactBear />
+          <CompactBear t={t} />
         </g>
 
         {/* Exactly 2 fireflies hovering near the bear */}
