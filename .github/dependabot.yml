@@ -1,0 +1,63 @@
+# Dependabot — automated dependency updates
+# Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+#
+# Restored 2026-05-05 per Stilgar directive (cf-s5cs) — cfw CI standards parity
+# with carolina-futons (pre-#1137 hardening). Email/Codecov noise was removed
+# in #1137 + #459, but the security/version-update PR feed is being kept ON
+# to mirror cfutons hardening.
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: daily
+      time: "08:00"
+      timezone: America/New_York
+    labels:
+      - dependencies
+    open-pull-requests-limit: 10
+    rebase-strategy: auto
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    groups:
+      dev-dependencies:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+      next-react:
+        patterns:
+          - "next"
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+          - "eslint-config-next"
+        update-types:
+          - minor
+          - patch
+      wix-sdk:
+        patterns:
+          - "@wix/*"
+        update-types:
+          - minor
+          - patch
+    # Major bumps for known-stable parents that haven't yet released compatible
+    # versions are ignored here. Remove entries once the parent ships support.
+    ignore: []
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: America/New_York
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
