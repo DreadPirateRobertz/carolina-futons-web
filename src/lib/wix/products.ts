@@ -181,32 +181,48 @@ export async function listCollections(limit = 25): Promise<WixCollection[]> {
   }
 }
 
-// cf-346v / cf-ni0z: fetch full catalog and filter in-memory so substring
-// queries like "futon" or "monterey" match anywhere in the product name.
-// Wix queryProducts() SDK caps .limit() at 100 — requesting 200 caused a
-// silent SDK error and returned []. Paginate to collect all products up to
-// SEARCH_CATALOG_CAP so the search index is complete.
-const SEARCH_PAGE_SIZE = 100;
+// Wix queryProducts() SDK caps .limit() at 100. Anything that needs the
+// full catalog (search index, sitemap) must paginate explicitly — a single
+// call with limit=1000 fails SDK validation and the catch returns [].
+const PRODUCT_PAGE_SIZE = 100;
 const SEARCH_CATALOG_CAP = 500;
+// Sitemap default — covers ~10x the current 88 SKU catalog. Cap exists so
+// a runaway iteration can't infinite-loop in a Vercel build.
+const SITEMAP_CATALOG_CAP = 1000;
 
-async function getAllProductsForSearch(): Promise<WixProduct[]> {
+// cfw-upa: paginate-to-completion helper. Replaces the previous
+// `listProducts(1000)` call site (Wix rejected the 1000-limit and the
+// sitemap silently dropped every product URL).
+export async function listAllProducts(
+  cap: number = SITEMAP_CATALOG_CAP,
+): Promise<WixProduct[]> {
+  if (USE_FIXTURES) {
+    return FIXTURE_PRODUCTS.slice(0, cap) as unknown as WixProduct[];
+  }
   try {
     const client = getWixClient();
     const all: WixProduct[] = [];
     let page = await client.products
       .queryProducts()
-      .limit(SEARCH_PAGE_SIZE)
+      .limit(PRODUCT_PAGE_SIZE)
       .find();
     all.push(...page.items);
-    while (page.hasNext() && all.length < SEARCH_CATALOG_CAP) {
+    while (page.hasNext() && all.length < cap) {
       page = await page.next();
       all.push(...page.items);
     }
-    return all;
+    return all.slice(0, cap);
   } catch (err) {
-    await logWixFailure("wix", "getAllProductsForSearch", err);
+    await logWixFailure("wix", "listAllProducts", err);
     return [];
   }
+}
+
+// cf-346v / cf-ni0z: fetch full catalog and filter in-memory so substring
+// queries like "futon" or "monterey" match anywhere in the product name.
+// Now delegates to listAllProducts so pagination logic lives in one place.
+async function getAllProductsForSearch(): Promise<WixProduct[]> {
+  return listAllProducts(SEARCH_CATALOG_CAP);
 }
 
 export async function searchProducts(

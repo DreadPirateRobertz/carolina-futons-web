@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { SHOP_CATEGORIES } from "@/lib/shop/categories";
 import { listAllPostSlugs } from "@/lib/wix/blog";
-import { listProducts } from "@/lib/wix/products";
+import { listAllProducts } from "@/lib/wix/products";
 import { SEO_CITIES } from "@/lib/seo/cities";
 
 // Site-wide sitemap (cf-sitemap). Next.js serves this at /sitemap.xml.
@@ -36,10 +36,11 @@ const STATIC_PATHS = [
   "/sustainability",
 ] as const;
 
-// Pull as many products as Wix will return in one call. 1000 is the SDK hard
-// cap; past that the listing truncates and the sitemap would silently drop
-// products. If the catalog ever grows beyond 1000 SKUs, paginate here.
-const PRODUCT_SITEMAP_LIMIT = 1000;
+// cfw-upa: Wix queryProducts() caps .limit() at 100 per call. The previous
+// PRODUCT_SITEMAP_LIMIT=1000 single call hit SDK validation and the
+// listProducts catch silently returned [], dropping every product URL
+// from /sitemap.xml. listAllProducts paginates 100 at a time up to its
+// own SITEMAP_CATALOG_CAP=1000 (covers ~10x today's 88 SKUs).
 
 export function resolveSiteBase(): string {
   if (process.env.NEXT_PUBLIC_SITE_URL) {
@@ -75,7 +76,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }),
   );
 
-  const products = await listProducts(PRODUCT_SITEMAP_LIMIT);
+  const products = await listAllProducts();
   const productEntries: MetadataRoute.Sitemap = products
     .filter(
       (p): p is typeof p & { slug: string } =>
