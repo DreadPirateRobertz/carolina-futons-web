@@ -78,9 +78,26 @@ describe("HeaderMobileMenu", () => {
     await userEvent.click(
       screen.getByRole("button", { name: /open navigation menu/i }),
     );
-    // Backdrop has aria-hidden="true" and the bg-cf-charcoal/40 class
-    const backdrop = container.querySelector('[aria-hidden="true"]');
+    // Backdrop is the fixed inset-0 div with aria-hidden="true". Visual
+    // focus comes from a 70% charcoal tint plus a subtle blur so content
+    // beneath is clearly de-emphasized rather than bleeding through.
+    const backdrop = document.body.querySelector(
+      'div[aria-hidden="true"].fixed.inset-0',
+    );
     expect(backdrop).not.toBeNull();
+    expect(backdrop?.className).toContain("bg-cf-charcoal/70");
+    expect(backdrop?.className).toContain("backdrop-blur-sm");
+    expect(container).toBeDefined();
+  });
+
+  it("drawer is comfortably wide on small phones (w-80) and tightens at sm:", () => {
+    renderMenu();
+    const drawer = document.getElementById("mobile-nav-drawer");
+    // 320px on <640px viewports keeps content from peeking past the right
+    // edge on iPhone-13/14-class screens; sm: trims back to 288px so the
+    // tablet column doesn't feel chunky.
+    expect(drawer?.className).toContain("w-80");
+    expect(drawer?.className).toContain("sm:w-72");
   });
 
   it("locks body scroll when open", async () => {
