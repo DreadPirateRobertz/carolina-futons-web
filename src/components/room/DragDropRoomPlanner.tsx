@@ -7,7 +7,7 @@
 //   • localStorage save/load (auto-saves on every change)
 //   • Clear button
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 
 import { FUTON_OPTIONS } from "@/lib/design-a-room/steps";
 import {
@@ -57,10 +57,12 @@ export function DragDropRoomPlanner() {
   const dragPayload = useRef<DragPayload | null>(null);
   const dragOffsetInRoom = useRef({ xIn: 0, yIn: 0 });
 
-  // Load from localStorage on mount.
+  // Load from localStorage on mount. setState is required here because
+  // localStorage isn't available during SSR — initial state must be deterministic.
   useEffect(() => {
     const layout = loadLayout();
     if (!layout) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRoomWStr(String(layout.roomWFt));
     setRoomDStr(String(layout.roomDFt));
     setItems(layout.items);
@@ -77,11 +79,6 @@ export function DragDropRoomPlanner() {
   const roomPxD = roomD * 12 * scale;
   const roomOriginX = (CANVAS_W - roomPxW) / 2;
   const roomOriginY = (CANVAS_H - roomPxD) / 2;
-
-  const currentLayout = useCallback(
-    (): LayoutState => ({ roomWFt: roomW, roomDFt: roomD, items }),
-    [roomW, roomD, items],
-  );
 
   function persistLayout(layout: LayoutState) {
     saveLayout(layout);
