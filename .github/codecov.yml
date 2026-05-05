@@ -1,0 +1,34 @@
+# Codecov configuration for carolina-futons-web
+# Docs: https://docs.codecov.com/docs/codecov-yaml
+#
+# Added 2026-05-05 per Stilgar directive (cf-s5cs) — CI standards parity.
+# Single aggregate target enforced here; per-metric thresholds enforced by
+# vitest.config.ts coverage.thresholds block.
+
+codecov:
+  require_ci_to_pass: true
+  notify:
+    wait_for_ci: true
+
+coverage:
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 1%
+    patch:
+      default:
+        target: 85%
+
+comment:
+  layout: "reach,diff,flags,components"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+
+flags:
+  unit:
+    paths:
+      - src/
+    carryforward: false

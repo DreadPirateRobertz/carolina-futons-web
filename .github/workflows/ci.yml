@@ -9,9 +9,18 @@ on:
     - cron: '0 6 * * *'  # Nightly at 6am UTC — full lint/typecheck/unit/E2E suite
   workflow_dispatch:
 
+# Path filter for PR-level E2E (cf-s5cs):
+#   - run E2E on PRs that touch src/app, src/components, src/lib/wix, e2e/,
+#     or playwright.config.ts. Other PRs (docs, config-only) skip E2E.
+#   - nightly + manual dispatch always run E2E regardless of paths.
+
+permissions:
+  contents: read
+
 jobs:
   lint-typecheck-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
 
@@ -19,6 +28,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: package-lock.json
 
       - run: npm ci
 
@@ -28,21 +38,76 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
-      - name: Unit tests
-        run: npx vitest run
+      - name: Unit tests with coverage
+        run: npx vitest run --coverage
 
-      # E2E tests depend on live Wix API. GitHub Actions runners consistently
-      # miss the Wix API response window on PR builds (network path is slow).
-      # Retries are already configured (2x in playwright.config.ts) and still
-      # fail. E2E runs on nightly schedule and manual dispatch only — PRs get
-      # lint + typecheck + unit which is sufficient signal for code regressions.
-      # Dependabot PRs also skip E2E since they don't receive repository secrets.
+      # Codecov upload (cf-s5cs):
+      #   - uploads on push to main and on every non-Dependabot PR.
+      #   - Dependabot PRs cannot read CODECOV_TOKEN, so skip to avoid hard fail.
+      - name: Upload coverage to Codecov
+        if: github.actor != 'dependabot[bot]'
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage/lcov.info
+          flags: unit
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  # ── E2E (Playwright) ─────────────────────────────────────────────────────────
+  # E2E depends on live Wix Headless API. The runner-network → Wix path is slow
+  # enough on PRs that we used to skip E2E entirely on PR runs. Now (cf-s5cs)
+  # we re-enable PR E2E with a paths-changed gate so commerce-critical edits
+  # exercise the integration layer; doc/config-only PRs still skip.
+  #
+  # Always runs on schedule + workflow_dispatch.
+  # Skips Dependabot (no access to repo secrets).
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    if: |
+      github.actor != 'dependabot[bot]' &&
+      (github.event_name == 'schedule' ||
+       github.event_name == 'workflow_dispatch' ||
+       github.event_name == 'push' ||
+       github.event_name == 'pull_request')
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - name: Detect commerce/path changes (PR only)
+        id: paths
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          changed=$(git diff --name-only "$base" "$head" || true)
+          echo "changed files:"
+          echo "$changed"
+          if echo "$changed" | grep -E '^(src/app/|src/components/|src/lib/wix/|e2e/|playwright\.config\.ts|package-lock\.json)' >/dev/null; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v6
+        if: github.event_name != 'pull_request' || steps.paths.outputs.run == 'true'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        if: github.event_name != 'pull_request' || steps.paths.outputs.run == 'true'
+        run: npm ci
+
       - name: Install Playwright browsers
-        if: github.event_name != 'pull_request' && github.actor != 'dependabot[bot]'
+        if: github.event_name != 'pull_request' || steps.paths.outputs.run == 'true'
         run: npx playwright install --with-deps chromium
 
-      - name: E2E tests
-        if: github.event_name != 'pull_request' && github.actor != 'dependabot[bot]'
+      - name: Run E2E tests
+        if: github.event_name != 'pull_request' || steps.paths.outputs.run == 'true'
         run: npx playwright test
         env:
           WIX_CLIENT_ID_HEADLESS: ${{ secrets.WIX_CLIENT_ID_HEADLESS }}
@@ -50,3 +115,11 @@ jobs:
           WIX_VELO_SITE_URL: ${{ secrets.WIX_VELO_SITE_URL }}
           WIX_WEBHOOK_SECRET: ${{ secrets.WIX_WEBHOOK_SECRET }}
           SESSION_COOKIE_SECRET: ${{ secrets.SESSION_COOKIE_SECRET }}
+
+      - name: Upload Playwright report
+        if: always() && (github.event_name != 'pull_request' || steps.paths.outputs.run == 'true')
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

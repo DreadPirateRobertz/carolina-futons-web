@@ -9,6 +9,27 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
     exclude: ["e2e/**", "node_modules/**"],
+    // CI standards parity (cf-s5cs) — coverage with v8 provider, thresholds
+    // ratcheted to current measured floor so any regression fails CI. Raise
+    // the numbers as coverage improves; never lower them.
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "lcov", "html"],
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: [
+        "src/**/*.d.ts",
+        "src/**/*.test.{ts,tsx}",
+        "src/**/__tests__/**",
+        "src/**/__mocks__/**",
+        "e2e/**",
+      ],
+      thresholds: {
+        statements: 75,
+        branches: 65,
+        functions: 73,
+        lines: 76,
+      },
+    },
   },
   resolve: {
     alias: {
