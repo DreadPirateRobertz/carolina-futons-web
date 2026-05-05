@@ -74,17 +74,20 @@ export function GalleryZoomLightbox({
   const [tx, setTx] = useState(0);
   const [ty, setTy] = useState(0);
 
-  // Reset transform + index whenever the dialog reopens. Keeping the state in
-  // React (not refs) is intentional — the visible transform must be derived
-  // from React state so reduced-motion users see the change in a single paint.
-  useEffect(() => {
+  // Reset transform + index on the open=false → open=true transition. Adjust-
+  // state-during-render (vs. an effect) keeps the visible transform in sync
+  // with the open prop in a single paint and avoids the cascading-renders
+  // lint rule. Mirrors the activeUrl→selectedIndex pattern in PdpGallery.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (open) {
       setIndex(safeInitial);
       setScale(1);
       setTx(0);
       setTy(0);
     }
-  }, [open, safeInitial]);
+  }
 
   const resetZoom = useCallback(() => {
     setScale(1);

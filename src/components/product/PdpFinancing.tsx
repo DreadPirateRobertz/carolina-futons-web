@@ -115,7 +115,7 @@ function FinancingModal({
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
 
   // Escape dismissal + focus the close button on mount so keyboard users
-  // land on an actionable control, matching PdpImageLightbox convention.
+  // land on an actionable control, matching the gallery zoom lightbox convention.
   useEffect(() => {
     closeBtnRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {

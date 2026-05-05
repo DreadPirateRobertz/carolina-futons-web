@@ -431,10 +431,11 @@ describe("PdpGallery — onError / broken image fallback", () => {
   });
 });
 
-// cf-nmwy: wiring the PdpImageLightbox into the gallery. Three cases pinned
-// down by the dispatch: main image renders, clicking it opens the overlay,
-// ESC on the open overlay closes it.
-describe("PdpGallery — image zoom lightbox (cf-nmwy)", () => {
+// cfw-zd8: wiring the GalleryZoomLightbox into the gallery. Three cases
+// pinned down: main image renders, clicking it opens the overlay, ESC on
+// the open overlay closes it. Detailed lightbox behavior (zoom, pan, swipe,
+// keyboard nav, focus trap) lives in GalleryZoomLightbox.test.tsx.
+describe("PdpGallery — gallery zoom lightbox (cfw-zd8)", () => {
   it("renders the main image (zoom entry-point source of truth)", () => {
     render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
     const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
