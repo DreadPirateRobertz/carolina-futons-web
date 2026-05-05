@@ -42,7 +42,7 @@ describe("DragDropRoomPlanner — palette drag handler", () => {
     const tile = palette!.querySelector("[draggable]") as HTMLElement;
     expect(tile).not.toBeNull();
 
-    const dt = { effectAllowed: "" } as DataTransfer;
+    const dt = { effectAllowed: "" } as unknown as DataTransfer;
     fireEvent.dragStart(tile, { dataTransfer: dt });
 
     expect(dt.effectAllowed).toBe("copy");
