@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { EasterEggBear } from "@/components/mascot/EasterEggBear";
 
 // Strip exit animations so state transitions are synchronous in tests.
@@ -27,12 +27,20 @@ vi.mock("framer-motion", async () => {
   };
 });
 
-// useSyncExternalStore returns true (mounted) in jsdom — portal renders immediately.
+const writeText = vi.fn();
 
+// useSyncExternalStore returns true (mounted) in jsdom — portal renders immediately.
 beforeEach(() => {
   while (document.body.firstChild) {
     document.body.removeChild(document.body.firstChild);
   }
+  writeText.mockReset();
+  writeText.mockResolvedValue(undefined);
+  Object.defineProperty(navigator, "clipboard", {
+    value: { writeText },
+    writable: true,
+    configurable: true,
+  });
 });
 
 describe("EasterEggBear", () => {
@@ -45,6 +53,7 @@ describe("EasterEggBear", () => {
     render(<EasterEggBear />);
     expect(screen.queryByText(/you found the bear/i)).toBeNull();
     expect(screen.queryByText("BEAR10")).toBeNull();
+    expect(screen.queryByText(/copied to clipboard/i)).toBeNull();
   });
 
   it("shows discount modal after clicking bear", () => {
@@ -52,6 +61,7 @@ describe("EasterEggBear", () => {
     fireEvent.click(screen.getByRole("button", { name: /peek-a-boo bear/i }));
     expect(screen.getByText(/you found the bear/i)).toBeInTheDocument();
     expect(screen.getByText("BEAR10")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /copy & dismiss/i })).toBeInTheDocument();
   });
 
   it("renders modal inside document.body (portal escapes transformed ancestors)", () => {
@@ -63,35 +73,56 @@ describe("EasterEggBear", () => {
     expect(within(document.body).getByText("BEAR10")).toBeInTheDocument();
   });
 
-  it("shows Dismiss button in modal", () => {
+  it("copies BEAR10 to clipboard and shows confirmation on dismiss", async () => {
     render(<EasterEggBear />);
     fireEvent.click(screen.getByRole("button", { name: /peek-a-boo bear/i }));
-    expect(screen.getByRole("button", { name: /dismiss/i })).toBeInTheDocument();
-  });
-
-  it("hides modal and shows confirmation after dismiss", () => {
-    render(<EasterEggBear />);
-    fireEvent.click(screen.getByRole("button", { name: /peek-a-boo bear/i }));
-    fireEvent.click(screen.getByRole("button", { name: /dismiss/i }));
+    fireEvent.click(screen.getByRole("button", { name: /copy & dismiss/i }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith("BEAR10"));
     expect(screen.queryByText("BEAR10")).toBeNull();
-    expect(screen.getByText(/code saved/i)).toBeInTheDocument();
+    expect(screen.getByText(/copied to clipboard/i)).toBeInTheDocument();
   });
 
-  it("confirmation is also portaled to document.body", () => {
+  it("confirmation is also portaled to document.body", async () => {
     const { container } = render(<EasterEggBear />);
     fireEvent.click(screen.getByRole("button", { name: /peek-a-boo bear/i }));
-    fireEvent.click(screen.getByRole("button", { name: /dismiss/i }));
-    expect(within(container).queryByText(/code saved/i)).toBeNull();
-    expect(within(document.body).getByText(/code saved/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /copy & dismiss/i }));
+    await waitFor(() =>
+      expect(within(document.body).getByText(/copied to clipboard/i)).toBeInTheDocument(),
+    );
+    expect(within(container).queryByText(/copied to clipboard/i)).toBeNull();
   });
 
-  it("re-clicking bear after claiming does not re-show modal", () => {
+  it("dismisses silently when clipboard write rejects", async () => {
+    writeText.mockRejectedValue(new DOMException("NotAllowedError"));
     render(<EasterEggBear />);
     fireEvent.click(screen.getByRole("button", { name: /peek-a-boo bear/i }));
-    fireEvent.click(screen.getByRole("button", { name: /dismiss/i }));
+    fireEvent.click(screen.getByRole("button", { name: /copy & dismiss/i }));
+    await waitFor(() => expect(screen.queryByText("BEAR10")).toBeNull());
+    expect(screen.queryByText(/copied to clipboard/i)).toBeNull();
+  });
+
+  it("dismisses silently when navigator.clipboard is unavailable", async () => {
+    Object.defineProperty(navigator, "clipboard", {
+      value: undefined,
+      writable: true,
+      configurable: true,
+    });
+    render(<EasterEggBear />);
+    fireEvent.click(screen.getByRole("button", { name: /peek-a-boo bear/i }));
+    fireEvent.click(screen.getByRole("button", { name: /copy & dismiss/i }));
+    await waitFor(() => expect(screen.queryByText("BEAR10")).toBeNull());
+    expect(writeText).not.toHaveBeenCalled();
+    expect(screen.queryByText(/copied to clipboard/i)).toBeNull();
+  });
+
+  it("re-clicking bear after claiming does not re-show modal", async () => {
+    render(<EasterEggBear />);
+    fireEvent.click(screen.getByRole("button", { name: /peek-a-boo bear/i }));
+    fireEvent.click(screen.getByRole("button", { name: /copy & dismiss/i }));
+    await waitFor(() => expect(screen.queryByText("BEAR10")).toBeNull());
     // claimed is true, so found&&!claimed is still false even after another click.
     fireEvent.click(screen.getByRole("button", { name: /peek-a-boo bear/i }));
     expect(screen.queryByText("BEAR10")).toBeNull();
-    expect(screen.getByText(/code saved/i)).toBeInTheDocument();
+    expect(screen.getByText(/copied to clipboard/i)).toBeInTheDocument();
   });
 });
