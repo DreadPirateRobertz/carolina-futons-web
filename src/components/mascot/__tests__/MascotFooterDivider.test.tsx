@@ -9,6 +9,7 @@ import type { ReactNode } from "react";
 const mocks = vi.hoisted(() => ({
   prefersReducedMotion: false as boolean | null,
   bearAnimate: undefined as unknown,
+  pawAnimate: undefined as unknown,
   starAnimates: [] as unknown[],
   fireflyAnimates: [] as unknown[],
 }));
@@ -35,6 +36,8 @@ vi.mock("framer-motion", () => {
       const slot = (rest as { "data-slot"?: string })["data-slot"];
       if (tag === "g" && slot === "footer-bear") {
         mocks.bearAnimate = animate;
+      } else if (tag === "g" && slot === "footer-bear-paw") {
+        mocks.pawAnimate = animate;
       } else if (tag === "circle") {
         // Star elements live in the stars group; everything else is a firefly
         // (we identify by the presence of a filter style — fireflies have a glow)
@@ -65,6 +68,7 @@ import { MascotFooterDivider } from "@/components/mascot/MascotFooterDivider";
 beforeEach(() => {
   mocks.prefersReducedMotion = false;
   mocks.bearAnimate = undefined;
+  mocks.pawAnimate = undefined;
   mocks.starAnimates = [];
   mocks.fireflyAnimates = [];
 });
@@ -88,13 +92,16 @@ describe("MascotFooterDivider — structure", () => {
     expect(last?.getAttribute("stop-color")?.toLowerCase()).toBe("#1e2a3a");
   });
 
-  it("renders a sleeping bear (Z markers present)", () => {
+  it("renders a watchful sitting bear (distinct from header's lying stargazer) with a waving paw", () => {
     const { container } = render(<MascotFooterDivider />);
+    expect(container.querySelector("[data-slot='footer-bear']")).not.toBeNull();
+    expect(container.querySelector("[data-slot='footer-bear-paw']")).not.toBeNull();
+    // The watchful pose has no sleeping-Z markers (those marked the prior pose).
     const texts = Array.from(container.querySelectorAll("text")).map((t) => t.textContent);
-    expect(texts).toEqual(expect.arrayContaining(["z", "Z"]));
+    expect(texts).not.toEqual(expect.arrayContaining(["Z"]));
   });
 
-  it("renders the moon (data-slot for stars and fireflies present)", () => {
+  it("exposes data-slots for stars and fireflies", () => {
     const { container } = render(<MascotFooterDivider />);
     expect(container.querySelector("[data-slot='footer-stars']")).not.toBeNull();
     expect(container.querySelector("[data-slot='footer-fireflies']")).not.toBeNull();
@@ -106,6 +113,14 @@ describe("MascotFooterDivider — animation active (reduced motion off)", () => 
     mocks.prefersReducedMotion = false;
     render(<MascotFooterDivider />);
     expect(mocks.bearAnimate).toEqual({ scaleY: [1, 1.045, 1] });
+  });
+
+  it("bear waves (paw rotate is an array)", () => {
+    mocks.prefersReducedMotion = false;
+    render(<MascotFooterDivider />);
+    const rotate = (mocks.pawAnimate as { rotate?: unknown } | undefined)?.rotate;
+    expect(Array.isArray(rotate)).toBe(true);
+    expect((rotate as unknown[]).length).toBeGreaterThanOrEqual(3);
   });
 
   it("stars twinkle (every star animate has an opacity array)", () => {
@@ -135,6 +150,12 @@ describe("MascotFooterDivider — reduced motion", () => {
     mocks.prefersReducedMotion = true;
     render(<MascotFooterDivider />);
     expect(mocks.bearAnimate).toBeUndefined();
+  });
+
+  it("paw wave is undefined when useReducedMotion returns true", () => {
+    mocks.prefersReducedMotion = true;
+    render(<MascotFooterDivider />);
+    expect(mocks.pawAnimate).toBeUndefined();
   });
 
   it("stars hold a static opacity (no array)", () => {

@@ -120,15 +120,16 @@ export function MascotFooterDivider({ className }: { className?: string }) {
         fill={n.r2}
       />
 
-      {/* Sleeping bear — chest breathes */}
+      {/* Watchful bear — sitting upright on the ridge, breathing, occasional wave.
+          Distinct from the header's lying stargazing bear. */}
       <motion.g
         data-slot="footer-bear"
-        transform="translate(960 145)"
-        style={{ transformOrigin: "0px 20px", transformBox: "fill-box" }}
+        transform="translate(960 110)"
+        style={{ transformOrigin: "0px 50px", transformBox: "fill-box" }}
         animate={reduce ? undefined : { scaleY: [1, 1.045, 1] }}
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
       >
-        <SleepingBear />
+        <WatchfulBear reduce={reduce} />
       </motion.g>
 
       {/* Fireflies — drifting orbs of light */}
@@ -170,19 +171,59 @@ export function MascotFooterDivider({ className }: { className?: string }) {
   );
 }
 
-function SleepingBear() {
+function WatchfulBear({ reduce }: { reduce: boolean }) {
+  // Sitting upright, eyes catching moonlight, one paw raised in a slow wave.
+  // Drawn larger than the lying-bear pose used in the header's StargazingHero
+  // so the mood (alert, watchful) reads at a glance.
   return (
-    <g transform="scale(0.7 0.7)">
-      <ellipse cx="0" cy="20" rx="58" ry="22" fill={n.fur} />
-      <ellipse cx="-50" cy="6" rx="22" ry="18" fill={n.fur} />
-      <circle cx="-66" cy="-8" r="7" fill={n.fur} />
-      <ellipse cx="-50" cy="14" rx="10" ry="6" fill={n.muzzle} />
-      <ellipse cx="-58" cy="10" rx="3" ry="2" fill={n.nose} />
-      <path d="M -56 0 q 4 0 6 -1" fill="none" stroke={n.nose} strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M -42 -2 q 4 0 6 -1" fill="none" stroke={n.nose} strokeWidth="1.5" strokeLinecap="round" />
-      <text x="20" y="-20" fontFamily="Playfair Display, serif" fontSize="14" fontWeight="700" fill={n.muzzle} opacity="0.7">z</text>
-      <text x="32" y="-30" fontFamily="Playfair Display, serif" fontSize="18" fontWeight="700" fill={n.muzzle} opacity="0.6">z</text>
-      <text x="48" y="-44" fontFamily="Playfair Display, serif" fontSize="22" fontWeight="700" fill={n.muzzle} opacity="0.5">Z</text>
+    <g transform="scale(0.62 0.62)">
+      {/* ground shadow */}
+      <ellipse cx="0" cy="50" rx="42" ry="4.5" fill={n.r1} opacity="0.45" />
+      {/* legs / haunches */}
+      <ellipse cx="-22" cy="44" rx="13" ry="9" fill={n.fur} />
+      <ellipse cx="22" cy="44" rx="13" ry="9" fill={n.fur} />
+      {/* body */}
+      <ellipse cx="0" cy="18" rx="30" ry="28" fill={n.fur} />
+      <ellipse cx="0" cy="26" rx="18" ry="16" fill={n.muzzle} opacity="0.28" />
+      {/* resting (left) arm */}
+      <ellipse cx="-26" cy="12" rx="9" ry="20" fill={n.fur} transform="rotate(-12 -26 12)" />
+      {/* head */}
+      <ellipse cx="0" cy="-22" rx="22" ry="20" fill={n.fur} />
+      {/* ears */}
+      <circle cx="-17" cy="-38" r="7" fill={n.fur} />
+      <circle cx="17" cy="-38" r="7" fill={n.fur} />
+      <circle cx="-17" cy="-38" r="3.5" fill={n.muzzle} opacity="0.6" />
+      <circle cx="17" cy="-38" r="3.5" fill={n.muzzle} opacity="0.6" />
+      {/* muzzle */}
+      <ellipse cx="0" cy="-14" rx="11" ry="8" fill={n.muzzle} />
+      <ellipse cx="0" cy="-19" rx="3" ry="2.4" fill={n.nose} />
+      <path d="M -3 -15 Q 0 -12 3 -15" fill="none" stroke={n.nose} strokeWidth="1.4" strokeLinecap="round" />
+      {/* eyes — moonlit */}
+      <circle cx="-9" cy="-26" r="2.4" fill={n.nose} />
+      <circle cx="9" cy="-26" r="2.4" fill={n.nose} />
+      <circle cx="-8" cy="-27" r="0.9" fill={n.star} />
+      <circle cx="10" cy="-27" r="0.9" fill={n.star} />
+
+      {/* Waving paw — pivots around the shoulder (26, 10).
+          Wraps a translate parent so framer-motion's rotate keyframes
+          don't clobber the position offset. */}
+      <g transform="translate(26 10)">
+        <motion.g
+          data-slot="footer-bear-paw"
+          animate={reduce ? undefined : { rotate: [0, -22, -8, -26, 0] }}
+          transition={{
+            duration: 2.6,
+            repeat: reduce ? 0 : Infinity,
+            ease: "easeInOut",
+            repeatDelay: 1.8,
+          }}
+          style={{ transformOrigin: "0 0" }}
+        >
+          <ellipse cx="2" cy="-2" rx="9" ry="20" fill={n.fur} transform="rotate(18 2 -2)" />
+          <circle cx="10" cy="-22" r="6.5" fill={n.fur} />
+          <circle cx="11" cy="-23" r="2.2" fill={n.muzzle} opacity="0.55" />
+        </motion.g>
+      </g>
     </g>
   );
 }
