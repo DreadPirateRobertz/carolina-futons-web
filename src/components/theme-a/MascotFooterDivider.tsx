@@ -33,9 +33,12 @@ export function MascotFooterDivider({ className }: { className?: string }) {
       </defs>
       <rect width="1920" height="200" fill="url(#v3fd-sky)" />
 
-      {/* Moon — gentle pulse */}
+      {/* Moon — gentle pulse. cx=1100 keeps the moon inside the
+          375px-visible centre column [772.5, 1147.5] (cf-f6g, mirrors the
+          production divider). */}
       <motion.circle
-        cx={1620}
+        data-slot="footer-moon"
+        cx={1100}
         cy={60}
         r={30}
         fill={c.cream}

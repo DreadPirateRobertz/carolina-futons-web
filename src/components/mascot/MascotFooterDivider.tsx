@@ -5,6 +5,16 @@
 // divider→footer boundary disappears — one coherent surface.
 // Alive: sleeping bear breathes, stars twinkle, fireflies drift, all
 // gated by useReducedMotion.
+//
+// cf-f6g: viewBox 1920×200 + xMidYMid slice means at a 375px viewport the
+// visible viewBox x-range is centred at 960 with width = viewport_width
+// (slice scale = 1.0 when container height = viewBox height). So
+// storytelling elements (bear, moon, fireflies) must live inside
+// [(1920 - 375)/2, (1920 + 375)/2] = [772.5, 1147.5] to survive the
+// horizontal slice down to mobile. Bear at x=960, moon at x=1100,
+// fireflies at x=820/1080 all stay inside that window. Stars are
+// decorative — half live in the centre window, half spread wider so the
+// scene reads richer at desktop without going empty on mobile.
 
 import { motion, useReducedMotion } from "framer-motion";
 import { V3_NIGHT as n } from "./MascotPalette";
@@ -13,21 +23,21 @@ import { V3_NIGHT as n } from "./MascotPalette";
 const FOOTER_BG = "#1E2A3A";
 
 const STARS = [
-  { x: 80, y: 30, r: 1.4, base: 0.7 },
-  { x: 220, y: 18, r: 1, base: 0.5 },
-  { x: 360, y: 52, r: 1.6, base: 0.85 },
-  { x: 540, y: 26, r: 1.1, base: 0.6 },
-  { x: 720, y: 38, r: 1.3, base: 0.7 },
-  { x: 880, y: 14, r: 1.5, base: 0.85 },
+  { x: 220, y: 30, r: 1.4, base: 0.7 },
+  { x: 540, y: 18, r: 1, base: 0.5 },
+  { x: 800, y: 52, r: 1.6, base: 0.85 },
+  { x: 850, y: 26, r: 1.1, base: 0.6 },
+  { x: 920, y: 38, r: 1.3, base: 0.7 },
+  { x: 980, y: 14, r: 1.5, base: 0.85 },
   { x: 1060, y: 44, r: 1, base: 0.5 },
-  { x: 1240, y: 22, r: 1.4, base: 0.7 },
+  { x: 1130, y: 22, r: 1.4, base: 0.7 },
   { x: 1380, y: 38, r: 1.1, base: 0.55 },
   { x: 1780, y: 84, r: 1.2, base: 0.6 },
 ] as const;
 
 const FIREFLIES = [
-  { x: 740, y: 152 },
-  { x: 1180, y: 158 },
+  { x: 820, y: 152 },
+  { x: 1080, y: 158 },
 ] as const;
 
 export function MascotFooterDivider({ className }: { className?: string }) {
@@ -61,9 +71,12 @@ export function MascotFooterDivider({ className }: { className?: string }) {
 
       <rect width="1920" height="200" fill="url(#v3fd-sky)" />
 
-      {/* Moon + soft halo */}
-      <circle cx="1620" cy="50" r="80" fill="url(#v3fd-moonglow)" />
-      <circle cx="1620" cy="50" r="22" fill={n.moon} opacity="0.92" />
+      {/* Moon + soft halo. cx=1100 sits inside the 375px-visible centre
+          column [772.5, 1147.5] (cf-f6g); the r=80 halo soft-clips at
+          mobile but its gradient fades to opacity 0 so the slice is
+          imperceptible. */}
+      <circle data-slot="footer-moon-halo" cx="1100" cy="50" r="80" fill="url(#v3fd-moonglow)" />
+      <circle data-slot="footer-moon" cx="1100" cy="50" r="22" fill={n.moon} opacity="0.92" />
 
       {/* Twinkling stars */}
       <g data-slot="footer-stars">

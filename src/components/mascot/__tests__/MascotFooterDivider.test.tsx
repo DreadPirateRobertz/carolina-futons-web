@@ -190,3 +190,58 @@ describe("MascotFooterDivider — null reduced-motion (SSR/unknown)", () => {
     expect(mocks.bearAnimate).toEqual({ scaleY: [1, 1.045, 1] });
   });
 });
+
+describe("MascotFooterDivider — 375px mobile visibility (cf-f6g)", () => {
+  // viewBox 0 0 1920 200 + xMidYMid slice. The footer container is
+  // 200px tall (Footer.tsx: h-[200px] w-full). When the viewport
+  // narrows to 375px the slice scale stays at 1.0 (height matches
+  // viewBox height), so the visible viewBox x-band is centred at 960
+  // with width = viewport_width: x ∈ [(1920 - 375)/2, (1920 + 375)/2]
+  // = [772.5, 1147.5]. Storytelling elements outside that window are
+  // cropped on mobile — which is exactly the regression cf-f6g fixes.
+  const VIEWBOX_W = 1920;
+  const MOBILE_W = 375;
+  const VISIBLE_X_MIN = (VIEWBOX_W - MOBILE_W) / 2;
+  const VISIBLE_X_MAX = (VIEWBOX_W + MOBILE_W) / 2;
+  const isVisibleX = (x: number) =>
+    x >= VISIBLE_X_MIN && x <= VISIBLE_X_MAX;
+
+  it("moon disk renders inside the 375px-visible centre column", () => {
+    const { container } = render(<MascotFooterDivider />);
+    const moon = container.querySelector("[data-slot='footer-moon']");
+    expect(moon).not.toBeNull();
+    const cx = Number(moon?.getAttribute("cx"));
+    expect(isVisibleX(cx)).toBe(true);
+  });
+
+  it("bear sits centred at x=960 (always inside any horizontal slice)", () => {
+    const { container } = render(<MascotFooterDivider />);
+    const bear = container.querySelector("[data-slot='footer-bear']");
+    expect(bear).not.toBeNull();
+    expect(bear?.getAttribute("transform")).toMatch(/translate\(960\b/);
+  });
+
+  it("both fireflies stay inside the 375px-visible window through their entire drift cycle", () => {
+    mocks.prefersReducedMotion = false;
+    render(<MascotFooterDivider />);
+    expect(mocks.fireflyAnimates.length).toBe(2);
+    for (const a of mocks.fireflyAnimates) {
+      const cx = (a as { cx: number[] }).cx;
+      expect(Array.isArray(cx)).toBe(true);
+      for (const x of cx) {
+        expect(isVisibleX(x)).toBe(true);
+      }
+    }
+  });
+
+  it("both fireflies static positions are inside the visible window under reduced motion", () => {
+    mocks.prefersReducedMotion = true;
+    render(<MascotFooterDivider />);
+    expect(mocks.fireflyAnimates.length).toBe(2);
+    for (const a of mocks.fireflyAnimates) {
+      const cx = (a as { cx: number }).cx;
+      expect(typeof cx).toBe("number");
+      expect(isVisibleX(cx)).toBe(true);
+    }
+  });
+});
