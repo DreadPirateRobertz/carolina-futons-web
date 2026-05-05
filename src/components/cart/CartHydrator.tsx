@@ -10,6 +10,11 @@ import { useCart } from "@/components/cart/CartProvider";
 // the visitor's Wix session has items. The hydrate action always replaces
 // client state with server state so a post-checkout page load clears the
 // CartProvider when the Wix cart is empty.
+//
+// cfw-7so: in fixture mode (NEXT_PUBLIC_USE_FIXTURE_PRODUCTS=1) addItemAction
+// short-circuits without writing to Wix, so server hydration would always
+// return empty and clobber the localStorage-backed snapshot in CartProvider.
+// Skip the round-trip entirely and let the local snapshot stand.
 export function CartHydrator() {
   const { dispatch } = useCart();
   const hydrated = useRef(false);
@@ -18,6 +23,8 @@ export function CartHydrator() {
   useEffect(() => {
     if (hydrated.current) return;
     hydrated.current = true;
+
+    if (process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1") return;
 
     hydrateCartAction()
       .then((result) => {

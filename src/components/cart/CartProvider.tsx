@@ -4,8 +4,10 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useReducer,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -19,6 +21,10 @@ import {
   type CartLineItem,
   type CartState,
 } from "@/lib/cart/cart-state";
+import {
+  loadCartFromStorage,
+  saveCartToStorage,
+} from "@/lib/cart/cart-storage";
 
 type CartContextValue = {
   state: CartState;
@@ -44,6 +50,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, EMPTY_CART);
   const [isOpen, setIsOpen] = useState(false);
   const [pendingWrites, setPendingWrites] = useState(0);
+
+  // cfw-7so: hydrate from localStorage on first client mount and persist on
+  // every state change so the cart survives a hard navigation between PDP and
+  // /cart. SSR always paints EMPTY_CART (no localStorage on the server) so the
+  // first client paint matches and avoids hydration mismatch warnings.
+  const storageInitialized = useRef(false);
+  useEffect(() => {
+    if (!storageInitialized.current) {
+      storageInitialized.current = true;
+      const stored = loadCartFromStorage();
+      if (stored && stored.lines.length > 0) {
+        dispatch({ type: "hydrate", lines: stored.lines });
+      }
+      return;
+    }
+    saveCartToStorage(state);
+  }, [state]);
 
   const openCart = useCallback(() => setIsOpen(true), []);
   const closeCart = useCallback(() => setIsOpen(false), []);
