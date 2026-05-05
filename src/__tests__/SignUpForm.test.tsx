@@ -76,7 +76,10 @@ describe("SignUpForm", () => {
     });
   });
 
-  it("shows account-created + sign-in link on registered_sign_in_required", async () => {
+  // cfw-aik: legacy registered_sign_in_required state must NOT render
+  // 'Account created. Sign in to continue.' because subsequent sign-in
+  // silently fails. Collapse onto the verify-email screen instead.
+  it("shows verify-email screen on legacy registered_sign_in_required", async () => {
     mockFetch.mockResolvedValueOnce({
       json: async () => ({ state: "registered_sign_in_required" }),
     });
@@ -85,12 +88,12 @@ describe("SignUpForm", () => {
     fireEvent.click(screen.getByRole("button", { name: /create account/i }));
     await waitFor(() => {
       expect(
-        screen.getByRole("heading", { name: /account created/i }),
+        screen.getByRole("heading", { name: /check your email/i }),
       ).toBeTruthy();
     });
-    expect(screen.getByRole("link", { name: /sign in/i }).getAttribute("href")).toBe(
-      "/account",
-    );
+    expect(
+      screen.queryByRole("heading", { name: /^account created$/i }),
+    ).toBeNull();
   });
 
   it("redirects to /dashboard on success", async () => {

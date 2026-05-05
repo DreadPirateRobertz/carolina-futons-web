@@ -56,6 +56,87 @@ test.describe("/signup page — UI smoke (no live Wix creds needed)", () => {
   });
 });
 
+// cfw-aik regression coverage. The legacy bug was: register API returned
+// `state: "registered_sign_in_required"` and the form rendered
+// "Account created. Sign in to continue." — but the user could not actually
+// sign in. We now collapse that legacy state onto the verify-email screen,
+// which is honest about what the user has to do next.
+test.describe("/signup — cfw-aik regression: never claim 'Account created' on a state that bricks sign-in", () => {
+  test("legacy registered_sign_in_required collapses onto the verify-email screen", async ({ page }) => {
+    await page.route("**/api/auth/register", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ state: "registered_sign_in_required" }),
+      });
+    });
+
+    await page.goto("/signup");
+    await page.getByLabel(/^email$/i).fill("legacy-state@example.com");
+    await page.getByLabel(/^password$/i).fill("password123");
+    await page.getByLabel(/confirm password/i).fill("password123");
+    await page.getByRole("button", { name: /create account/i }).click();
+
+    await expect(
+      page.getByRole("heading", { name: /check your email/i }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /^account created$/i }),
+    ).toHaveCount(0);
+  });
+
+  test("email_verification_required renders the verify-email screen", async ({ page }) => {
+    await page.route("**/api/auth/register", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ state: "email_verification_required" }),
+      });
+    });
+
+    await page.goto("/signup");
+    await page.getByLabel(/^email$/i).fill("verify@example.com");
+    await page.getByLabel(/^password$/i).fill("password123");
+    await page.getByLabel(/confirm password/i).fill("password123");
+    await page.getByRole("button", { name: /create account/i }).click();
+
+    await expect(
+      page.getByRole("heading", { name: /check your email/i }),
+    ).toBeVisible();
+  });
+
+  test("ok response redirects to /dashboard (round-trip happy path)", async ({ page }) => {
+    await page.route("**/api/auth/register", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true, redirectTo: "/dashboard" }),
+      });
+    });
+    // Stub the welcome-email trigger and dashboard so the spec runs without
+    // chaining real backend calls.
+    await page.route("**/api/email/trigger", (route) =>
+      route.fulfill({ status: 200, contentType: "application/json", body: "{}" }),
+    );
+    await page.route("**/dashboard", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "text/html",
+        body: "<html><body><h1>Dashboard</h1></body></html>",
+      }),
+    );
+
+    await page.goto("/signup");
+    await page.getByLabel(/^email$/i).fill("happy@example.com");
+    await page.getByLabel(/^password$/i).fill("password123");
+    await page.getByLabel(/confirm password/i).fill("password123");
+    await page.getByRole("button", { name: /create account/i }).click();
+
+    await page.waitForURL("**/dashboard");
+    expect(page.url()).toContain("/dashboard");
+  });
+});
+
 test.describe("/api/auth/register — API contract (no live Wix creds needed)", () => {
   test("returns 400 when email is missing", async ({ request }) => {
     const res = await request.post("/api/auth/register", {

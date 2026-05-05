@@ -10,7 +10,6 @@ export function SignUpForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verifyPending, setVerifyPending] = useState(false);
-  const [signInRequired, setSignInRequired] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,13 +38,15 @@ export function SignUpForm() {
         state?: string;
       };
 
-      if (data.state === "email_verification_required") {
+      // Both `email_verification_required` and the legacy
+      // `registered_sign_in_required` (cfw-aik) collapse onto the verify-email
+      // screen — we never want to claim "Account created. Sign in to continue."
+      // when subsequent sign-in will silently fail.
+      if (
+        data.state === "email_verification_required" ||
+        data.state === "registered_sign_in_required"
+      ) {
         setVerifyPending(true);
-        setLoading(false);
-        return;
-      }
-      if (data.state === "registered_sign_in_required") {
-        setSignInRequired(true);
         setLoading(false);
         return;
       }
@@ -99,25 +100,6 @@ export function SignUpForm() {
           >
             Back to sign up
           </button>
-        </div>
-      </main>
-    );
-  }
-
-  if (signInRequired) {
-    return (
-      <main className="flex min-h-[60vh] items-center justify-center px-4 py-16">
-        <div className="w-full max-w-sm text-center">
-          <h1 className="font-heading text-3xl font-bold tracking-tight text-cf-navy">
-            Account created
-          </h1>
-          <p className="mt-4 text-sm text-cf-charcoal/80">
-            Your account is ready.{" "}
-            <Link href="/account" className="text-cf-cta hover:underline">
-              Sign in
-            </Link>{" "}
-            to continue.
-          </p>
         </div>
       </main>
     );
