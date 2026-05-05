@@ -39,14 +39,22 @@ vi.mock("next/headers", () => ({
     }),
 }));
 
+const mockLogWixFailure = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/wix/errors", () => ({
+  logWixFailure: (...args: unknown[]) => mockLogWixFailure(...args),
+}));
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-async function callRegister(body: Record<string, unknown>) {
+async function callRegister(
+  body: Record<string, unknown>,
+  headers: Record<string, string> = {},
+) {
   const { POST } = await import("@/app/api/auth/register/route");
   const req = new Request("http://localhost/api/auth/register", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...headers },
     body: JSON.stringify(body),
   });
   return POST(req as Parameters<typeof POST>[0]);
@@ -237,18 +245,78 @@ describe("POST /api/auth/register", () => {
 
   it("returns 502 when client.auth.register throws", async () => {
     mockRegister.mockRejectedValueOnce(new Error("network error"));
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const res = await callRegister({
       email: "a@b.com",
       password: "password123",
     });
     expect(res.status).toBe(502);
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining("[auth/register]"),
+    expect(mockLogWixFailure).toHaveBeenCalledWith(
+      "auth/register",
+      expect.any(String),
       expect.any(Error),
     );
-    consoleSpy.mockRestore();
+  });
+
+  // cfw-hb3: env-gated diag block.
+  describe("cfw-hb3 diag response (gated by WIX_AUTH_DEBUG_TOKEN)", () => {
+    it("does NOT include diag when token is unset", async () => {
+      vi.stubEnv("WIX_AUTH_DEBUG_TOKEN", "");
+      mockRegister.mockRejectedValueOnce(new Error("vercel-runtime-boom"));
+
+      const res = await callRegister(
+        { email: "a@b.com", password: "password123" },
+        { "x-debug-token": "anything" },
+      );
+      const body = (await res.json()) as { error: string; diag?: unknown };
+      expect(res.status).toBe(502);
+      expect(body.diag).toBeUndefined();
+    });
+
+    it("includes diag.err.message when token matches", async () => {
+      vi.stubEnv("WIX_AUTH_DEBUG_TOKEN", "secret");
+      vi.stubEnv("WIX_CLIENT_ID_HEADLESS", "abcd-1234-efgh-5678");
+      mockRegister.mockRejectedValueOnce(new Error("vercel-runtime-boom"));
+
+      const res = await callRegister(
+        { email: "a@b.com", password: "password123" },
+        { "x-debug-token": "secret" },
+      );
+      const body = (await res.json()) as {
+        diag: {
+          err: { message: string };
+          env: { length: number; prefix4: string };
+        };
+      };
+      expect(res.status).toBe(502);
+      expect(body.diag.err.message).toBe("vercel-runtime-boom");
+      expect(body.diag.env.length).toBe("abcd-1234-efgh-5678".length);
+      expect(body.diag.env.prefix4).toBe("abcd");
+    });
+
+    it("includes diag on the login-fallback-throws 502 path", async () => {
+      vi.stubEnv("WIX_AUTH_DEBUG_TOKEN", "secret");
+      mockRegister.mockResolvedValueOnce({
+        loginState: LoginState.SUCCESS,
+        data: { sessionToken: "tok-register" },
+      });
+      mockGetMemberTokensForDirectLogin.mockRejectedValueOnce(
+        new Error("first exchange failed"),
+      );
+      mockLogin.mockRejectedValueOnce(new Error("login-fallback-network-boom"));
+
+      const res = await callRegister(
+        { email: "a@b.com", password: "password123" },
+        { "x-debug-token": "secret" },
+      );
+      const body = (await res.json()) as {
+        error: string;
+        diag: { err: { message: string } };
+      };
+      expect(res.status).toBe(502);
+      expect(body.error).toMatch(/verification link/i);
+      expect(body.diag.err.message).toBe("login-fallback-network-boom");
+    });
   });
 
   // cfw-aik: when post-register token exchange fails, fall back to login()

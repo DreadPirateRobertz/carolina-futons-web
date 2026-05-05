@@ -197,4 +197,91 @@ describe("POST /api/auth/login — email+password in-app auth", () => {
     );
     consoleSpy.mockRestore();
   });
+
+  // cfw-hb3: env-gated diag block ships in the 502 response so a curl with
+  // x-debug-token can read the SDK error message + env byte fingerprint
+  // without needing Vercel function logs access.
+  describe("cfw-hb3 diag response (gated by WIX_AUTH_DEBUG_TOKEN)", () => {
+    it("does NOT include diag when WIX_AUTH_DEBUG_TOKEN is unset", async () => {
+      vi.stubEnv("WIX_AUTH_DEBUG_TOKEN", "");
+      loginFn.mockRejectedValue(new Error("vercel-runtime-boom"));
+
+      const { POST } = await import("@/app/api/auth/login/route");
+      const res = await POST(
+        makeReq({ email: "a@b.com", password: "pw" }, { "x-debug-token": "anything" }) as never,
+      );
+      const body = (await res.json()) as { error: string; diag?: unknown };
+
+      expect(res.status).toBe(502);
+      expect(body.diag).toBeUndefined();
+    });
+
+    it("does NOT include diag when token header is missing", async () => {
+      vi.stubEnv("WIX_AUTH_DEBUG_TOKEN", "secret");
+      loginFn.mockRejectedValue(new Error("vercel-runtime-boom"));
+
+      const { POST } = await import("@/app/api/auth/login/route");
+      const res = await POST(makeReq({ email: "a@b.com", password: "pw" }) as never);
+      const body = (await res.json()) as { error: string; diag?: unknown };
+
+      expect(res.status).toBe(502);
+      expect(body.diag).toBeUndefined();
+    });
+
+    it("does NOT include diag when token mismatches", async () => {
+      vi.stubEnv("WIX_AUTH_DEBUG_TOKEN", "secret");
+      loginFn.mockRejectedValue(new Error("vercel-runtime-boom"));
+
+      const { POST } = await import("@/app/api/auth/login/route");
+      const res = await POST(
+        makeReq({ email: "a@b.com", password: "pw" }, { "x-debug-token": "wrong" }) as never,
+      );
+      const body = (await res.json()) as { error: string; diag?: unknown };
+
+      expect(res.status).toBe(502);
+      expect(body.diag).toBeUndefined();
+    });
+
+    it("includes diag.err.message + diag.env + diag.runtime when token matches", async () => {
+      vi.stubEnv("WIX_AUTH_DEBUG_TOKEN", "secret");
+      vi.stubEnv("WIX_CLIENT_ID_HEADLESS", "abcd-1234-efgh-5678");
+      loginFn.mockRejectedValue(new Error("vercel-runtime-boom"));
+
+      const { POST } = await import("@/app/api/auth/login/route");
+      const res = await POST(
+        makeReq({ email: "a@b.com", password: "pw" }, { "x-debug-token": "secret" }) as never,
+      );
+      const body = (await res.json()) as {
+        error: string;
+        diag: {
+          err: { message: string; name: string };
+          env: { length: number; prefix4: string; suffix4: string; hex8Prefix: string };
+          runtime: { nodeVersion: string };
+        };
+      };
+
+      expect(res.status).toBe(502);
+      expect(body.diag.err.message).toBe("vercel-runtime-boom");
+      expect(body.diag.env.length).toBe("abcd-1234-efgh-5678".length);
+      expect(body.diag.env.prefix4).toBe("abcd");
+      expect(body.diag.env.suffix4).toBe("5678");
+      expect(body.diag.runtime.nodeVersion).toMatch(/^v\d+\./);
+    });
+
+    it("also gates diag on the post-success token-exchange failure path", async () => {
+      vi.stubEnv("WIX_AUTH_DEBUG_TOKEN", "secret");
+      loginFn.mockResolvedValue({
+        loginState: LoginState.SUCCESS,
+        data: { sessionToken: "tok" },
+      });
+      getMemberTokensForDirectLogin.mockRejectedValue(new Error("exchange-boom"));
+
+      const { POST } = await import("@/app/api/auth/login/route");
+      const res = await POST(
+        makeReq({ email: "a@b.com", password: "pw" }, { "x-debug-token": "secret" }) as never,
+      );
+      const body = (await res.json()) as { diag: { err: { message: string } } };
+      expect(body.diag.err.message).toBe("exchange-boom");
+    });
+  });
 });
