@@ -9,7 +9,7 @@ import {
   useTransform,
   type MotionStyle,
 } from "framer-motion";
-import { PdpImageLightbox } from "./PdpImageLightbox";
+import { GalleryZoomLightbox } from "./GalleryZoomLightbox";
 import { PdpImageComparison } from "./PdpImageComparison";
 import { ProductSpinViewer } from "./ProductSpinViewer";
 
@@ -238,11 +238,15 @@ export function PdpGallery({ images, productName, activeUrl, spinImages }: PdpGa
           />
         </button>
       )}
-      <PdpImageLightbox
+      <GalleryZoomLightbox
         open={zoomOpen}
         onClose={() => setZoomOpen(false)}
-        src={resolvedSrc(active.url)}
-        alt={active.alt ?? productName}
+        images={images.map((img) => ({
+          url: resolvedSrc(img.url),
+          alt: img.alt,
+        }))}
+        initialIndex={index}
+        productName={productName}
       />
       {images.length > 1 ? (
         <div
