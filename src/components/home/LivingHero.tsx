@@ -16,8 +16,9 @@ import { useTimeOfDay } from "@/lib/hooks/useTimeOfDay";
 import { MascotWorldHero } from "@/components/mascot/MascotWorldHero";
 import { VintageSunRays } from "@/components/mascot/VintageSunRays";
 import { StargazingHero } from "@/components/mascot/StargazingHero";
+import { StargazingHeroHeader } from "@/components/mascot/StargazingHeroHeader";
 
-export function LivingHero() {
+export function LivingHero({ headerMode = false }: { headerMode?: boolean } = {}) {
   const { phase, time, mounted, reduceMotion } = useTimeOfDay({ trackTime: true });
 
   return (
@@ -44,7 +45,11 @@ export function LivingHero() {
           pointerEvents: phase === "night" ? "auto" : "none",
         }}
       >
-        <StargazingHero time={time} reduceMotion={reduceMotion} />
+        {headerMode ? (
+          <StargazingHeroHeader time={time} reduceMotion={reduceMotion} />
+        ) : (
+          <StargazingHero time={time} reduceMotion={reduceMotion} />
+        )}
       </div>
 
       {/* Dawn — vintage sunburst */}

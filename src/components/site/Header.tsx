@@ -83,7 +83,7 @@ export function Header() {
         className="pointer-events-none absolute inset-0 overflow-hidden"
       >
         <div className="absolute top-0 left-0 z-0 h-full w-full">
-          <LivingHero />
+          <LivingHero headerMode />
         </div>
         <div className="absolute inset-0 z-10 bg-white/10" />
       </div>
