@@ -1,31 +1,39 @@
 import Link from "next/link";
 
-import { getReviewStats, type ReviewStats } from "@/lib/product/review-stats";
 import {
   REVIEWS,
   type Review,
   type ReviewCategory,
 } from "@/lib/discovery/reviews";
 
-export type PdpReviewsProps = {
-  productSlug: string;
+export interface PdpReviewsProps {
+  productSlug?: string;
   productName: string;
-};
+  /** Pool of reviews to filter from. Defaults to fixture for tests/dev. */
+  reviews?: readonly Review[];
+  /** Location-wide aggregate (rating/count). Suppressed when null. */
+  stats?: { rating: number; count: number } | null;
+  /** Set when the live fetch failed — renders a friendly "couldn't load" state. */
+  error?: boolean;
+}
 
 const HEADING_ID = "pdp-reviews-heading";
 const MAX_CARDS = 3;
 
-// Select reviews to spotlight on the PDP. Fallback chain favors honest
+// Selects the reviews to spotlight on the PDP. Fallback chain favors honest
 // specificity: exact productName -> inferred category -> []. The previous
 // "top-rated overall" tier was removed because it surfaced reviews from
 // unrelated categories captioned as the current product's reviews.
-export function pickPdpReviews(productName: string): readonly Review[] {
-  const exact = REVIEWS.filter((r) => r.productName === productName);
+export function pickPdpReviews(
+  productName: string,
+  pool: readonly Review[] = REVIEWS,
+): readonly Review[] {
+  const exact = pool.filter((r) => r.productName === productName);
   if (exact.length > 0) return exact.slice(0, MAX_CARDS);
 
   const category = inferReviewCategory(productName);
   if (category) {
-    const byCategory = REVIEWS.filter((r) => r.category === category);
+    const byCategory = pool.filter((r) => r.category === category);
     if (byCategory.length > 0) return byCategory.slice(0, MAX_CARDS);
   }
 
@@ -45,25 +53,35 @@ function inferReviewCategory(productName: string): ReviewCategory | null {
   return null;
 }
 
-export function PdpReviews({ productSlug, productName }: PdpReviewsProps) {
-  const stats = getReviewStats(productSlug);
-  const reviews = pickPdpReviews(productName);
+export function PdpReviews({
+  productSlug,
+  productName,
+  reviews: pool = REVIEWS,
+  stats = null,
+  error = false,
+}: PdpReviewsProps) {
+  if (error) {
+    return (
+      <ReviewsShell>
+        <p className="mt-3 text-sm text-cf-espresso/70">
+          We couldn&rsquo;t load reviews right now.{" "}
+          <Link href="/reviews" className="underline hover:no-underline">
+            Try the full reviews page
+          </Link>
+          .
+        </p>
+        <SharePhotoCta productSlug={productSlug} />
+      </ReviewsShell>
+    );
+  }
+
+  const reviews = pickPdpReviews(productName, pool);
 
   // Aggregate is suppressed when reviews is empty so we never show a count
   // ("42 reviews") with zero cards beneath it.
   if (reviews.length === 0) {
     return (
-      <section
-        aria-labelledby={HEADING_ID}
-        className="mt-10 max-w-3xl border-t border-cf-sand/60 pt-10"
-        data-slot="pdp-reviews"
-      >
-        <h2
-          id={HEADING_ID}
-          className="font-heading text-lg font-semibold text-cf-espresso"
-        >
-          Reviews
-        </h2>
+      <ReviewsShell>
         <p className="mt-3 text-sm text-cf-espresso/70">
           No reviews yet.{" "}
           <Link href="/reviews" className="underline hover:no-underline">
@@ -72,26 +90,12 @@ export function PdpReviews({ productSlug, productName }: PdpReviewsProps) {
           .
         </p>
         <SharePhotoCta productSlug={productSlug} />
-      </section>
+      </ReviewsShell>
     );
   }
 
   return (
-    <section
-      aria-labelledby={HEADING_ID}
-      className="mt-10 max-w-3xl border-t border-cf-sand/60 pt-10"
-      data-slot="pdp-reviews"
-    >
-      <header className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2
-          id={HEADING_ID}
-          className="font-heading text-lg font-semibold text-cf-espresso"
-        >
-          Reviews
-        </h2>
-        {stats ? <AggregateRating stats={stats} /> : null}
-      </header>
-
+    <ReviewsShell aside={stats ? <AggregateRating stats={stats} /> : null}>
       <ul className="mt-6 space-y-6">
         {reviews.map((review) => (
           <ReviewCard key={review.id} review={review} />
@@ -105,6 +109,33 @@ export function PdpReviews({ productSlug, productName }: PdpReviewsProps) {
       </p>
 
       <SharePhotoCta productSlug={productSlug} />
+    </ReviewsShell>
+  );
+}
+
+function ReviewsShell({
+  children,
+  aside,
+}: {
+  children: React.ReactNode;
+  aside?: React.ReactNode;
+}) {
+  return (
+    <section
+      aria-labelledby={HEADING_ID}
+      className="mt-10 max-w-3xl border-t border-cf-sand/60 pt-10"
+      data-slot="pdp-reviews"
+    >
+      <header className="flex flex-wrap items-baseline justify-between gap-3">
+        <h2
+          id={HEADING_ID}
+          className="font-heading text-lg font-semibold text-cf-espresso"
+        >
+          Reviews
+        </h2>
+        {aside}
+      </header>
+      {children}
     </section>
   );
 }
@@ -113,7 +144,7 @@ export function PdpReviews({ productSlug, productName }: PdpReviewsProps) {
 // query string so the submitted photo is linked back to this product page.
 // Copy stays aligned with the gallery page's primary action and the submit
 // page heading ("Share your photo") so the journey reads as one flow.
-function SharePhotoCta({ productSlug }: { productSlug: string }) {
+function SharePhotoCta({ productSlug }: { productSlug?: string }) {
   const href = productSlug
     ? `/community-gallery/submit?productSlug=${encodeURIComponent(productSlug)}`
     : "/community-gallery/submit";
@@ -131,7 +162,7 @@ function SharePhotoCta({ productSlug }: { productSlug: string }) {
   );
 }
 
-function AggregateRating({ stats }: { stats: ReviewStats }) {
+function AggregateRating({ stats }: { stats: { rating: number; count: number } }) {
   const rounded = stats.rating.toFixed(1);
   const label = `Average rating ${rounded} out of 5 from ${stats.count} reviews`;
   return (

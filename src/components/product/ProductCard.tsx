@@ -6,7 +6,6 @@ import { m, useReducedMotion } from "framer-motion";
 
 import { formatPlpPrice } from "@/lib/product/plp-price";
 import { getPlpCardImages } from "@/lib/product/plp-card-images";
-import { getReviewStats } from "@/lib/product/review-stats";
 import { AddToCompareButton } from "@/components/compare/AddToCompareButton";
 import { PdpProductBadges } from "@/components/product/PdpProductBadges";
 import { ProductCardSwatchRow } from "@/components/product/ProductCardSwatchRow";
@@ -88,7 +87,9 @@ export function ProductCard({
     ? { opacity: REDUCED_OPACITY, y: 0 }
     : { opacity: 1, y: MOTION_Y_PX };
 
-  const reviewStats = getReviewStats(product.slug);
+  // PLP review badge intentionally absent (cfw-49h, v1): per-product ratings
+  // don't exist in Google Business Profile (location-wide only). The location
+  // aggregate renders on the PDP via PdpReviews instead.
 
   return (
     <m.div
@@ -154,16 +155,6 @@ export function ProductCard({
               {formatPlpPrice(product)}
             </p>
           )}
-          {reviewStats ? (
-            <p
-              data-testid="review-badge"
-              className="mt-1 text-xs text-cf-charcoal/60 dark:text-zinc-400"
-            >
-              <span aria-hidden="true">★</span>{" "}
-              {reviewStats.rating.toFixed(1)} ({reviewStats.count}{" "}
-              {reviewStats.count === 1 ? "review" : "reviews"})
-            </p>
-          ) : null}
           {colorChoices && colorChoices.length > 0 ? (
             <ProductCardSwatchRow choices={colorChoices} />
           ) : null}

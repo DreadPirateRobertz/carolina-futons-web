@@ -8,8 +8,12 @@ import { REVIEWS } from "@/lib/discovery/reviews";
 // The card source uses an honest fallback chain (productName -> category -> [])
 // so a PDP without relevant reviews shows a real empty state instead of
 // reviews from unrelated categories captioned as this product's. These tests
-// pin that selection contract — the fallback order is the part most likely
-// to silently regress (cf-xe54).
+// pin that selection contract — the fallback order is the part most likely to
+// silently regress (cf-xe54). After the cfw-49h GBP migration, reviews + stats
+// arrive as props from the server-side loadReviews(); the fixture pool is the
+// default to keep these tests deterministic.
+
+const STATS = { rating: 4.8, count: 187 };
 
 describe("pickPdpReviews", () => {
   it("returns reviews matching the exact productName when present", () => {
@@ -53,21 +57,48 @@ describe("pickPdpReviews", () => {
     // sanity: source has more than 3 reviews so the cap is meaningful
     expect(REVIEWS.length).toBeGreaterThan(3);
   });
+
+  it("filters from a caller-provided pool when reviews come from the GBP fetcher", () => {
+    const pool = [
+      ...REVIEWS,
+      {
+        id: "gbp-1",
+        author: "Avery K.",
+        category: "mattresses" as const,
+        rating: 5 as const,
+        title: "Fresh GBP review",
+        body: "Loved it.",
+        date: "2026-04-01",
+        productName: "",
+      },
+    ];
+    const picked = pickPdpReviews("Brand-New Mattress 9000", pool);
+    expect(picked.some((r) => r.id === "gbp-1")).toBe(true);
+  });
 });
 
 describe("<PdpReviews />", () => {
   it("renders the section heading and aggregate rating when stats and reviews exist", () => {
     render(
-      <PdpReviews productSlug="monterey-futon" productName="Monterey Futon" />,
+      <PdpReviews
+        productSlug="monterey-futon"
+        productName="Studio Murphy Bed"
+        stats={STATS}
+      />,
     );
     expect(screen.getByRole("heading", { name: /reviews/i })).toBeInTheDocument();
-    const aggregate = screen.getByLabelText(/average rating .* out of 5 from \d+ reviews/i);
-    expect(aggregate).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/average rating .* out of 5 from \d+ reviews/i),
+    ).toBeInTheDocument();
   });
 
-  it("renders up to 3 review cards", () => {
+  it("renders up to 3 review cards when matches exist", () => {
     render(
-      <PdpReviews productSlug="monterey-futon" productName="Monterey Futon" />,
+      <PdpReviews
+        productSlug="monterey-futon"
+        productName="Studio Murphy Bed"
+        stats={STATS}
+      />,
     );
     const list = screen.getByRole("list");
     const cards = within(list).getAllByRole("listitem");
@@ -77,7 +108,11 @@ describe("<PdpReviews />", () => {
 
   it("renders a link to /reviews so customers can read more", () => {
     render(
-      <PdpReviews productSlug="monterey-futon" productName="Monterey Futon" />,
+      <PdpReviews
+        productSlug="monterey-futon"
+        productName="Studio Murphy Bed"
+        stats={STATS}
+      />,
     );
     const link = screen.getByRole("link", { name: /see all customer reviews/i });
     expect(link.getAttribute("href")).toBe("/reviews");
@@ -85,7 +120,11 @@ describe("<PdpReviews />", () => {
 
   it("shows star indicators reflecting each review's rating", () => {
     render(
-      <PdpReviews productSlug="monterey-futon" productName="Monterey Futon" />,
+      <PdpReviews
+        productSlug="monterey-futon"
+        productName="Studio Murphy Bed"
+        stats={STATS}
+      />,
     );
     const ratings = screen.getAllByLabelText(/rated [1-5] out of 5/i);
     expect(ratings.length).toBeGreaterThan(0);
@@ -105,11 +144,13 @@ describe("<PdpReviews />", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("suppresses the aggregate when stats exist but no reviews match", () => {
-    // monterey-futon has SEED stats; productName "Mismatched Product" has no
-    // matching review in REVIEWS. We must not show the seed aggregate alone.
+  it("suppresses the aggregate when stats are provided but no reviews match", () => {
     render(
-      <PdpReviews productSlug="monterey-futon" productName="Wool Throw Pillow" />,
+      <PdpReviews
+        productSlug="monterey-futon"
+        productName="Wool Throw Pillow"
+        stats={STATS}
+      />,
     );
     expect(
       screen.queryByLabelText(/average rating/i),
@@ -117,11 +158,13 @@ describe("<PdpReviews />", () => {
     expect(screen.getByText(/no reviews yet/i)).toBeInTheDocument();
   });
 
-  it("renders review cards without an aggregate when slug is unseeded but reviews match", () => {
-    // unseeded slug -> getReviewStats returns null; but productName matches an
-    // exact review entry. Cards render; aggregate is omitted.
+  it("renders review cards without an aggregate when stats are null", () => {
     render(
-      <PdpReviews productSlug="unseeded-slug" productName="Studio Murphy Bed" />,
+      <PdpReviews
+        productSlug="unseeded-slug"
+        productName="Studio Murphy Bed"
+        stats={null}
+      />,
     );
     expect(
       screen.queryByLabelText(/average rating/i),
@@ -162,13 +205,38 @@ describe("<PdpReviews />", () => {
 
   it("emits a machine-readable <time dateTime> for each review date", () => {
     const { container } = render(
-      <PdpReviews productSlug="monterey-futon" productName="Monterey Futon" />,
+      <PdpReviews
+        productSlug="monterey-futon"
+        productName="Studio Murphy Bed"
+        stats={STATS}
+      />,
     );
     const times = container.querySelectorAll("time[datetime]");
     expect(times.length).toBeGreaterThan(0);
     times.forEach((t) => {
-      // ISO 8601 yyyy-mm-dd from the static REVIEWS list
       expect(t.getAttribute("datetime")).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
+  });
+
+  it("renders a friendly 'couldn't load reviews' state when the fetcher errored", () => {
+    render(
+      <PdpReviews
+        productSlug="monterey-futon"
+        productName="Studio Murphy Bed"
+        stats={STATS}
+        error
+      />,
+    );
+    expect(screen.getByRole("heading", { name: /reviews/i })).toBeInTheDocument();
+    expect(screen.getByText(/couldn.t load reviews/i)).toBeInTheDocument();
+    // Card list and aggregate must both be suppressed under error.
+    expect(screen.queryByRole("list")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/average rating/i),
+    ).not.toBeInTheDocument();
+    // The "try the full reviews page" link still routes users somewhere useful.
+    expect(
+      screen.getByRole("link", { name: /full reviews page/i }).getAttribute("href"),
+    ).toBe("/reviews");
   });
 });

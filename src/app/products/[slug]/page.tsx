@@ -16,7 +16,7 @@ import { PdpRecentlyViewed } from "@/components/product/PdpRecentlyViewed";
 import { PdpReviews, pickPdpReviews } from "@/components/product/PdpReviews";
 import { PdpShareButtons } from "@/components/product/PdpShareButtons";
 import { PdpViewItemTracker } from "@/components/product/PdpViewItemTracker";
-import { getReviewStats } from "@/lib/product/review-stats";
+import { loadReviews } from "@/lib/discovery/google-reviews";
 import { getProductBySlug } from "@/lib/wix/products";
 import { logWixFailure } from "@/lib/wix/errors";
 import { listFabricSwatches } from "@/lib/wix/fabrics";
@@ -142,8 +142,12 @@ export default async function PdpPage(props: {
   // aggregateRating). Only honest stats + matching reviews are emitted —
   // pickPdpReviews returns [] when neither exact name nor category matches.
   const productNameForSchema = product.name ?? "";
-  const reviewStats = getReviewStats(slug);
-  const pdpReviews = pickPdpReviews(productNameForSchema);
+  const loadedReviews = await loadReviews();
+  const pdpReviews = pickPdpReviews(productNameForSchema, loadedReviews.reviews);
+  const locationStats =
+    loadedReviews.averageRating !== null && loadedReviews.totalReviewCount !== null
+      ? { rating: loadedReviews.averageRating, count: loadedReviews.totalReviewCount }
+      : null;
   const productSchema = buildProductSchema({
     name: productNameForSchema,
     description: descriptionText,
@@ -151,9 +155,12 @@ export default async function PdpPage(props: {
     priceUSD: product.priceData?.price ?? 0,
     inStock: stock?.inStock !== false,
     canonicalUrl,
+    // Aggregate is the location-wide GBP rating (per-product GBP data does not
+    // exist). Emitted only when matching reviews are also rendered on the page,
+    // so JSON-LD never advertises a count without supporting cards.
     aggregateRating:
-      reviewStats && pdpReviews.length > 0
-        ? { ratingValue: reviewStats.rating, reviewCount: reviewStats.count }
+      locationStats && pdpReviews.length > 0
+        ? { ratingValue: locationStats.rating, reviewCount: locationStats.count }
         : undefined,
     reviews:
       pdpReviews.length > 0
@@ -248,7 +255,13 @@ export default async function PdpPage(props: {
 
       <PdpComfortBand />
 
-      <PdpReviews productSlug={slug} productName={product.name ?? ""} />
+      <PdpReviews
+        productSlug={slug}
+        productName={product.name ?? ""}
+        reviews={loadedReviews.reviews}
+        stats={locationStats}
+        error={!loadedReviews.ok}
+      />
 
       <PdpShareButtons
         productUrl={canonicalUrl}

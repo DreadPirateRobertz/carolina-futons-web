@@ -4,7 +4,6 @@ import { useState } from "react";
 
 import { HeroReveal } from "@/components/motion/HeroReveal";
 import {
-  REVIEWS,
   REVIEW_CATEGORIES,
   type Review,
   type ReviewCategory,
@@ -14,10 +13,14 @@ const STAR_STAGGER_SECONDS = 0.04;
 
 type Filter = ReviewCategory | "all";
 
-export function ReviewFilter() {
+export interface ReviewFilterProps {
+  reviews: readonly Review[];
+}
+
+export function ReviewFilter({ reviews }: ReviewFilterProps) {
   const [active, setActive] = useState<Filter>("all");
   const filtered: readonly Review[] =
-    active === "all" ? REVIEWS : REVIEWS.filter((r) => r.category === active);
+    active === "all" ? reviews : reviews.filter((r) => r.category === active);
 
   return (
     <div className="space-y-8">
@@ -81,7 +84,8 @@ export function ReviewFilter() {
                 </h3>
                 <p className="leading-relaxed text-cf-ink">{review.body}</p>
                 <p className="text-xs uppercase tracking-[0.15em] text-cf-muted">
-                  {review.author} · {review.productName}
+                  {review.author}
+                  {review.productName ? ` · ${review.productName}` : ""}
                 </p>
               </article>
             </li>

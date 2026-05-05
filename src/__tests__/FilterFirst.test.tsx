@@ -22,7 +22,6 @@ vi.mock("framer-motion", () => ({
   useInView: () => true,
   AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
-vi.mock("@/lib/product/review-stats", () => ({ getReviewStats: () => null }));
 vi.mock("@/lib/product/plp-card-images", () => ({
   getPlpCardImages: () => ({ primary: null, secondary: null }),
 }));
