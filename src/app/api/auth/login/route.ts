@@ -8,6 +8,8 @@ import {
   serializeSessionTokens,
   safeCallbackUrl,
 } from "@/lib/auth/session";
+import { logWixFailure } from "@/lib/wix/errors";
+import { buildAuthDiag, diagAuthorized } from "@/lib/auth/diag";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +21,18 @@ const ERROR_MESSAGES: Record<string, string> = {
   invalidPassword: "Email or password is incorrect.",
   resetPassword: "Please reset your password via the link we sent to your email.",
 };
+
+// cfw-hb3: deployed cfw login fails with 502 while the same WIX_CLIENT_ID_HEADLESS
+// works locally. Wraps a 502 response with a sanitized env+runtime+error
+// fingerprint so a curl with `x-debug-token: $WIX_AUTH_DEBUG_TOKEN` can
+// retrieve the actual SDK error from production without needing Vercel logs
+// access. The full diag is also captured to Sentry via logWixFailure.
+function failWith502(req: NextRequest, err: unknown, userMessage: string) {
+  const diag = buildAuthDiag(err);
+  const body: Record<string, unknown> = { error: userMessage };
+  if (diagAuthorized(req)) body.diag = diag;
+  return NextResponse.json(body, { status: 502 });
+}
 
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as {
@@ -44,11 +58,8 @@ export async function POST(req: NextRequest) {
   try {
     state = await client.auth.login({ email, password });
   } catch (err) {
-    console.error("[auth/login] client.auth.login failed:", err);
-    return NextResponse.json(
-      { error: "Sign-in failed. Please try again." },
-      { status: 502 },
-    );
+    await logWixFailure("auth/login", "client.auth.login", err);
+    return failWith502(req, err, "Sign-in failed. Please try again.");
   }
 
   if (state.loginState === LoginState.SUCCESS) {
@@ -58,11 +69,12 @@ export async function POST(req: NextRequest) {
         (state as { data: { sessionToken: string } }).data.sessionToken,
       );
     } catch (err) {
-      console.error("[auth/login] getMemberTokensForDirectLogin failed:", err);
-      return NextResponse.json(
-        { error: "Sign-in failed. Please try again." },
-        { status: 502 },
+      await logWixFailure(
+        "auth/login",
+        "getMemberTokensForDirectLogin",
+        err,
       );
+      return failWith502(req, err, "Sign-in failed. Please try again.");
     }
     const jar = await cookies();
     jar.set(SESSION_COOKIE_NAME, serializeSessionTokens(tokens), {

@@ -25,15 +25,20 @@ vi.mock("@/lib/wix-client", () => ({
   }),
 }));
 
+const logWixFailure = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/wix/errors", () => ({
+  logWixFailure: (...args: unknown[]) => logWixFailure(...args),
+}));
+
 const TOKENS: Tokens = {
   accessToken: { value: "access-tok", expiresAt: 9_999_999_999 },
   refreshToken: { value: "refresh-tok", role: "member" as Tokens["refreshToken"]["role"] },
 };
 
-const makeReq = (body: unknown) =>
+const makeReq = (body: unknown, headers: Record<string, string> = {}) =>
   new Request("https://test.local/api/auth/login", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...headers },
     body: JSON.stringify(body),
   });
 
@@ -164,8 +169,9 @@ describe("POST /api/auth/login — email+password in-app auth", () => {
 
     expect(res.status).toBe(502);
     expect(cookieStore.has("wix-session")).toBe(false);
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining("[auth/login]"),
+    expect(logWixFailure).toHaveBeenCalledWith(
+      "auth/login",
+      expect.any(String),
       expect.any(Error),
     );
     consoleSpy.mockRestore();
@@ -184,8 +190,9 @@ describe("POST /api/auth/login — email+password in-app auth", () => {
 
     expect(res.status).toBe(502);
     expect(cookieStore.has("wix-session")).toBe(false);
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining("[auth/login]"),
+    expect(logWixFailure).toHaveBeenCalledWith(
+      "auth/login",
+      expect.any(String),
       expect.any(Error),
     );
     consoleSpy.mockRestore();

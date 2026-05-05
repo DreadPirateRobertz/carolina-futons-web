@@ -8,10 +8,21 @@ import {
   serializeSessionTokens,
   safeCallbackUrl,
 } from "@/lib/auth/session";
+import { logWixFailure } from "@/lib/wix/errors";
+import { buildAuthDiag, diagAuthorized } from "@/lib/auth/diag";
 
 export const dynamic = "force-dynamic";
 
 type WixClient = ReturnType<typeof getWixClientWithTokens>;
+
+// cfw-hb3: deployed cfw register fails on Vercel runtime where local works.
+// Same env-gated diag pattern as /api/auth/login.
+function failWith502(req: NextRequest, err: unknown, userMessage: string) {
+  const diag = buildAuthDiag(err);
+  const body: Record<string, unknown> = { error: userMessage };
+  if (diagAuthorized(req)) body.diag = diag;
+  return NextResponse.json(body, { status: 502 });
+}
 
 // After a successful register, Wix returns a one-time `sessionToken` that we
 // exchange for member tokens. That exchange occasionally fails for transient
@@ -27,14 +38,15 @@ async function exchangeOrLoginFallback(
 ): Promise<
   | { tokens: Tokens }
   | { state: "email_verification_required" }
-  | { error: string; status: number }
+  | { error: string; status: number; loggedErr: unknown }
 > {
   try {
     const tokens = await client.auth.getMemberTokensForDirectLogin(sessionToken);
     return { tokens };
   } catch (err) {
-    console.error(
-      "[auth/register] getMemberTokensForDirectLogin failed; falling back to login()",
+    await logWixFailure(
+      "auth/register",
+      "getMemberTokensForDirectLogin (post-register, falling back to login)",
       err,
     );
   }
@@ -43,10 +55,12 @@ async function exchangeOrLoginFallback(
   try {
     loginState = await client.auth.login({ email, password });
   } catch (err) {
-    console.error("[auth/register] login fallback threw:", err);
+    await logWixFailure("auth/register", "login fallback threw", err);
     return {
-      error: "Sign-up succeeded, but signing you in failed. Please check your email for a verification link, then sign in.",
+      error:
+        "Sign-up succeeded, but signing you in failed. Please check your email for a verification link, then sign in.",
       status: 502,
+      loggedErr: err,
     };
   }
 
@@ -57,8 +71,9 @@ async function exchangeOrLoginFallback(
       );
       return { tokens };
     } catch (err) {
-      console.error(
-        "[auth/register] login fallback token exchange failed:",
+      await logWixFailure(
+        "auth/register",
+        "login-fallback getMemberTokensForDirectLogin",
         err,
       );
       return { state: "email_verification_required" };
@@ -105,11 +120,8 @@ export async function POST(req: NextRequest) {
   try {
     state = await client.auth.register({ email, password });
   } catch (err) {
-    console.error("[auth/register] client.auth.register failed:", err);
-    return NextResponse.json(
-      { error: "Sign-up failed. Please try again." },
-      { status: 502 },
-    );
+    await logWixFailure("auth/register", "client.auth.register", err);
+    return failWith502(req, err, "Sign-up failed. Please try again.");
   }
 
   if (state.loginState === LoginState.SUCCESS) {
@@ -133,10 +145,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ state: result.state }, { status: 200 });
     }
 
-    return NextResponse.json(
-      { error: result.error },
-      { status: result.status },
-    );
+    return failWith502(req, result.loggedErr, result.error);
   }
 
   if (state.loginState === LoginState.EMAIL_VERIFICATION_REQUIRED) {
