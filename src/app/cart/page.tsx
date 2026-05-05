@@ -7,6 +7,8 @@ import { useCart } from "@/components/cart/CartProvider";
 import { formatCents } from "@/lib/cart/cart-state";
 import { trackBeginCheckout } from "@/lib/analytics/ga4-events";
 import { cn } from "@/lib/utils";
+import { EmptyCartIllustration } from "@/components/illustrations/EmptyCartIllustration";
+import { PackingBearIllustration } from "@/components/illustrations/PackingBearIllustration";
 
 export default function CartPage() {
   const { state, itemCount, subtotalCents, isCartPending, removeLine, setQuantity } = useCart();
@@ -17,7 +19,8 @@ export default function CartPage() {
         <h1 className="font-heading text-3xl font-semibold tracking-tight text-cf-espresso">
           Your cart
         </h1>
-        <p className="mt-4 text-cf-charcoal/70">Your cart is empty.</p>
+        <EmptyCartIllustration className="mt-6 w-full max-w-[260px]" />
+        <p className="mt-6 text-cf-charcoal/70">Your cart is empty.</p>
         <Link
           href="/shop"
           className="mt-8 inline-flex h-12 items-center justify-center rounded-md bg-cf-cta px-6 text-sm font-medium text-white hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
@@ -30,12 +33,17 @@ export default function CartPage() {
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-      <h1 className="font-heading text-3xl font-semibold tracking-tight text-cf-espresso">
-        Your cart
-        <span className="ml-3 text-base font-normal text-cf-espresso/60">
-          {itemCount} {itemCount === 1 ? "item" : "items"}
-        </span>
-      </h1>
+      <div className="flex items-start justify-between gap-6">
+        <h1 className="font-heading text-3xl font-semibold tracking-tight text-cf-espresso">
+          Your cart
+          <span className="ml-3 text-base font-normal text-cf-espresso/60">
+            {itemCount} {itemCount === 1 ? "item" : "items"}
+          </span>
+        </h1>
+        {/* Companion illustration — keeps mascot world cohesion on the
+            populated cart layout without crowding the line items. */}
+        <PackingBearIllustration className="hidden h-auto w-[180px] shrink-0 rounded-lg shadow-sm md:block lg:w-[200px]" />
+      </div>
 
       <div className="mt-8 grid gap-10 lg:grid-cols-[1fr,320px]">
         {/* Line items */}

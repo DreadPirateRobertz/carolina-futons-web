@@ -64,6 +64,38 @@ describe("CartPage", () => {
     expect(screen.getByRole("link", { name: /continue shopping/i })).toHaveAttribute("href", "/shop");
   });
 
+  it("renders the V3 EmptyCartIllustration in the empty state (cfw-pm3)", () => {
+    mockCart([]);
+    const { container } = render(<CartPage />);
+    expect(
+      container.querySelector("[data-slot='empty-cart-illustration']"),
+    ).not.toBeNull();
+  });
+
+  it("does not render the empty illustration when the cart has items", () => {
+    mockCart([LINE]);
+    const { container } = render(<CartPage />);
+    expect(
+      container.querySelector("[data-slot='empty-cart-illustration']"),
+    ).toBeNull();
+  });
+
+  it("renders the PackingBearIllustration when cart is populated (cfw-pm3)", () => {
+    mockCart([LINE]);
+    const { container } = render(<CartPage />);
+    expect(
+      container.querySelector("[data-slot='packing-bear-illustration']"),
+    ).not.toBeNull();
+  });
+
+  it("does not render the packing illustration on the empty cart", () => {
+    mockCart([]);
+    const { container } = render(<CartPage />);
+    expect(
+      container.querySelector("[data-slot='packing-bear-illustration']"),
+    ).toBeNull();
+  });
+
   it("renders line items and subtotal when cart has items", () => {
     mockCart([LINE]);
     render(<CartPage />);
