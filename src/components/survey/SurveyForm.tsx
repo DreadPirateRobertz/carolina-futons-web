@@ -85,7 +85,7 @@ export function SurveyForm({ orderId }: { orderId?: string }) {
           htmlFor="survey-comments"
           className="mb-2 block text-base font-medium text-cf-ink"
         >
-          What's the main reason for your score?{" "}
+          What&apos;s the main reason for your score?{" "}
           <span className="text-cf-charcoal/50">(optional)</span>
         </label>
         <textarea
