@@ -145,7 +145,10 @@ describe("QuickViewModal", () => {
         container.querySelector('[data-slot="quick-view-details"]'),
       ).not.toBeNull();
     });
-    expect(screen.getByText("$799.00")).toBeInTheDocument();
+    const priceSlot = container.querySelector(
+      '[data-slot="quick-view-price"]',
+    );
+    expect(priceSlot?.textContent).toBe("$799.00");
   });
 
   it("renders an error slot with retry on a failed fetch", async () => {
