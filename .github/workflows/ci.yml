@@ -44,13 +44,17 @@ jobs:
       # Codecov upload (cf-s5cs):
       #   - uploads on push to main and on every non-Dependabot PR.
       #   - Dependabot PRs cannot read CODECOV_TOKEN, so skip to avoid hard fail.
+      #   - fail_ci_if_error is gated on CODECOV_TOKEN presence: until the
+      #     repo owner adds the secret, the step warns but does not block CI.
+      #     Once the secret is set, this evaluates to true and any upload
+      #     error fails the build (same strictness as carolina-futons used to).
       - name: Upload coverage to Codecov
         if: github.actor != 'dependabot[bot]'
         uses: codecov/codecov-action@v5
         with:
           files: ./coverage/lcov.info
           flags: unit
-          fail_ci_if_error: true
+          fail_ci_if_error: ${{ secrets.CODECOV_TOKEN != '' }}
           token: ${{ secrets.CODECOV_TOKEN }}
 
   # ── E2E (Playwright) ─────────────────────────────────────────────────────────
