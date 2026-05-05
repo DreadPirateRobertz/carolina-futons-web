@@ -46,11 +46,14 @@ function buildFireflies(): FireflyDef[] {
 }
 
 // Compact mode uses a 1920×240 band sized for the site header (~213px tall).
-// Element coords are hand-placed so moon, bear, and exactly 2 fireflies
-// stay inside the visible slice at any header viewport width.
+// preserveAspectRatio="xMidYMid slice" means height drives scale at narrow
+// viewports, so the viewBox is cropped horizontally around x=960. The
+// always-visible band at min mobile (375px wide × ~213px header) is
+// x ∈ [749, 1171] — anything outside is cropped on phones. Moon, bear, and
+// fireflies must stay inside that window.
 const COMPACT_FIREFLIES: FireflyDef[] = [
-  { cx: 760, cy: 175, ph: 0.0, sp: 1.0 },
-  { cx: 1180, cy: 165, ph: 1.6, sp: 1.2 },
+  { cx: 820, cy: 175, ph: 0.0, sp: 1.0 },
+  { cx: 1080, cy: 165, ph: 1.6, sp: 1.2 },
 ];
 
 function buildCompactStars(): StarDef[] {
@@ -214,15 +217,16 @@ export function StargazingHero({
               opacity={0.6 + 0.4 * Math.sin(t * 1.2 + s.tw)}
             />
           ))}
-          {/* Prominent stars with glow */}
-          <circle cx="320" cy="48" r="1.8" fill={SKY.cream} />
-          <circle cx="320" cy="48" r="6" fill={SKY.cream} opacity="0.25" />
-          <circle cx="1180" cy="34" r="2.0" fill={SKY.cream} />
-          <circle cx="1180" cy="34" r="7" fill={SKY.cream} opacity="0.25" />
+          {/* Prominent stars with glow — kept inside the mobile-visible band */}
+          <circle cx="820" cy="48" r="1.8" fill={SKY.cream} />
+          <circle cx="820" cy="48" r="6" fill={SKY.cream} opacity="0.25" />
+          <circle cx="980" cy="30" r="2.0" fill={SKY.cream} />
+          <circle cx="980" cy="30" r="7" fill={SKY.cream} opacity="0.25" />
         </g>
 
-        {/* Moon — top-right, large enough to read at header height */}
-        <g data-slot="stargazing-moon" transform="translate(1620 70)">
+        {/* Moon — placed inside the mobile-visible band [749, 1171] so it is
+            never cropped at narrow viewports. */}
+        <g data-slot="stargazing-moon" transform="translate(1100 70)">
           <circle r="120" fill="url(#sg-moon-c)" />
           <circle r="42" fill={SKY.moon} />
           <circle cx="-14" cy="-8" r="6" fill={SKY.sky2} opacity="0.18" />

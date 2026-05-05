@@ -1,11 +1,33 @@
 // cf-2t0y — compact StargazingHero (header band) must render moon, bear,
 // and exactly 2 fireflies inside a 1920×240 viewBox so they stay visible at
 // the ~213px header height.
+// cf-d05z / cfw-858 — additionally, moon and fireflies must stay inside the
+// always-visible band at min mobile viewport so they are not cropped on phones.
 
 import { describe, expect, it } from "vitest";
 import { render } from "@testing-library/react";
 
 import { StargazingHero } from "@/components/mascot/StargazingHero";
+
+// Slice math at min mobile viewport (375px wide × ~213px header). The SVG uses
+// preserveAspectRatio="xMidYMid slice", so when rendered-aspect < viewBox-aspect
+// the viewBox is cropped horizontally around x=960. Anything outside
+// [VISIBLE_X_MIN, VISIBLE_X_MAX] is cropped on a 375px-wide phone.
+const MIN_VIEWPORT_W = 375;
+const HEADER_H = 213;
+const VIEWBOX_W = 1920;
+const VIEWBOX_H = 240;
+const SLICE_SCALE = Math.max(MIN_VIEWPORT_W / VIEWBOX_W, HEADER_H / VIEWBOX_H);
+const VISIBLE_W = MIN_VIEWPORT_W / SLICE_SCALE;
+const VISIBLE_X_MIN = VIEWBOX_W / 2 - VISIBLE_W / 2;
+const VISIBLE_X_MAX = VIEWBOX_W / 2 + VISIBLE_W / 2;
+
+function parseTranslate(transform: string): { x: number; y: number } | null {
+  const m = transform.match(
+    /translate\(\s*(-?\d+(?:\.\d+)?)[ ,]+(-?\d+(?:\.\d+)?)/,
+  );
+  return m ? { x: Number(m[1]), y: Number(m[2]) } : null;
+}
 
 function getCompactSvg(container: HTMLElement) {
   const svg = container.querySelector("svg");
@@ -44,6 +66,36 @@ describe("StargazingHero compact mode", () => {
     const cy = Number(match![1]);
     expect(cy).toBeGreaterThan(0);
     expect(cy).toBeLessThan(240);
+  });
+
+  it("places the moon inside the always-visible band at min mobile viewport", () => {
+    const { container } = render(<StargazingHero compact />);
+    const moon = container.querySelector('[data-slot="stargazing-moon"]');
+    expect(moon).not.toBeNull();
+    const pos = parseTranslate(moon!.getAttribute("transform") ?? "");
+    expect(pos).not.toBeNull();
+    expect(pos!.x).toBeGreaterThanOrEqual(VISIBLE_X_MIN);
+    expect(pos!.x).toBeLessThanOrEqual(VISIBLE_X_MAX);
+  });
+
+  it("keeps both fireflies inside the always-visible band across the animation cycle", () => {
+    // Sample several time values so we catch positions at the extremes of
+    // the firefly drift (sin amplitude = 18 viewBox units).
+    for (const time of [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]) {
+      const { container } = render(<StargazingHero compact time={time} />);
+      const group = container.querySelector(
+        '[data-slot="stargazing-fireflies-compact"]',
+      );
+      expect(group).not.toBeNull();
+      const fireflies = group!.querySelectorAll('[data-slot="firefly"]');
+      expect(fireflies.length).toBe(2);
+      for (const ff of Array.from(fireflies)) {
+        const pos = parseTranslate(ff.getAttribute("transform") ?? "");
+        expect(pos).not.toBeNull();
+        expect(pos!.x).toBeGreaterThanOrEqual(VISIBLE_X_MIN);
+        expect(pos!.x).toBeLessThanOrEqual(VISIBLE_X_MAX);
+      }
+    }
   });
 
   it("renders exactly 2 fireflies", () => {
