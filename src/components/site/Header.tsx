@@ -10,7 +10,7 @@
 // header gains a shadow (both modes) and the main row compresses py-4 → py-2
 // (non-reduced-motion only). Under prefers-reduced-motion the height stays
 // static — only the shadow fades in, which is not a vestibular trigger.
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useReducedMotion } from "framer-motion";
@@ -40,7 +40,16 @@ const SUB_NAV = [
 
 const SCROLL_THRESHOLD_PX = 80;
 
-export function Header() {
+// cfw-61b: optional announcementBar slot. layout.tsx (server) fetches the
+// owner-editable rotation copy via getSiteContent and passes a configured
+// <AnnouncementBarCartAware rotationMessages={…} rotationCtas={…} /> in.
+// Existing call sites that render <Header /> without a prop fall through
+// to the default mount, which is the byte-identical pre-refactor render.
+type HeaderProps = {
+  announcementBar?: ReactNode;
+};
+
+export function Header({ announcementBar }: HeaderProps = {}) {
   const prefersReducedMotion = useReducedMotion() ?? false;
   const [scrolled, setScrolled] = useState(false);
 
@@ -74,7 +83,7 @@ export function Header() {
         .join(" ")}
     >
       <div className="relative z-20">
-        <AnnouncementBarCartAware />
+        {announcementBar ?? <AnnouncementBarCartAware />}
 
         <div
           data-slot="site-header-main"

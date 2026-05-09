@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 
 import { Header } from "@/components/site/Header";
 import { CartProvider } from "@/components/cart/CartProvider";
@@ -8,6 +9,14 @@ function renderHeader() {
   return render(
     <CartProvider>
       <Header />
+    </CartProvider>,
+  );
+}
+
+function renderHeaderWithSlot(announcementBar: ReactNode) {
+  return render(
+    <CartProvider>
+      <Header announcementBar={announcementBar} />
     </CartProvider>,
   );
 }
@@ -96,6 +105,35 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
     renderHeader();
     const browse = screen.getByRole("link", { name: /browse/i });
     expect(browse).toHaveAttribute("href", "/shop");
+  });
+
+  // cfw-61b: announcementBar slot prop. layout.tsx (server) constructs an
+  // AnnouncementBarCartAware with SiteContent-fed rotation copy and passes
+  // it in via this prop; tests with no prop (the existing pattern above)
+  // continue to render the default mount, which is what every existing
+  // Header assertion relies on.
+  it("renders an externally-supplied announcementBar in place of the default mount (cfw-61b)", () => {
+    renderHeaderWithSlot(
+      <div data-slot="custom-announcement-bar">
+        Memorial Day — 15% off frames
+      </div>,
+    );
+    const custom = document.querySelector(
+      "[data-slot='custom-announcement-bar']",
+    );
+    expect(custom).not.toBeNull();
+    expect(custom?.textContent).toContain("Memorial Day — 15% off frames");
+  });
+
+  it("falls back to the default AnnouncementBarCartAware mount when no slot is supplied (cfw-61b)", () => {
+    renderHeader();
+    // The default mount renders the AnnouncementBar region; if the slot
+    // contract regressed (e.g. always rendered the prop, even undefined),
+    // the announcement region would disappear and existing pages would
+    // lose their delivery prompt.
+    expect(
+      screen.getByRole("region", { name: /site announcement/i }),
+    ).toBeInTheDocument();
   });
 
 });

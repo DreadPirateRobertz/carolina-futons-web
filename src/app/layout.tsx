@@ -4,6 +4,12 @@ import { DEFAULT_OG_IMAGE } from "@/lib/og";
 import "./globals.css";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
+import {
+  AnnouncementBarCartAware,
+  ROTATION_CTAS,
+  ROTATION_MESSAGES,
+  type AnnouncementCta,
+} from "@/components/site/AnnouncementBarCartAware";
 import { getSiteContent } from "@/lib/cms/site-content";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { CartAbandonmentTracker } from "@/components/cart/CartAbandonmentTracker";
@@ -88,22 +94,75 @@ export default async function RootLayout({
   // cfw-o2q + cfw-25t: thread owner-editable footer copy from SiteContent.
   // Fallbacks match the Footer component's defaults so the rendered shell
   // is identical when the SiteContent collection is empty / Wix is down.
-  const [footerTagline, footerShowroomHours, footerCopyrightSuffix] =
-    await Promise.all([
-      getSiteContent("footer.tagline", "Quality futon furniture since 1991"),
-      // cfw-sbl: key matches the seed convention (hyphenated, lowercase) and
-      // the existing seed-data.json row at "footer.showroom-hours.label".
-      getSiteContent(
-        "footer.showroom-hours.label",
-        "Showroom hours: Sun–Tue, 10am–5pm",
-      ),
-      // cfw-25t: third Footer key now wired. Reader and seed (cfw-roi) row
-      // at "footer.copyright.suffix" both align on the same key.
-      getSiteContent(
-        "footer.copyright.suffix",
-        "Carolina Futons. Hendersonville, NC.",
-      ),
-    ]);
+  // cfw-61b: 5 announcement.rotation.{i}.message + 2 rotation.3.cta-{label,
+  // href} keys join the same Promise.all so the announcement copy + footer
+  // copy share one cached Wix snapshot per render (unstable_cache layer in
+  // site-content.ts).
+  const [
+    footerTagline,
+    footerShowroomHours,
+    footerCopyrightSuffix,
+    rotationMessage0,
+    rotationMessage1,
+    rotationMessage2,
+    rotationMessage3,
+    rotationCta3Label,
+    rotationCta3Href,
+    rotationMessage4,
+  ] = await Promise.all([
+    getSiteContent("footer.tagline", "Quality futon furniture since 1991"),
+    // cfw-sbl: key matches the seed convention (hyphenated, lowercase) and
+    // the existing seed-data.json row at "footer.showroom-hours.label".
+    getSiteContent(
+      "footer.showroom-hours.label",
+      "Showroom hours: Sun–Tue, 10am–5pm",
+    ),
+    // cfw-25t: third Footer key now wired. Reader and seed (cfw-roi) row
+    // at "footer.copyright.suffix" both align on the same key.
+    getSiteContent(
+      "footer.copyright.suffix",
+      "Carolina Futons. Hendersonville, NC.",
+    ),
+    // cfw-61b: announcement rotation copy. Defaults pulled from the
+    // exported ROTATION_MESSAGES / ROTATION_CTAS so a Wix-down render is
+    // byte-identical to today's hardcoded path.
+    getSiteContent("announcement.rotation.0.message", ROTATION_MESSAGES[0]),
+    getSiteContent("announcement.rotation.1.message", ROTATION_MESSAGES[1]),
+    getSiteContent("announcement.rotation.2.message", ROTATION_MESSAGES[2]),
+    getSiteContent("announcement.rotation.3.message", ROTATION_MESSAGES[3]),
+    getSiteContent(
+      "announcement.rotation.3.cta-label",
+      ROTATION_CTAS[3]?.ctaLabel ?? "",
+    ),
+    getSiteContent(
+      "announcement.rotation.3.cta-href",
+      ROTATION_CTAS[3]?.ctaHref ?? "",
+    ),
+    getSiteContent("announcement.rotation.4.message", ROTATION_MESSAGES[4]),
+  ]);
+
+  const rotationMessages: ReadonlyArray<string> = [
+    rotationMessage0,
+    rotationMessage1,
+    rotationMessage2,
+    rotationMessage3,
+    rotationMessage4,
+  ];
+  // Only index 3 currently has a CTA pair in the seed contract. Empty
+  // label OR href → no CTA renders (the AnnouncementBar treats undefined
+  // as "message-only", and missing-href would otherwise emit a broken
+  // <a href="">).
+  const rotationCta3: AnnouncementCta | undefined =
+    rotationCta3Label && rotationCta3Href
+      ? { ctaLabel: rotationCta3Label, ctaHref: rotationCta3Href }
+      : undefined;
+  const rotationCtas: ReadonlyArray<AnnouncementCta | undefined> = [
+    undefined,
+    undefined,
+    undefined,
+    rotationCta3,
+    undefined,
+  ];
   return (
     <html
       lang="en"
@@ -137,7 +196,14 @@ export default async function RootLayout({
           <CartProvider>
             <CartHydrator />
             <CartAbandonmentTracker />
-            <Header />
+            <Header
+              announcementBar={
+                <AnnouncementBarCartAware
+                  rotationMessages={rotationMessages}
+                  rotationCtas={rotationCtas}
+                />
+              }
+            />
             <main id="main" className="flex-1">
               <PageTransition>{children}</PageTransition>
             </main>
