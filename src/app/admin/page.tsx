@@ -22,6 +22,12 @@ const SHIPPED_SURFACES: ReadonlyArray<AdminCard> = [
     description:
       "Read-only list of every editable copy key on the site, with current values. Use it to audit what you can change inline.",
   },
+  {
+    title: "Audit log",
+    href: "/admin/audit",
+    description:
+      "The most recent owner edits across the site — who changed what, before/after, and when. Use it to spot accidental edits or hand a change history to engineering.",
+  },
 ];
 
 const STOREFRONT_AFFORDANCES: ReadonlyArray<{ title: string; description: string }> = [

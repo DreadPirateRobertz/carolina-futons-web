@@ -2,7 +2,7 @@ import "server-only";
 
 import type { Tokens } from "@wix/sdk";
 
-import { getWixClientWithTokens } from "@/lib/wix-client";
+import { getWixClient, getWixClientWithTokens } from "@/lib/wix-client";
 
 // cfw-6qd.11: lightweight audit trail for owner-mode edits.
 //
@@ -78,6 +78,53 @@ export async function recordOwnerEdit(
     console.error(
       `[audit-log] failed to record ${entry.action} on ${entry.target}: ${message}`,
     );
+    return { ok: false, reason: "wix_outage", error: message };
+  }
+}
+
+// cfw-xlv: read half. Surfaces audit rows to the /admin/audit viewer.
+// Mirrors the readSiteContentHistory shape (cfw-6qd.10) so the consuming
+// page can pattern-match the same { ok, rows } / { ok: false, reason }
+// discriminated union.
+
+export type AuditLogRow = {
+  _id?: string;
+  _createdDate?: string;
+  actorEmail: string;
+  action: AuditAction;
+  target: string;
+  before: string;
+  after: string;
+  ts: string;
+};
+
+export type ReadAuditLogResult =
+  | { ok: true; rows: AuditLogRow[] }
+  | { ok: false; reason: "wix_outage"; error: string };
+
+const DEFAULT_AUDIT_LIMIT = 50;
+const MAX_AUDIT_LIMIT = 200;
+
+/**
+ * Read the most recent N audit rows newest-first. Uses the unauthenticated
+ * client for the same reason as readSiteContentHistory: callers gate on
+ * the route layer (the /admin/audit viewer reuses requireOwnerSession),
+ * not on data-layer permissions.
+ */
+export async function readOwnerAuditLog(
+  limit: number = DEFAULT_AUDIT_LIMIT,
+): Promise<ReadAuditLogResult> {
+  const cap = Math.min(Math.max(1, Math.floor(limit)), MAX_AUDIT_LIMIT);
+  try {
+    const client = getWixClient();
+    const result = await client.items
+      .query(AUDIT_LOG_COLLECTION_ID)
+      .descending("_createdDate")
+      .limit(cap)
+      .find();
+    return { ok: true, rows: result.items as AuditLogRow[] };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     return { ok: false, reason: "wix_outage", error: message };
   }
 }

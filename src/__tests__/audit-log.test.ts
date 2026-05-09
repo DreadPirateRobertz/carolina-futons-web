@@ -10,11 +10,16 @@ import type { Tokens } from "@wix/sdk";
 vi.mock("server-only", () => ({}));
 
 const itemsSave = vi.fn();
+const itemsFind = vi.fn();
+const itemsLimit = vi.fn(() => ({ find: itemsFind }));
+const itemsDescending = vi.fn(() => ({ limit: itemsLimit }));
+const itemsQuery = vi.fn(() => ({ descending: itemsDescending }));
 vi.mock("@/lib/wix-client", () => ({
   getWixClientWithTokens: () => ({ items: { save: itemsSave } }),
+  getWixClient: () => ({ items: { query: itemsQuery } }),
 }));
 
-import { recordOwnerEdit } from "@/lib/admin/audit-log";
+import { recordOwnerEdit, readOwnerAuditLog } from "@/lib/admin/audit-log";
 
 const tokens: Tokens = {
   accessToken: { value: "a", expiresAt: 1_780_000_000 },
@@ -23,6 +28,12 @@ const tokens: Tokens = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Re-wire the query chain after each clear so tests start with a working
+  // descending().limit().find() pipeline.
+  itemsLimit.mockReturnValue({ find: itemsFind });
+  itemsDescending.mockReturnValue({ limit: itemsLimit });
+  itemsQuery.mockReturnValue({ descending: itemsDescending });
+  itemsFind.mockResolvedValue({ items: [] });
   itemsSave.mockResolvedValue({ _id: "audit-row-1" });
 });
 
@@ -141,5 +152,58 @@ describe("recordOwnerEdit — best-effort contract", () => {
       expect(result.error).toBe("not even an Error");
     }
     consoleSpy.mockRestore();
+  });
+});
+
+describe("readOwnerAuditLog — cfw-xlv", () => {
+  const SAMPLE = [
+    { _id: "r1", actorEmail: "a@x.com", action: "edit", target: "k", before: "", after: "v", ts: "T" },
+  ];
+
+  it("queries OwnerAuditLog newest-first with the default limit (50)", async () => {
+    itemsFind.mockResolvedValueOnce({ items: SAMPLE });
+    const result = await readOwnerAuditLog();
+    expect(itemsQuery).toHaveBeenCalledWith("OwnerAuditLog");
+    expect(itemsDescending).toHaveBeenCalledWith("_createdDate");
+    expect(itemsLimit).toHaveBeenCalledWith(50);
+    expect(result).toEqual({ ok: true, rows: SAMPLE });
+  });
+
+  it("honours an explicit limit", async () => {
+    itemsFind.mockResolvedValueOnce({ items: [] });
+    await readOwnerAuditLog(20);
+    expect(itemsLimit).toHaveBeenCalledWith(20);
+  });
+
+  it("caps limit at 200", async () => {
+    itemsFind.mockResolvedValueOnce({ items: [] });
+    await readOwnerAuditLog(10_000);
+    expect(itemsLimit).toHaveBeenCalledWith(200);
+  });
+
+  it("clamps non-positive / fractional limits to a sane positive integer", async () => {
+    itemsFind.mockResolvedValueOnce({ items: [] });
+    await readOwnerAuditLog(0);
+    expect(itemsLimit).toHaveBeenCalledWith(1);
+    itemsLimit.mockClear();
+    await readOwnerAuditLog(2.7);
+    expect(itemsLimit).toHaveBeenCalledWith(2);
+  });
+
+  it("returns ok:false on Wix outage", async () => {
+    itemsFind.mockRejectedValueOnce(new Error("Wix down"));
+    const result = await readOwnerAuditLog();
+    expect(result).toEqual({
+      ok: false,
+      reason: "wix_outage",
+      error: "Wix down",
+    });
+  });
+
+  it("does not throw to the caller on unexpected errors", async () => {
+    itemsFind.mockRejectedValueOnce("string error");
+    const result = await readOwnerAuditLog();
+    expect(result.ok).toBe(false);
+    if (result.ok === false) expect(result.error).toBe("string error");
   });
 });
