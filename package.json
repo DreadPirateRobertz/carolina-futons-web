@@ -12,7 +12,9 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
-    "provision:site-content": "node scripts/provision-site-content/index.mjs"
+    "provision:site-content": "node scripts/provision-site-content/index.mjs",
+    "provision:owner-audit-log": "node scripts/provision-owner-audit-log/index.mjs",
+    "provision:site-content-history": "node scripts/provision-site-content-history/index.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
