@@ -243,6 +243,72 @@ describe("POST /api/auth/register", () => {
     expect(data.redirectTo).toBe("/dashboard");
   });
 
+  // cfw-ipr: malformed-input throws on /api/auth/register get classified as
+  // 422 instead of bleeding through to the 502 + Sentry path.
+  describe("cfw-ipr 422 input-validation throws", () => {
+    it("returns 422 + email message when register throws code=invalidEmail (no Sentry)", async () => {
+      mockRegister.mockRejectedValueOnce(
+        Object.assign(new Error("invalid email"), { code: "invalidEmail" }),
+      );
+
+      const res = await callRegister({
+        email: "@@",
+        password: "password123",
+      });
+      const data = await res.json();
+
+      expect(res.status).toBe(422);
+      expect(data.error).toMatch(/email/i);
+      expect(data.error).toMatch(/invalid/i);
+      expect(mockLogWixFailure).not.toHaveBeenCalled();
+      expect(mockCookiesSet).not.toHaveBeenCalled();
+    });
+
+    it("returns 422 + password message when register throws code=invalidPassword (no Sentry)", async () => {
+      mockRegister.mockRejectedValueOnce(
+        Object.assign(new Error("invalid password"), {
+          code: "invalidPassword",
+        }),
+      );
+
+      const res = await callRegister({
+        email: "a@b.com",
+        password: "x",
+      });
+      const data = await res.json();
+
+      expect(res.status).toBe(422);
+      expect(data.error).toMatch(/password/i);
+      expect(mockLogWixFailure).not.toHaveBeenCalled();
+    });
+
+    it("returns 422 + generic message on response.status=400 without known code (no Sentry)", async () => {
+      mockRegister.mockRejectedValueOnce({ response: { status: 400 } });
+
+      const res = await callRegister({
+        email: "a@b.com",
+        password: "password123",
+      });
+      const data = await res.json();
+
+      expect(res.status).toBe(422);
+      expect(data.error).toMatch(/email|password/i);
+      expect(mockLogWixFailure).not.toHaveBeenCalled();
+    });
+
+    it("does NOT classify upstream 5xx as validation (still 502 + Sentry)", async () => {
+      mockRegister.mockRejectedValueOnce({ response: { status: 502 } });
+
+      const res = await callRegister({
+        email: "a@b.com",
+        password: "password123",
+      });
+
+      expect(res.status).toBe(502);
+      expect(mockLogWixFailure).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it("returns 502 when client.auth.register throws", async () => {
     mockRegister.mockRejectedValueOnce(new Error("network error"));
 

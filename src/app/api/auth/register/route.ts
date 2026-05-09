@@ -10,6 +10,10 @@ import {
 } from "@/lib/auth/session";
 import { logWixFailure } from "@/lib/wix/errors";
 import { buildAuthDiag, diagAuthorized } from "@/lib/auth/diag";
+import {
+  AUTH_INPUT_ERROR_MESSAGES,
+  classifyAuthInputError,
+} from "@/lib/auth/sdk-error";
 
 export const dynamic = "force-dynamic";
 
@@ -120,6 +124,15 @@ export async function POST(req: NextRequest) {
   try {
     state = await client.auth.register({ email, password });
   } catch (err) {
+    // cfw-ipr: classify malformed-input throws (invalidEmail/invalidPassword
+    // or generic 400) as 422 user-input errors instead of 502 + Sentry noise.
+    const kind = classifyAuthInputError(err);
+    if (kind) {
+      return NextResponse.json(
+        { error: AUTH_INPUT_ERROR_MESSAGES[kind] },
+        { status: 422 },
+      );
+    }
     await logWixFailure("auth/register", "client.auth.register", err);
     return failWith502(req, err, "Sign-up failed. Please try again.");
   }

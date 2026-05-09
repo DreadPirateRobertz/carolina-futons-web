@@ -160,6 +160,85 @@ describe("POST /api/auth/login — email+password in-app auth", () => {
     expect(loginFn).not.toHaveBeenCalled();
   });
 
+  // cfw-ipr: malformed-input throws (e.g. email "@@") get classified as 422
+  // instead of bleeding through to the 502 + Sentry path.
+  describe("cfw-ipr 422 input-validation throws", () => {
+    it("returns 422 + email message when login throws code=invalidEmail (no Sentry)", async () => {
+      loginFn.mockRejectedValue(
+        Object.assign(new Error("invalid email"), { code: "invalidEmail" }),
+      );
+
+      const { POST } = await import("@/app/api/auth/login/route");
+      const res = await POST(makeReq({ email: "@@", password: "pw" }) as never);
+      const body = (await res.json()) as { error: string };
+
+      expect(res.status).toBe(422);
+      expect(body.error).toMatch(/email/i);
+      expect(body.error).toMatch(/invalid/i);
+      expect(logWixFailure).not.toHaveBeenCalled();
+      expect(cookieStore.has("wix-session")).toBe(false);
+    });
+
+    it("returns 422 + password message when login throws code=invalidPassword (no Sentry)", async () => {
+      loginFn.mockRejectedValue(
+        Object.assign(new Error("invalid password"), {
+          code: "invalidPassword",
+        }),
+      );
+
+      const { POST } = await import("@/app/api/auth/login/route");
+      const res = await POST(
+        makeReq({ email: "a@b.com", password: "x" }) as never,
+      );
+      const body = (await res.json()) as { error: string };
+
+      expect(res.status).toBe(422);
+      expect(body.error).toMatch(/password/i);
+      expect(logWixFailure).not.toHaveBeenCalled();
+    });
+
+    it("returns 422 + generic message when login throws response.status=400 with no known code (no Sentry)", async () => {
+      loginFn.mockRejectedValue({ response: { status: 400 } });
+
+      const { POST } = await import("@/app/api/auth/login/route");
+      const res = await POST(
+        makeReq({ email: "a@b.com", password: "pw" }) as never,
+      );
+      const body = (await res.json()) as { error: string };
+
+      expect(res.status).toBe(422);
+      expect(body.error).toMatch(/email|password/i);
+      expect(logWixFailure).not.toHaveBeenCalled();
+    });
+
+    it("classifies validation via details.applicationError.code", async () => {
+      loginFn.mockRejectedValue({
+        message: "x",
+        details: { applicationError: { code: "invalidEmail" } },
+      });
+
+      const { POST } = await import("@/app/api/auth/login/route");
+      const res = await POST(makeReq({ email: "@@", password: "pw" }) as never);
+
+      expect(res.status).toBe(422);
+      expect(logWixFailure).not.toHaveBeenCalled();
+    });
+
+    it("does NOT classify upstream 5xx as validation (still 502 + Sentry)", async () => {
+      loginFn.mockRejectedValue({ response: { status: 502 } });
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const { POST } = await import("@/app/api/auth/login/route");
+      const res = await POST(
+        makeReq({ email: "a@b.com", password: "pw" }) as never,
+      );
+
+      expect(res.status).toBe(502);
+      expect(logWixFailure).toHaveBeenCalledTimes(1);
+      consoleSpy.mockRestore();
+    });
+  });
+
   it("returns 502 when Wix SDK throws during login", async () => {
     loginFn.mockRejectedValue(new Error("network error"));
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
