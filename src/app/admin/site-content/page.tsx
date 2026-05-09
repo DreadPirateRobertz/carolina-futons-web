@@ -129,8 +129,12 @@ function EmptyState({ hasError }: { hasError: boolean }) {
         No SiteContent rows {hasError ? "are visible" : "exist yet"}.
       </p>
       <p className="mt-2">
-        Run the seed script (<code className="rounded bg-cf-cream px-1.5 py-0.5 text-xs">scripts/seed-site-content.ts</code>)
-        or add rows via the Wix Dashboard → CMS → SiteContent collection.
+        Run{" "}
+        <code className="rounded bg-cf-cream px-1.5 py-0.5 text-xs">
+          npm run provision:site-content
+        </code>{" "}
+        (cfw-roi) or add rows via the Wix Dashboard → CMS → SiteContent
+        collection.
       </p>
     </div>
   );

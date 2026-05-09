@@ -86,6 +86,19 @@ describe("/admin/site-content browse page (cfw-9m3)", () => {
     ).not.toBeInTheDocument();
   });
 
+  // cfw-tiv: the empty-state told operators to run a non-existent path
+  // (`scripts/seed-site-content.ts`). The real provisioning script is
+  // exposed via npm as `provision:site-content` (cfw-roi). Pin the new
+  // copy so a future refactor can't silently re-introduce a broken path.
+  it("empty-state references the npm provisioning script (cfw-tiv)", async () => {
+    loadSiteContent.mockResolvedValue({ map: new Map<string, string>() });
+    await renderPage();
+    const empty = screen.getByTestId("admin-site-content-empty");
+    expect(empty).toHaveTextContent("npm run provision:site-content");
+    // No reference to the old ghost path.
+    expect(empty.textContent ?? "").not.toMatch(/seed-site-content\.ts/);
+  });
+
   it("renders an error banner + adapted empty-state when the reader returned an error", async () => {
     loadSiteContent.mockResolvedValue({
       map: new Map<string, string>(),
