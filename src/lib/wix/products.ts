@@ -126,20 +126,24 @@ export async function getProductBySlug(slug: string): Promise<WixProduct | null>
     // includes variant.priceData. getProduct returns variants without it, so
     // the PDP picker was stuck on the product fallback price across every
     // size selection (Stilgar repro: Kingston Twin/Full/Queen/King all $619).
-    // Fire both calls in parallel; queryProductVariants is allowed to fail
-    // soft so a transient Wix outage doesn't take the PDP down.
+    // Fire both calls in parallel; queryProductVariants is wrapped so a
+    // missing method (older mock clients) or a transient Wix outage degrades
+    // to the fallback price instead of taking the PDP down.
+    const queryVariantPriceData = async () => {
+      try {
+        const queryFn = (
+          client.products as { queryProductVariants?: (id: string, opts: object) => Promise<unknown> }
+        ).queryProductVariants;
+        if (typeof queryFn !== "function") return null;
+        return (await queryFn(stub._id, {})) as { variants?: ReadonlyArray<{ _id?: string | null; variant?: { priceData?: unknown } | null }> } | null;
+      } catch (err) {
+        await logWixFailure("wix", `queryProductVariants(${stub._id})`, err);
+        return null;
+      }
+    };
     const [full, variantPriceResp] = await Promise.all([
       client.products.getProduct(stub._id),
-      client.products
-        .queryProductVariants(stub._id, {})
-        .catch(async (err: unknown) => {
-          await logWixFailure(
-            "wix",
-            `queryProductVariants(${stub._id})`,
-            err,
-          );
-          return null;
-        }),
+      queryVariantPriceData(),
     ]);
     if (!full.product) {
       await logWixFailure(
