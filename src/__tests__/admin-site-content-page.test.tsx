@@ -126,3 +126,63 @@ describe("/admin/site-content browse page (cfw-9m3)", () => {
     expect(link).toHaveAttribute("href", "/admin");
   });
 });
+
+describe("admin/site-content — cfw-9md history link per row", () => {
+  it("renders one History link per row pointing at /admin/audit?q=<key>", async () => {
+    loadSiteContent.mockResolvedValue({
+      map: new Map<string, string>([
+        ["footer.tagline", "Quality futons since 1991"],
+        ["hero.headline", "Find your perfect futon"],
+      ]),
+    });
+    await renderPage();
+    const links = screen.getAllByTestId("admin-site-content-history-link");
+    expect(links).toHaveLength(2);
+    // Sorted alphabetically by key in the page (footer < hero).
+    expect(links[0]).toHaveAttribute(
+      "href",
+      "/admin/audit?q=footer.tagline",
+    );
+    expect(links[1]).toHaveAttribute(
+      "href",
+      "/admin/audit?q=hero.headline",
+    );
+  });
+
+  it("URL-encodes keys with special characters in the link href", async () => {
+    loadSiteContent.mockResolvedValue({
+      map: new Map<string, string>([
+        // Hyphenated dotted-path is the canonical SiteContent key shape;
+        // unusual characters shouldn't appear in production keys, but we
+        // still encode defensively in case a row has been hand-inserted.
+        ["announcement.rotation.3.cta-href", "/sale"],
+      ]),
+    });
+    await renderPage();
+    const link = screen.getByTestId("admin-site-content-history-link");
+    expect(link).toHaveAttribute(
+      "href",
+      "/admin/audit?q=announcement.rotation.3.cta-href",
+    );
+  });
+
+  it("includes an aria-label for screen readers naming the key", async () => {
+    loadSiteContent.mockResolvedValue({
+      map: new Map<string, string>([["footer.tagline", "x"]]),
+    });
+    await renderPage();
+    const link = screen.getByTestId("admin-site-content-history-link");
+    expect(link).toHaveAttribute(
+      "aria-label",
+      "See edit history for footer.tagline",
+    );
+  });
+
+  it("does NOT render history links when the empty-state shows (no rows)", async () => {
+    loadSiteContent.mockResolvedValue({ map: new Map<string, string>() });
+    await renderPage();
+    expect(
+      screen.queryByTestId("admin-site-content-history-link"),
+    ).toBeNull();
+  });
+});

@@ -93,6 +93,9 @@ function SiteContentTable({
             <th scope="col" className="py-2 pr-4 font-medium">
               Current value
             </th>
+            <th scope="col" className="py-2 font-medium">
+              History
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -110,6 +113,22 @@ function SiteContentTable({
                 {row.value || (
                   <span className="text-cf-muted italic">(empty)</span>
                 )}
+              </td>
+              <td className="py-3 text-xs">
+                {/* cfw-9md: jump to /admin/audit pre-filtered to this key.
+                    Substring search via cfw-3zk's ?q= param — the key
+                    string appears in row.target so an exact-substring
+                    match lands every edit to this key (and only this
+                    key, since target is namespaced). */}
+                <Link
+                  href={`/admin/audit?q=${encodeURIComponent(row.key)}`}
+                  data-testid="admin-site-content-history-link"
+                  data-key={row.key}
+                  aria-label={`See edit history for ${row.key}`}
+                  className="text-cf-cta underline-offset-2 hover:underline"
+                >
+                  History →
+                </Link>
               </td>
             </tr>
           ))}
