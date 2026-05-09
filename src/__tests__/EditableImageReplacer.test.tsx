@@ -10,6 +10,13 @@ import { EditableImageReplacer } from "@/components/admin/EditableImageReplacer"
 const fetchMock = vi.fn<typeof fetch>();
 const reloadMock = vi.fn();
 
+// cfw-lvd: stub via vi.stubGlobal so afterEach's vi.unstubAllGlobals()
+// genuinely restores the original window.location. The previous
+// Object.defineProperty(window, "location", ...) wasn't reverted by
+// unstubAllGlobals — once this file ran, window.location was permanently
+// replaced for any later test in the same vitest worker, producing
+// order-dependent failures elsewhere (mirrors the AccountPage.test.tsx
+// pattern that already does this correctly).
 beforeEach(() => {
   // NOTE: real timers by default. The single test that needs to control the
   // 2-second saved-pulse calls vi.useFakeTimers() inside its body and resets
@@ -18,16 +25,19 @@ beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   fetchMock.mockReset();
   reloadMock.mockReset();
-  Object.defineProperty(window, "location", {
-    configurable: true,
-    value: { ...window.location, reload: reloadMock, assign: vi.fn(), replace: vi.fn() },
+  vi.stubGlobal("location", {
+    ...window.location,
+    reload: reloadMock,
+    assign: vi.fn(),
+    replace: vi.fn(),
   });
 });
 
 afterEach(() => {
   // RTL's auto-cleanup unmounts the tree. Production code's useEffect cleanup
   // clears the saved-pulse setTimeout on unmount, so cross-test reload leaks
-  // are no longer a concern. Just unstub globals.
+  // are no longer a concern. Just unstub globals — this also restores the
+  // original window.location (cfw-lvd).
   vi.unstubAllGlobals();
 });
 
