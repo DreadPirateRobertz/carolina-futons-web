@@ -689,4 +689,50 @@ describe("PdpInteractive (cf-3qt.2.1 + 2.2 integration)", () => {
       ).toBeInTheDocument();
     });
   });
+
+  describe("media-area branch coverage (cfw-l0m)", () => {
+    it("falls back to a gray placeholder when neither galleryImages, variant media, nor fallbackImageUrl yield a URL", () => {
+      // Hits the third media-area branch: no gallery + no resolvable image
+      // URL → bg-cf-sand placeholder div. Existing tests cover the gallery
+      // path (galleryImages provided) and the fallback-img path
+      // (fallbackImageUrl provided); this completes the branch coverage on
+      // the cfw-l0m diff.
+      const { container } = render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Carolina Classic Futon"
+          productOptions={[]}
+          variants={[]}
+          fallbackPrice="from $799"
+          // Branch under test is "no resolvable image URL" — pass undefined
+          // explicitly (the prop is required-but-nullable in the contract).
+          fallbackImageUrl={undefined}
+        />,
+      );
+      expect(screen.queryByTestId("pdp-main-image")).toBeNull();
+      const mediaSlot = container.querySelector('[data-slot="pdp-media"]');
+      const placeholder = mediaSlot?.querySelector("div.bg-cf-sand");
+      expect(placeholder).not.toBeNull();
+      expect(placeholder?.className).toContain("aspect-square");
+    });
+
+    it("renders the no-gallery <img> with object-contain when only fallbackImageUrl is provided", () => {
+      // Pins the cfw-l0m className contract: object-contain (not object-cover)
+      // on the no-gallery <img> path so a future revert to cover trips this
+      // assertion alongside the source-grep pin in cfw-l0m-gallery-fit.test.ts.
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Carolina Classic Futon"
+          productOptions={[]}
+          variants={[]}
+          fallbackImageUrl="https://img/only-fallback.jpg"
+          fallbackPrice="$799"
+        />,
+      );
+      const img = screen.getByTestId("pdp-main-image");
+      expect(img.className).toContain("object-contain");
+      expect(img.className).not.toContain("object-cover");
+    });
+  });
 });

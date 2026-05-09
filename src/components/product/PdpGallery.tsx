@@ -423,7 +423,11 @@ function ZoomMainImage({
         style={baseStyle}
         onError={onImgError}
         {...crossfadeProps}
-        className="aspect-square w-full object-cover"
+        // cfw-l0m: contain (not cover) so the whole product is visible at the
+        // pre-lightbox view. Cover was cropping product photos that aren't
+        // exactly square, which read as "zoomed in" before the user clicked
+        // into the lightbox. Lightbox itself uses object-contain too.
+        className="aspect-square w-full object-contain"
       />
     </div>
   );
