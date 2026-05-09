@@ -44,7 +44,7 @@ describe("/admin/audit page", () => {
   it("renders the heading + row-limit description", async () => {
     mockReadOwnerAuditLog.mockResolvedValueOnce({ ok: true, rows: [] });
     const { default: AdminAuditPage } = await import("@/app/admin/audit/page");
-    render(await AdminAuditPage());
+    render(await AdminAuditPage({ searchParams: Promise.resolve({}) }));
     expect(
       screen.getByRole("heading", { name: /audit log/i, level: 1 }),
     ).toBeInTheDocument();
@@ -54,7 +54,7 @@ describe("/admin/audit page", () => {
   it("renders the empty-state message when no rows exist", async () => {
     mockReadOwnerAuditLog.mockResolvedValueOnce({ ok: true, rows: [] });
     const { default: AdminAuditPage } = await import("@/app/admin/audit/page");
-    render(await AdminAuditPage());
+    render(await AdminAuditPage({ searchParams: Promise.resolve({}) }));
     expect(screen.getByTestId("admin-audit-empty")).toHaveTextContent(
       /no audit entries/i,
     );
@@ -67,7 +67,7 @@ describe("/admin/audit page", () => {
       rows: SAMPLE_ROWS,
     });
     const { default: AdminAuditPage } = await import("@/app/admin/audit/page");
-    render(await AdminAuditPage());
+    render(await AdminAuditPage({ searchParams: Promise.resolve({}) }));
 
     const rows = screen.getAllByTestId("admin-audit-row");
     expect(rows).toHaveLength(2);
@@ -91,7 +91,7 @@ describe("/admin/audit page", () => {
       rows: [SAMPLE_ROWS[0]!],
     });
     const { default: AdminAuditPage } = await import("@/app/admin/audit/page");
-    render(await AdminAuditPage());
+    render(await AdminAuditPage({ searchParams: Promise.resolve({}) }));
     expect(screen.getByText("2026-05-09 15:00Z")).toBeInTheDocument();
   });
 
@@ -102,7 +102,7 @@ describe("/admin/audit page", () => {
       error: "collection unprovisioned",
     });
     const { default: AdminAuditPage } = await import("@/app/admin/audit/page");
-    render(await AdminAuditPage());
+    render(await AdminAuditPage({ searchParams: Promise.resolve({}) }));
     expect(screen.getByTestId("admin-audit-error")).toHaveTextContent(
       /OwnerAuditLog/i,
     );
@@ -113,7 +113,132 @@ describe("/admin/audit page", () => {
   it("requests up to 100 rows from the helper", async () => {
     mockReadOwnerAuditLog.mockResolvedValueOnce({ ok: true, rows: [] });
     const { default: AdminAuditPage } = await import("@/app/admin/audit/page");
-    render(await AdminAuditPage());
+    render(await AdminAuditPage({ searchParams: Promise.resolve({}) }));
     expect(mockReadOwnerAuditLog).toHaveBeenCalledWith(100);
+  });
+});
+
+describe("/admin/audit page — cfw-ild filters", () => {
+  const FILTER_ROWS = [
+    {
+      _id: "r1",
+      actorEmail: "brenda@cfutons.com",
+      action: "edit" as const,
+      target: "footer.tagline",
+      before: "x",
+      after: "y",
+      ts: "2026-05-09T15:00:00.000Z",
+    },
+    {
+      _id: "r2",
+      actorEmail: "chris@cfutons.com",
+      action: "upload" as const,
+      target: "hero.image",
+      before: "",
+      after: "https://wix",
+      ts: "2026-05-09T14:00:00.000Z",
+    },
+    {
+      _id: "r3",
+      actorEmail: "brenda@cfutons.com",
+      action: "swap" as const,
+      target: "products/kingston/main",
+      before: "old.jpg",
+      after: "new.jpg",
+      ts: "2026-05-09T13:00:00.000Z",
+    },
+  ];
+
+  beforeEach(() => {
+    mockReadOwnerAuditLog.mockResolvedValue({ ok: true, rows: FILTER_ROWS });
+  });
+
+  async function renderWith(searchParams: Record<string, string>) {
+    const { default: AdminAuditPage } = await import(
+      "@/app/admin/audit/page"
+    );
+    return render(
+      await AdminAuditPage({ searchParams: Promise.resolve(searchParams) }),
+    );
+  }
+
+  it("renders the filter form by default with empty selections", async () => {
+    await renderWith({});
+    const form = screen.getByTestId("admin-audit-filters");
+    expect(form).toHaveAttribute("action", "/admin/audit");
+    expect(form).toHaveAttribute("method", "get");
+    const action = screen.getByTestId(
+      "admin-audit-filter-action",
+    ) as HTMLSelectElement;
+    expect(action.value).toBe("");
+    const actor = screen.getByTestId(
+      "admin-audit-filter-actor",
+    ) as HTMLInputElement;
+    expect(actor.value).toBe("");
+  });
+
+  it("?action=edit narrows rows to edit-only", async () => {
+    await renderWith({ action: "edit" });
+    const rows = screen.getAllByTestId("admin-audit-row");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!).toHaveTextContent("footer.tagline");
+  });
+
+  it("?action=upload narrows rows to upload-only", async () => {
+    await renderWith({ action: "upload" });
+    const rows = screen.getAllByTestId("admin-audit-row");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!).toHaveTextContent("hero.image");
+  });
+
+  it("?action=swap narrows rows to swap-only", async () => {
+    await renderWith({ action: "swap" });
+    const rows = screen.getAllByTestId("admin-audit-row");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!).toHaveTextContent("products/kingston/main");
+  });
+
+  it("ignores an unknown action value (renders all rows)", async () => {
+    await renderWith({ action: "delete" });
+    expect(screen.getAllByTestId("admin-audit-row")).toHaveLength(3);
+  });
+
+  it("?actor= filters by case-insensitive email substring", async () => {
+    await renderWith({ actor: "BRENDA" });
+    const rows = screen.getAllByTestId("admin-audit-row");
+    expect(rows).toHaveLength(2);
+    expect(rows.every((r) => r.textContent?.includes("brenda"))).toBe(true);
+  });
+
+  it("?action= and ?actor= compose (AND semantics)", async () => {
+    await renderWith({ action: "edit", actor: "brenda" });
+    const rows = screen.getAllByTestId("admin-audit-row");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!).toHaveTextContent("footer.tagline");
+  });
+
+  it("preselects the form values from the URL params", async () => {
+    await renderWith({ action: "upload", actor: "chris" });
+    const action = screen.getByTestId(
+      "admin-audit-filter-action",
+    ) as HTMLSelectElement;
+    expect(action.value).toBe("upload");
+    const actor = screen.getByTestId(
+      "admin-audit-filter-actor",
+    ) as HTMLInputElement;
+    expect(actor.value).toBe("chris");
+  });
+
+  it("shows a filter-aware empty message when filters cull all rows", async () => {
+    await renderWith({ actor: "no-match" });
+    expect(screen.getByTestId("admin-audit-empty")).toHaveTextContent(
+      /match those filters/i,
+    );
+  });
+
+  it("Clear link points back to /admin/audit (no params)", async () => {
+    await renderWith({ action: "edit" });
+    const clear = screen.getByTestId("admin-audit-filter-clear");
+    expect(clear).toHaveAttribute("href", "/admin/audit");
   });
 });

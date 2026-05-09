@@ -3,18 +3,22 @@ import type { Metadata } from "next";
 import {
   readOwnerAuditLog,
   type AuditLogRow,
+  type AuditAction,
 } from "@/lib/admin/audit-log";
 
-// cfw-xlv (cfw-6qd.11 follow-up): /admin/audit owner-mode log viewer.
+// cfw-xlv: /admin/audit owner-mode log viewer.
+// cfw-ild: ?action= and ?actor= URL filter params + top-of-page form so
+// Brenda can narrow a long log without scrolling. Filtering runs in-memory
+// over the 100-row read window — small enough that a server-side query
+// rewrite isn't worth it.
 //
-// Renders the most recent N rows from OwnerAuditLog newest-first so Brenda
-// (and engineering) can see what was edited, by whom, and when. The
-// /admin layout (cfw-wef) already gates the entire route group via
+// The /admin layout (cfw-wef) already gates the entire route group via
 // requireOwnerSession, so reaching this server component is sufficient
 // proof the visitor is an allowlisted owner.
 //
 // Out of scope (filed as future beads if Brenda asks):
-//   - filtering by date / key / actor
+//   - date-range filter
+//   - free-text search across before/after
 //   - CSV export
 //   - row-level "revert" (the EditableText ↶ icon already covers this
 //     for SiteContent edits via cfw-plg)
@@ -27,9 +31,49 @@ export const metadata: Metadata = {
 };
 
 const ROW_LIMIT = 100;
+const ACTION_VALUES: ReadonlyArray<AuditAction> = ["edit", "upload", "swap"];
 
-export default async function AdminAuditPage() {
+type Filters = {
+  action: AuditAction | null;
+  actor: string;
+};
+
+function parseFilters(raw: { action?: string; actor?: string }): Filters {
+  const action =
+    typeof raw.action === "string" &&
+    (ACTION_VALUES as ReadonlyArray<string>).includes(raw.action)
+      ? (raw.action as AuditAction)
+      : null;
+  const actor = typeof raw.actor === "string" ? raw.actor.trim() : "";
+  return { action, actor };
+}
+
+function applyFilters(rows: AuditLogRow[], f: Filters): AuditLogRow[] {
+  const actorNeedle = f.actor.toLowerCase();
+  return rows.filter((r) => {
+    if (f.action && r.action !== f.action) return false;
+    if (
+      actorNeedle.length > 0 &&
+      !r.actorEmail.toLowerCase().includes(actorNeedle)
+    ) {
+      return false;
+    }
+    return true;
+  });
+}
+
+export default async function AdminAuditPage(props: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await props.searchParams;
+  const filters = parseFilters({
+    action: typeof sp.action === "string" ? sp.action : undefined,
+    actor: typeof sp.actor === "string" ? sp.actor : undefined,
+  });
   const result = await readOwnerAuditLog(ROW_LIMIT);
+  const filteredRows =
+    result.ok ? applyFilters(result.rows, filters) : [];
+  const filtersActive = filters.action !== null || filters.actor.length > 0;
 
   return (
     <section
@@ -47,6 +91,8 @@ export default async function AdminAuditPage() {
         The {ROW_LIMIT} most recent owner edits, newest first.
       </p>
 
+      <FilterForm filters={filters} />
+
       {!result.ok ? (
         <p
           role="alert"
@@ -56,12 +102,14 @@ export default async function AdminAuditPage() {
           Couldn&rsquo;t load the audit log. The OwnerAuditLog collection may
           not be provisioned yet.
         </p>
-      ) : result.rows.length === 0 ? (
+      ) : filteredRows.length === 0 ? (
         <p
           data-testid="admin-audit-empty"
           className="mt-6 text-sm text-cf-muted"
         >
-          No audit entries yet.
+          {filtersActive
+            ? "No audit entries match those filters."
+            : "No audit entries yet."}
         </p>
       ) : (
         <div className="mt-6 overflow-x-auto">
@@ -80,7 +128,7 @@ export default async function AdminAuditPage() {
               </tr>
             </thead>
             <tbody>
-              {result.rows.map((row, i) => (
+              {filteredRows.map((row, i) => (
                 <AuditRow key={row._id ?? `row-${i}`} row={row} />
               ))}
             </tbody>
@@ -88,6 +136,58 @@ export default async function AdminAuditPage() {
         </div>
       )}
     </section>
+  );
+}
+
+function FilterForm({ filters }: { filters: Filters }) {
+  return (
+    <form
+      method="get"
+      action="/admin/audit"
+      data-testid="admin-audit-filters"
+      className="mt-5 flex flex-wrap items-end gap-3 rounded-md border border-cf-divider bg-cf-cream/40 p-3 text-xs"
+    >
+      <label className="flex flex-col gap-1">
+        <span className="font-medium text-cf-charcoal/70">Action</span>
+        <select
+          name="action"
+          defaultValue={filters.action ?? ""}
+          data-testid="admin-audit-filter-action"
+          className="h-8 rounded border border-cf-divider bg-white px-2 text-cf-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta"
+        >
+          <option value="">Any</option>
+          {ACTION_VALUES.map((a) => (
+            <option key={a} value={a}>
+              {a}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="font-medium text-cf-charcoal/70">Actor</span>
+        <input
+          type="text"
+          name="actor"
+          defaultValue={filters.actor}
+          placeholder="email substring"
+          data-testid="admin-audit-filter-actor"
+          className="h-8 rounded border border-cf-divider bg-white px-2 text-cf-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta"
+        />
+      </label>
+      <button
+        type="submit"
+        className="inline-flex h-8 items-center justify-center rounded-md bg-cf-cta px-3 font-medium text-white hover:bg-cf-cta/90"
+      >
+        Apply
+      </button>
+      <a
+        href="/admin/audit"
+        data-testid="admin-audit-filter-clear"
+        className="inline-flex h-8 items-center justify-center px-2 text-cf-muted underline-offset-2 hover:text-cf-ink hover:underline"
+      >
+        Clear
+      </a>
+    </form>
   );
 }
 
