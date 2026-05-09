@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import dynamicImport from "next/dynamic";
 
-import { LivingHero } from "@/components/home/LivingHero";
 import { VideoShowcaseStrip } from "@/components/home/VideoShowcaseStrip";
 import {
   FilterFirst,
@@ -101,13 +100,10 @@ export default async function HomePage() {
     <>
       <EmailCapturePopup />
 
-      {/* ── Time-of-day living hero (dawn/day/dusk/night) ──
-           cfw-3t9 (cfw-y2i §7): cap home hero ~360px so the first viewport at
-           1280 shows announce + slim hero + start of FilterFirst headline. The
-           SVG uses preserveAspectRatio="xMidYMid slice" so cropping is graceful. */}
-      <div className="h-[220px] sm:h-[280px] md:h-[320px] lg:h-[360px]">
-        <LivingHero />
-      </div>
+      {/* The site Header already renders LivingHero (compact) as a time-of-day
+          backdrop on every page; a second standalone hero band on / produced a
+          duplicate bear scene that Stilgar flagged. The header chrome is the
+          unified hero now — home jumps straight into the featured grid. */}
 
       {/* ── Featured collections grid (cf-3qt.2.6) ── */}
       <HomeFeaturedCollections />
