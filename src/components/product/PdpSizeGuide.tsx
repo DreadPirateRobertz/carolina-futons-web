@@ -251,7 +251,7 @@ export function PdpSizeGuide({ productName, dimensions, careGuide }: PdpSizeGuid
       <section
         aria-label="Product dimensions"
         data-slot="pdp-size-guide"
-        className="mt-8 max-w-2xl rounded-lg border border-cf-sand/60 bg-cf-sand/10 p-5"
+        className="mt-16 max-w-2xl rounded-lg border border-cf-sand/60 bg-cf-sand/10 p-5"
       >
         <h2 className="font-heading text-base font-semibold text-cf-espresso mb-2">
           Dimensions
@@ -265,7 +265,7 @@ export function PdpSizeGuide({ productName, dimensions, careGuide }: PdpSizeGuid
     <section
       aria-label={`Dimensions — ${productName}`}
       data-slot="pdp-size-guide"
-      className="mt-8 max-w-2xl space-y-6 rounded-lg border border-cf-sand/60 bg-cf-sand/10 p-5"
+      className="mt-16 max-w-2xl space-y-6 rounded-lg border border-cf-sand/60 bg-cf-sand/10 p-5"
     >
       {/* Header + unit toggle */}
       <div className="flex flex-wrap items-center justify-between gap-3">

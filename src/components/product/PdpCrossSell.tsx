@@ -20,7 +20,7 @@ export function PdpCrossSell({ products, error }: PdpCrossSellProps) {
   return (
     <section
       aria-labelledby={HEADING_ID}
-      className="mt-12 border-t border-cf-sand/60 pt-10"
+      className="mt-16 border-t border-cf-divider pt-10"
       data-slot="pdp-cross-sell"
     >
       <h2

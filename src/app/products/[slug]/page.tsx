@@ -239,7 +239,7 @@ export default async function PdpPage(props: {
 
 
       {descriptionText ? (
-        <section className="mt-10 max-w-3xl">
+        <section className="mt-16 max-w-3xl border-t border-cf-divider pt-10">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
             <h2 className="font-heading text-lg font-semibold text-cf-espresso">
               About this product
