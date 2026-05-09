@@ -5,7 +5,6 @@ import { useState, useMemo } from "react";
 import { ProductCard } from "@/components/product/ProductCard";
 import type { WixProduct } from "@/lib/wix/products";
 import type { ColorChoice } from "@/lib/product/color-options";
-import { formatPlpPrice } from "@/lib/product/plp-price";
 
 export type ThemeDCategory = {
   slug: string;
@@ -57,7 +56,7 @@ export function FilterFirst({
           return true;
         });
     }
-    return categories.find((c) => c.slug === categorySlug)?.products ?? [];
+    return (categories.find((c) => c.slug === categorySlug)?.products ?? []).filter((p) => !!p._id);
   }, [categories, categorySlug]);
 
   const filtered = useMemo(
@@ -162,7 +161,7 @@ export function FilterFirst({
         ) : (
           <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {filtered.map((product, i) => (
-              <li key={product._id}>
+              <li key={product._id ?? product.slug}>
                 <ProductCard
                   product={product}
                   priority={i < 4}
