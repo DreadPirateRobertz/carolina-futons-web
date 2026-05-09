@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 
 import { listCollectionItems } from "@/lib/wix/data";
 
@@ -12,10 +13,14 @@ import { listCollectionItems } from "@/lib/wix/data";
 // "hero.headline", "visit.address.street". This module gives the call sites
 // a single read API: `getSiteContent(key, fallback)`.
 //
-// The whole collection is fetched once per request via React's `cache()`,
-// so a render that renders Footer + MobileMenu + AnnouncementBar pays one
-// Wix round-trip, not three. The result is also kept in a top-level promise
-// so concurrent first-callers in one render share the same in-flight fetch.
+// Two-level caching:
+//   1. unstable_cache (cross-request, revalidate=300s, tag="site-content")
+//      — every page that reads owner copy reuses the same Wix snapshot for
+//      five minutes instead of paying a cold round-trip per render. Brenda's
+//      edits propagate within the revalidate window or via the
+//      revalidateTag("site-content") webhook for instant publishes.
+//   2. React.cache (per-request) — Footer + MobileMenu + AnnouncementBar
+//      in the same render share one Map allocation and one promise.
 //
 // Failure shape mirrors faq.ts: callers always get a usable string. We never
 // throw to the caller. If Wix is down OR the SiteContent collection hasn't
@@ -44,6 +49,12 @@ const COLLECTION_ID = "SiteContent";
 // and we'd rather skip the tail than pay an unbounded read.
 const MAX_ITEMS = 500;
 
+// cfw-vxb: cache tag — call revalidateTag("site-content") to publish Brenda's
+// edits before the 5-minute revalidate window expires. Kept exported so any
+// CMS-webhook route can `import { SITE_CONTENT_CACHE_TAG } from ...` without
+// duplicating the literal.
+export const SITE_CONTENT_CACHE_TAG = "site-content";
+
 // Defensive coerce. Wix RICH_TEXT can return non-string shapes; we treat
 // anything non-string as "no value" and let the caller's fallback win.
 function coerceValue(raw: unknown): string | null {
@@ -51,28 +62,48 @@ function coerceValue(raw: unknown): string | null {
   return null;
 }
 
-// Cached per-request via React.cache so Footer + MobileMenu + AnnouncementBar
-// share one round-trip in a single render.
-export const loadSiteContent = cache(async (): Promise<SiteContentResult> => {
-  try {
-    const items = await listCollectionItems<{ key?: unknown; value?: unknown }>(
-      COLLECTION_ID,
-      MAX_ITEMS,
-    );
-    const map = new Map<string, string>();
-    for (const item of items) {
-      const key = typeof item.key === "string" ? item.key : null;
-      const value = coerceValue(item.value);
-      if (key && value !== null) {
-        map.set(key, value);
+type SerializedResult =
+  | { entries: Array<readonly [string, string]>; error?: undefined }
+  | { entries: Array<readonly [string, string]>; error: "wix_sdk" | "unexpected" };
+
+// cfw-vxb: cross-request layer. unstable_cache stores a serializable shape
+// (entries array, not Map — the fetch cache JSON-encodes the result). The
+// React.cache wrapper below converts back to Map for callers and keeps the
+// per-render dedupe.
+const loadSerializedSiteContent = unstable_cache(
+  async (): Promise<SerializedResult> => {
+    try {
+      const items = await listCollectionItems<{ key?: unknown; value?: unknown }>(
+        COLLECTION_ID,
+        MAX_ITEMS,
+      );
+      const entries: Array<readonly [string, string]> = [];
+      for (const item of items) {
+        const key = typeof item.key === "string" ? item.key : null;
+        const value = coerceValue(item.value);
+        if (key && value !== null) {
+          entries.push([key, value]);
+        }
       }
+      return { entries };
+    } catch (err) {
+      const tag =
+        err && typeof err === "object" && "code" in err
+          ? "wix_sdk"
+          : "unexpected";
+      return { entries: [], error: tag };
     }
-    return { map };
-  } catch (err) {
-    const tag =
-      err && typeof err === "object" && "code" in err ? "wix_sdk" : "unexpected";
-    return { map: new Map(), error: tag };
-  }
+  },
+  ["site-content-snapshot-v1"],
+  { revalidate: 300, tags: [SITE_CONTENT_CACHE_TAG] },
+);
+
+// Cached per-request via React.cache so Footer + MobileMenu + AnnouncementBar
+// share one Map allocation in a single render.
+export const loadSiteContent = cache(async (): Promise<SiteContentResult> => {
+  const { entries, error } = await loadSerializedSiteContent();
+  const map = new Map<string, string>(entries);
+  return error ? { map, error } : { map };
 });
 
 /**

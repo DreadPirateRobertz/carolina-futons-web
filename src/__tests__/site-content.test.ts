@@ -5,6 +5,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
+// cfw-vxb: site-content now wraps the Wix fetch in next/cache.unstable_cache.
+// Its production behaviour requires a Next request/work-store context that
+// vitest doesn't provide, so mock it as an identity wrapper for tests.
+vi.mock("next/cache", () => ({
+  unstable_cache: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
+  revalidateTag: vi.fn(),
+}));
+
 const mockListCollectionItems = vi.fn();
 vi.mock("@/lib/wix/data", () => ({
   listCollectionItems: (...args: unknown[]) => mockListCollectionItems(...args),

@@ -414,6 +414,12 @@ function ZoomMainImage({
         src={wixImageUrl(src, 600, 600)}
         alt={alt}
         data-testid="pdp-main-image"
+        // cfw-vxb: this is the PDP LCP candidate. Telling the browser to
+        // prioritize the fetch and decode async lets it start the request
+        // before the body's JS evaluates, which dominated PDP LCP cost.
+        fetchPriority="high"
+        loading="eager"
+        decoding="async"
         style={baseStyle}
         onError={onImgError}
         {...crossfadeProps}

@@ -219,6 +219,12 @@ export function PdpInteractive({
             src={wixImageUrl(imageUrl, 600, 600)}
             alt={productName}
             data-testid="pdp-main-image"
+            // cfw-vxb: PDP LCP candidate (no-gallery fallback path). Mirrors
+            // the priority hints on PdpGallery's main image so single-image
+            // products get the same LCP boost.
+            fetchPriority="high"
+            loading="eager"
+            decoding="async"
             className="aspect-square w-full rounded-lg object-cover"
           />
         ) : (

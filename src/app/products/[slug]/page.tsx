@@ -50,6 +50,7 @@ import type {
   VariantInput,
 } from "@/lib/product/variant-selection";
 import { extractSpinFrames } from "@/lib/product/spin-frames";
+import { wixImageUrl } from "@/lib/wix/wix-image";
 
 export const dynamic = "force-dynamic"; // Phase 2: per-request until facets + caching tags wired
 
@@ -187,8 +188,24 @@ export default async function PdpPage(props: {
     { name: product.name ?? "", url: canonicalUrl },
   ]);
 
+  // cfw-vxb: preload the LCP candidate so the browser starts the fetch
+  // alongside HTML parse instead of after PdpGallery's client chunk
+  // hydrates. React 19 hoists bare <link rel="preload"> tags into <head>.
+  // Use the same constrained URL the gallery renders so the preload and
+  // the eventual <img src> match exactly (no double-fetch).
+  const lcpImageUrl = galleryImages[0]?.url ?? mainUrl;
+  const lcpPreloadHref = lcpImageUrl ? wixImageUrl(lcpImageUrl, 600, 600) : "";
+
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-10">
+      {lcpPreloadHref ? (
+        <link
+          rel="preload"
+          as="image"
+          href={lcpPreloadHref}
+          fetchPriority="high"
+        />
+      ) : null}
       <AppDownloadBanner />
       <JsonLd id="jsonld-product" schema={productSchema} />
       <JsonLd id="jsonld-breadcrumb" schema={breadcrumbSchema} />

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import dynamicImport from "next/dynamic";
 
 import { LivingHero } from "@/components/home/LivingHero";
 import { VideoShowcaseStrip } from "@/components/home/VideoShowcaseStrip";
@@ -12,7 +13,17 @@ import { QuizCtaSection } from "@/components/home/QuizCtaSection";
 import { StatsStrip } from "@/components/site/StatsStrip";
 import { TestimonialsStrip } from "@/components/site/TestimonialsStrip";
 import { TrustBar } from "@/components/site/TrustBar";
-import { EmailCapturePopup } from "@/components/site/EmailCapturePopup";
+
+// cfw-vxb: EmailCapturePopup never paints until the user has scrolled one
+// viewport (cfw-l93). Splitting it off the initial home chunk shaves its JS
+// off the LCP critical path — the dynamic chunk loads in parallel with the
+// hero paint instead of inflating the page's main script bundle.
+const EmailCapturePopup = dynamicImport(
+  () =>
+    import("@/components/site/EmailCapturePopup").then((m) => ({
+      default: m.EmailCapturePopup,
+    })),
+);
 import {
   getCollectionBySlug,
   listProductsByCollectionId,
