@@ -98,6 +98,15 @@ function renderWithCart(unitPriceCents = 0) {
   );
 }
 
+// cfw-xyw: helper for the prop-override tests below.
+function renderWithProps(props: Parameters<typeof AnnouncementBarCartAware>[0]) {
+  return render(
+    <CartProvider>
+      <AnnouncementBarCartAware {...(props ?? {})} />
+    </CartProvider>,
+  );
+}
+
 // ── AnnouncementBarCartAware — static cart states ──────────────────
 
 describe("AnnouncementBarCartAware", () => {
@@ -245,5 +254,61 @@ describe("AnnouncementBarCartAware", () => {
 
     const region = screen.getByRole("region", { name: /site announcement/i });
     expect(region.textContent).toBe(ROTATION_MESSAGES[0]);
+  });
+});
+
+// ── cfw-xyw: prop-driven rotation copy ─────────────────────────────────
+//
+// Pass-1 of the cfw-66o announcement-bar refactor: AnnouncementBarCartAware
+// accepts rotationMessages + rotationCtas as props with defaults that
+// preserve today's hardcoded copy. The data-wiring side (server fetch +
+// Header restructure) is a follow-up; here we pin the override contract.
+
+describe("AnnouncementBarCartAware — prop overrides (cfw-xyw)", () => {
+  it("renders Brenda's first override message instead of the default static prompt", () => {
+    renderWithProps({
+      rotationMessages: ["Limited-time offer: 15% off all frames"],
+      rotationCtas: [undefined],
+    });
+    const region = screen.getByRole("region", { name: /site announcement/i });
+    expect(region.textContent).toContain(
+      "Limited-time offer: 15% off all frames",
+    );
+    expect(region.textContent).not.toMatch(/free white-glove delivery/i);
+  });
+
+  it("renders an owner-supplied CTA pair when one is provided", () => {
+    renderWithProps({
+      rotationMessages: ["Memorial Day Sale"],
+      rotationCtas: [{ ctaLabel: "Shop the sale", ctaHref: "/sale" }],
+    });
+    const cta = screen.getByRole("link", { name: /shop the sale/i });
+    expect(cta).toHaveAttribute("href", "/sale");
+  });
+
+  it("rotates through a 2-message owner-supplied list (modulo wrap)", () => {
+    vi.useFakeTimers();
+    renderWithProps({
+      rotationMessages: ["Custom A", "Custom B"],
+      rotationCtas: [undefined, undefined],
+    });
+    const region = screen.getByRole("region", { name: /site announcement/i });
+    expect(region.textContent).toBe("Custom A");
+    act(() => vi.advanceTimersByTime(ROTATION_INTERVAL_MS));
+    expect(region.textContent).toBe("Custom B");
+    act(() => vi.advanceTimersByTime(ROTATION_INTERVAL_MS));
+    expect(region.textContent).toBe("Custom A");
+  });
+
+  it("falls back to the announcementMessage path when an empty messages array is supplied", () => {
+    renderWithProps({
+      rotationMessages: [],
+      rotationCtas: [],
+    });
+    const region = screen.getByRole("region", { name: /site announcement/i });
+    // Empty messages disables the rotating prompt; cart-aware copy is the
+    // only thing left, and an empty cart returns the static-prompt fallback
+    // from announcementMessage(0).
+    expect(region.textContent).toMatch(/free white-glove delivery on/i);
   });
 });
