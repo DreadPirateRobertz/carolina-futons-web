@@ -102,11 +102,6 @@ export default async function HomePage() {
     <>
       <EmailCapturePopup />
 
-      {/* The site Header already renders LivingHero (compact) as a time-of-day
-          backdrop on every page; a second standalone hero band on / produced a
-          duplicate bear scene that Stilgar flagged. The header chrome is the
-          unified hero now — home jumps straight into the featured grid. */}
-
       {/* ── Featured collections grid — v9 dark photo cards ── */}
       <HomeCategoryGridV9 />
 

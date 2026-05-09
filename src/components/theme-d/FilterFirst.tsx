@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Image from "next/image";
 
 import { ProductCard } from "@/components/product/ProductCard";
 import type { WixProduct } from "@/lib/wix/products";
@@ -69,11 +70,17 @@ export function FilterFirst({
 
   return (
     <div className="theme-d-shell" style={{ fontFamily: "var(--font-theme-d-body, var(--font-sans))" }}>
-      {/* Hero filter panel */}
+      {/* Hero filter panel — cfw-x20 (cfw-y2i.3): two-column on md+ with the
+          v9 three-bear realistic photo as right anchor, mobile stacks photo
+          above the headline as a wide banner so the fold opens with image
+          before utility. Resolves Stilgar's "no photographic punch above the
+          fold" feedback from the visual-parity audit (§1). */}
       <section
         aria-labelledby="theme-d-heading"
         className="mx-auto w-full max-w-7xl px-4 pb-6 pt-14 sm:px-6 lg:px-8"
       >
+        <div className="grid items-center gap-8 md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-12">
+          <div className="md:order-1 order-2">
         <p className="text-xs font-medium uppercase tracking-[0.22em] text-cf-cta">
           Family owned · Hendersonville, NC
         </p>
@@ -148,6 +155,25 @@ export function FilterFirst({
             ? "No products match those filters"
             : `${filtered.length} product${filtered.length === 1 ? "" : "s"}`}
         </p>
+          </div>
+
+          {/* v9 three-bear photographic anchor. Mobile: full-width banner
+              above the headline (order-1). md+: square-ish portrait in the
+              right column. Source asset is large (~2 MB) — Next/Image's
+              optimizer crops + serves WebP at the requested sizes so the LCP
+              candidate is well under 100 KB on the wire. Marked priority so
+              the home fold doesn't ship without it. */}
+          <div className="md:order-2 order-1 relative aspect-[16/9] w-full overflow-hidden rounded-2xl md:aspect-[4/5] lg:aspect-[5/6]">
+            <Image
+              src="/design/animals/bears.jpg"
+              alt="Three bears on the porch — Carolina Futons, family-owned in Hendersonville, NC since 1991"
+              fill
+              priority
+              sizes="(min-width: 1024px) 540px, (min-width: 768px) 45vw, 100vw"
+              className="object-cover"
+            />
+          </div>
+        </div>
       </section>
 
       {/* Product grid */}
