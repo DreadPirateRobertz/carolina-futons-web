@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 
 // `flush` is now invoked from logWixFailure (Sentry serverless-ship pattern);
@@ -111,131 +111,11 @@ beforeEach(() => {
   });
 });
 
-// cf-theme-ad-grid: A+D hybrid — MrPopsHero + MrPopsMarquee + AdGrid filter-first.
-// SUITE SKIPPED 2026-04-26: cf-wmha replaced this layout with LivingHero +
-// MascotWorldHero. Coverage to be re-authored against the new home.
-describe.skip("HomePage — A+D hybrid (cf-theme-ad-grid)", () => {
-  it("renders the Hero landmark", async () => {
-    await renderHome();
-    expect(screen.getByRole("region", { name: /hero/i })).toBeInTheDocument();
-  });
-
-  it("renders the MrPops marquee gallery between hero and grid", async () => {
-    await renderHome();
-    expect(
-      screen.getByRole("region", { name: /furniture gallery/i }),
-    ).toBeInTheDocument();
-  });
-
-  it("renders the Shop collection heading", async () => {
-    await renderHome();
-    expect(
-      screen.getByRole("heading", { name: /shop our collection/i }),
-    ).toBeInTheDocument();
-  });
-
-  it("renders the category filter group", async () => {
-    await renderHome();
-    expect(
-      screen.getByRole("group", { name: /filter by category/i }),
-    ).toBeInTheDocument();
-  });
-
-  it("renders All + 4 category chips", async () => {
-    await renderHome();
-    const group = screen.getByRole("group", { name: /filter by category/i });
-    const buttons = group.querySelectorAll("button");
-    // All + Futon Frames + Murphy Beds + Platform Beds + Mattresses
-    expect(buttons).toHaveLength(5);
-  });
-
-  it("renders the price filter group", async () => {
-    await renderHome();
-    expect(
-      screen.getByRole("group", { name: /filter by price/i }),
-    ).toBeInTheDocument();
-  });
-
-  it("renders the Products grid landmark", async () => {
-    await renderHome();
-    expect(
-      screen.getByRole("region", { name: /products/i }),
-    ).toBeInTheDocument();
-  });
-
-  it("shows all 16 products on the All tab (4 categories × 4 products)", async () => {
-    await renderHome();
-    expect(screen.getAllByRole("listitem")).toHaveLength(16);
-  });
-
-  it("announces product count to screen readers", async () => {
-    await renderHome();
-    const count = screen.getByRole("status");
-    expect(count).toHaveTextContent(/16 products/i);
-  });
-
-  it("All chip is pressed by default", async () => {
-    await renderHome();
-    const allBtn = screen.getByRole("button", { name: /^all$/i });
-    expect(allBtn).toHaveAttribute("aria-pressed", "true");
-  });
-
-  it("selecting a category chip filters the product list", async () => {
-    await renderHome();
-    fireEvent.click(screen.getByRole("button", { name: /futon frames/i }));
-    // col-col-futon-frames: 4 products
-    expect(screen.getAllByRole("listitem")).toHaveLength(4);
-  });
-
-  it("selecting a price chip filters by price range", async () => {
-    await renderHome();
-    // "Under $500" — products with price < 500: prices are 300 (i=0) only per category
-    fireEvent.click(screen.getByRole("button", { name: /under \$500/i }));
-    // 4 collections × 1 product under $500 each = 4
-    expect(screen.getAllByRole("listitem")).toHaveLength(4);
-  });
-
-  it("shows zero-state message when no products match filters", async () => {
-    await renderHome();
-    // Prices are 300, 500, 700, 900 — "$2,000+" matches none
-    fireEvent.click(screen.getByRole("button", { name: /\$2,000\+/i }));
-    expect(
-      screen.getByText(/no products match those filters/i),
-    ).toBeInTheDocument();
-  });
-
-  it("fetches products for each of the 4 categories on render", async () => {
-    const mod = await import("@/lib/wix/products");
-    (mod.getCollectionBySlug as ReturnType<typeof vi.fn>).mockClear();
-    await renderHome();
-    expect(mod.getCollectionBySlug).toHaveBeenCalledTimes(4);
-  });
-
-  it("does not render Marugame landmarks (regression guard)", async () => {
-    const { container } = await renderHome();
-    expect(container.querySelector("[data-slot='marugame-hero']")).toBeNull();
-    expect(container.querySelector("[data-slot='trust-bar']")).toBeNull();
-  });
-
-  it("exposes the ad-grid data slot", async () => {
-    const { container } = await renderHome();
-    expect(container.querySelector("[data-slot='ad-grid']")).not.toBeNull();
-  });
-
-  it("renders the ShopTheRoom lifestyle hotspot section", async () => {
-    const { container } = await renderHome();
-    expect(container.querySelector("[data-slot='shop-the-room']")).not.toBeNull();
-  });
-
-  it("renders a sunrise hover overlay for each product card (Mr Pops microinteraction)", async () => {
-    const { container } = await renderHome();
-    const overlays = container.querySelectorAll(
-      ".ad-grid-shell [aria-hidden='true'].pointer-events-none.absolute",
-    );
-    // 16 products → 16 overlays
-    expect(overlays).toHaveLength(16);
-  });
-});
+// cf-theme-ad-grid: A+D hybrid coverage was retired in cf-wmha (2026-04-26) when
+// MrPopsHero + MrPopsMarquee + AdGrid were replaced by LivingHero +
+// MascotWorldHero. The describe.skip block that lived here was deleted in
+// cfw-0kw; new-home coverage lives in dedicated test files (LivingHero-lazy-
+// phases.test.tsx, HeroParallax.test.tsx, HeroCarousel.test.tsx, etc.).
 
 // cf-ml6n regression: home page must not render a second footer-like visual
 // (MascotFooterDivider was doubling the footer — day landscape + night footer).
