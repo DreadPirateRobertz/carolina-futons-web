@@ -154,7 +154,54 @@ gt dolt status                     # Check server health + latency
 4. If formula attached, steps are shown inline by `gt prime`
 5. Work through the checklist, then `gt done`
 
-**If NO work on hook and NO mail:** run `gt done` immediately.
+**If NO work on hook and NO mail:** apply the Self-Assign Protocol below
+before falling back to `gt done`.
+
+## Self-Assign Protocol (cfw-13b — desire-path documentation)
+
+When you finish a bead OR start a session with no hooked work and no mail,
+**do not idle waiting for dispatch.** The Mayor and Melania (human or AI
+dispatchers) cannot see the polecat's tmux pane — work queues unworked
+unless you self-claim.
+
+```bash
+# 1. Find the highest-priority unassigned bead.
+bd ready --unassigned --priority 0       # try P0 first
+bd ready --unassigned --priority 1       # then P1
+bd ready --unassigned --exclude-type epic,molecule  # any unassigned non-container
+```
+
+Skip:
+- Epic placeholders (`[epic]`, `[EPIC]` titles, `cfw-wisp-*`, `cfw-rig-*`).
+- Patrol molecules (`Witness Patrol`, `Refinery Patrol`, `Deacon Patrol`) —
+  those belong to the witness/refinery/deacon roles, not polecats.
+- Beads that look already-done (cross-check against recent commits).
+
+```bash
+# 2. Claim it.
+#
+# IMPORTANT: `gt sling` rejects self-sling from inside a polecat session
+# with "Error: polecats cannot sling (use gt done for handoff)". Use
+# `bd update --claim` instead — it is atomic (sets assignee + status).
+bd update <bead-id> --claim
+```
+
+`gt hook <bead-id>` similarly errors with "polecats cannot hook work" —
+the hook attachment is dispatcher-only. After `bd update --claim`, just
+branch and work the bead directly:
+
+```bash
+# 3. Branch from main and execute. Submit via gt done as normal.
+git fetch origin main
+git checkout -b polecat/<polecat-name>/<bead-id> origin/main
+# implement → test → commit → gt done
+```
+
+**Why this section exists:** the gt CLI does not (yet) expose a polecat
+self-sling path; the error message also doesn't suggest the bd-update
+fallback. Until that's fixed in gt, the bd-update path above is the
+canonical polecat self-claim. Tracked in cfw-13b as a desire-path bead
+against gt-cli ownership.
 
 **If your assigned bead has nothing to implement** (already done, can't reproduce, not applicable):
 ```bash
