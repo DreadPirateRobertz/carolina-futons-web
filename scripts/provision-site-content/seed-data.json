@@ -1,0 +1,107 @@
+{
+  "$schema": "./seed-schema.json",
+  "_about": "cfw-roi (cf-atze) — initial seed for the SiteContent Wix CMS collection. 20 owner-editable copy strings keyed by dotted-path. Provisioning script lives in ./index.mjs. Production reader: src/lib/cms/site-content.ts.",
+  "_naming": "lowercase, dotted-path, hyphenated segments. e.g. 'footer.tagline', 'announcement.rotation.0.message'. See docs/design/cfw-66o-footer-announce-specs.md §2.",
+  "rows": [
+    {
+      "key": "footer.tagline",
+      "value": "Quality futon furniture since 1991",
+      "_source": "src/components/site/Footer.tsx:131"
+    },
+    {
+      "key": "footer.showroom-hours.label",
+      "value": "Showroom hours: Sun–Tue, 10am–5pm",
+      "_source": "src/components/site/Footer.tsx:193"
+    },
+    {
+      "key": "footer.copyright.suffix",
+      "value": "Carolina Futons. Hendersonville, NC.",
+      "_source": "src/components/site/Footer.tsx:213"
+    },
+    {
+      "key": "visit.hours.sun-tue",
+      "value": "10 am – 5 pm",
+      "_source": "src/app/visit/page.tsx STORE_HOURS_FALLBACK"
+    },
+    {
+      "key": "visit.hours.wed-sat",
+      "value": "Closed",
+      "_source": "src/app/visit/page.tsx STORE_HOURS_FALLBACK"
+    },
+    {
+      "key": "visit.intro.heading",
+      "value": "Visit Us",
+      "_source": "src/app/visit/page.tsx <h1>"
+    },
+    {
+      "key": "visit.intro.body",
+      "value": "Come try it in person. Our Hendersonville showroom has every frame, mattress, and Murphy bed we sell — no commission pressure, just honest answers.",
+      "_source": "src/app/visit/page.tsx hero <p>"
+    },
+    {
+      "key": "visit.location.heading",
+      "value": "Location",
+      "_source": "src/app/visit/page.tsx Location section"
+    },
+    {
+      "key": "visit.hours.heading",
+      "value": "Store Hours",
+      "_source": "src/app/visit/page.tsx Hours section"
+    },
+    {
+      "key": "visit.directions-button.label",
+      "value": "Get directions",
+      "_source": "src/app/visit/page.tsx maps button"
+    },
+    {
+      "key": "visit.cta.heading",
+      "value": "Ready to shop?",
+      "_source": "src/app/visit/page.tsx CTA card"
+    },
+    {
+      "key": "visit.cta.body",
+      "value": "Browse online first, then come in and try everything.",
+      "_source": "src/app/visit/page.tsx CTA card"
+    },
+    {
+      "key": "visit.cta.button-label",
+      "value": "Browse all products",
+      "_source": "src/app/visit/page.tsx CTA button"
+    },
+    {
+      "key": "announcement.rotation.0.message",
+      "value": "Free white-glove delivery on orders over $1,500",
+      "_source": "docs/design/cfw-66o-footer-announce-specs.md §4 — index 0 default"
+    },
+    {
+      "key": "announcement.rotation.1.message",
+      "value": "10-year warranty on all hardwood futon frames",
+      "_source": "docs/design/cfw-66o-footer-announce-specs.md §4 — index 1"
+    },
+    {
+      "key": "announcement.rotation.2.message",
+      "value": "Family-owned since 1991 · Hendersonville, NC",
+      "_source": "docs/design/cfw-66o-footer-announce-specs.md §4 — index 2"
+    },
+    {
+      "key": "announcement.rotation.3.message",
+      "value": "Free fabric swatches — find your perfect match",
+      "_source": "docs/design/cfw-66o-footer-announce-specs.md §4 — index 3 (paired with cta)"
+    },
+    {
+      "key": "announcement.rotation.3.cta-label",
+      "value": "Order free swatches",
+      "_source": "docs/design/cfw-66o-footer-announce-specs.md §4 — index 3 cta"
+    },
+    {
+      "key": "announcement.rotation.3.cta-href",
+      "value": "/swatch-request",
+      "_source": "docs/design/cfw-66o-footer-announce-specs.md §4 — index 3 cta href"
+    },
+    {
+      "key": "announcement.rotation.4.message",
+      "value": "Assembly included with every delivery",
+      "_source": "docs/design/cfw-66o-footer-announce-specs.md §4 — index 4"
+    }
+  ]
+}
