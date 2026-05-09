@@ -59,6 +59,32 @@ export async function queryCollectionWhere<
 }
 
 /**
+ * Look up a single row in a Wix Data collection by a unique business key.
+ * Mirrors the read half of `upsertCollectionItemByKey` for callers (e.g. the
+ * audit-log path) that need the previous value before overwriting it.
+ *
+ * cfw-6qd.11: read SiteContent's `before` value so the audit row carries a
+ * full diff snapshot, not just the post-edit value.
+ */
+export async function lookupCollectionItemByKey<
+  T extends WixDataItem = WixDataItem,
+>(args: {
+  collectionId: string;
+  keyField: string;
+  keyValue: string;
+  tokens?: Tokens;
+}): Promise<T | null> {
+  const { collectionId, keyField, keyValue, tokens } = args;
+  const client = tokens ? getWixClientWithTokens(tokens) : getWixClient();
+  const result = await client.items
+    .query(collectionId)
+    .eq(keyField, keyValue)
+    .limit(1)
+    .find();
+  return (result.items[0] as T | undefined) ?? null;
+}
+
+/**
  * Upsert a row in a Wix Data collection by a unique business key (e.g. SiteContent
  * is keyed by `key`, not `_id`). Looks up the existing item by `keyField === keyValue`
  * and calls `items.save()` with the existing `_id` (update) or without (insert).

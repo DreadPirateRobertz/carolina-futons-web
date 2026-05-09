@@ -1,0 +1,145 @@
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import type { Tokens } from "@wix/sdk";
+
+// cfw-6qd.11: recordOwnerEdit append-only audit writer. Tests pin: row
+// shape (actorEmail, action, target, before, after, ts ISO string), the
+// best-effort contract (Wix outage returns ok=false but never throws), and
+// the timestamp injection point so we can pin the row without faking the
+// global clock.
+
+vi.mock("server-only", () => ({}));
+
+const itemsSave = vi.fn();
+vi.mock("@/lib/wix-client", () => ({
+  getWixClientWithTokens: () => ({ items: { save: itemsSave } }),
+}));
+
+import { recordOwnerEdit } from "@/lib/admin/audit-log";
+
+const tokens: Tokens = {
+  accessToken: { value: "a", expiresAt: 1_780_000_000 },
+  refreshToken: { value: "r", role: "member" as Tokens["refreshToken"]["role"] },
+};
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  itemsSave.mockResolvedValue({ _id: "audit-row-1" });
+});
+
+describe("recordOwnerEdit — happy path", () => {
+  it("writes one row to the OwnerAuditLog collection", async () => {
+    await recordOwnerEdit(
+      {
+        actorEmail: "brenda@x.com",
+        action: "edit",
+        target: "footer.tagline",
+        before: "old",
+        after: "new",
+      },
+      tokens,
+      () => "2026-05-09T15:00:00.000Z",
+    );
+
+    expect(itemsSave).toHaveBeenCalledTimes(1);
+    expect(itemsSave).toHaveBeenCalledWith("OwnerAuditLog", {
+      actorEmail: "brenda@x.com",
+      action: "edit",
+      target: "footer.tagline",
+      before: "old",
+      after: "new",
+      ts: "2026-05-09T15:00:00.000Z",
+    });
+  });
+
+  it("returns ok=true on success", async () => {
+    const result = await recordOwnerEdit(
+      {
+        actorEmail: "brenda@x.com",
+        action: "edit",
+        target: "k",
+        before: "",
+        after: "v",
+      },
+      tokens,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it("preserves the action enum (edit/upload/swap)", async () => {
+    await recordOwnerEdit(
+      {
+        actorEmail: "x@x.com",
+        action: "upload",
+        target: "hero.image",
+        before: "",
+        after: "https://static.wixstatic.com/media/abc",
+      },
+      tokens,
+      () => "T",
+    );
+    expect(itemsSave.mock.calls[0]![1]).toMatchObject({ action: "upload" });
+
+    await recordOwnerEdit(
+      {
+        actorEmail: "x@x.com",
+        action: "swap",
+        target: "product-123",
+        before: "old",
+        after: "new",
+      },
+      tokens,
+      () => "T",
+    );
+    expect(itemsSave.mock.calls[1]![1]).toMatchObject({ action: "swap" });
+  });
+
+  it("defaults the timestamp to a real ISO string when no `now` override", async () => {
+    await recordOwnerEdit(
+      { actorEmail: "x@x.com", action: "edit", target: "k", before: "", after: "v" },
+      tokens,
+    );
+    const ts = (itemsSave.mock.calls[0]![1] as { ts: unknown }).ts as string;
+    expect(typeof ts).toBe("string");
+    expect(ts).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+    // Round-trippable through Date.
+    expect(Number.isFinite(Date.parse(ts))).toBe(true);
+  });
+});
+
+describe("recordOwnerEdit — best-effort contract", () => {
+  it("returns ok=false on Wix error and does NOT throw", async () => {
+    itemsSave.mockRejectedValueOnce(new Error("Wix down"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await recordOwnerEdit(
+      { actorEmail: "x@x.com", action: "edit", target: "k", before: "", after: "v" },
+      tokens,
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      reason: "wix_outage",
+      error: "Wix down",
+    });
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[audit-log] failed to record edit on k"),
+    );
+    consoleSpy.mockRestore();
+  });
+
+  it("handles non-Error throws (Wix SDK occasionally rejects with strings)", async () => {
+    itemsSave.mockRejectedValueOnce("not even an Error");
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await recordOwnerEdit(
+      { actorEmail: "x@x.com", action: "edit", target: "k", before: "", after: "v" },
+      tokens,
+    );
+
+    expect(result.ok).toBe(false);
+    if (result.ok === false) {
+      expect(result.error).toBe("not even an Error");
+    }
+    consoleSpy.mockRestore();
+  });
+});

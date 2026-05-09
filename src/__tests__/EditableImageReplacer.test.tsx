@@ -25,6 +25,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // RTL's auto-cleanup unmounts the tree. Production code's useEffect cleanup
+  // clears the saved-pulse setTimeout on unmount, so cross-test reload leaks
+  // are no longer a concern. Just unstub globals.
   vi.unstubAllGlobals();
 });
 

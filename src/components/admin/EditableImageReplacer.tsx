@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
 // cfw-6qd.6: client subtree for the EditableImage replace flow.
 //
@@ -50,6 +50,20 @@ export function EditableImageReplacer({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
+  // Track the saved-pulse setTimeout so unmount can clear it. Without this a
+  // page navigation between save and the 2s reload would still fire reload
+  // against an unmounted tree (no production user impact, but it leaks
+  // setTimeouts across test mounts).
+  const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (reloadTimerRef.current !== null) {
+        clearTimeout(reloadTimerRef.current);
+        reloadTimerRef.current = null;
+      }
+    };
+  }, []);
 
   function openPicker() {
     setError(null);
@@ -106,8 +120,14 @@ export function EditableImageReplacer({
       setStatus("saved");
       // Defer reload so the saved-state pulse is visible before the page
       // re-renders. The reload pulls the new SiteContent value via
-      // revalidateTag (cfw-vxb cache).
-      setTimeout(() => window.location.reload(), SAVED_PULSE_MS);
+      // revalidateTag (cfw-vxb cache). Tracked in a ref so the unmount
+      // effect can cancel it — prevents a stranded reload from firing
+      // after the user navigates away (or, in tests, after the component
+      // unmounts between cases).
+      reloadTimerRef.current = setTimeout(
+        () => window.location.reload(),
+        SAVED_PULSE_MS,
+      );
     });
   }
 

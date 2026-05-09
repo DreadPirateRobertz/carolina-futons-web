@@ -12,8 +12,19 @@ vi.mock("@/lib/auth/owner", () => ({
 }));
 
 const mockUpsert = vi.fn();
+const mockLookup = vi.fn();
 vi.mock("@/lib/wix/data", () => ({
   upsertCollectionItemByKey: (...args: unknown[]) => mockUpsert(...args),
+  lookupCollectionItemByKey: (...args: unknown[]) => mockLookup(...args),
+}));
+
+// cfw-6qd.11: audit-log writer is a best-effort side-effect of the route.
+// Mock its top-level export so the route's call doesn't try to talk to a
+// real Wix client. Tests assert on the call shape below.
+const mockRecordOwnerEdit = vi.fn();
+vi.mock("@/lib/admin/audit-log", () => ({
+  recordOwnerEdit: (...args: unknown[]) => mockRecordOwnerEdit(...args),
+  AUDIT_LOG_COLLECTION_ID: "OwnerAuditLog",
 }));
 
 const mockLogWixFailure = vi.fn().mockResolvedValue(undefined);
@@ -55,6 +66,10 @@ async function callPost(
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Default: lookup returns no existing row (so before="" in audit) and
+  // recordOwnerEdit succeeds. Individual tests can override either.
+  mockLookup.mockResolvedValue(null);
+  mockRecordOwnerEdit.mockResolvedValue({ ok: true });
 });
 
 describe("POST /api/admin/site-content (cfw-6qd.3)", () => {
@@ -390,5 +405,109 @@ describe("POST /api/admin/site-content (cfw-6qd.3)", () => {
         }),
       );
     });
+  });
+});
+
+describe("POST /api/admin/site-content — cfw-6qd.11 audit log", () => {
+  it("appends an audit row with action='edit' on a successful save", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+    mockLookup.mockResolvedValueOnce({ value: "old tagline" });
+    mockUpsert.mockResolvedValueOnce({});
+
+    const res = await callPost({ key: "footer.tagline", value: "new tagline" });
+
+    expect(res.status).toBe(200);
+    expect(mockRecordOwnerEdit).toHaveBeenCalledTimes(1);
+    expect(mockRecordOwnerEdit).toHaveBeenCalledWith(
+      {
+        actorEmail: OWNER_SESSION.email,
+        action: "edit",
+        target: "footer.tagline",
+        before: "old tagline",
+        after: "new tagline",
+      },
+      OWNER_SESSION.tokens,
+    );
+  });
+
+  it("records before='' when the row didn't exist (insert path)", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+    mockLookup.mockResolvedValueOnce(null);
+    mockUpsert.mockResolvedValueOnce({});
+
+    await callPost({ key: "hero.subhead", value: "Brand new copy" });
+
+    expect(mockRecordOwnerEdit).toHaveBeenCalledWith(
+      expect.objectContaining({ before: "", after: "Brand new copy" }),
+      OWNER_SESSION.tokens,
+    );
+  });
+
+  it("records before='' when the existing row's value is non-string (defensive)", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+    mockLookup.mockResolvedValueOnce({ value: { weird: "shape" } });
+    mockUpsert.mockResolvedValueOnce({});
+
+    await callPost({ key: "footer.tagline", value: "v" });
+
+    expect(mockRecordOwnerEdit).toHaveBeenCalledWith(
+      expect.objectContaining({ before: "" }),
+      OWNER_SESSION.tokens,
+    );
+  });
+
+  it("does NOT call recordOwnerEdit when the upsert itself failed", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+    mockLookup.mockResolvedValueOnce({ value: "old" });
+    mockUpsert.mockRejectedValueOnce(new Error("permission denied"));
+
+    const res = await callPost({ key: "footer.tagline", value: "new" });
+
+    expect(res.status).toBe(502);
+    expect(mockRecordOwnerEdit).not.toHaveBeenCalled();
+  });
+
+  it("does NOT call recordOwnerEdit when no owner session", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(null);
+
+    await callPost({ key: "footer.tagline", value: "v" });
+
+    expect(mockRecordOwnerEdit).not.toHaveBeenCalled();
+  });
+
+  it("still returns 200 + revalidates when audit-log write fails (best-effort contract)", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+    mockLookup.mockResolvedValueOnce({ value: "old" });
+    mockUpsert.mockResolvedValueOnce({});
+    mockRecordOwnerEdit.mockResolvedValueOnce({
+      ok: false,
+      reason: "wix_outage",
+      error: "audit collection down",
+    });
+
+    const res = await callPost({ key: "footer.tagline", value: "new" });
+
+    expect(res.status).toBe(200);
+    expect(mockRevalidateTag).toHaveBeenCalledWith("site-content", "default");
+  });
+
+  it("survives a lookup failure with before='' (audit still records the after-value)", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+    mockLookup.mockRejectedValueOnce(new Error("query failed"));
+    mockUpsert.mockResolvedValueOnce({});
+
+    const res = await callPost({ key: "footer.tagline", value: "new" });
+
+    expect(res.status).toBe(200);
+    expect(mockRecordOwnerEdit).toHaveBeenCalledWith(
+      expect.objectContaining({ before: "", after: "new" }),
+      OWNER_SESSION.tokens,
+    );
+    // Lookup failure routes through logWixFailure with a distinct phase tag.
+    expect(mockLogWixFailure).toHaveBeenCalledWith(
+      "admin/site-content",
+      "items.query (before)",
+      expect.anything(),
+    );
   });
 });

@@ -2,7 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { revalidateTag } from "next/cache";
 
 import { getOwnerSession } from "@/lib/auth/owner";
-import { upsertCollectionItemByKey } from "@/lib/wix/data";
+import {
+  lookupCollectionItemByKey,
+  upsertCollectionItemByKey,
+} from "@/lib/wix/data";
 import { logWixFailure } from "@/lib/wix/errors";
 import {
   AUTH_INPUT_ERROR_MESSAGES,
@@ -14,6 +17,7 @@ import {
   validateOwnerEditKey,
 } from "@/lib/cms/owner-edit-validation";
 import { sanitizeOwnerHtml } from "@/lib/cms/owner-edit-sanitize";
+import { recordOwnerEdit } from "@/lib/admin/audit-log";
 
 export const dynamic = "force-dynamic";
 
@@ -29,9 +33,15 @@ export const dynamic = "force-dynamic";
 // the next read instead of waiting out the 5-minute revalidate window
 // (cfw-vxb cache).
 //
+// cfw-6qd.11: every successful save also appends an audit row to the
+// OwnerAuditLog collection ({ actorEmail, action: "edit", target: key,
+// before, after, ts }). Audit write is best-effort — a Wix outage during
+// audit doesn't fail the user-visible save.
+//
 // Out of scope:
 //   - undo/version history (sub-bead 9 — cfw-6qd.9)
 //   - audit log (sub-bead 8 — cfw-6qd.8)
+//   - XSS sanitisation beyond length limits (sub-bead 10 — cfw-6qd.10)
 //   - image-upload (sub-bead 6 — cfw-6qd.6)
 
 const COLLECTION_ID = "SiteContent";
@@ -86,6 +96,26 @@ export async function POST(req: NextRequest) {
   if (!valueCheck.ok) return badRequest(valueCheck.message);
   const value = sanitizeOwnerHtml(valueCheck.value);
 
+  // cfw-6qd.11: snapshot the previous value BEFORE the upsert so the audit
+  // entry can record the diff. A failed lookup here doesn't fail the save —
+  // we just record `before: ""` and trust the upsert path's error handler.
+  let beforeValue = "";
+  try {
+    const existing = await lookupCollectionItemByKey<{ value?: unknown }>({
+      collectionId: COLLECTION_ID,
+      keyField: "key",
+      keyValue: key,
+      tokens: owner.tokens,
+    });
+    if (existing && typeof existing.value === "string") {
+      beforeValue = existing.value;
+    }
+  } catch (err) {
+    // Don't surface — the upsert below will produce a definitive error if
+    // Wix is genuinely down. For now we just lose the audit's `before` snapshot.
+    await logWixFailure("admin/site-content", "items.query (before)", err);
+  }
+
   // Wix Data write under the owner's member tokens. Permissions live on the
   // collection — Wix returns 4xx if the member isn't writer-permitted there
   // (we surface that as the same 422 path the auth routes use, so the diag
@@ -112,6 +142,22 @@ export async function POST(req: NextRequest) {
       { status: 502 },
     );
   }
+
+  // cfw-6qd.11: best-effort audit append. recordOwnerEdit never throws —
+  // failures are logged + returned as ok=false so the save still succeeds.
+  // The audit's `after` is the SANITISED value (what was actually persisted),
+  // not the raw input — `before` is the previously-persisted (already-
+  // sanitised on its own write) value, so the diff stays apples-to-apples.
+  await recordOwnerEdit(
+    {
+      actorEmail: owner.email,
+      action: "edit",
+      target: key,
+      before: beforeValue,
+      after: value,
+    },
+    owner.tokens,
+  );
 
   // Bust the unstable_cache snapshot so getSiteContent() sees the new value
   // on the next read. The reader's per-request React.cache layer is
