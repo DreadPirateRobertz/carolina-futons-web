@@ -5,6 +5,29 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname),
   },
+  // cf-r192: keep the Wix SDK + auto_sdk_* sub-packages in the Node server
+  // runtime only. Without this, Turbopack lifts wix-client.ts into a client
+  // async chunk via the server-action call graph (server-action stubs imported
+  // by "use client" components → Turbopack walks the action's transitive deps).
+  // The resulting chunk shipped 9 sub-packages of admin-shaped Wix SDK code on
+  // every PDP load (~117 KiB transferred / 905 KB raw post-cf-g6vx). These
+  // packages have no business in the browser — every Wix call from cfw goes
+  // through a Server Action or server-only module.
+  serverExternalPackages: [
+    "@wix/sdk",
+    "@wix/sdk-runtime",
+    "@wix/sdk-types",
+    "@wix/wix-data-items-sdk",
+    "@wix/auto_sdk_stores_products",
+    "@wix/auto_sdk_stores_collections",
+    "@wix/auto_sdk_members_members",
+    "@wix/auto_sdk_ecom_current-cart",
+    "@wix/auto_sdk_ecom_checkout",
+    "@wix/auto_sdk_ecom_orders",
+    "@wix/auto_sdk_redirects_redirects",
+    "@wix/auto_sdk_blog_posts",
+    "@wix/auto_sdk_identity_recovery",
+  ],
   images: {
     // cf-93rb Phase A: the brand illustrations under /public/illustrations
     // are vetted, inert SVGs (no <script>/on*=/javascript: URIs). Enabling
