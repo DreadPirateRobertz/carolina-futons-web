@@ -89,7 +89,7 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
     ).toBeInTheDocument();
   });
 
-  it("applies h-cf-header token so the 213px chrome spec is honored", () => {
+  it("applies h-cf-header token so the 197px chrome spec is honored", () => {
     const { container } = renderHeader();
     const header = container.querySelector('header[data-slot="site-header"]');
     expect(header).not.toBeNull();

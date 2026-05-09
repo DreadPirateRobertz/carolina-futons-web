@@ -19,7 +19,7 @@ export function AnnouncementBar({
       data-slot="announcement-bar"
       role="region"
       aria-label="Site announcement"
-      className="flex h-[60px] items-center justify-center bg-cf-navy px-4 text-center text-sm font-medium text-cf-cream"
+      className="flex h-[44px] items-center justify-center bg-cf-navy px-4 text-center text-sm font-medium text-cf-cream"
     >
       <p className="inline-flex items-center gap-2">
         <span aria-live="polite" aria-atomic="true">{message}</span>

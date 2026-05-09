@@ -101,8 +101,13 @@ export default async function HomePage() {
     <>
       <EmailCapturePopup />
 
-      {/* ── Time-of-day living hero (dawn/day/dusk/night) ── */}
-      <LivingHero />
+      {/* ── Time-of-day living hero (dawn/day/dusk/night) ──
+           cfw-3t9 (cfw-y2i §7): cap home hero ~360px so the first viewport at
+           1280 shows announce + slim hero + start of FilterFirst headline. The
+           SVG uses preserveAspectRatio="xMidYMid slice" so cropping is graceful. */}
+      <div className="h-[220px] sm:h-[280px] md:h-[320px] lg:h-[360px]">
+        <LivingHero />
+      </div>
 
       {/* ── Featured collections grid (cf-3qt.2.6) ── */}
       <HomeFeaturedCollections />
