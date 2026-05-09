@@ -2,7 +2,8 @@
 
 // cf-u89z: Share button on the dashboard wishlist page.
 // Calls generateShareToken (Server Action) on click, then writes the
-// resulting /wishlist/[token] URL to the clipboard.
+// resulting /wishlist-share/[token] URL to the clipboard. (cfw-9vs
+// renamed the public surface to disambiguate from the auth /wishlist.)
 
 import { useState, useTransition } from "react";
 import { generateShareToken } from "@/app/actions/wishlist";
@@ -27,7 +28,7 @@ export function WishlistShareButton({ loadFailed }: { loadFailed?: boolean }) {
           resetLater();
           return;
         }
-        const url = `${window.location.origin}/wishlist/${result.token}`;
+        const url = `${window.location.origin}/wishlist-share/${result.token}`;
         await navigator.clipboard.writeText(url);
         setState("copied");
         resetLater();

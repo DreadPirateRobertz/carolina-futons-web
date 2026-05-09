@@ -1,24 +1,25 @@
 "use server";
 
 import { getMemberSession, withMember } from "@/lib/auth/member";
-import { callVelo } from "@/lib/wix/velo-client";
 import { signMemberId, verifyShareToken } from "@/lib/wishlist/share-token";
 import type { WishlistResponse } from "@/lib/wishlist/wishlist-types";
-
-const w = (method: string) => `wishlistService/${method}`;
+import {
+  addWishlistItem,
+  fetchWishlist,
+  fetchWishlistByMemberId,
+  isProductOnWishlist,
+  removeWishlistItem,
+  type WishlistAddOpts,
+} from "@/lib/wix/wishlist";
 
 export async function addToWishlist(
   productId: string,
   name: string,
   price: number,
-  opts?: { variantId?: string; image?: string },
+  opts?: WishlistAddOpts,
 ) {
   return withMember((m) =>
-    callVelo({
-      method: w("addToWishlist"),
-      args: [productId, name, price, opts ?? {}],
-      accessToken: m.accessToken,
-    }),
+    addWishlistItem(m.accessToken, productId, name, price, opts ?? {}),
   );
 }
 
@@ -35,16 +36,18 @@ export async function addToWishlistFromPdp(
   productId: string,
   name: string,
   price: number,
-  opts?: { variantId?: string; image?: string },
+  opts?: WishlistAddOpts,
 ): Promise<AddToWishlistFromPdpResult> {
   const session = await getMemberSession();
   if (!session) return { success: false, requiresAuth: true };
   try {
-    const result = (await callVelo({
-      method: w("addToWishlist"),
-      args: [productId, name, price, opts ?? {}],
-      accessToken: session.accessToken,
-    })) as { success: boolean; error?: string } | undefined;
+    const result = await addWishlistItem(
+      session.accessToken,
+      productId,
+      name,
+      price,
+      opts ?? {},
+    );
     if (!result?.success) {
       return {
         success: false,
@@ -59,29 +62,32 @@ export async function addToWishlistFromPdp(
 }
 
 export async function removeFromWishlist(productId: string) {
-  return withMember((m) =>
-    callVelo({
-      method: w("removeFromWishlist"),
-      args: [productId],
-      accessToken: m.accessToken,
-    }),
-  );
+  return withMember((m) => removeWishlistItem(m.accessToken, productId));
 }
 
 export async function getWishlist() {
-  return withMember((m) =>
-    callVelo({ method: w("getWishlist"), args: [], accessToken: m.accessToken }),
-  );
+  return withMember((m) => fetchWishlist(m.accessToken));
 }
 
 export async function isOnWishlist(productId: string) {
-  return withMember((m) =>
-    callVelo({
-      method: w("isOnWishlist"),
-      args: [productId],
-      accessToken: m.accessToken,
-    }),
-  );
+  return withMember((m) => isProductOnWishlist(m.accessToken, productId));
+}
+
+// cfw-9vs: header badge count. Returns 0 (rather than redirecting) when the
+// visitor isn't signed in — the badge silently hides instead of forcing an
+// OAuth round-trip on every page load. Errors collapse to 0 too; a missing
+// badge is preferable to a server-error toast on the global header.
+export async function getWishlistCount(): Promise<number> {
+  const session = await getMemberSession();
+  if (!session) return 0;
+  try {
+    const result = await fetchWishlist(session.accessToken);
+    if (!result?.success) return 0;
+    return result.total ?? result.items?.length ?? 0;
+  } catch (err) {
+    console.error("[wishlist] getWishlistCount failed:", err);
+    return 0;
+  }
 }
 
 // ── Share token (cf-u89z) ─────────────────────────────────────────
@@ -115,11 +121,7 @@ export async function getSharedWishlist(token: string): Promise<
   const memberId = verifyShareToken(token, shareSecret());
   if (!memberId) return { success: false };
   try {
-    const result = (await callVelo({
-      method: w("getWishlistByMemberId"),
-      args: [memberId],
-      // No accessToken — getWishlistByMemberId uses Permissions.Anyone
-    })) as WishlistResponse | undefined;
+    const result = await fetchWishlistByMemberId(memberId);
     if (!result?.success) return { success: false };
     return { success: true, items: result.items, total: result.total };
   } catch (err) {

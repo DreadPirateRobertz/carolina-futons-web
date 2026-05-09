@@ -17,6 +17,7 @@ import { Search, User } from "lucide-react";
 import { AnnouncementBarCartAware } from "@/components/site/AnnouncementBarCartAware";
 import { CartTrigger } from "@/components/cart/CartTrigger";
 import { HeaderMobileMenu } from "@/components/site/HeaderMobileMenu";
+import { HeaderWishlistLink } from "@/components/site/HeaderWishlistLink";
 import { LivingHero } from "@/components/home/LivingHero";
 import { ThemeToggle } from "@/components/site/ThemeToggle";
 import { MegaMenuItem } from "@/components/site/MegaMenu";
@@ -145,6 +146,7 @@ export function Header() {
               >
                 <User className="size-5" aria-hidden="true" />
               </Link>
+              <HeaderWishlistLink />
               <CartTrigger />
             </div>
           </div>

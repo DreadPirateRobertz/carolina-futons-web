@@ -66,7 +66,7 @@ describe("WishlistShareButton", () => {
       expect(screen.getByTestId("wishlist-share-button")).toHaveTextContent("Link copied!"),
     );
     expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("/wishlist/abc.def"),
+      expect.stringContaining("/wishlist-share/abc.def"),
     );
   });
 
