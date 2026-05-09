@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { GalleryImage } from "./PdpGallery";
+import { wixImageUrl } from "@/lib/wix/wix-image";
 
 export type PdpImageComparisonProps = {
   before: GalleryImage;
@@ -77,7 +78,7 @@ export function PdpImageComparison({
       {/* "after" image — full width, underneath */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={after.url}
+        src={wixImageUrl(after.url, 600, 600)}
         alt={after.alt ?? `${productName} — angle 2`}
         className="absolute inset-0 h-full w-full object-cover"
         draggable={false}
@@ -92,7 +93,7 @@ export function PdpImageComparison({
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={before.url}
+          src={wixImageUrl(before.url, 600, 600)}
           alt={before.alt ?? `${productName} — angle 1`}
           className="h-full w-full object-cover"
           draggable={false}
