@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { HeroReveal } from "@/components/motion/HeroReveal";
+import { ReviewsJsonLd } from "@/components/seo/ReviewsJsonLd";
 import { loadReviews } from "@/lib/discovery/google-reviews";
 import { ReviewFilter } from "./ReviewFilter";
 import { FallsScene } from "@/components/mascot/FallsScene";
@@ -11,10 +12,6 @@ export const metadata: Metadata = {
     "Real reviews from Carolina Futons customers on our hardwood frames, hand-built mattresses, and Murphy beds.",
 };
 
-// TODO(cf-3qt.8.D): emit schema.org AggregateRating + Review JSON-LD via
-// a dedicated component in the follow-up commit. Kept out of the skeleton
-// push so the initial PR lands without the inline-script pattern.
-
 export default async function ReviewsPage() {
   const loaded = await loadReviews();
   const reviews = loaded.reviews;
@@ -23,6 +20,13 @@ export default async function ReviewsPage() {
 
   return (
     <main className="w-full">
+      {loaded.ok && reviews.length > 0 ? (
+        <ReviewsJsonLd
+          averageRating={avg}
+          totalReviewCount={total}
+          reviews={reviews}
+        />
+      ) : null}
       <FallsScene className="max-h-64" />
       <div className="mx-auto max-w-4xl space-y-12 px-4 py-12 font-source-sans text-cf-ink sm:px-6 sm:py-16">
         <HeroReveal>
