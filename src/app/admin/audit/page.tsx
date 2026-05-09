@@ -6,6 +6,7 @@ import {
 } from "@/lib/admin/audit-log";
 import {
   applyAuditFilters,
+  auditFiltersActive,
   parseAuditFilters,
   type AuditFilters,
 } from "@/lib/admin/audit-filters";
@@ -45,6 +46,8 @@ function buildExportHref(filters: AuditFilters): string {
   const params = new URLSearchParams();
   if (filters.action) params.set("action", filters.action);
   if (filters.actor) params.set("actor", filters.actor);
+  if (filters.fromRaw) params.set("from", filters.fromRaw);
+  if (filters.toRaw) params.set("to", filters.toRaw);
   const qs = params.toString();
   return qs ? `/api/admin/audit/export?${qs}` : "/api/admin/audit/export";
 }
@@ -56,11 +59,13 @@ export default async function AdminAuditPage(props: {
   const filters = parseAuditFilters({
     action: typeof sp.action === "string" ? sp.action : undefined,
     actor: typeof sp.actor === "string" ? sp.actor : undefined,
+    from: typeof sp.from === "string" ? sp.from : undefined,
+    to: typeof sp.to === "string" ? sp.to : undefined,
   });
   const result = await readOwnerAuditLog(ROW_LIMIT);
   const filteredRows =
     result.ok ? applyAuditFilters(result.rows, filters) : [];
-  const filtersActive = filters.action !== null || filters.actor.length > 0;
+  const filtersActive = auditFiltersActive(filters);
 
   return (
     <section
@@ -158,6 +163,26 @@ function FilterForm({ filters }: { filters: AuditFilters }) {
           defaultValue={filters.actor}
           placeholder="email substring"
           data-testid="admin-audit-filter-actor"
+          className="h-8 rounded border border-cf-divider bg-white px-2 text-cf-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta"
+        />
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="font-medium text-cf-charcoal/70">From</span>
+        <input
+          type="date"
+          name="from"
+          defaultValue={filters.fromRaw}
+          data-testid="admin-audit-filter-from"
+          className="h-8 rounded border border-cf-divider bg-white px-2 text-cf-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta"
+        />
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="font-medium text-cf-charcoal/70">To</span>
+        <input
+          type="date"
+          name="to"
+          defaultValue={filters.toRaw}
+          data-testid="admin-audit-filter-to"
           className="h-8 rounded border border-cf-divider bg-white px-2 text-cf-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta"
         />
       </label>

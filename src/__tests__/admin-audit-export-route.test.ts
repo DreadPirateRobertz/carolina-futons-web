@@ -153,3 +153,62 @@ describe("GET /api/admin/audit/export — Wix outage", () => {
     expect(res.headers.get("content-type")).toContain("application/json");
   });
 });
+
+describe("GET /api/admin/audit/export — cfw-9j9 date-range filter", () => {
+  const DATED_ROWS = [
+    {
+      _id: "may-9",
+      actorEmail: "brenda@x.com",
+      action: "edit",
+      target: "footer.tagline",
+      before: "x",
+      after: "y",
+      ts: "2026-05-09T15:00:00.000Z",
+    },
+    {
+      _id: "may-7",
+      actorEmail: "brenda@x.com",
+      action: "edit",
+      target: "visit.hours",
+      before: "p",
+      after: "q",
+      ts: "2026-05-07T10:00:00.000Z",
+    },
+  ];
+
+  beforeEach(() => {
+    mockReadOwnerAuditLog.mockResolvedValue({ ok: true, rows: DATED_ROWS });
+  });
+
+  it("?from= narrows the CSV body inclusive of that day", async () => {
+    const { GET } = await import("@/app/api/admin/audit/export/route");
+    const res = await GET(makeReq("?from=2026-05-09") as never);
+    const body = await res.text();
+    expect(body).toContain("footer.tagline");
+    expect(body).not.toContain("visit.hours");
+  });
+
+  it("?to= narrows the CSV body inclusive of that day", async () => {
+    const { GET } = await import("@/app/api/admin/audit/export/route");
+    const res = await GET(makeReq("?to=2026-05-08") as never);
+    const body = await res.text();
+    expect(body).toContain("visit.hours");
+    expect(body).not.toContain("footer.tagline");
+  });
+
+  it("?from + ?to picks a single-day window", async () => {
+    const { GET } = await import("@/app/api/admin/audit/export/route");
+    const res = await GET(makeReq("?from=2026-05-09&to=2026-05-09") as never);
+    const body = await res.text();
+    expect(body).toContain("footer.tagline");
+    expect(body).not.toContain("visit.hours");
+  });
+
+  it("ignores malformed date params (no rows excluded)", async () => {
+    const { GET } = await import("@/app/api/admin/audit/export/route");
+    const res = await GET(makeReq("?from=abc&to=2026/05/09") as never);
+    const body = await res.text();
+    expect(body).toContain("footer.tagline");
+    expect(body).toContain("visit.hours");
+  });
+});

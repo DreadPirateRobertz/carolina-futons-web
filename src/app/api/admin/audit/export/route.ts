@@ -48,6 +48,8 @@ export async function GET(req: NextRequest) {
   const filters = parseAuditFilters({
     action: url.searchParams.get("action") ?? undefined,
     actor: url.searchParams.get("actor") ?? undefined,
+    from: url.searchParams.get("from") ?? undefined,
+    to: url.searchParams.get("to") ?? undefined,
   });
 
   const result = await readOwnerAuditLog(ROW_LIMIT);

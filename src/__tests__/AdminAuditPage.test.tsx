@@ -295,3 +295,126 @@ describe("/admin/audit page — cfw-daa Download CSV link", () => {
     ).toHaveAttribute("href", "/api/admin/audit/export");
   });
 });
+
+describe("/admin/audit page — cfw-9j9 date-range filter", () => {
+  const DATED_ROWS = [
+    {
+      _id: "may-9",
+      actorEmail: "brenda@x.com",
+      action: "edit" as const,
+      target: "footer.tagline",
+      before: "x",
+      after: "y",
+      ts: "2026-05-09T15:00:00.000Z",
+    },
+    {
+      _id: "may-8",
+      actorEmail: "brenda@x.com",
+      action: "edit" as const,
+      target: "hero.headline",
+      before: "a",
+      after: "b",
+      ts: "2026-05-08T10:00:00.000Z",
+    },
+    {
+      _id: "may-7",
+      actorEmail: "brenda@x.com",
+      action: "edit" as const,
+      target: "visit.hours.sun-tue",
+      before: "p",
+      after: "q",
+      ts: "2026-05-07T10:00:00.000Z",
+    },
+  ];
+
+  beforeEach(() => {
+    mockReadOwnerAuditLog.mockResolvedValue({ ok: true, rows: DATED_ROWS });
+  });
+
+  async function renderWith(searchParams: Record<string, string>) {
+    const { default: AdminAuditPage } = await import(
+      "@/app/admin/audit/page"
+    );
+    return render(
+      await AdminAuditPage({ searchParams: Promise.resolve(searchParams) }),
+    );
+  }
+
+  it("renders From + To date inputs in the filter form", async () => {
+    await renderWith({});
+    const from = screen.getByTestId(
+      "admin-audit-filter-from",
+    ) as HTMLInputElement;
+    const to = screen.getByTestId(
+      "admin-audit-filter-to",
+    ) as HTMLInputElement;
+    expect(from.type).toBe("date");
+    expect(to.type).toBe("date");
+    expect(from.value).toBe("");
+    expect(to.value).toBe("");
+  });
+
+  it("?from= narrows rows to that date and later (inclusive)", async () => {
+    await renderWith({ from: "2026-05-08" });
+    const rows = screen.getAllByTestId("admin-audit-row");
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.textContent).join(" ")).not.toContain("visit.hours.sun-tue");
+  });
+
+  it("?to= narrows rows to that date and earlier (inclusive)", async () => {
+    await renderWith({ to: "2026-05-08" });
+    const rows = screen.getAllByTestId("admin-audit-row");
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.textContent).join(" ")).not.toContain("footer.tagline");
+  });
+
+  it("?from + ?to inclusive on the same day picks rows on that day only", async () => {
+    await renderWith({ from: "2026-05-08", to: "2026-05-08" });
+    const rows = screen.getAllByTestId("admin-audit-row");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!).toHaveTextContent("hero.headline");
+  });
+
+  it("preselects from/to in the form from URL params", async () => {
+    await renderWith({ from: "2026-05-09", to: "2026-05-09" });
+    expect(
+      (screen.getByTestId("admin-audit-filter-from") as HTMLInputElement).value,
+    ).toBe("2026-05-09");
+    expect(
+      (screen.getByTestId("admin-audit-filter-to") as HTMLInputElement).value,
+    ).toBe("2026-05-09");
+  });
+
+  it("ignores malformed date strings (renders all rows)", async () => {
+    await renderWith({ from: "abc", to: "2026/05/09" });
+    expect(screen.getAllByTestId("admin-audit-row")).toHaveLength(3);
+  });
+
+  it("date filters preserved into the Download CSV link", async () => {
+    await renderWith({ from: "2026-05-08", to: "2026-05-09" });
+    expect(
+      screen.getByTestId("admin-audit-filter-export"),
+    ).toHaveAttribute(
+      "href",
+      "/api/admin/audit/export?from=2026-05-08&to=2026-05-09",
+    );
+  });
+
+  it("filter-aware empty message fires when date range culls everything", async () => {
+    await renderWith({ from: "2026-06-01" });
+    expect(screen.getByTestId("admin-audit-empty")).toHaveTextContent(
+      /match those filters/i,
+    );
+  });
+
+  it("composes date range with action + actor", async () => {
+    await renderWith({
+      from: "2026-05-08",
+      to: "2026-05-09",
+      action: "edit",
+      actor: "brenda",
+    });
+    const rows = screen.getAllByTestId("admin-audit-row");
+    expect(rows).toHaveLength(2);
+  });
+});
