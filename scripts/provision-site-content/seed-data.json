@@ -1,6 +1,6 @@
 {
   "$schema": "./seed-schema.json",
-  "_about": "cfw-roi (cf-atze) — initial seed for the SiteContent Wix CMS collection. 20 owner-editable copy strings keyed by dotted-path. Provisioning script lives in ./index.mjs. Production reader: src/lib/cms/site-content.ts.",
+  "_about": "cfw-roi (cf-atze) — initial seed for the SiteContent Wix CMS collection. 26 owner-editable copy strings keyed by dotted-path. Row count grew from 20 → 26 in cfw-34q to cover the home.value-props.* keys cfw-9uw introduced. Provisioning script lives in ./index.mjs. Production reader: src/lib/cms/site-content.ts.",
   "_naming": "lowercase, dotted-path, hyphenated segments. e.g. 'footer.tagline', 'announcement.rotation.0.message'. See docs/design/cfw-66o-footer-announce-specs.md §2.",
   "rows": [
     {
@@ -102,6 +102,36 @@
       "key": "announcement.rotation.4.message",
       "value": "Assembly included with every delivery",
       "_source": "docs/design/cfw-66o-footer-announce-specs.md §4 — index 4"
+    },
+    {
+      "key": "home.value-props.0.title",
+      "value": "Hardwood, not plywood",
+      "_source": "src/app/page.tsx VALUE_PROP_DEFAULTS[0].title (cfw-9uw)"
+    },
+    {
+      "key": "home.value-props.0.body",
+      "value": "Frames milled from solid oak, maple, and cherry. Built to outlive the apartment they ship to.",
+      "_source": "src/app/page.tsx VALUE_PROP_DEFAULTS[0].body (cfw-9uw)"
+    },
+    {
+      "key": "home.value-props.1.title",
+      "value": "Sleep on it first",
+      "_source": "src/app/page.tsx VALUE_PROP_DEFAULTS[1].title (cfw-9uw)"
+    },
+    {
+      "key": "home.value-props.1.body",
+      "value": "Visit the Hendersonville showroom and try every mattress we sell. No commission pressure.",
+      "_source": "src/app/page.tsx VALUE_PROP_DEFAULTS[1].body (cfw-9uw)"
+    },
+    {
+      "key": "home.value-props.2.title",
+      "value": "White-glove delivery",
+      "_source": "src/app/page.tsx VALUE_PROP_DEFAULTS[2].title (cfw-9uw)"
+    },
+    {
+      "key": "home.value-props.2.body",
+      "value": "Regional delivery teams set it up where you want it. Not on a curb in a box.",
+      "_source": "src/app/page.tsx VALUE_PROP_DEFAULTS[2].body (cfw-9uw)"
     }
   ]
 }

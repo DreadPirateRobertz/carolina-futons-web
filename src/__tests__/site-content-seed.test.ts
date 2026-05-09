@@ -43,9 +43,9 @@ describe("provision-site-content seed-data.json", () => {
     expect(seed.rows.length).toBeGreaterThan(0);
   });
 
-  it("contains exactly 20 seed rows (cfw-roi spec)", () => {
+  it("contains exactly 26 seed rows (cfw-roi + cfw-34q value-props expansion)", () => {
     const seed = loadSeed();
-    expect(seed.rows).toHaveLength(20);
+    expect(seed.rows).toHaveLength(26);
   });
 
   it("every row has a non-empty string key and value", () => {
@@ -79,8 +79,8 @@ describe("provision-site-content seed-data.json", () => {
 
   it("includes the keys the cfw-66o specs already wired with getSiteContent fallbacks", () => {
     // These keys are already read by Pass-1 refactors (cf-n7ni, cf-h21g,
-    // cf-68w4) and need a corresponding row so live values replace the
-    // fallback once the collection is provisioned.
+    // cf-68w4, cfw-9uw) and need a corresponding row so live values replace
+    // the fallback once the collection is provisioned.
     const REQUIRED_KEYS = [
       "footer.tagline",
       "footer.showroom-hours.label",
@@ -94,6 +94,14 @@ describe("provision-site-content seed-data.json", () => {
       "announcement.rotation.3.cta-label",
       "announcement.rotation.3.cta-href",
       "announcement.rotation.4.message",
+      // cfw-34q: home value-props (cfw-9uw added the reader before the seed
+      // had rows; this closes the loop so Brenda can edit them).
+      "home.value-props.0.title",
+      "home.value-props.0.body",
+      "home.value-props.1.title",
+      "home.value-props.1.body",
+      "home.value-props.2.title",
+      "home.value-props.2.body",
     ];
     const seed = loadSeed();
     const keys = new Set(seed.rows.map((r) => r.key));
