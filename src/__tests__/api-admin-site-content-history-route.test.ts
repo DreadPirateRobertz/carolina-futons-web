@@ -168,3 +168,39 @@ describe("GET /api/admin/site-content/history — Wix outage", () => {
     expect((await res.json()).error).toMatch(/history/i);
   });
 });
+
+describe("GET /api/admin/site-content/history — cfw-jya Cache-Control", () => {
+  it("200 success response sets Cache-Control: no-store", async () => {
+    const { GET } = await import("@/app/api/admin/site-content/history/route");
+    const res = await GET(makeReq("?key=footer.tagline") as never);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("no-store");
+  });
+
+  it("401 unauthenticated response sets Cache-Control: no-store", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(null);
+    const { GET } = await import("@/app/api/admin/site-content/history/route");
+    const res = await GET(makeReq("?key=footer.tagline") as never);
+    expect(res.status).toBe(401);
+    expect(res.headers.get("cache-control")).toBe("no-store");
+  });
+
+  it("400 invalid-key response sets Cache-Control: no-store", async () => {
+    const { GET } = await import("@/app/api/admin/site-content/history/route");
+    const res = await GET(makeReq("?key=Footer.Tagline") as never);
+    expect(res.status).toBe(400);
+    expect(res.headers.get("cache-control")).toBe("no-store");
+  });
+
+  it("502 Wix-outage response sets Cache-Control: no-store", async () => {
+    mockReadSiteContentHistory.mockResolvedValueOnce({
+      ok: false,
+      reason: "wix_error",
+      status: 404,
+    });
+    const { GET } = await import("@/app/api/admin/site-content/history/route");
+    const res = await GET(makeReq("?key=footer.tagline") as never);
+    expect(res.status).toBe(502);
+    expect(res.headers.get("cache-control")).toBe("no-store");
+  });
+});

@@ -21,14 +21,22 @@ import { readSiteContentHistory } from "@/lib/cms/site-content-history";
 // data-layer helper. Tightening the collection's permissions later just
 // means the read fails with `wix_error` and we surface 502, which is the
 // right behaviour anyway.
+//
+// cfw-jya: every response carries Cache-Control: no-store so a CDN /
+// browser can't hold an admin-only payload. Mirrors the pattern from
+// GET /api/admin/audit/export (cfw-daa).
 
 export const dynamic = "force-dynamic";
 
 const DEFAULT_LIMIT = 5;
 const MAX_LIMIT = 50;
+const NO_STORE_HEADERS = { "Cache-Control": "no-store" } as const;
 
 function jsonError(error: string, status: number) {
-  return NextResponse.json({ ok: false, error }, { status });
+  return NextResponse.json(
+    { ok: false, error },
+    { status, headers: NO_STORE_HEADERS },
+  );
 }
 
 function parseLimit(raw: string | null): number | { error: string } {
@@ -58,5 +66,8 @@ export async function GET(req: NextRequest) {
     return jsonError("Couldn't load history. Try again.", 502);
   }
 
-  return NextResponse.json({ ok: true, rows: result.rows });
+  return NextResponse.json(
+    { ok: true, rows: result.rows },
+    { headers: NO_STORE_HEADERS },
+  );
 }
