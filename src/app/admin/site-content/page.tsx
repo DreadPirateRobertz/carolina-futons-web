@@ -9,6 +9,10 @@ import { loadSiteContent } from "@/lib/cms/site-content";
 // currently resolves to. Read-only on purpose: edits go through the
 // in-page <EditableText> pencils, not here.
 //
+// cfw-08k: ?q= URL param + search input filters by case-insensitive
+// substring against key OR value. Same shape as cfw-3zk's audit search.
+// Useful once the collection grows past one screen.
+//
 // Auth gate is inherited from /admin/layout.tsx (requireOwnerSession).
 // `force-dynamic` matches the layout so the gate's per-request redirect
 // behaviour isn't ISR-cached.
@@ -20,11 +24,31 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function AdminSiteContentBrowsePage() {
+function applyQ(
+  rows: ReadonlyArray<{ key: string; value: string }>,
+  q: string,
+): ReadonlyArray<{ key: string; value: string }> {
+  const needle = q.trim().toLowerCase();
+  if (needle.length === 0) return rows;
+  return rows.filter(
+    (r) =>
+      r.key.toLowerCase().includes(needle) ||
+      r.value.toLowerCase().includes(needle),
+  );
+}
+
+export default async function AdminSiteContentBrowsePage(props: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await props.searchParams;
+  const q = typeof sp.q === "string" ? sp.q.trim() : "";
+
   const result = await loadSiteContent();
-  const rows = [...result.map.entries()]
+  const allRows = [...result.map.entries()]
     .map(([key, value]) => ({ key, value }))
     .sort((a, b) => a.key.localeCompare(b.key));
+  const rows = applyQ(allRows, q);
+  const filterActive = q.length > 0;
 
   return (
     <section
@@ -41,8 +65,13 @@ export default async function AdminSiteContentBrowsePage() {
             SiteContent
           </h1>
           <p className="mt-1 text-sm text-cf-charcoal/70">
-            {rows.length} {rows.length === 1 ? "key" : "keys"} currently
-            available for inline edit.
+            {filterActive
+              ? `${rows.length} of ${allRows.length} ${
+                  allRows.length === 1 ? "key" : "keys"
+                } match`
+              : `${rows.length} ${
+                  rows.length === 1 ? "key" : "keys"
+                } currently available for inline edit.`}
           </p>
         </div>
         <Link
@@ -52,6 +81,8 @@ export default async function AdminSiteContentBrowsePage() {
           ← Back to owner home
         </Link>
       </header>
+
+      <SearchForm q={q} />
 
       {result.error ? (
         <p
@@ -66,11 +97,50 @@ export default async function AdminSiteContentBrowsePage() {
       ) : null}
 
       {rows.length === 0 ? (
-        <EmptyState hasError={Boolean(result.error)} />
+        <EmptyState
+          hasError={Boolean(result.error)}
+          filterActive={filterActive}
+        />
       ) : (
         <SiteContentTable rows={rows} />
       )}
     </section>
+  );
+}
+
+function SearchForm({ q }: { q: string }) {
+  return (
+    <form
+      method="get"
+      action="/admin/site-content"
+      data-testid="admin-site-content-search"
+      className="mt-5 flex flex-wrap items-end gap-3 rounded-md border border-cf-divider bg-cf-cream/40 p-3 text-xs"
+    >
+      <label className="flex flex-col gap-1">
+        <span className="font-medium text-cf-charcoal/70">Search</span>
+        <input
+          type="text"
+          name="q"
+          defaultValue={q}
+          placeholder="text in key or value"
+          data-testid="admin-site-content-search-input"
+          className="h-8 w-72 rounded border border-cf-divider bg-white px-2 text-cf-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta"
+        />
+      </label>
+      <button
+        type="submit"
+        className="inline-flex h-8 items-center justify-center rounded-md bg-cf-cta px-3 font-medium text-white hover:bg-cf-cta/90"
+      >
+        Apply
+      </button>
+      <a
+        href="/admin/site-content"
+        data-testid="admin-site-content-search-clear"
+        className="inline-flex h-8 items-center justify-center px-2 text-cf-muted underline-offset-2 hover:text-cf-ink hover:underline"
+      >
+        Clear
+      </a>
+    </form>
   );
 }
 
@@ -142,7 +212,35 @@ function SiteContentTable({
   );
 }
 
-function EmptyState({ hasError }: { hasError: boolean }) {
+function EmptyState({
+  hasError,
+  filterActive,
+}: {
+  hasError: boolean;
+  filterActive: boolean;
+}) {
+  if (filterActive) {
+    return (
+      <div
+        data-testid="admin-site-content-empty"
+        className="mt-6 rounded-md border border-dashed border-cf-divider px-4 py-8 text-center text-sm text-cf-charcoal/70"
+      >
+        <p className="font-medium text-cf-ink">
+          No SiteContent rows match that search.
+        </p>
+        <p className="mt-2">
+          Try a shorter substring, or{" "}
+          <Link
+            href="/admin/site-content"
+            className="text-cf-cta underline-offset-2 hover:underline"
+          >
+            clear the filter
+          </Link>{" "}
+          to see all keys.
+        </p>
+      </div>
+    );
+  }
   return (
     <div
       data-testid="admin-site-content-empty"
