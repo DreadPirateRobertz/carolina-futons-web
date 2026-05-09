@@ -4,6 +4,7 @@ import { DEFAULT_OG_IMAGE } from "@/lib/og";
 import "./globals.css";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
+import { getSiteContent } from "@/lib/cms/site-content";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { CartAbandonmentTracker } from "@/components/cart/CartAbandonmentTracker";
 import { CartDrawer } from "@/components/cart/CartDrawer";
@@ -83,6 +84,14 @@ export default async function RootLayout({
   const consentChoice = parseConsentCookie(
     (await cookies()).get(CONSENT_COOKIE_NAME)?.value,
   );
+
+  // cfw-o2q: thread owner-editable footer copy from SiteContent. Fallbacks
+  // match the Footer component's defaults so the rendered shell is
+  // identical when the SiteContent collection is empty / Wix is down.
+  const [footerTagline, footerShowroomHours] = await Promise.all([
+    getSiteContent("footer.tagline", "Quality futon furniture since 1991"),
+    getSiteContent("footer.showroomHours", "Showroom hours: Sun–Tue, 10am–5pm"),
+  ]);
   return (
     <html
       lang="en"
@@ -121,7 +130,10 @@ export default async function RootLayout({
             <main id="main" className="flex-1">
               <PageTransition>{children}</PageTransition>
             </main>
-            <Footer />
+            <Footer
+              tagline={footerTagline}
+              showroomHoursLabel={footerShowroomHours}
+            />
             <CartDrawer />
             <BackToTop />
             <PwaInstallBanner />

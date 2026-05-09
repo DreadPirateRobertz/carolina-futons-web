@@ -93,7 +93,23 @@ function SocialIcon({ path, label }: { path: string; label: string }) {
   );
 }
 
-export function Footer() {
+// cfw-o2q: SiteContent-driven copy. Both strings are optional so existing
+// tests that render <Footer /> without props (the brand fallback contract)
+// keep passing — they assert the default copy. layout.tsx threads the
+// owner-editable values in via getSiteContent("footer.tagline", default)
+// and getSiteContent("footer.showroomHours", default).
+type FooterProps = {
+  tagline?: string;
+  showroomHoursLabel?: string;
+};
+
+const DEFAULT_TAGLINE = "Quality futon furniture since 1991";
+const DEFAULT_SHOWROOM_HOURS = "Showroom hours: Sun–Tue, 10am–5pm";
+
+export function Footer({
+  tagline = DEFAULT_TAGLINE,
+  showroomHoursLabel = DEFAULT_SHOWROOM_HOURS,
+}: FooterProps = {}) {
   const prefersReducedMotion = useReducedMotion() ?? false;
 
   return (
@@ -127,9 +143,7 @@ export function Footer() {
                 Carolina Futons
               </span>
             </Link>
-            <p className="max-w-xs text-sm text-cf-cream/80">
-              Quality futon furniture since 1991
-            </p>
+            <p className="max-w-xs text-sm text-cf-cream/80">{tagline}</p>
             <ul className="mt-2 flex items-center gap-3 text-cf-cream/80">
               {FOOTER_SOCIALS.map((social) => (
                 <li key={social.name}>
@@ -189,9 +203,7 @@ export function Footer() {
             >
               {BUSINESS.email}
             </a>
-            <p className="mt-1 text-cf-cream/70">
-              Showroom hours: Sun–Tue, 10am–5pm
-            </p>
+            <p className="mt-1 text-cf-cream/70">{showroomHoursLabel}</p>
           </div>
         </div>
 

@@ -37,6 +37,38 @@ describe("Footer — Phase 3 rebrand", () => {
     ).toBeInTheDocument();
   });
 
+  // cfw-o2q: tagline + showroom hours flow from SiteContent via layout.tsx.
+  // The component's default fallback covers Wix-down / unprovisioned cases;
+  // these tests pin the override path that owner edits travel through.
+  it("renders an owner-supplied tagline when passed via prop (cfw-o2q)", () => {
+    render(<Footer tagline="Hardwood futons, built for life" />);
+    expect(
+      screen.getByText(/hardwood futons, built for life/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/quality futon furniture since 1991/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders an owner-supplied showroom hours label when passed via prop (cfw-o2q)", () => {
+    render(
+      <Footer showroomHoursLabel="Open by appointment · Mon–Sat" />,
+    );
+    expect(
+      screen.getByText(/open by appointment · mon–sat/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/showroom hours: sun–tue, 10am–5pm/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("falls back to default showroom hours when no prop is passed (cfw-o2q)", () => {
+    render(<Footer />);
+    expect(
+      screen.getByText(/showroom hours: sun–tue, 10am–5pm/i),
+    ).toBeInTheDocument();
+  });
+
   it("renders BUSINESS.phone as a tel: link with Call/Text prefix", () => {
     render(<Footer />);
     const phone = screen.getByRole("link", {
