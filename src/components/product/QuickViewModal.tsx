@@ -105,9 +105,7 @@ export function QuickViewModal({
           <span aria-hidden="true">×</span>
         </button>
 
-        {loadState === "loading" ? (
-          <p className="py-12 text-center text-sm text-cf-muted">Loading…</p>
-        ) : loadState === "error" ? (
+        {loadState === "error" ? (
           <p className="py-12 text-center text-sm text-red-600">
             Couldn&rsquo;t load this product. Please try again.
           </p>
@@ -168,7 +166,9 @@ export function QuickViewModal({
               ) : null}
             </div>
           </div>
-        ) : null}
+        ) : (
+          <p className="py-12 text-center text-sm text-cf-muted">Loading…</p>
+        )}
       </div>
     </div>
   );
