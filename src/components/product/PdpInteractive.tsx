@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 
 import {
   AddToCartButton,
@@ -15,13 +16,41 @@ import { ProductInventoryBadge } from "@/components/product/ProductInventoryBadg
 import { PdpProductBadges } from "@/components/product/PdpProductBadges";
 import type { ProductBadgeType } from "@/lib/wix/product-badges";
 import { PdpFabricSwatches } from "@/components/product/PdpFabricSwatches";
-import { BnplWidget } from "@/components/product/BnplWidget";
-import { PdpFinancing } from "@/components/product/PdpFinancing";
-import { PdpNotifyMe } from "@/components/product/PdpNotifyMe";
-import { PriceLockGuarantee } from "@/components/product/PriceLockGuarantee";
 import { PdpWhiteGlove } from "@/components/product/PdpWhiteGlove";
 import { PdpWishlistButton } from "@/components/product/PdpWishlistButton";
 import { VariantPicker } from "@/components/product/VariantPicker";
+
+// cf-u67q: pull below-the-fold PDP affordances behind next/dynamic so they
+// stay in the SSR HTML (no SEO/UX regression) but get split out of the
+// initial client chunk. Cuts the main-thread script-evaluation cost on PDP
+// load, which dominated TBT in the pre-cutover Lighthouse audit.
+//
+// Components asserted on directly by PdpInteractive.test.tsx (PdpStickyCta,
+// PdpFabricSwatches, PdpWhiteGlove) intentionally stay as static imports —
+// the existing test harness asserts their rendered subtree synchronously,
+// and rewiring those tests to await dynamic resolution is out of scope for
+// this perf fix. The remaining four still ship in their own chunks, which
+// is where the long-tail cost lives.
+const BnplWidget = dynamic(() =>
+  import("@/components/product/BnplWidget").then((m) => ({
+    default: m.BnplWidget,
+  })),
+);
+const PdpFinancing = dynamic(() =>
+  import("@/components/product/PdpFinancing").then((m) => ({
+    default: m.PdpFinancing,
+  })),
+);
+const PdpNotifyMe = dynamic(() =>
+  import("@/components/product/PdpNotifyMe").then((m) => ({
+    default: m.PdpNotifyMe,
+  })),
+);
+const PriceLockGuarantee = dynamic(() =>
+  import("@/components/product/PriceLockGuarantee").then((m) => ({
+    default: m.PriceLockGuarantee,
+  })),
+);
 import type { StockBadgeInput } from "@/lib/product/stock-badge-state";
 import type { SwatchItem } from "@/lib/swatch-request/swatch-request-schema";
 import {
