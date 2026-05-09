@@ -189,9 +189,32 @@ describe("sitemap()", () => {
 });
 
 describe("robots()", () => {
-  it("emits a single allow-all rule for user-agent '*'", () => {
+  it("emits a single rule for user-agent '*' that allows the public surface", () => {
     const r = robots();
-    expect(r.rules).toEqual([{ userAgent: "*", allow: "/" }]);
+    expect(Array.isArray(r.rules)).toBe(true);
+    const rules = Array.isArray(r.rules) ? r.rules : [r.rules];
+    expect(rules).toHaveLength(1);
+    const rule = rules[0]!;
+    expect(rule.userAgent).toBe("*");
+    expect(rule.allow).toBe("/");
+  });
+
+  // cfw-7ke: owner-mode paths should be opted out of crawling. Each
+  // /admin page also sets per-page robots:{index:false,follow:false},
+  // but the robots.txt level disallow saves the SSR + auth-gate cost
+  // on every bot hit and nudges hostile crawlers toward not enumerating
+  // the admin surface.
+  it("disallows /admin and /api/admin on the same rule", () => {
+    const r = robots();
+    const rules = Array.isArray(r.rules) ? r.rules : [r.rules];
+    const rule = rules[0]!;
+    const disallow = Array.isArray(rule.disallow)
+      ? rule.disallow
+      : rule.disallow
+        ? [rule.disallow]
+        : [];
+    expect(disallow).toContain("/admin");
+    expect(disallow).toContain("/api/admin");
   });
 
   it("points at the absolute sitemap URL so crawlers don't guess the origin", () => {
