@@ -102,9 +102,13 @@ function SiteContentTable({
           {rows.map((row) => (
             <tr
               key={row.key}
+              // cfw-wy0: stable anchor target so /admin/audit rows can link
+              // here via /admin/site-content#row-<key>. scroll-mt-20 keeps
+              // the linked-to row clear of the page header on arrival.
+              id={`row-${row.key}`}
               data-slot="admin-site-content-row"
               data-key={row.key}
-              className="border-b border-cf-divider/60 align-top"
+              className="scroll-mt-20 border-b border-cf-divider/60 align-top"
             >
               <td className="py-3 pr-4 font-mono text-xs text-cf-ink">
                 {row.key}

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import {
   readOwnerAuditLog,
@@ -246,7 +247,9 @@ function AuditRow({ row }: { row: AuditLogRow }) {
           {row.action}
         </span>
       </td>
-      <td className="py-2 pr-3 text-xs font-mono text-cf-ink">{row.target}</td>
+      <td className="py-2 pr-3 text-xs font-mono text-cf-ink">
+        <TargetCell action={row.action} target={row.target} />
+      </td>
       <td className="py-2 pr-3 text-xs text-cf-charcoal/70">
         <span className="line-clamp-2">{row.before || "—"}</span>
       </td>
@@ -254,6 +257,33 @@ function AuditRow({ row }: { row: AuditLogRow }) {
         <span className="line-clamp-2">{row.after || "—"}</span>
       </td>
     </tr>
+  );
+}
+
+// cfw-wy0: target cell renders as a link to /admin/site-content#row-<target>
+// for SiteContent edits (action: edit | upload), where the target IS a
+// SiteContent key. action="swap" targets are productIds — there's no
+// SiteContent row to scroll to, so render plain text in that case.
+function TargetCell({
+  action,
+  target,
+}: {
+  action: AuditLogRow["action"];
+  target: string;
+}) {
+  if (action === "swap") {
+    return <span data-testid="admin-audit-target-text">{target}</span>;
+  }
+  return (
+    <Link
+      href={`/admin/site-content#row-${encodeURIComponent(target)}`}
+      data-testid="admin-audit-target-link"
+      data-target={target}
+      aria-label={`See current value for ${target}`}
+      className="underline-offset-2 hover:text-cf-cta hover:underline"
+    >
+      {target}
+    </Link>
   );
 }
 

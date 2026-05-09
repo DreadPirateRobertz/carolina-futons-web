@@ -20,7 +20,7 @@ async function renderPage() {
     "@/app/admin/site-content/page"
   );
   const ui = await AdminSiteContentBrowsePage();
-  render(ui);
+  return render(ui);
 }
 
 describe("/admin/site-content browse page (cfw-9m3)", () => {
@@ -184,5 +184,28 @@ describe("admin/site-content — cfw-9md history link per row", () => {
     expect(
       screen.queryByTestId("admin-site-content-history-link"),
     ).toBeNull();
+  });
+});
+
+describe("admin/site-content — cfw-wy0 row anchor IDs", () => {
+  it("each row has id='row-<key>' so /admin/audit can deep-link to it", async () => {
+    loadSiteContent.mockResolvedValue({
+      map: new Map<string, string>([
+        ["footer.tagline", "x"],
+        ["hero.image", "y"],
+      ]),
+    });
+    const { container } = await renderPage();
+    expect(container.querySelector("#row-footer\\.tagline")).not.toBeNull();
+    expect(container.querySelector("#row-hero\\.image")).not.toBeNull();
+  });
+
+  it("scroll-mt-20 keeps the linked-to row clear of the page header", async () => {
+    loadSiteContent.mockResolvedValue({
+      map: new Map<string, string>([["footer.tagline", "x"]]),
+    });
+    const { container } = await renderPage();
+    const row = container.querySelector("#row-footer\\.tagline");
+    expect(row?.className).toMatch(/scroll-mt-20/);
   });
 });

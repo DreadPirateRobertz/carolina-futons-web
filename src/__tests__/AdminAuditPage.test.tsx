@@ -524,3 +524,120 @@ describe("/admin/audit page — cfw-3zk free-text search", () => {
     ).toHaveAttribute("href", "/api/admin/audit/export?q=footer");
   });
 });
+
+describe("/admin/audit page — cfw-wy0 target-cell links", () => {
+  beforeEach(() => {
+    mockReadOwnerAuditLog.mockResolvedValue({
+      ok: true,
+      rows: [
+        {
+          _id: "edit-row",
+          actorEmail: "brenda@x.com",
+          action: "edit" as const,
+          target: "footer.tagline",
+          before: "x",
+          after: "y",
+          ts: "2026-05-09T15:00:00.000Z",
+        },
+        {
+          _id: "upload-row",
+          actorEmail: "brenda@x.com",
+          action: "upload" as const,
+          target: "hero.image",
+          before: "",
+          after: "https://x",
+          ts: "2026-05-09T14:00:00.000Z",
+        },
+        {
+          _id: "swap-row",
+          actorEmail: "brenda@x.com",
+          action: "swap" as const,
+          target: "products/kingston/main",
+          before: "old.jpg",
+          after: "new.jpg",
+          ts: "2026-05-09T13:00:00.000Z",
+        },
+      ],
+    });
+  });
+
+  async function renderHere() {
+    const { default: AdminAuditPage } = await import(
+      "@/app/admin/audit/page"
+    );
+    return render(
+      await AdminAuditPage({ searchParams: Promise.resolve({}) }),
+    );
+  }
+
+  it("renders edit-action target as a Link to /admin/site-content#row-<key>", async () => {
+    await renderHere();
+    const links = screen.getAllByTestId("admin-audit-target-link");
+    const editLink = links.find(
+      (el) => el.getAttribute("data-target") === "footer.tagline",
+    );
+    expect(editLink).toHaveAttribute(
+      "href",
+      "/admin/site-content#row-footer.tagline",
+    );
+  });
+
+  it("renders upload-action target as a Link too (image keys live in SiteContent)", async () => {
+    await renderHere();
+    const links = screen.getAllByTestId("admin-audit-target-link");
+    const uploadLink = links.find(
+      (el) => el.getAttribute("data-target") === "hero.image",
+    );
+    expect(uploadLink).toHaveAttribute(
+      "href",
+      "/admin/site-content#row-hero.image",
+    );
+  });
+
+  it("renders swap-action target as plain text (productIds aren't SiteContent rows)", async () => {
+    await renderHere();
+    const text = screen.getByTestId("admin-audit-target-text");
+    expect(text).toHaveTextContent("products/kingston/main");
+    // No SiteContent link for the swap row.
+    const links = screen.queryAllByTestId("admin-audit-target-link");
+    expect(
+      links.some(
+        (el) => el.getAttribute("data-target") === "products/kingston/main",
+      ),
+    ).toBe(false);
+  });
+
+  it("URL-encodes the fragment so unusual keys don't break the URL", async () => {
+    mockReadOwnerAuditLog.mockResolvedValueOnce({
+      ok: true,
+      rows: [
+        {
+          _id: "r",
+          actorEmail: "brenda@x.com",
+          action: "edit" as const,
+          target: "announcement.rotation.3.cta-href",
+          before: "",
+          after: "/sale",
+          ts: "2026-05-09T15:00:00.000Z",
+        },
+      ],
+    });
+    await renderHere();
+    const link = screen.getByTestId("admin-audit-target-link");
+    expect(link).toHaveAttribute(
+      "href",
+      "/admin/site-content#row-announcement.rotation.3.cta-href",
+    );
+  });
+
+  it("links carry an aria-label naming the target for screen readers", async () => {
+    await renderHere();
+    const editLink = screen
+      .getAllByTestId("admin-audit-target-link")
+      .find((el) => el.getAttribute("data-target") === "footer.tagline");
+    expect(editLink).toHaveAttribute(
+      "aria-label",
+      "See current value for footer.tagline",
+    );
+  });
+});
