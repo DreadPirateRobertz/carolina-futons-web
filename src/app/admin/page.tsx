@@ -1,5 +1,10 @@
 import Link from "next/link";
 
+import {
+  readOwnerAuditLog,
+  type AuditLogRow,
+} from "@/lib/admin/audit-log";
+
 // cfw-wef (cfw-6qd.1): /admin landing for owner mode. The layout has
 // already enforced the `requireOwnerSession` gate, so reaching this
 // component is sufficient proof the visitor is an allowlisted owner.
@@ -8,6 +13,14 @@ import Link from "next/link";
 // nav surface now that several sub-beads have shipped. The list below is
 // hand-maintained — when a new owner-mode surface lands, add an <AdminCard>
 // for it so Brenda doesn't have to memorise URLs.
+//
+// cfw-f2u: added a "Recent activity" card showing the 5 most recent
+// OwnerAuditLog rows. Brenda gets a quick "who did what recently" without
+// clicking into /admin/audit. Reuses readOwnerAuditLog with a tight cap.
+
+export const dynamic = "force-dynamic";
+
+const RECENT_ACTIVITY_LIMIT = 5;
 
 type AdminCard = {
   title: string;
@@ -43,7 +56,9 @@ const STOREFRONT_AFFORDANCES: ReadonlyArray<{ title: string; description: string
   },
 ];
 
-export default function AdminHomePage() {
+export default async function AdminHomePage() {
+  const recent = await readOwnerAuditLog(RECENT_ACTIVITY_LIMIT);
+
   return (
     <section
       data-slot="admin-home"
@@ -60,6 +75,8 @@ export default function AdminHomePage() {
         You&rsquo;re signed in as a Carolina Futons site owner. From here you
         can browse editable content, jump back to the storefront, or sign out.
       </p>
+
+      <RecentActivity result={recent} />
 
       <h2
         id="admin-home-tools-heading"
@@ -123,4 +140,86 @@ export default function AdminHomePage() {
       </p>
     </section>
   );
+}
+
+function RecentActivity({
+  result,
+}: {
+  result: Awaited<ReturnType<typeof readOwnerAuditLog>>;
+}) {
+  return (
+    <section
+      data-testid="admin-home-recent-activity"
+      aria-labelledby="admin-home-recent-heading"
+      className="mt-8"
+    >
+      <div className="flex items-baseline justify-between">
+        <h2
+          id="admin-home-recent-heading"
+          className="font-heading text-base font-semibold uppercase tracking-wide text-cf-charcoal/60"
+        >
+          Recent activity
+        </h2>
+        <Link
+          href="/admin/audit"
+          data-testid="admin-home-recent-view-all"
+          className="text-xs font-medium text-cf-cta underline-offset-2 hover:underline"
+        >
+          View all →
+        </Link>
+      </div>
+
+      {!result.ok ? (
+        <p
+          role="alert"
+          data-testid="admin-home-recent-error"
+          className="mt-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+        >
+          Recent activity unavailable. The OwnerAuditLog collection may not be
+          provisioned yet.
+        </p>
+      ) : result.rows.length === 0 ? (
+        <p
+          data-testid="admin-home-recent-empty"
+          className="mt-3 text-sm text-cf-muted"
+        >
+          No recent activity.
+        </p>
+      ) : (
+        <ul
+          data-testid="admin-home-recent-list"
+          className="mt-3 divide-y divide-cf-divider/60 rounded-md border border-cf-divider/80"
+        >
+          {result.rows.map((row, i) => (
+            <RecentRow key={row._id ?? `recent-${i}`} row={row} />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function RecentRow({ row }: { row: AuditLogRow }) {
+  return (
+    <li
+      data-testid="admin-home-recent-row"
+      className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-3 py-2 text-xs"
+    >
+      <span className="text-cf-muted">{formatTimestamp(row.ts)}</span>
+      <span className="text-cf-ink">{row.actorEmail}</span>
+      <span
+        data-testid="admin-home-recent-action"
+        className="inline-flex items-center rounded-full border border-cf-divider px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-cf-ink"
+      >
+        {row.action}
+      </span>
+      <span className="font-mono text-cf-ink">{row.target}</span>
+    </li>
+  );
+}
+
+function formatTimestamp(iso: string): string {
+  const ms = Date.parse(iso);
+  if (!Number.isFinite(ms)) return iso;
+  return new Date(ms).toISOString().slice(0, 16).replace("T", " ") + "Z";
 }

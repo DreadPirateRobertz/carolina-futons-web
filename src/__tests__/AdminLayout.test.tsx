@@ -15,6 +15,13 @@ vi.mock("@/lib/auth/owner", () => ({
   requireOwnerSession: (...args: unknown[]) => requireOwnerSession(...args),
 }));
 
+// cfw-f2u: AdminHomePage now calls readOwnerAuditLog for the recent-activity
+// card. Stub it so the existing AdminHomePage assertions in this file don't
+// need to set up its return shape — empty rows is the simplest baseline.
+vi.mock("@/lib/admin/audit-log", () => ({
+  readOwnerAuditLog: () => Promise.resolve({ ok: true, rows: [] }),
+}));
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -78,7 +85,7 @@ describe("AdminLayout", () => {
 describe("AdminHomePage", () => {
   it("renders the owner-mode heading + back link", async () => {
     const { default: AdminHomePage } = await import("@/app/admin/page");
-    render(<AdminHomePage />);
+    render(await AdminHomePage());
     expect(
       screen.getByRole("heading", { name: /owner mode/i, level: 1 }),
     ).toBeInTheDocument();
