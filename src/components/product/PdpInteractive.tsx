@@ -36,11 +36,6 @@ const BnplWidget = dynamic(() =>
     default: m.BnplWidget,
   })),
 );
-const PdpFinancing = dynamic(() =>
-  import("@/components/product/PdpFinancing").then((m) => ({
-    default: m.PdpFinancing,
-  })),
-);
 const PdpNotifyMe = dynamic(() =>
   import("@/components/product/PdpNotifyMe").then((m) => ({
     default: m.PdpNotifyMe,
@@ -268,7 +263,6 @@ export function PdpInteractive({
             imageUrl={fallbackImageUrl}
           />
         </div>
-        <PdpFinancing unitPriceCents={whiteGlovePriceCents ?? fallbackPriceCents} />
         <AddToCompareButton slug={productSlug} />
         <PdpWhiteGlove unitPriceCents={whiteGlovePriceCents ?? fallbackPriceCents} />
         <PdpShippingEstimate weightLbs={weightLbs} palletized={palletized} />
