@@ -13,15 +13,20 @@ import { EditableTextEditor } from "@/components/admin/EditableTextEditor";
 const fetchMock = vi.fn<typeof fetch>();
 const reloadMock = vi.fn();
 
+// cfw-lvd: stub via vi.stubGlobal so afterEach's vi.unstubAllGlobals()
+// genuinely restores the original window.location. The previous
+// Object.defineProperty(window, "location", ...) wasn't reverted —
+// once this file ran, window.location stayed replaced for any later
+// test in the same vitest worker, producing order-dependent failures.
 beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   fetchMock.mockReset();
   reloadMock.mockReset();
-  // jsdom's location.reload is non-configurable on the prototype; redefine
-  // on the instance instead so we can assert without touching globals.
-  Object.defineProperty(window, "location", {
-    configurable: true,
-    value: { ...window.location, reload: reloadMock, assign: vi.fn(), replace: vi.fn() },
+  vi.stubGlobal("location", {
+    ...window.location,
+    reload: reloadMock,
+    assign: vi.fn(),
+    replace: vi.fn(),
   });
 });
 
