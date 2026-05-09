@@ -17,13 +17,13 @@ import { join } from "node:path";
 
 import { describe, it, expect } from "vitest";
 
-// Inlined here (not imported from @/lib/cms/owner-edit-validation) so this
-// test is order-independent against the cfw-6qd.12 merge: the file lands
-// after cfw-sbl in the queue and the test still needs to enforce key
-// shape today. The regex is small and the seed test (site-content-seed.
-// test.ts) already pins the canonical version.
-const SITE_CONTENT_KEY_PATTERN =
-  /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)+$/;
+// cfw-7k0: imports the canonical regex now that cfw-6qd.12 is on main.
+// The original cfw-sbl file inlined the pattern to stay order-independent
+// against the cfw-6qd.12 merge — that constraint is gone, so this test,
+// the seed test (site-content-seed.test.ts, which already imports), the
+// runtime endpoint validator, and any future caller all share one
+// definition.
+import { SITE_CONTENT_KEY_PATTERN } from "@/lib/cms/owner-edit-validation";
 
 const SRC_ROOT = join(__dirname, "..");
 const SCAN_DIRS = ["app", "components", "lib"] as const;
