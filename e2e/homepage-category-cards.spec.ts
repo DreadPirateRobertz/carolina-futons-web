@@ -51,7 +51,7 @@ test.describe("Homepage MascotCategoryCard grid", () => {
 
   test("section heading is accessible", async ({ page }) => {
     await expect(
-      page.getByRole("heading", { name: /shop by category/i }),
+      page.getByRole("heading", { name: /four ways to sleep/i }),
     ).toBeVisible();
   });
 });

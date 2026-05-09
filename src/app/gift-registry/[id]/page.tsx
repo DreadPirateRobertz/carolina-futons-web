@@ -5,7 +5,7 @@
 // A "Registry not found" state is shown when the id isn't in local storage
 // (different device, cleared storage, or bad link).
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { Gift } from "lucide-react";
 import { getRegistry } from "@/lib/registry/registry-storage";
@@ -15,16 +15,17 @@ import { RegistryShareButton } from "@/components/gift-registry/RegistryShareBut
 export default function RegistryPublicPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = use(params);
   const [registry, setRegistry] = useState<RegistryDetail | null | "loading">(
     "loading",
   );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage unavailable during SSR
-    setRegistry(getRegistry(window.localStorage, params.id));
-  }, [params.id]);
+    setRegistry(getRegistry(window.localStorage, id));
+  }, [id]);
 
   if (registry === "loading") {
     return (

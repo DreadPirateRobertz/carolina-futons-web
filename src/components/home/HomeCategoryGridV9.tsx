@@ -102,6 +102,8 @@ export function HomeCategoryGridV9() {
             <li key={card.num}>
               <Link
                 href={card.href}
+                data-slot="category-card"
+                aria-label={card.title}
                 className="group relative block aspect-[3/4] overflow-hidden rounded-2xl bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
               >
                 {/* Background product photo */}
