@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { BUSINESS } from "@/lib/business/contact-info";
 import { CabinHero } from "@/components/mascot/CabinHero";
+import { getSiteContent } from "@/lib/cms/site-content";
 
 export const metadata: Metadata = {
   title: "Visit Us — Carolina Futons",
@@ -10,12 +11,31 @@ export const metadata: Metadata = {
     "Visit the Carolina Futons showroom in Hendersonville, NC. Try every futon, mattress, and Murphy bed before you buy.",
 };
 
-const STORE_HOURS = [
-  { days: "Sunday – Tuesday", hours: "10 am – 5 pm" },
-  { days: "Wednesday – Saturday", hours: "Closed" },
+// Days are layout (the label column); only the hours string is owner-editable
+// via SiteContent so seasonal closures don't need a deploy. Fallbacks below
+// match the current published hours (Brenda's #475 schedule update) and are
+// returned by getSiteContent any time the SiteContent collection is missing
+// the row.
+const STORE_HOURS_FALLBACK = [
+  {
+    key: "visit.hours.sun-tue",
+    days: "Sunday – Tuesday",
+    fallback: "10 am – 5 pm",
+  },
+  {
+    key: "visit.hours.wed-sat",
+    days: "Wednesday – Saturday",
+    fallback: "Closed",
+  },
 ] as const;
 
-export default function VisitPage() {
+export default async function VisitPage() {
+  const storeHours = await Promise.all(
+    STORE_HOURS_FALLBACK.map(async ({ key, days, fallback }) => ({
+      days,
+      hours: await getSiteContent(key, fallback),
+    })),
+  );
   const fullAddress = `${BUSINESS.street}, ${BUSINESS.city}, ${BUSINESS.state} ${BUSINESS.zip}`;
   const mapsHref = `https://maps.google.com/?q=${encodeURIComponent(`${BUSINESS.name} ${fullAddress}`)}`;
 
@@ -84,7 +104,7 @@ export default function VisitPage() {
               Store Hours
             </h2>
             <dl className="mt-4 space-y-2">
-              {STORE_HOURS.map(({ days, hours }) => (
+              {storeHours.map(({ days, hours }) => (
                 <div key={days} className="flex justify-between text-sm">
                   <dt className="font-medium text-cf-ink">{days}</dt>
                   <dd className="text-cf-charcoal/80">{hours}</dd>

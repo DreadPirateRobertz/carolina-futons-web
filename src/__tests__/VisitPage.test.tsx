@@ -1,37 +1,53 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+
+vi.mock("server-only", () => ({}));
+
+const mockGetSiteContent = vi.fn(async (_key: string, fallback = "") => fallback);
+vi.mock("@/lib/cms/site-content", () => ({
+  getSiteContent: (key: string, fallback?: string) =>
+    mockGetSiteContent(key, fallback ?? ""),
+}));
+
 import VisitPage from "@/app/visit/page";
 
-function renderPage() {
-  return render(<VisitPage />);
+async function renderPage() {
+  return render(await VisitPage());
 }
 
+beforeEach(() => {
+  mockGetSiteContent.mockClear();
+  mockGetSiteContent.mockImplementation(
+    async (_key: string, fallback = "") => fallback,
+  );
+});
+
 describe("VisitPage — rendering", () => {
-  it("renders Visit Us heading", () => {
-    renderPage();
+  it("renders Visit Us heading", async () => {
+    await renderPage();
     expect(screen.getByRole("heading", { name: /visit us/i })).toBeInTheDocument();
   });
 
-  it("renders location section with address", () => {
-    renderPage();
+  it("renders location section with address", async () => {
+    await renderPage();
     expect(screen.getByRole("region", { name: /location/i })).toBeInTheDocument();
   });
 
-  it("renders store hours section", () => {
-    renderPage();
+  it("renders store hours section", async () => {
+    await renderPage();
     expect(screen.getByRole("region", { name: /store hours/i })).toBeInTheDocument();
   });
 
-  it("renders Get directions link pointing to Google Maps", () => {
-    renderPage();
+  it("renders Get directions link pointing to Google Maps", async () => {
+    await renderPage();
     const link = screen.getByRole("link", { name: /get directions/i });
     expect(link).toHaveAttribute("href", expect.stringContaining("maps.google.com"));
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", "noopener noreferrer");
   });
 
-  it("directions href URL-encodes the store address", () => {
-    renderPage();
+  it("directions href URL-encodes the store address", async () => {
+    await renderPage();
     const link = screen.getByRole("link", { name: /get directions/i });
     const href = link.getAttribute("href") ?? "";
     // Encoded store name must appear somewhere in the query
@@ -39,35 +55,64 @@ describe("VisitPage — rendering", () => {
     expect(href).toContain("Hendersonville");
   });
 
-  it("map iframe has descriptive title", () => {
-    const { container } = renderPage();
+  it("map iframe has descriptive title", async () => {
+    const { container } = await renderPage();
     const iframe = container.querySelector("iframe");
     expect(iframe?.getAttribute("title")).toMatch(/map/i);
   });
 
-  it("map iframe src URL-encodes the store address", () => {
-    const { container } = renderPage();
+  it("map iframe src URL-encodes the store address", async () => {
+    const { container } = await renderPage();
     const src = container.querySelector("iframe")?.getAttribute("src") ?? "";
     expect(src).toContain("maps.google.com");
     expect(src).toContain("Hendersonville");
   });
 
-  it("renders shop CTA link to /shop", () => {
-    renderPage();
+  it("renders shop CTA link to /shop", async () => {
+    await renderPage();
     expect(
       screen.getByRole("link", { name: /browse all products/i }),
     ).toHaveAttribute("href", "/shop");
   });
 
-  it("renders phone link with tel: href", () => {
-    renderPage();
+  it("renders phone link with tel: href", async () => {
+    await renderPage();
     const phoneLink = screen.getByRole("link", { name: /828/i });
     expect(phoneLink.getAttribute("href")).toMatch(/^tel:/);
   });
 
-  it("renders email link with mailto: href", () => {
-    renderPage();
+  it("renders email link with mailto: href", async () => {
+    await renderPage();
     const mailLink = screen.getByRole("link", { name: /carolinafutons@gmail/i });
     expect(mailLink.getAttribute("href")).toMatch(/^mailto:/);
+  });
+});
+
+describe("VisitPage — owner-editable hours (cf-h21g / cfw-66o.4)", () => {
+  it("falls back to baked-in hours when SiteContent is empty", async () => {
+    await renderPage();
+    expect(screen.getByText("Sunday – Tuesday")).toBeInTheDocument();
+    expect(screen.getByText("Wednesday – Saturday")).toBeInTheDocument();
+    expect(screen.getByText("10 am – 5 pm")).toBeInTheDocument();
+    expect(screen.getByText("Closed")).toBeInTheDocument();
+  });
+
+  it("uses SiteContent values when present", async () => {
+    mockGetSiteContent.mockImplementation(async (key: string, fallback = "") => {
+      if (key === "visit.hours.sun-tue") return "11 am – 6 pm";
+      if (key === "visit.hours.wed-sat") return "12 pm – 4 pm";
+      return fallback;
+    });
+    await renderPage();
+    expect(screen.getByText("11 am – 6 pm")).toBeInTheDocument();
+    expect(screen.getByText("12 pm – 4 pm")).toBeInTheDocument();
+  });
+
+  it("queries the two expected SiteContent keys", async () => {
+    await renderPage();
+    const keys = mockGetSiteContent.mock.calls.map(([key]) => key);
+    expect(keys).toEqual(
+      expect.arrayContaining(["visit.hours.sun-tue", "visit.hours.wed-sat"]),
+    );
   });
 });
