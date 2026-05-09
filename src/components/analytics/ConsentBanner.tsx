@@ -4,19 +4,18 @@ import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 
 import { setConsentChoice } from "@/app/actions/consent";
-import {
-  consentMapFor,
-  type ConsentChoice,
-} from "@/lib/consent/consent-state";
+import { consentMapFor, type ConsentChoice } from "@/lib/consent/consent-state";
 
 export type ConsentBannerProps = {
   initialChoice: ConsentChoice;
 };
 
-// cf-zhkr: bottom slide-in banner for first-time visitors. Renders only
-// when the server-rendered initialChoice is "unknown" — the cookie set
-// by setConsentChoice() flips initialChoice on the next request and the
-// banner stays hidden thereafter.
+// cf-zhkr / cfw-pa1: bottom-anchored full-width sticky bar for first-time
+// visitors. Renders only when the server-rendered initialChoice is
+// "unknown" — the cookie set by setConsentChoice() flips initialChoice on
+// the next request and the banner stays hidden thereafter. The bar spans
+// the full viewport so it never overlaps right-column content or stacks
+// under a newsletter modal (cfw-y2i.2 visual-parity finding).
 //
 // Accept / Reject both: (1) call the Server Action to persist the choice
 // in cf_consent (so the next page load emits the correct
@@ -67,39 +66,41 @@ export function ConsentBanner({ initialChoice }: ConsentBannerProps) {
       role="region"
       aria-label="Privacy preferences"
       data-slot="consent-banner"
-      className="fixed inset-x-2 bottom-2 z-50 mx-auto max-w-3xl rounded-lg border border-cf-divider bg-white dark:bg-cf-cream dark:border-cf-ink/30 p-4 shadow-lg sm:inset-x-auto sm:right-4 sm:left-auto sm:w-[28rem]"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-cf-divider bg-white dark:bg-cf-cream dark:border-cf-ink/30 shadow-[0_-4px_12px_-4px_rgba(0,0,0,0.15)]"
     >
-      <p className="text-sm text-cf-ink">
-        We use cookies to understand how this site is used and to improve your
-        experience. You can change your choice anytime on our{" "}
-        <Link href="/privacy" className="underline hover:no-underline">
-          privacy page
-        </Link>
-        .
-      </p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => applyChoice("granted")}
-          disabled={pending}
-          className="inline-flex h-9 items-center justify-center rounded-md bg-cf-cta px-4 text-sm font-medium text-white transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60"
-        >
-          Accept all
-        </button>
-        <button
-          type="button"
-          onClick={() => applyChoice("denied")}
-          disabled={pending}
-          className="inline-flex h-9 items-center justify-center rounded-md border border-cf-divider px-4 text-sm font-medium text-cf-ink transition-colors hover:bg-cf-cream/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60"
-        >
-          Reject all
-        </button>
-        <Link
-          href="/privacy"
-          className="inline-flex h-9 items-center justify-center px-2 text-sm font-medium text-cf-muted underline-offset-2 hover:text-cf-ink hover:underline"
-        >
-          Manage preferences
-        </Link>
+      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-6 sm:py-4">
+        <p className="text-sm text-cf-ink">
+          We use cookies to understand how this site is used and to improve your
+          experience. You can change your choice anytime on our{" "}
+          <Link href="/privacy" className="underline hover:no-underline">
+            privacy page
+          </Link>
+          .
+        </p>
+        <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-end">
+          <button
+            type="button"
+            onClick={() => applyChoice("granted")}
+            disabled={pending}
+            className="inline-flex h-9 items-center justify-center rounded-md bg-cf-cta px-4 text-sm font-medium text-white transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60"
+          >
+            Accept all
+          </button>
+          <button
+            type="button"
+            onClick={() => applyChoice("denied")}
+            disabled={pending}
+            className="inline-flex h-9 items-center justify-center rounded-md border border-cf-divider px-4 text-sm font-medium text-cf-ink transition-colors hover:bg-cf-cream/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60"
+          >
+            Reject all
+          </button>
+          <Link
+            href="/privacy"
+            className="inline-flex h-9 items-center justify-center px-2 text-sm font-medium text-cf-muted underline-offset-2 hover:text-cf-ink hover:underline"
+          >
+            Manage preferences
+          </Link>
+        </div>
       </div>
     </aside>
   );
