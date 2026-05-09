@@ -11,6 +11,15 @@
 //
 // Cross-fade between phases is a 4s CSS opacity transition so the switch
 // is perceptible but not jarring.
+//
+// cf-byms: SSR + first paint mount only the ACTIVE phase. The other three
+// hero SVGs were the LCP-killer on Home — three full-bleed SVGs sat in the
+// DOM with opacity:0 but still painted/composited every frame. Lazy-mount
+// the inactive phases via requestIdleCallback so they're ready for the
+// next phase-boundary cross-fade (which fires every few hours, not in
+// the LCP window).
+
+import { useEffect, useState, type ReactNode } from "react";
 
 import { useTimeOfDay } from "@/lib/hooks/useTimeOfDay";
 import { MascotWorldHero } from "@/components/mascot/MascotWorldHero";
@@ -19,6 +28,32 @@ import { StargazingHero } from "@/components/mascot/StargazingHero";
 
 export function LivingHero({ compact = false }: { compact?: boolean } = {}) {
   const { phase, time, mounted, reduceMotion } = useTimeOfDay({ trackTime: true });
+
+  // Mount the three non-active phases lazily so initial render paints
+  // only one full-bleed SVG. The other three appear after first idle —
+  // by the time any phase boundary fires (hours later), all four are
+  // mounted and the 4s cross-fade plays normally.
+  const [mountInactive, setMountInactive] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const ric =
+      window.requestIdleCallback ??
+      ((cb: IdleRequestCallback) =>
+        window.setTimeout(() => {
+          cb({ didTimeout: false, timeRemaining: () => 50 });
+        }, 200));
+    const cic = window.cancelIdleCallback ?? window.clearTimeout;
+    const handle = ric(() => setMountInactive(true));
+    return () => {
+      try {
+        cic(handle as number);
+      } catch {
+        /* requestIdleCallback handle types vary across browsers; the
+           cleanup is best-effort — failing it is harmless because the
+           callback only flips a state flag. */
+      }
+    };
+  }, []);
 
   return (
     <div
@@ -34,57 +69,49 @@ export function LivingHero({ compact = false }: { compact?: boolean } = {}) {
               : "Bear in the Blue Ridge mountains"
       }
     >
-      {/* Night — stargazing bear */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          opacity: !mounted ? 0 : phase === "night" ? 1 : 0,
-          transition: mounted ? "opacity 4s ease-in-out" : "none",
-          pointerEvents: phase === "night" ? "auto" : "none",
-        }}
-      >
+      <Phase active={phase === "night"} mounted={mounted} mountInactive={mountInactive}>
         <StargazingHero time={time} reduceMotion={reduceMotion} compact={compact} />
-      </div>
-
-      {/* Dawn — vintage sunburst */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          opacity: !mounted ? 0 : phase === "dawn" ? 1 : 0,
-          transition: mounted ? "opacity 4s ease-in-out" : "none",
-          pointerEvents: phase === "dawn" ? "auto" : "none",
-        }}
-      >
+      </Phase>
+      <Phase active={phase === "dawn"} mounted={mounted} mountInactive={mountInactive}>
         <VintageSunRays phase="dawn" time={time} />
-      </div>
-
-      {/* Day — mascot world with cursor-tracking bear */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          opacity: !mounted ? 0 : phase === "day" ? 1 : 0,
-          transition: mounted ? "opacity 4s ease-in-out" : "none",
-          pointerEvents: phase === "day" ? "auto" : "none",
-        }}
-      >
+      </Phase>
+      <Phase active={phase === "day"} mounted={mounted} mountInactive={mountInactive}>
         <MascotWorldHero />
-      </div>
-
-      {/* Dusk — vintage sunburst */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          opacity: !mounted ? 0 : phase === "dusk" ? 1 : 0,
-          transition: mounted ? "opacity 4s ease-in-out" : "none",
-          pointerEvents: phase === "dusk" ? "auto" : "none",
-        }}
-      >
+      </Phase>
+      <Phase active={phase === "dusk"} mounted={mounted} mountInactive={mountInactive}>
         <VintageSunRays phase="dusk" time={time} />
-      </div>
+      </Phase>
+    </div>
+  );
+}
+
+function Phase({
+  active,
+  mounted,
+  mountInactive,
+  children,
+}: {
+  active: boolean;
+  mounted: boolean;
+  mountInactive: boolean;
+  children: ReactNode;
+}) {
+  // Skip the DOM node entirely until either this phase is active or the
+  // post-paint idle callback has flipped mountInactive. Skipping the node
+  // means the browser doesn't paint or composite this SVG at all on the
+  // critical path.
+  if (!active && !mountInactive) return null;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        opacity: !mounted ? 0 : active ? 1 : 0,
+        transition: mounted ? "opacity 4s ease-in-out" : "none",
+        pointerEvents: active ? "auto" : "none",
+      }}
+    >
+      {children}
     </div>
   );
 }
