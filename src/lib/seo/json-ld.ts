@@ -57,6 +57,50 @@ export function buildOrganizationSchema(siteUrl: string): OrganizationSchema {
   };
 }
 
+// cfw-1wd: LocalBusiness specialisation of Organization for the /visit page.
+// Same name/address/phone/url as the site-wide Organization in layout, but
+// with the more specific @type so Google's Knowledge Panel can attach
+// showroom-specific affordances (Get Directions button, maps link, etc.).
+// We pin @id back to the homepage Organization so the two markups don't
+// fight for canonical-entity ownership — the LocalBusiness is the same
+// entity as the Organization, just typed more specifically here.
+export type LocalBusinessSchema = {
+  "@context": "https://schema.org";
+  "@type": "LocalBusiness";
+  "@id": string;
+  name: string;
+  url: string;
+  telephone: string;
+  email: string;
+  address: PostalAddress;
+};
+
+export function buildLocalBusinessSchema(
+  siteUrl: string,
+): LocalBusinessSchema {
+  return {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    // Match the Organization @id from buildOrganizationSchema (which is
+    // currently emitted by layout.tsx without an explicit @id but defaults
+    // to siteUrl as the implicit identity). Pin this one explicitly so
+    // crawlers can fold the two markups into one entity.
+    "@id": `${siteUrl}#organization`,
+    name: BUSINESS.name,
+    url: `${siteUrl}/visit`,
+    telephone: BUSINESS.phone,
+    email: BUSINESS.email,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: BUSINESS.street,
+      addressLocality: BUSINESS.city,
+      addressRegion: BUSINESS.state,
+      postalCode: BUSINESS.zip,
+      addressCountry: "US",
+    },
+  };
+}
+
 export type ProductReviewInput = {
   author: string;
   rating: number;

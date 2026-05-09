@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildArticleSchema,
   buildBreadcrumbSchema,
+  buildLocalBusinessSchema,
   buildOrganizationSchema,
   buildProductSchema,
   resolveSiteUrl,
@@ -284,5 +285,50 @@ describe("buildArticleSchema", () => {
     expect(
       buildArticleSchema({ ...base, publishedDate: null }).datePublished,
     ).toBeUndefined();
+  });
+});
+
+// cfw-1wd: LocalBusiness specialisation for /visit. Pinned here so a
+// silent regression on the address shape (e.g. dropping addressCountry)
+// fails fast in CI.
+describe("buildLocalBusinessSchema", () => {
+  const siteUrl = "https://carolinafutons.com";
+
+  it("emits a schema.org LocalBusiness with CF data sourced from BUSINESS", () => {
+    const schema = buildLocalBusinessSchema(siteUrl);
+    expect(schema["@context"]).toBe("https://schema.org");
+    expect(schema["@type"]).toBe("LocalBusiness");
+    expect(schema.name).toBe(BUSINESS.name);
+    expect(schema.telephone).toBe(BUSINESS.phone);
+    expect(schema.email).toBe(BUSINESS.email);
+  });
+
+  it("points the canonical url at /visit (not the homepage)", () => {
+    expect(buildLocalBusinessSchema(siteUrl).url).toBe(
+      "https://carolinafutons.com/visit",
+    );
+  });
+
+  it("pins @id to the homepage Organization so the two markups fold into one entity", () => {
+    expect(buildLocalBusinessSchema(siteUrl)["@id"]).toBe(
+      "https://carolinafutons.com#organization",
+    );
+  });
+
+  it("respects the resolved siteUrl override (preview/staging)", () => {
+    const schema = buildLocalBusinessSchema("https://preview.carolinafutons.com");
+    expect(schema.url).toBe("https://preview.carolinafutons.com/visit");
+    expect(schema["@id"]).toBe("https://preview.carolinafutons.com#organization");
+  });
+
+  it("emits a full PostalAddress block with country", () => {
+    expect(buildLocalBusinessSchema(siteUrl).address).toEqual({
+      "@type": "PostalAddress",
+      streetAddress: BUSINESS.street,
+      addressLocality: BUSINESS.city,
+      addressRegion: BUSINESS.state,
+      postalCode: BUSINESS.zip,
+      addressCountry: "US",
+    });
   });
 });

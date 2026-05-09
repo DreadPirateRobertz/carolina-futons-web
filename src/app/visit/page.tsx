@@ -3,7 +3,12 @@ import Link from "next/link";
 
 import { BUSINESS } from "@/lib/business/contact-info";
 import { CabinHero } from "@/components/mascot/CabinHero";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { getSiteContent } from "@/lib/cms/site-content";
+import {
+  buildLocalBusinessSchema,
+  resolveSiteUrl,
+} from "@/lib/seo/json-ld";
 
 export const metadata: Metadata = {
   title: "Visit Us — Carolina Futons",
@@ -38,9 +43,12 @@ export default async function VisitPage() {
   );
   const fullAddress = `${BUSINESS.street}, ${BUSINESS.city}, ${BUSINESS.state} ${BUSINESS.zip}`;
   const mapsHref = `https://maps.google.com/?q=${encodeURIComponent(`${BUSINESS.name} ${fullAddress}`)}`;
+  const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+  const localBusinessSchema = buildLocalBusinessSchema(siteUrl);
 
   return (
     <main className="w-full">
+      <JsonLd id="jsonld-visit-localbusiness" schema={localBusinessSchema} />
       <CabinHero className="max-h-72" />
       <div className="mx-auto w-full max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
         <h1 className="font-heading text-4xl font-bold tracking-tight text-cf-navy sm:text-5xl">
