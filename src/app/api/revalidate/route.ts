@@ -2,7 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { createHmac, timingSafeEqual, randomUUID } from "node:crypto";
 
+import { SITE_CONTENT_CACHE_TAG } from "@/lib/cms/site-content";
+
 export const dynamic = "force-dynamic";
+
+// cfw-r5x: collection → reader-cache-tag mapping. Wix CMS webhooks identify
+// the source collection via collectionId, but our readers cache under their
+// own short tags (e.g. "site-content") so callers can revalidate without
+// knowing the underlying collection name. Without this mapping, a Brenda
+// edit to SiteContent would invalidate `wix:collection:SiteContent` but
+// leave the SiteContent reader's cache untouched until the 5-minute
+// unstable_cache window expired.
+const COLLECTION_TAG_MAP: Record<string, readonly string[]> = {
+  SiteContent: [SITE_CONTENT_CACHE_TAG],
+};
 
 // Webhooks with a `ts` field more than this many ms from the current time
 // (past or future) are rejected to prevent replay and pre-signed-payload attacks.
@@ -99,7 +112,12 @@ export async function POST(req: NextRequest) {
   }
 
   const tags = new Set<string>();
-  if (body.collectionId) tags.add(`wix:collection:${body.collectionId}`);
+  if (body.collectionId) {
+    tags.add(`wix:collection:${body.collectionId}`);
+    for (const mapped of COLLECTION_TAG_MAP[body.collectionId] ?? []) {
+      tags.add(mapped);
+    }
+  }
   if (body.itemId) tags.add(`wix:item:${body.itemId}`);
   for (const t of body.tags ?? []) tags.add(t);
 

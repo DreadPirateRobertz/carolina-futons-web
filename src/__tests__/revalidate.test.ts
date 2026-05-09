@@ -3,6 +3,10 @@ import { createHmac } from "node:crypto";
 
 vi.mock("next/cache", () => ({
   revalidateTag: vi.fn(),
+  // cfw-r5x: route now imports SITE_CONTENT_CACHE_TAG from site-content.ts,
+  // which wraps its Wix fetch in unstable_cache. Vitest doesn't provide a
+  // Next request/work-store context, so stub unstable_cache as identity.
+  unstable_cache: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
 }));
 
 const SECRET = "test-secret";
@@ -51,6 +55,32 @@ describe("POST /api/revalidate", () => {
     const { revalidateTag } = await import("next/cache");
     expect(revalidateTag).toHaveBeenCalledWith("wix:collection:Promotions", "default");
     expect(revalidateTag).toHaveBeenCalledWith("wix:item:abc123", "default");
+  });
+
+  it("maps SiteContent collection to the site-content reader tag (cfw-r5x)", async () => {
+    const body = JSON.stringify({ collectionId: "SiteContent" });
+    const res = await post(body, { "x-wix-signature": sign(body) });
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as { ok: boolean; revalidated: string[] };
+    expect(json.ok).toBe(true);
+    expect(json.revalidated).toEqual(
+      expect.arrayContaining(["wix:collection:SiteContent", "site-content"]),
+    );
+
+    const { revalidateTag } = await import("next/cache");
+    expect(revalidateTag).toHaveBeenCalledWith("site-content", "default");
+    expect(revalidateTag).toHaveBeenCalledWith(
+      "wix:collection:SiteContent",
+      "default",
+    );
+  });
+
+  it("does not add the site-content tag for unrelated collections", async () => {
+    const body = JSON.stringify({ collectionId: "Promotions" });
+    const res = await post(body, { "x-wix-signature": sign(body) });
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as { revalidated: string[] };
+    expect(json.revalidated).not.toContain("site-content");
   });
 
   it("returns 500 when WIX_WEBHOOK_SECRET is unset", async () => {
