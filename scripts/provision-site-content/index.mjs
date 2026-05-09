@@ -41,9 +41,6 @@ const DRY_RUN = args.has("--dry-run");
 function log(...parts) {
   console.log("[provision-site-content]", ...parts);
 }
-function warn(...parts) {
-  console.warn("[provision-site-content][warn]", ...parts);
-}
 function err(...parts) {
   console.error("[provision-site-content][error]", ...parts);
 }

@@ -107,7 +107,6 @@ export default async function RootLayout({
         {/* Theme init — runs synchronously before first paint to prevent flash.
             Reads localStorage 'cf-theme'; falls back to prefers-color-scheme.
             Content is a hardcoded literal with no user input. */}
-        {/* eslint-disable-next-line react/no-danger */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         {/* Consent Mode v2 default — MUST emit before any pixel script.
             head + beforeInteractive ensures gtag('consent','default',...)

@@ -16,20 +16,17 @@ import { EditableTextEditor } from "./EditableTextEditor";
 // 3, will 404 until that lands — the editor surfaces the error inline so
 // landing this slice without #3 is non-fatal).
 
-const VALID_TAGS = [
-  "span",
-  "p",
-  "h1",
-  "h2",
-  "h3",
-  "h4",
-  "h5",
-  "h6",
-  "div",
-  "li",
-] as const;
-
-type TagName = (typeof VALID_TAGS)[number];
+type TagName =
+  | "span"
+  | "p"
+  | "h1"
+  | "h2"
+  | "h3"
+  | "h4"
+  | "h5"
+  | "h6"
+  | "div"
+  | "li";
 
 export type EditableTextProps = {
   /** SiteContent dotted-path key, e.g. "visit.hours.sun-tue". */

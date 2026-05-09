@@ -30,9 +30,6 @@ test.describe("bundle builder — /bundle", () => {
     const configurator = page.locator('[data-slot="bundle-configurator"]');
 
     // Select first frame option
-    const frameButtons = configurator
-      .getByRole("heading", { name: /frame/i })
-      .locator("~ ul button");
     const firstFrame = configurator.locator("section").first().getByRole("button").first();
     await firstFrame.click();
 

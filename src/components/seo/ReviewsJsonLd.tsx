@@ -109,7 +109,6 @@ export function ReviewsJsonLd(props: ReviewsJsonLdProps) {
     <script
       type="application/ld+json"
       // Fixed payload + escaped < — no user-controlled HTML reaches the DOM.
-      // eslint-disable-next-line react/no-danger
       dangerouslySetInnerHTML={{ __html: json }}
       data-testid="reviews-json-ld"
     />

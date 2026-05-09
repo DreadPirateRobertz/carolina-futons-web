@@ -4,7 +4,6 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   REGISTRY_STORAGE_KEY,
   readRegistries,
-  writeRegistries,
   createRegistry,
   deleteRegistry,
   getRegistry,

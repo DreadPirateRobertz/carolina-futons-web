@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { V3_PAL as c } from "./MascotPalette";
-import { Bear, Deer, Fox, Owl, Pine } from "./MascotCharacters";
+import { Bear, Deer, Fox, Owl } from "./MascotCharacters";
 
 type AnimalKey = "bear" | "fox" | "deer" | "owl";
 
@@ -15,7 +15,7 @@ type Props = {
 
 function AnimalComponent({
   animal,
-  hover,
+  hover: _hover,
 }: {
   animal: AnimalKey;
   hover: boolean;
