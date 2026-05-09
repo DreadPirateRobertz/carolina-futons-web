@@ -80,7 +80,7 @@ export function FilterFirst({
         className="mx-auto w-full max-w-7xl px-4 pb-6 pt-14 sm:px-6 lg:px-8"
       >
         <div className="grid items-center gap-8 md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-12">
-          <div className="md:order-1 order-2">
+          <div className="order-2 md:order-1">
         <p className="text-xs font-medium uppercase tracking-[0.22em] text-cf-cta">
           Family owned · Hendersonville, NC
         </p>
@@ -163,7 +163,7 @@ export function FilterFirst({
               optimizer crops + serves WebP at the requested sizes so the LCP
               candidate is well under 100 KB on the wire. Marked priority so
               the home fold doesn't ship without it. */}
-          <div className="md:order-2 order-1 relative aspect-[16/9] w-full overflow-hidden rounded-2xl md:aspect-[4/5] lg:aspect-[5/6]">
+          <div className="order-1 md:order-2 relative aspect-[16/9] w-full overflow-hidden rounded-2xl md:aspect-[4/5] lg:aspect-[5/6]">
             <Image
               src="/design/animals/bears.jpg"
               alt="Three bears on the porch — Carolina Futons, family-owned in Hendersonville, NC since 1991"
