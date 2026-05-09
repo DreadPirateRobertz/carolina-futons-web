@@ -260,6 +260,26 @@
   animation-play-state: paused;
 }
 
+/* HomeCategoryGridV9 — animal medallion hover animations */
+@keyframes medallion-peck {
+  0%,100% { transform: scale(1) rotate(0deg) translateY(0); }
+  18%      { transform: scale(1.08) rotate(-14deg) translateY(-6px); }
+  36%      { transform: scale(0.94) rotate(10deg) translateY(5px); }
+  54%      { transform: scale(1.08) rotate(-14deg) translateY(-6px); }
+  72%      { transform: scale(0.94) rotate(10deg) translateY(5px); }
+  88%      { transform: scale(1) rotate(0deg) translateY(0); }
+}
+@keyframes medallion-tilt {
+  0%,100% { transform: rotate(-9deg) scale(1.06); }
+  50%      { transform: rotate(9deg) scale(1.06); }
+}
+.group:hover .anim-peck {
+  animation: medallion-peck 0.85s ease-in-out infinite;
+}
+.group:hover .anim-tilt {
+  animation: medallion-tilt 0.75s ease-in-out infinite alternate;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

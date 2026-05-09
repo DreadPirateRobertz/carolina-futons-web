@@ -126,7 +126,12 @@ export function HomeCategoryGridV9() {
 
                 {/* Animal medallion — center */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="relative h-[88px] w-[88px] overflow-hidden rounded-full border-2 border-white/30 shadow-xl transition-transform duration-300 group-hover:scale-110">
+                  <div
+                    className={[
+                      "relative h-[88px] w-[88px] overflow-hidden rounded-full border-2 border-white/30 shadow-xl",
+                      card.num === "01" ? "anim-peck" : "anim-tilt",
+                    ].join(" ")}
+                  >
                     <Image
                       src={card.animal}
                       alt={card.animalAlt}
