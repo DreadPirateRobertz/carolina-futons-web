@@ -9,6 +9,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
+import { Mail, Phone } from "lucide-react";
 
 import { BUSINESS } from "@/lib/business/contact-info";
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
@@ -191,17 +192,24 @@ export function Footer({
               <br />
               {BUSINESS.city}, {BUSINESS.state} {BUSINESS.zip}
             </address>
+            {/* cfw-eqk: tap-to-call/tap-to-email affordance — Phone/Mail icons
+                next to the existing tel:/mailto: links. The icons are
+                aria-hidden so the accessible link name stays the bare
+                "Call/Text {phone}" / "{email}" copy that callers + tests
+                rely on. */}
             <a
               href={BUSINESS.phoneHref}
-              className="text-cf-cream/90 transition-colors hover:text-cf-cream focus-visible:outline-none focus-visible:underline underline-offset-4"
+              className="inline-flex items-center gap-2 text-cf-cream/90 transition-colors hover:text-cf-cream focus-visible:outline-none focus-visible:underline underline-offset-4"
             >
-              Call/Text {BUSINESS.phone}
+              <Phone aria-hidden="true" className="h-4 w-4 shrink-0" />
+              <span>Call/Text {BUSINESS.phone}</span>
             </a>
             <a
               href={BUSINESS.emailHref}
-              className="text-cf-cream/90 transition-colors hover:text-cf-cream focus-visible:outline-none focus-visible:underline underline-offset-4"
+              className="inline-flex items-center gap-2 text-cf-cream/90 transition-colors hover:text-cf-cream focus-visible:outline-none focus-visible:underline underline-offset-4"
             >
-              {BUSINESS.email}
+              <Mail aria-hidden="true" className="h-4 w-4 shrink-0" />
+              <span>{BUSINESS.email}</span>
             </a>
             <p className="mt-1 text-cf-cream/70">{showroomHoursLabel}</p>
           </div>

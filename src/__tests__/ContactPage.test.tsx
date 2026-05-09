@@ -67,4 +67,21 @@ describe("ContactPage — rendering", () => {
     const { container } = render(<ContactPage />);
     expect(container.querySelector("[data-slot='fog-scene']")).not.toBeNull();
   });
+
+  // cfw-eqk: visual phone/mail icon next to each tel:/mailto: link.
+  it("renders a Lucide Phone icon inside the phone link (aria-hidden)", () => {
+    render(<ContactPage />);
+    const link = screen.getByRole("link", { name: BUSINESS.phone });
+    const svg = link.querySelector("svg");
+    expect(svg).not.toBeNull();
+    expect(svg).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("renders a Lucide Mail icon inside the email link (aria-hidden)", () => {
+    render(<ContactPage />);
+    const link = screen.getByRole("link", { name: BUSINESS.email });
+    const svg = link.querySelector("svg");
+    expect(svg).not.toBeNull();
+    expect(svg).toHaveAttribute("aria-hidden", "true");
+  });
 });

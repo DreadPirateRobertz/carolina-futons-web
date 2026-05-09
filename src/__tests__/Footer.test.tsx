@@ -154,4 +154,31 @@ describe("Footer — Phase 3 rebrand", () => {
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/stay in the loop/i)).toBeInTheDocument();
   });
+
+  // cfw-eqk: tap-to-call/tap-to-email visual affordance — Lucide Phone +
+  // Mail icons next to the existing tel:/mailto: links. The icons are
+  // aria-hidden so the accessible name stays the bare phone/email copy
+  // (covered by the existing "renders BUSINESS.phone as a tel: link" tests
+  // above).
+  describe("cfw-eqk tap-to-call/email icons", () => {
+    it("renders a Lucide Phone icon inside the phone link", () => {
+      render(<Footer />);
+      const phoneLink = screen.getByRole("link", {
+        name: `Call/Text ${BUSINESS.phone}`,
+      });
+      // Lucide ships SVGs with class="lucide lucide-phone …"; assert the
+      // SVG is present and aria-hidden so screen readers ignore it.
+      const svg = phoneLink.querySelector("svg");
+      expect(svg).not.toBeNull();
+      expect(svg).toHaveAttribute("aria-hidden", "true");
+    });
+
+    it("renders a Lucide Mail icon inside the email link", () => {
+      render(<Footer />);
+      const emailLink = screen.getByRole("link", { name: BUSINESS.email });
+      const svg = emailLink.querySelector("svg");
+      expect(svg).not.toBeNull();
+      expect(svg).toHaveAttribute("aria-hidden", "true");
+    });
+  });
 });

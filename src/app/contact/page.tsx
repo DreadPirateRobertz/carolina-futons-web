@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Mail, Phone } from "lucide-react";
 
 import { AppointmentForm } from "@/components/contact/AppointmentForm";
 import { ContactForm } from "@/components/contact/ContactForm";
@@ -38,19 +39,31 @@ export default function ContactPage() {
             Reach us directly
           </h2>
           <dl className="space-y-2 text-base leading-relaxed">
+            {/* cfw-eqk: tap-to-call/tap-to-email — Lucide Phone/Mail icons
+                next to the existing tel:/mailto: links. Icons are
+                aria-hidden; the accessible link name stays the raw
+                phone/email string. */}
             <div className="flex gap-2">
               <dt className="font-medium">Phone</dt>
               <dd>
-                <a href={BUSINESS.phoneHref} className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta">
-                  {BUSINESS.phone}
+                <a
+                  href={BUSINESS.phoneHref}
+                  className="inline-flex items-center gap-2 text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
+                >
+                  <Phone aria-hidden="true" className="h-4 w-4 shrink-0" />
+                  <span>{BUSINESS.phone}</span>
                 </a>
               </dd>
             </div>
             <div className="flex gap-2">
               <dt className="font-medium">Email</dt>
               <dd>
-                <a href={BUSINESS.emailHref} className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta">
-                  {BUSINESS.email}
+                <a
+                  href={BUSINESS.emailHref}
+                  className="inline-flex items-center gap-2 text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
+                >
+                  <Mail aria-hidden="true" className="h-4 w-4 shrink-0" />
+                  <span>{BUSINESS.email}</span>
                 </a>
               </dd>
             </div>
