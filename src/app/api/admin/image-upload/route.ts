@@ -33,12 +33,14 @@ export const dynamic = "force-dynamic";
 // Auth at the gateway: getOwnerSession() — only allow-listed owner emails
 // reach the upload code path.
 //
-// Auth at the upstream call: WIX_BACKEND_KEY (the site-scoped Wix API key,
-// already declared as a required env in src/lib/env.ts). API key auth has
-// account-level scope on Wix Site Media writes, which member-OAuth tokens
-// don't reliably grant for headless storefronts. See PR description for
-// the deploy gate — the env value must be populated in Vercel before this
-// route works in prod (Stilgar adding).
+// Auth at the upstream call: WIX_API_KEY (the rotated site-scoped Wix REST
+// API key Stilgar synced specifically for this flow on 2026-05-09).
+// Distinct from the older WIX_BACKEND_KEY env — different value, different
+// rotation cadence. API key auth has account-level scope on Wix Site
+// Media writes, which member-OAuth tokens don't reliably grant for
+// headless storefronts. The env must be populated in Vercel before this
+// route works in prod; the route surfaces a 503 'not configured' if it's
+// missing rather than a generic 5xx.
 //
 // Out of scope (deferred per cfw-6qd.8 plan):
 //   - dimension decode (would need image-size or sharp dep — owner approval)
@@ -157,13 +159,13 @@ export async function POST(req: NextRequest) {
 
   let apiKey: string;
   try {
-    apiKey = env("WIX_BACKEND_KEY");
+    apiKey = env("WIX_API_KEY");
   } catch (err) {
     // Required env not populated — fail loudly (the env() helper throws
     // with a clear "Missing required env var" message). Translate to a
     // 503 so the editor surfaces "service unavailable" rather than the
     // generic 5xx.
-    console.error("[admin/image-upload] WIX_BACKEND_KEY not set:", err);
+    console.error("[admin/image-upload] WIX_API_KEY not set:", err);
     return NextResponse.json(
       { error: "Image upload not configured for this environment." },
       { status: 503 },

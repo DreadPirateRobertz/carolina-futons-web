@@ -80,18 +80,19 @@ async function callPost(formData: FormData) {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.unstubAllGlobals();
-  vi.stubEnv("WIX_BACKEND_KEY", "test-wix-api-key");
+  vi.stubEnv("WIX_API_KEY", "test-wix-api-key");
   // env() also requires these even though this route only consumes
-  // WIX_BACKEND_KEY — env.ts trips on any required var being absent the
+  // WIX_API_KEY — env.ts trips on any required var being absent the
   // moment any helper from `@/lib/env` resolves a value.
+  vi.stubEnv("WIX_BACKEND_KEY", "test-backend-key");
   vi.stubEnv("WIX_CLIENT_ID_HEADLESS", "test-client-id");
   vi.stubEnv("WIX_WEBHOOK_SECRET", "test-webhook-secret");
 });
 
 describe("POST /api/admin/image-upload (cfw-6qd.8)", () => {
-  it("returns 503 when WIX_BACKEND_KEY is unset (deploy gate)", async () => {
+  it("returns 503 when WIX_API_KEY is unset (deploy gate)", async () => {
     mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
-    vi.stubEnv("WIX_BACKEND_KEY", "");
+    vi.stubEnv("WIX_API_KEY", "");
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const fd = new FormData();
