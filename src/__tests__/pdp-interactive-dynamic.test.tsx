@@ -12,12 +12,18 @@ const SOURCE = readFileSync(
   "utf8",
 );
 
+<<<<<<< HEAD
 // cfw-uwg: PdpFinancing was removed from PdpInteractive (no longer rendered
 // — the financing surface is now the BnplWidget alone). The component still
 // exists at src/components/product/PdpFinancing.tsx for any future caller,
 // but it isn't imported here anymore, so the lazy-load assertion against
 // PdpInteractive can't apply. Drop it from the list rather than fabricate
 // a binding that doesn't exist.
+=======
+// cf-urg9 removed PdpFinancing entirely — the placeholder section was
+// dropped from the buy-box. Drop it from this list so the test stops
+// asserting on a component that no longer exists.
+>>>>>>> a9f731f (refactor(cfw-3w8): extract owner-mode time formatters to a shared module)
 const LAZY_COMPONENTS = [
   "BnplWidget",
   "PdpNotifyMe",

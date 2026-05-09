@@ -10,6 +10,7 @@ import {
   parseAuditFilters,
   type AuditFilters,
 } from "@/lib/admin/audit-filters";
+import { formatAuditTimestamp } from "@/lib/admin/format";
 
 // cfw-xlv: /admin/audit owner-mode log viewer.
 // cfw-ild: ?action= and ?actor= URL filter params + top-of-page form so
@@ -234,7 +235,7 @@ function AuditRow({ row }: { row: AuditLogRow }) {
       className="border-b border-cf-divider/60 align-top last:border-b-0"
     >
       <td className="py-2 pr-3 text-xs text-cf-muted">
-        {formatTimestamp(row.ts)}
+        {formatAuditTimestamp(row.ts)}
       </td>
       <td className="py-2 pr-3 text-xs text-cf-ink">{row.actorEmail}</td>
       <td className="py-2 pr-3 text-xs">
@@ -256,10 +257,3 @@ function AuditRow({ row }: { row: AuditLogRow }) {
   );
 }
 
-function formatTimestamp(iso: string): string {
-  const ms = Date.parse(iso);
-  if (!Number.isFinite(ms)) return iso;
-  // ISO with a space + minute precision. Avoids pulling in a date lib;
-  // owners are reading "what changed when" not "millisecond precision."
-  return new Date(ms).toISOString().slice(0, 16).replace("T", " ") + "Z";
-}

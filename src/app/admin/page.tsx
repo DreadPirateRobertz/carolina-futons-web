@@ -4,6 +4,7 @@ import {
   readOwnerAuditLog,
   type AuditLogRow,
 } from "@/lib/admin/audit-log";
+import { formatAuditTimestamp } from "@/lib/admin/format";
 
 // cfw-wef (cfw-6qd.1): /admin landing for owner mode. The layout has
 // already enforced the `requireOwnerSession` gate, so reaching this
@@ -205,7 +206,7 @@ function RecentRow({ row }: { row: AuditLogRow }) {
       data-testid="admin-home-recent-row"
       className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-3 py-2 text-xs"
     >
-      <span className="text-cf-muted">{formatTimestamp(row.ts)}</span>
+      <span className="text-cf-muted">{formatAuditTimestamp(row.ts)}</span>
       <span className="text-cf-ink">{row.actorEmail}</span>
       <span
         data-testid="admin-home-recent-action"
@@ -218,8 +219,3 @@ function RecentRow({ row }: { row: AuditLogRow }) {
   );
 }
 
-function formatTimestamp(iso: string): string {
-  const ms = Date.parse(iso);
-  if (!Number.isFinite(ms)) return iso;
-  return new Date(ms).toISOString().slice(0, 16).replace("T", " ") + "Z";
-}

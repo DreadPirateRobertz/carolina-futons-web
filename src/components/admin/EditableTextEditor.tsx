@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 
+import { formatRelativeTime } from "@/lib/admin/format";
+
 // cfw-v5w (cfw-6qd.2) + cfw-plg (cfw-6qd.10 follow-up): inline editor for
 // SiteContent strings, rendered only for owners by EditableText (server).
 //
@@ -256,7 +258,7 @@ export function EditableTextEditor({
                 <span className="line-clamp-2">{row.before || "(empty)"}</span>
                 {row._createdDate ? (
                   <span className="text-[10px] text-cf-muted">
-                    {formatRelative(row._createdDate)}
+                    {formatRelativeTime(row._createdDate)}
                   </span>
                 ) : null}
               </button>
@@ -325,14 +327,3 @@ function UndoIcon() {
   );
 }
 
-// Lightweight relative-time formatter — avoids pulling in a date lib for
-// the only place this is currently used.
-function formatRelative(iso: string): string {
-  const then = Date.parse(iso);
-  if (!Number.isFinite(then)) return iso;
-  const diffSec = (Date.now() - then) / 1000;
-  if (diffSec < 60) return "just now";
-  if (diffSec < 60 * 60) return `${Math.floor(diffSec / 60)}m ago`;
-  if (diffSec < 60 * 60 * 24) return `${Math.floor(diffSec / 3600)}h ago`;
-  return `${Math.floor(diffSec / (3600 * 24))}d ago`;
-}
