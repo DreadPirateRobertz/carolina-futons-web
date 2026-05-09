@@ -28,6 +28,7 @@ import {
   listProductsByCollectionId,
 } from "@/lib/wix/products";
 import { getVideoCatalog } from "@/lib/videos/catalog";
+import { getSiteContent } from "@/lib/cms/site-content";
 import { HomeFeaturedCollections } from "@/components/home/HomeFeaturedCollections";
 import { HomeSaleStrip } from "@/components/home/HomeSaleStrip";
 import { ContinueShoppingStrip } from "@/components/home/ContinueShoppingStrip";
@@ -64,6 +65,7 @@ const FILTER_CATEGORIES = [
 const SHOWCASE_IDS = ["vid-asheville", "vid-studio-conversion", "vid-moonglider-conversion"];
 
 export default async function HomePage() {
+  const valueProps = await loadValueProps();
   const categories = await Promise.all(
     FILTER_CATEGORIES.map(async (cat): Promise<ThemeDCategory> => {
       const collection = await getCollectionBySlug(cat.collectionSlug);
@@ -157,7 +159,7 @@ export default async function HomePage() {
       {/* ── Value props ── */}
       <section className="border-t border-cf-divider bg-cf-sand/40">
         <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-14 sm:grid-cols-3 sm:px-6 lg:px-8">
-          {VALUE_PROPS.map((prop) => (
+          {valueProps.map((prop) => (
             <div
               key={prop.title}
               className="rounded-lg border border-cf-divider bg-cf-cream p-6 shadow-sm"
@@ -190,7 +192,12 @@ export default async function HomePage() {
   );
 }
 
-const VALUE_PROPS = [
+// cfw-9uw: SiteContent-overridable defaults. The fallbacks below are the
+// shipped copy at the time of this refactor — when Brenda edits the row
+// in the SiteContent collection, getSiteContent returns her value; when
+// the row is missing or Wix is down, the fallback wins and the site
+// renders identically to pre-refactor output.
+const VALUE_PROP_DEFAULTS = [
   {
     title: "Hardwood, not plywood",
     body: "Frames milled from solid oak, maple, and cherry. Built to outlive the apartment they ship to.",
@@ -203,4 +210,18 @@ const VALUE_PROPS = [
     title: "White-glove delivery",
     body: "Regional delivery teams set it up where you want it. Not on a curb in a box.",
   },
-];
+] as const;
+
+async function loadValueProps(): Promise<
+  ReadonlyArray<{ title: string; body: string }>
+> {
+  return Promise.all(
+    VALUE_PROP_DEFAULTS.map(async (defaults, i) => {
+      const [title, body] = await Promise.all([
+        getSiteContent(`home.valueProps.${i}.title`, defaults.title),
+        getSiteContent(`home.valueProps.${i}.body`, defaults.body),
+      ]);
+      return { title, body };
+    }),
+  );
+}

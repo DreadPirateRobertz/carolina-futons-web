@@ -11,6 +11,19 @@ vi.mock("@sentry/nextjs", () => ({
   flush: vi.fn().mockResolvedValue(true),
 }));
 
+// cfw-9uw: HomePage now reads home.valueProps.* keys from SiteContent. Mock
+// the reader to return the caller's fallback by default, matching the
+// established pattern from VisitPage (cf-h21g). Tests that want to assert
+// the override path can set an implementation per-test.
+const mockGetSiteContent = vi.fn(
+  async (_key: string, fallback = "") => fallback,
+);
+vi.mock("@/lib/cms/site-content", () => ({
+  getSiteContent: (key: string, fallback?: string) =>
+    mockGetSiteContent(key, fallback ?? ""),
+  SITE_CONTENT_CACHE_TAG: "site-content",
+}));
+
 // HomePage isn't testing the swatches data layer — short-circuit it so the
 // default unmocked Wix client doesn't fan out to fixture rows and trigger
 // the new observability path.
@@ -240,5 +253,41 @@ describe("HomePage — cf-ml6n footer regression guard", () => {
     // The site Footer (data-slot="site-footer") is added by layout.tsx, not page.tsx.
     // Any <footer> elements in page output are semantic quote attributions (TestimonialsStrip).
     expect(container.querySelector("[data-slot='site-footer']")).toBeNull();
+  });
+});
+
+describe("HomePage — value props (cfw-9uw, cfw-66o text-refactor)", () => {
+  // The HomePage server component's render tree includes many suspending
+  // children (CMS-backed strips, dynamic imports). Rendering the full tree
+  // in jsdom is fragile, so these tests assert the SiteContent contract
+  // directly via the mocked reader: the right keys are queried with the
+  // right fallback strings. Reader-side correctness (override returns Wix
+  // value, missing key returns fallback) is covered by site-content.test.ts.
+  it("queries SiteContent for each of the 6 value-prop title + body keys with the today-shipped copy as fallback", async () => {
+    await HomePage();
+    const callMap = new Map<string, string>(
+      mockGetSiteContent.mock.calls.map(
+        ([key, fallback]) => [key, fallback ?? ""] as const,
+      ),
+    );
+    expect(callMap.get("home.valueProps.0.title")).toBe("Hardwood, not plywood");
+    expect(callMap.get("home.valueProps.0.body")).toBe(
+      "Frames milled from solid oak, maple, and cherry. Built to outlive the apartment they ship to.",
+    );
+    expect(callMap.get("home.valueProps.1.title")).toBe("Sleep on it first");
+    expect(callMap.get("home.valueProps.1.body")).toBe(
+      "Visit the Hendersonville showroom and try every mattress we sell. No commission pressure.",
+    );
+    expect(callMap.get("home.valueProps.2.title")).toBe("White-glove delivery");
+    expect(callMap.get("home.valueProps.2.body")).toBe(
+      "Regional delivery teams set it up where you want it. Not on a curb in a box.",
+    );
+  });
+
+  it("does not invoke a 4th value-prop key (catches accidental drift in VALUE_PROP_DEFAULTS length)", async () => {
+    await HomePage();
+    const queriedKeys = mockGetSiteContent.mock.calls.map(([key]) => key);
+    expect(queriedKeys).not.toContain("home.valueProps.3.title");
+    expect(queriedKeys).not.toContain("home.valueProps.3.body");
   });
 });
