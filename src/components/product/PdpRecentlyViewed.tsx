@@ -120,7 +120,7 @@ export function PdpRecentlyViewed(props: PdpRecentlyViewedProps) {
     <section
       aria-labelledby={HEADING_ID}
       data-slot="pdp-recently-viewed"
-      className="mt-12 border-t border-cf-divider py-6"
+      className="mt-16 border-t border-cf-divider pt-10"
     >
       <h2
         id={HEADING_ID}

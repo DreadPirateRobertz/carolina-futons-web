@@ -123,7 +123,7 @@ function ReviewsShell({
   return (
     <section
       aria-labelledby={HEADING_ID}
-      className="mt-10 max-w-3xl border-t border-cf-sand/60 pt-10"
+      className="mt-16 max-w-3xl border-t border-cf-divider pt-10"
       data-slot="pdp-reviews"
     >
       <header className="flex flex-wrap items-baseline justify-between gap-3">

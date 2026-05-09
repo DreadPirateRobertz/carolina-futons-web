@@ -22,7 +22,7 @@ export function PdpMattressBundle({
     <section
       data-slot="pdp-mattress-bundle"
       aria-labelledby="mattress-bundle-heading"
-      className="mt-10 rounded-xl border border-cf-divider bg-cf-cream/50 px-6 py-6"
+      className="mt-16 rounded-xl border border-cf-divider bg-cf-cream/50 px-6 py-6"
     >
       <p className="text-xs font-medium uppercase tracking-[0.18em] text-cf-cta">
         Complete your setup

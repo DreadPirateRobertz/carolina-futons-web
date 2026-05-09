@@ -20,7 +20,7 @@ export function ShowroomCta() {
     <section
       data-slot="pdp-showroom-cta"
       aria-labelledby="pdp-showroom-cta-heading"
-      className="mt-8 max-w-3xl"
+      className="mt-16 max-w-3xl"
     >
       <div className="flex flex-col gap-4 rounded-xl border border-cf-divider bg-cf-cream/60 p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:p-6">
         <div className="flex flex-col gap-2 sm:flex-1">

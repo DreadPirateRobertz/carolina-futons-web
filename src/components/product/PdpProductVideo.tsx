@@ -26,7 +26,7 @@ export function PdpProductVideo({ video }: PdpProductVideoProps) {
     <section
       aria-label={`${video.title} product video`}
       data-slot="pdp-product-video"
-      className="mt-8 max-w-2xl"
+      className="mt-16 max-w-2xl"
     >
       <div className="overflow-hidden rounded-lg border border-cf-charcoal/10 bg-white shadow-sm dark:bg-cf-cream">
         {/* Thumbnail / inline player */}

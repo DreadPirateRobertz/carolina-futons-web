@@ -116,7 +116,7 @@ const COMFORT_CARDS = [
 export function PdpComfortBand() {
   return (
     <section
-      className="mt-10 max-w-3xl"
+      className="mt-16 max-w-3xl border-t border-cf-divider pt-10"
       aria-label="Comfort levels"
       data-slot="pdp-comfort-band"
     >
