@@ -242,3 +242,56 @@ describe("/admin/audit page — cfw-ild filters", () => {
     expect(clear).toHaveAttribute("href", "/admin/audit");
   });
 });
+
+describe("/admin/audit page — cfw-daa Download CSV link", () => {
+  beforeEach(() => {
+    mockReadOwnerAuditLog.mockResolvedValue({ ok: true, rows: [] });
+  });
+
+  async function renderWith(searchParams: Record<string, string>) {
+    const { default: AdminAuditPage } = await import(
+      "@/app/admin/audit/page"
+    );
+    return render(
+      await AdminAuditPage({ searchParams: Promise.resolve(searchParams) }),
+    );
+  }
+
+  it("renders a Download CSV link in the filter form", async () => {
+    await renderWith({});
+    const link = screen.getByTestId("admin-audit-filter-export");
+    expect(link).toHaveAttribute("href", "/api/admin/audit/export");
+    expect(link).toHaveTextContent(/download csv/i);
+  });
+
+  it("preserves the active ?action= filter in the export URL", async () => {
+    await renderWith({ action: "edit" });
+    expect(
+      screen.getByTestId("admin-audit-filter-export"),
+    ).toHaveAttribute("href", "/api/admin/audit/export?action=edit");
+  });
+
+  it("preserves the active ?actor= filter in the export URL", async () => {
+    await renderWith({ actor: "brenda" });
+    expect(
+      screen.getByTestId("admin-audit-filter-export"),
+    ).toHaveAttribute("href", "/api/admin/audit/export?actor=brenda");
+  });
+
+  it("preserves both filters when set", async () => {
+    await renderWith({ action: "upload", actor: "chris" });
+    expect(
+      screen.getByTestId("admin-audit-filter-export"),
+    ).toHaveAttribute(
+      "href",
+      "/api/admin/audit/export?action=upload&actor=chris",
+    );
+  });
+
+  it("ignores an invalid ?action= when building the export URL", async () => {
+    await renderWith({ action: "delete" });
+    expect(
+      screen.getByTestId("admin-audit-filter-export"),
+    ).toHaveAttribute("href", "/api/admin/audit/export");
+  });
+});

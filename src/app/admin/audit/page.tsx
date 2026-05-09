@@ -3,14 +3,23 @@ import type { Metadata } from "next";
 import {
   readOwnerAuditLog,
   type AuditLogRow,
-  type AuditAction,
 } from "@/lib/admin/audit-log";
+import {
+  applyAuditFilters,
+  parseAuditFilters,
+  type AuditFilters,
+} from "@/lib/admin/audit-filters";
 
 // cfw-xlv: /admin/audit owner-mode log viewer.
 // cfw-ild: ?action= and ?actor= URL filter params + top-of-page form so
 // Brenda can narrow a long log without scrolling. Filtering runs in-memory
 // over the 100-row read window — small enough that a server-side query
 // rewrite isn't worth it.
+// cfw-daa: filter logic moved to @/lib/admin/audit-filters so /admin/audit
+// (this page) and GET /api/admin/audit/export apply identical narrowing —
+// a row hidden in the UI never accidentally lands in a CSV download, and
+// vice versa. Adds a "Download CSV" link to the filter form that
+// preserves the active filters in its URL.
 //
 // The /admin layout (cfw-wef) already gates the entire route group via
 // requireOwnerSession, so reaching this server component is sufficient
@@ -19,7 +28,6 @@ import {
 // Out of scope (filed as future beads if Brenda asks):
 //   - date-range filter
 //   - free-text search across before/after
-//   - CSV export
 //   - row-level "revert" (the EditableText ↶ icon already covers this
 //     for SiteContent edits via cfw-plg)
 
@@ -31,48 +39,27 @@ export const metadata: Metadata = {
 };
 
 const ROW_LIMIT = 100;
-const ACTION_VALUES: ReadonlyArray<AuditAction> = ["edit", "upload", "swap"];
+const ACTION_VALUES = ["edit", "upload", "swap"] as const;
 
-type Filters = {
-  action: AuditAction | null;
-  actor: string;
-};
-
-function parseFilters(raw: { action?: string; actor?: string }): Filters {
-  const action =
-    typeof raw.action === "string" &&
-    (ACTION_VALUES as ReadonlyArray<string>).includes(raw.action)
-      ? (raw.action as AuditAction)
-      : null;
-  const actor = typeof raw.actor === "string" ? raw.actor.trim() : "";
-  return { action, actor };
-}
-
-function applyFilters(rows: AuditLogRow[], f: Filters): AuditLogRow[] {
-  const actorNeedle = f.actor.toLowerCase();
-  return rows.filter((r) => {
-    if (f.action && r.action !== f.action) return false;
-    if (
-      actorNeedle.length > 0 &&
-      !r.actorEmail.toLowerCase().includes(actorNeedle)
-    ) {
-      return false;
-    }
-    return true;
-  });
+function buildExportHref(filters: AuditFilters): string {
+  const params = new URLSearchParams();
+  if (filters.action) params.set("action", filters.action);
+  if (filters.actor) params.set("actor", filters.actor);
+  const qs = params.toString();
+  return qs ? `/api/admin/audit/export?${qs}` : "/api/admin/audit/export";
 }
 
 export default async function AdminAuditPage(props: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const sp = await props.searchParams;
-  const filters = parseFilters({
+  const filters = parseAuditFilters({
     action: typeof sp.action === "string" ? sp.action : undefined,
     actor: typeof sp.actor === "string" ? sp.actor : undefined,
   });
   const result = await readOwnerAuditLog(ROW_LIMIT);
   const filteredRows =
-    result.ok ? applyFilters(result.rows, filters) : [];
+    result.ok ? applyAuditFilters(result.rows, filters) : [];
   const filtersActive = filters.action !== null || filters.actor.length > 0;
 
   return (
@@ -139,7 +126,7 @@ export default async function AdminAuditPage(props: {
   );
 }
 
-function FilterForm({ filters }: { filters: Filters }) {
+function FilterForm({ filters }: { filters: AuditFilters }) {
   return (
     <form
       method="get"
@@ -186,6 +173,17 @@ function FilterForm({ filters }: { filters: Filters }) {
         className="inline-flex h-8 items-center justify-center px-2 text-cf-muted underline-offset-2 hover:text-cf-ink hover:underline"
       >
         Clear
+      </a>
+      {/* cfw-daa: CSV download. href is rebuilt from the active filters
+          (not from the form's current select/input values) so the link
+          always points at the same dataset the page is rendering — a
+          mid-edit form value never produces a misleading download. */}
+      <a
+        href={buildExportHref(filters)}
+        data-testid="admin-audit-filter-export"
+        className="ml-auto inline-flex h-8 items-center justify-center rounded-md border border-cf-divider bg-white px-3 font-medium text-cf-ink hover:border-cf-cta hover:text-cf-cta focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta"
+      >
+        Download CSV
       </a>
     </form>
   );
