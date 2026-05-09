@@ -19,7 +19,6 @@ import { AnnouncementBarCartAware } from "@/components/site/AnnouncementBarCartA
 import { CartTrigger } from "@/components/cart/CartTrigger";
 import { HeaderMobileMenu } from "@/components/site/HeaderMobileMenu";
 import { HeaderWishlistLink } from "@/components/site/HeaderWishlistLink";
-import { LivingHero } from "@/components/home/LivingHero";
 import { ThemeToggle } from "@/components/site/ThemeToggle";
 import { MegaMenuItem } from "@/components/site/MegaMenu";
 
@@ -68,27 +67,12 @@ export function Header() {
       data-slot="site-header"
       data-scrolled={scrolled ? "true" : "false"}
       className={[
-        "sticky top-0 z-40 h-cf-header w-full border-b border-cf-divider bg-cf-cream text-cf-ink transition-shadow duration-200",
+        "sticky top-0 z-40 w-full border-b border-cf-divider bg-white text-cf-ink transition-shadow duration-200",
         shadowClass,
       ]
         .filter(Boolean)
         .join(" ")}
     >
-      {/* LivingHero backdrop — time-of-day cycling illustration fills the header.
-          LivingHero uses position:relative + h-full/w-full, matching this wrapper.
-          overflow-hidden is on this wrapper only, not the <header>, so
-          CMS-driven announcement bar text can grow without being clipped.
-          Veil at white/10 keeps nav text legible against the illustration. */}
-      <div
-        aria-hidden="true"
-        data-slot="living-sky-backdrop"
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-      >
-        <div className="absolute top-0 left-0 z-0 h-full w-full">
-          <LivingHero compact />
-        </div>
-        <div className="absolute inset-0 z-10 bg-white/10" />
-      </div>
       <div className="relative z-20">
         <AnnouncementBarCartAware />
 
@@ -149,6 +133,19 @@ export function Header() {
               </Link>
               <HeaderWishlistLink />
               <CartTrigger />
+              <Link
+                href="/shop"
+                className={[
+                  "ml-2 hidden items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-widest transition-colors md:inline-flex",
+                  scrolled
+                    ? "border-cf-espresso bg-cf-espresso text-white hover:bg-cf-espresso/90"
+                    : "border-cf-espresso bg-transparent text-cf-espresso hover:bg-cf-espresso hover:text-white",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                Browse <span aria-hidden="true">→</span>
+              </Link>
             </div>
           </div>
         </div>

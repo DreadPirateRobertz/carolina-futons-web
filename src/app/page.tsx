@@ -29,7 +29,7 @@ import {
 } from "@/lib/wix/products";
 import { getVideoCatalog } from "@/lib/videos/catalog";
 import { getSiteContent } from "@/lib/cms/site-content";
-import { HomeFeaturedCollections } from "@/components/home/HomeFeaturedCollections";
+import { HomeCategoryGridV9 } from "@/components/home/HomeCategoryGridV9";
 import { HomeSaleStrip } from "@/components/home/HomeSaleStrip";
 import { ContinueShoppingStrip } from "@/components/home/ContinueShoppingStrip";
 import { RecentlyViewedStrip } from "@/components/home/RecentlyViewedStrip";
@@ -107,8 +107,8 @@ export default async function HomePage() {
           duplicate bear scene that Stilgar flagged. The header chrome is the
           unified hero now — home jumps straight into the featured grid. */}
 
-      {/* ── Featured collections grid (cf-3qt.2.6) ── */}
-      <HomeFeaturedCollections />
+      {/* ── Featured collections grid — v9 dark photo cards ── */}
+      <HomeCategoryGridV9 />
 
       {/* ── Continue Shopping — localStorage LRU, hidden for first-time visitors (cf-l6aj.7) ── */}
       <ContinueShoppingStrip />
