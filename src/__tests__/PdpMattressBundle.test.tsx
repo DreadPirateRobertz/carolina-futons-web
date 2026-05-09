@@ -45,7 +45,7 @@ vi.mock("@/components/cart/AddToCartButton", () => ({
 }));
 
 vi.mock("next/image", () => ({
-  // eslint-disable-next-line @next/next/no-img-element -- next/image stub for vitest; LCP/perf concern is moot in a jsdom unit test
+   
   default: ({ alt }: { alt: string }) => <img alt={alt} />,
 }));
 

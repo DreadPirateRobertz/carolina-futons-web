@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 
 vi.mock("next/image", () => ({
   default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => {
-    // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text -- next/image stub for vitest, props (incl. alt) flow through from the caller
+     
     return <img {...props} />;
   },
 }));

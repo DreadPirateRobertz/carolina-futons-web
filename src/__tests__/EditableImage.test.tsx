@@ -60,7 +60,7 @@ vi.mock("next/image", () => ({
     priority?: boolean;
     className?: string;
   }) => (
-    // eslint-disable-next-line @next/next/no-img-element
+     
     <img
       src={src}
       alt={alt}
