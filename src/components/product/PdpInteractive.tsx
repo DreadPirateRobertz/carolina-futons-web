@@ -225,7 +225,9 @@ export function PdpInteractive({
             fetchPriority="high"
             loading="eager"
             decoding="async"
-            className="aspect-square w-full rounded-lg object-cover"
+            // cfw-l0m: contain not cover — match PdpGallery main image and
+            // show the whole product at the no-gallery fallback path too.
+            className="aspect-square w-full rounded-lg object-contain"
           />
         ) : (
           <div className="aspect-square w-full rounded-lg bg-cf-sand" />
