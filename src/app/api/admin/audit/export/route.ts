@@ -50,6 +50,7 @@ export async function GET(req: NextRequest) {
     actor: url.searchParams.get("actor") ?? undefined,
     from: url.searchParams.get("from") ?? undefined,
     to: url.searchParams.get("to") ?? undefined,
+    q: url.searchParams.get("q") ?? undefined,
   });
 
   const result = await readOwnerAuditLog(ROW_LIMIT);

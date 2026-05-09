@@ -48,6 +48,7 @@ function buildExportHref(filters: AuditFilters): string {
   if (filters.actor) params.set("actor", filters.actor);
   if (filters.fromRaw) params.set("from", filters.fromRaw);
   if (filters.toRaw) params.set("to", filters.toRaw);
+  if (filters.q) params.set("q", filters.q);
   const qs = params.toString();
   return qs ? `/api/admin/audit/export?${qs}` : "/api/admin/audit/export";
 }
@@ -61,6 +62,7 @@ export default async function AdminAuditPage(props: {
     actor: typeof sp.actor === "string" ? sp.actor : undefined,
     from: typeof sp.from === "string" ? sp.from : undefined,
     to: typeof sp.to === "string" ? sp.to : undefined,
+    q: typeof sp.q === "string" ? sp.q : undefined,
   });
   const result = await readOwnerAuditLog(ROW_LIMIT);
   const filteredRows =
@@ -184,6 +186,17 @@ function FilterForm({ filters }: { filters: AuditFilters }) {
           defaultValue={filters.toRaw}
           data-testid="admin-audit-filter-to"
           className="h-8 rounded border border-cf-divider bg-white px-2 text-cf-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta"
+        />
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="font-medium text-cf-charcoal/70">Search</span>
+        <input
+          type="text"
+          name="q"
+          defaultValue={filters.q}
+          placeholder="text in target / before / after"
+          data-testid="admin-audit-filter-q"
+          className="h-8 w-56 rounded border border-cf-divider bg-white px-2 text-cf-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta"
         />
       </label>
       <button

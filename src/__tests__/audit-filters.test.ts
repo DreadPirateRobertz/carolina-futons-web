@@ -52,6 +52,7 @@ const NO_FILTERS: AuditFilters = {
   toMs: null,
   fromRaw: "",
   toRaw: "",
+  q: "",
 };
 
 describe("parseAuditFilters", () => {
@@ -214,5 +215,72 @@ describe("auditFiltersActive", () => {
 
   it("true when toMs is set", () => {
     expect(auditFiltersActive({ ...NO_FILTERS, toMs: 0 })).toBe(true);
+  });
+
+  it("true when q is set", () => {
+    expect(auditFiltersActive({ ...NO_FILTERS, q: "sale" })).toBe(true);
+  });
+});
+
+describe("parseAuditFilters — cfw-3zk free-text q", () => {
+  it("trims whitespace", () => {
+    expect(parseAuditFilters({ q: "  sale  " }).q).toBe("sale");
+  });
+
+  it("defaults to empty string when missing or non-string", () => {
+    expect(parseAuditFilters({}).q).toBe("");
+    expect(parseAuditFilters({ q: undefined }).q).toBe("");
+  });
+});
+
+describe("applyAuditFilters — cfw-3zk free-text q", () => {
+  it("matches against row.target (case-insensitive)", () => {
+    expect(
+      applyAuditFilters(ROWS, { ...NO_FILTERS, q: "FOOTER" }).map((r) => r._id),
+    ).toEqual(["r1"]);
+  });
+
+  it("matches against row.after", () => {
+    expect(
+      applyAuditFilters(ROWS, { ...NO_FILTERS, q: "new.jpg" }).map((r) => r._id),
+    ).toEqual(["r3"]);
+  });
+
+  it("matches against row.before", () => {
+    expect(
+      applyAuditFilters(ROWS, { ...NO_FILTERS, q: "old.jpg" }).map((r) => r._id),
+    ).toEqual(["r3"]);
+  });
+
+  it("returns empty when nothing matches", () => {
+    expect(
+      applyAuditFilters(ROWS, { ...NO_FILTERS, q: "no-such-string" }),
+    ).toEqual([]);
+  });
+
+  it("composes q with action + actor", () => {
+    expect(
+      applyAuditFilters(ROWS, {
+        ...NO_FILTERS,
+        action: "edit",
+        actor: "brenda",
+        q: "footer",
+      }).map((r) => r._id),
+    ).toEqual(["r1"]);
+  });
+
+  it("composes q with date range", () => {
+    expect(
+      applyAuditFilters(ROWS, {
+        ...NO_FILTERS,
+        q: "kingston",
+        fromMs: Date.parse("2026-05-07T00:00:00.000Z"),
+        toMs: Date.parse("2026-05-07T23:59:59.999Z"),
+      }).map((r) => r._id),
+    ).toEqual(["r3"]);
+  });
+
+  it("treats whitespace-only q as no filter (after trim)", () => {
+    expect(applyAuditFilters(ROWS, { ...NO_FILTERS, q: "   " })).toEqual(ROWS);
   });
 });

@@ -212,3 +212,55 @@ describe("GET /api/admin/audit/export — cfw-9j9 date-range filter", () => {
     expect(body).toContain("visit.hours");
   });
 });
+
+describe("GET /api/admin/audit/export — cfw-3zk free-text q", () => {
+  const SEARCH_ROWS = [
+    {
+      _id: "r1",
+      actorEmail: "brenda@x.com",
+      action: "edit",
+      target: "footer.tagline",
+      before: "Quality futon furniture since 1991",
+      after: "Quality futons since 1991",
+      ts: "2026-05-09T15:00:00.000Z",
+    },
+    {
+      _id: "r2",
+      actorEmail: "brenda@x.com",
+      action: "upload",
+      target: "hero.image",
+      before: "https://x/old.jpg",
+      after: "https://x/new.jpg",
+      ts: "2026-05-08T10:00:00.000Z",
+    },
+  ];
+
+  beforeEach(() => {
+    mockReadOwnerAuditLog.mockResolvedValue({ ok: true, rows: SEARCH_ROWS });
+  });
+
+  it("?q= narrows the CSV body by substring (case-insensitive)", async () => {
+    const { GET } = await import("@/app/api/admin/audit/export/route");
+    const res = await GET(makeReq("?q=FOOTER") as never);
+    const body = await res.text();
+    expect(body).toContain("footer.tagline");
+    expect(body).not.toContain("hero.image");
+  });
+
+  it("?q= matches against before/after value text", async () => {
+    const { GET } = await import("@/app/api/admin/audit/export/route");
+    const res = await GET(makeReq("?q=old.jpg") as never);
+    const body = await res.text();
+    expect(body).toContain("hero.image");
+    expect(body).not.toContain("footer.tagline");
+  });
+
+  it("composes ?q= with action", async () => {
+    const { GET } = await import("@/app/api/admin/audit/export/route");
+    const res = await GET(makeReq("?q=futon&action=upload") as never);
+    const body = await res.text();
+    // No upload row contains "futon" → header-only CSV.
+    const lines = body.split("\r\n").filter(Boolean);
+    expect(lines.length).toBe(1);
+  });
+});

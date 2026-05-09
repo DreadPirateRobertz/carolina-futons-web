@@ -11,6 +11,11 @@ import type { AuditAction, AuditLogRow } from "@/lib/admin/audit-log";
 // (00:00:00.000Z … 23:59:59.999Z). Empty / invalid date strings fall
 // through (no filter), so a partially-typed input never produces a
 // confusing "everything disappeared" UX.
+//
+// cfw-3zk: extended with ?q= free-text substring search. Case-insensitive
+// match against row.target, row.before, row.after — covers Brenda's "find
+// every time the word 'sale' appeared in any edit" use case without
+// committing to regex syntax. Empty string falls through (no filter).
 
 const ACTION_VALUES: ReadonlyArray<AuditAction> = ["edit", "upload", "swap"];
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -25,6 +30,8 @@ export type AuditFilters = {
   /** Original YYYY-MM-DD strings retained for round-tripping into form defaults. */
   fromRaw: string;
   toRaw: string;
+  /** Trimmed free-text needle. Empty string == no filter. */
+  q: string;
 };
 
 function parseDateStart(raw: string | undefined): { ms: number | null; raw: string } {
@@ -54,6 +61,7 @@ export function parseAuditFilters(raw: {
   actor?: string;
   from?: string;
   to?: string;
+  q?: string;
 }): AuditFilters {
   const action =
     typeof raw.action === "string" &&
@@ -63,6 +71,7 @@ export function parseAuditFilters(raw: {
   const actor = typeof raw.actor === "string" ? raw.actor.trim() : "";
   const from = parseDateStart(raw.from);
   const to = parseDateEnd(raw.to);
+  const q = typeof raw.q === "string" ? raw.q.trim() : "";
   return {
     action,
     actor,
@@ -70,6 +79,7 @@ export function parseAuditFilters(raw: {
     toMs: to.ms,
     fromRaw: from.raw,
     toRaw: to.raw,
+    q,
   };
 }
 
@@ -78,6 +88,10 @@ export function applyAuditFilters(
   f: AuditFilters,
 ): AuditLogRow[] {
   const actorNeedle = f.actor.toLowerCase();
+  // Trim defensively in case a caller hands us an unparsed AuditFilters
+  // object (parseAuditFilters already trims, so this is a no-op for the
+  // hot path).
+  const qNeedle = f.q.trim().toLowerCase();
   return rows.filter((r) => {
     if (f.action && r.action !== f.action) return false;
     if (
@@ -92,6 +106,10 @@ export function applyAuditFilters(
       if (f.fromMs !== null && rowMs < f.fromMs) return false;
       if (f.toMs !== null && rowMs > f.toMs) return false;
     }
+    if (qNeedle.length > 0) {
+      const haystack = `${r.target}\n${r.before ?? ""}\n${r.after ?? ""}`.toLowerCase();
+      if (!haystack.includes(qNeedle)) return false;
+    }
     return true;
   });
 }
@@ -101,6 +119,7 @@ export function auditFiltersActive(f: AuditFilters): boolean {
     f.action !== null ||
     f.actor.length > 0 ||
     f.fromMs !== null ||
-    f.toMs !== null
+    f.toMs !== null ||
+    f.q.length > 0
   );
 }

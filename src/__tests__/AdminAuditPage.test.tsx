@@ -418,3 +418,109 @@ describe("/admin/audit page — cfw-9j9 date-range filter", () => {
     expect(rows).toHaveLength(2);
   });
 });
+
+describe("/admin/audit page — cfw-3zk free-text search", () => {
+  const SEARCH_ROWS = [
+    {
+      _id: "r1",
+      actorEmail: "brenda@x.com",
+      action: "edit" as const,
+      target: "footer.tagline",
+      before: "Quality futon furniture since 1991",
+      after: "Quality futons since 1991",
+      ts: "2026-05-09T15:00:00.000Z",
+    },
+    {
+      _id: "r2",
+      actorEmail: "brenda@x.com",
+      action: "edit" as const,
+      target: "hero.headline",
+      before: "Find your perfect ___",
+      after: "Find your perfect futon",
+      ts: "2026-05-08T10:00:00.000Z",
+    },
+    {
+      _id: "r3",
+      actorEmail: "brenda@x.com",
+      action: "upload" as const,
+      target: "hero.image",
+      before: "https://x/old.jpg",
+      after: "https://x/new.jpg",
+      ts: "2026-05-07T10:00:00.000Z",
+    },
+  ];
+
+  beforeEach(() => {
+    mockReadOwnerAuditLog.mockResolvedValue({ ok: true, rows: SEARCH_ROWS });
+  });
+
+  async function renderWith(searchParams: Record<string, string>) {
+    const { default: AdminAuditPage } = await import(
+      "@/app/admin/audit/page"
+    );
+    return render(
+      await AdminAuditPage({ searchParams: Promise.resolve(searchParams) }),
+    );
+  }
+
+  it("renders a Search input in the filter form", async () => {
+    await renderWith({});
+    const q = screen.getByTestId("admin-audit-filter-q") as HTMLInputElement;
+    expect(q.type).toBe("text");
+    expect(q.value).toBe("");
+  });
+
+  it("?q= matches against row.target", async () => {
+    await renderWith({ q: "footer" });
+    const rows = screen.getAllByTestId("admin-audit-row");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!).toHaveTextContent("footer.tagline");
+  });
+
+  it("?q= matches against row.after (case-insensitive)", async () => {
+    await renderWith({ q: "FUTON" });
+    const rows = screen.getAllByTestId("admin-audit-row");
+    // "futon" appears in r1.after, r1.before, r2.after, r2.before — 2 unique rows.
+    expect(rows).toHaveLength(2);
+  });
+
+  it("?q= matches against row.before", async () => {
+    await renderWith({ q: "old.jpg" });
+    const rows = screen.getAllByTestId("admin-audit-row");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!).toHaveTextContent("hero.image");
+  });
+
+  it("preselects the q input from URL params", async () => {
+    await renderWith({ q: "kingston" });
+    expect(
+      (screen.getByTestId("admin-audit-filter-q") as HTMLInputElement).value,
+    ).toBe("kingston");
+  });
+
+  it("composes ?q= with action + date range", async () => {
+    await renderWith({
+      q: "futon",
+      action: "edit",
+      from: "2026-05-08",
+      to: "2026-05-08",
+    });
+    const rows = screen.getAllByTestId("admin-audit-row");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!).toHaveTextContent("hero.headline");
+  });
+
+  it("filter-aware empty message fires when q culls everything", async () => {
+    await renderWith({ q: "no-such-string" });
+    expect(screen.getByTestId("admin-audit-empty")).toHaveTextContent(
+      /match those filters/i,
+    );
+  });
+
+  it("?q= preserved in the Download CSV link", async () => {
+    await renderWith({ q: "footer" });
+    expect(
+      screen.getByTestId("admin-audit-filter-export"),
+    ).toHaveAttribute("href", "/api/admin/audit/export?q=footer");
+  });
+});
