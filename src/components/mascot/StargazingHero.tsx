@@ -45,10 +45,10 @@ function buildFireflies(): FireflyDef[] {
   }));
 }
 
-// Compact mode uses a 1920×240 band sized for the site header (~213px tall).
+// Compact mode uses a 1920×240 band sized for the site header (~197px tall).
 // preserveAspectRatio="xMidYMid slice" means height drives scale at narrow
 // viewports, so the viewBox is cropped horizontally around x=960. The
-// always-visible band at min mobile (375px wide × ~213px header) is
+// always-visible band at min mobile (375px wide × ~197px header) is
 // x ∈ [749, 1171] — anything outside is cropped on phones. Moon, bear, and
 // fireflies must stay inside that window.
 const COMPACT_FIREFLIES: FireflyDef[] = [
@@ -143,7 +143,7 @@ export function StargazingHero({
   time?: number;
   reduceMotion?: boolean;
   /**
-   * Compact layout sized for the ~213px site header. Switches to a 1920×240
+   * Compact layout sized for the ~197px site header. Switches to a 1920×240
    * viewBox with hand-placed moon, bear, and exactly 2 fireflies that stay
    * inside the visible slice at common header heights.
    */

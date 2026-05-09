@@ -110,11 +110,12 @@
   --cf-footer-bg: #1E2A3A;    /* dark navy — matches carolinafutons.com */
   --cf-ink: #1E2A3A;          /* dark navy primary text */
 
-  /* Chrome pixel specs (cf-3qt.1 — measured live on carolinafutons.com 2026-04-17) */
-  --cf-header-top: 60px;         /* announcement + utility row */
+  /* Chrome pixel specs. cfw-3t9 (cfw-y2i §7): announcement trimmed 60→44 so
+     the home above-the-fold doesn't open with 540px of chrome before content. */
+  --cf-header-top: 44px;         /* announcement + utility row */
   --cf-header-main: 93px;        /* logo + primary nav */
   --cf-header-sub: 60px;         /* mega-nav / promo strip */
-  --cf-header-total: 213px;      /* = top + main + sub */
+  --cf-header-total: 197px;      /* = top + main + sub */
   --cf-footer-main: 72px;        /* column content row */
   --cf-footer-bottom: 36px;      /* copyright row */
   --cf-footer-total: 108px;      /* = main + bottom */

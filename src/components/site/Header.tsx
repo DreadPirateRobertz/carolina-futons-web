@@ -2,7 +2,8 @@
 
 // Site-wide header (cf-3qt.1 Phase 1 + cf-nav-scroll-shrink).
 // Chrome spec from docs/migration/cf-3qt-phase1-prep.md:
-//   Announcement bar 60px + main row 93px + sub-nav 60px = 213px total
+//   Announcement bar 44px + main row 93px + sub-nav 60px = 197px total
+//   (cfw-3t9: trimmed announcement 60→44 per cfw-y2i §7 to reclaim home fold)
 // CMS wiring + mega-nav content land in Phase 3 (rennala).
 //
 // Scroll-shrink (cf-nav-scroll-shrink): once the page scrolls past 80px the

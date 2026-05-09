@@ -1,6 +1,6 @@
 // cf-2t0y — compact StargazingHero (header band) must render moon, bear,
 // and exactly 2 fireflies inside a 1920×240 viewBox so they stay visible at
-// the ~213px header height.
+// the ~197px header height.
 // cf-d05z / cfw-858 — additionally, moon and fireflies must stay inside the
 // always-visible band at min mobile viewport so they are not cropped on phones.
 
@@ -9,12 +9,12 @@ import { render } from "@testing-library/react";
 
 import { StargazingHero } from "@/components/mascot/StargazingHero";
 
-// Slice math at min mobile viewport (375px wide × ~213px header). The SVG uses
+// Slice math at min mobile viewport (375px wide × ~197px header). The SVG uses
 // preserveAspectRatio="xMidYMid slice", so when rendered-aspect < viewBox-aspect
 // the viewBox is cropped horizontally around x=960. Anything outside
 // [VISIBLE_X_MIN, VISIBLE_X_MAX] is cropped on a 375px-wide phone.
 const MIN_VIEWPORT_W = 375;
-const HEADER_H = 213;
+const HEADER_H = 197;
 const VIEWBOX_W = 1920;
 const VIEWBOX_H = 240;
 const SLICE_SCALE = Math.max(MIN_VIEWPORT_W / VIEWBOX_W, HEADER_H / VIEWBOX_H);

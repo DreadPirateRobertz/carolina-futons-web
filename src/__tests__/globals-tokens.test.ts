@@ -34,10 +34,10 @@ describe("globals.css — CF brand tokens", () => {
 
 describe("globals.css — chrome pixel specs", () => {
   it.each([
-    ["--cf-header-top", "60px"],
+    ["--cf-header-top", "44px"],
     ["--cf-header-main", "93px"],
     ["--cf-header-sub", "60px"],
-    ["--cf-header-total", "213px"],
+    ["--cf-header-total", "197px"],
     ["--cf-footer-main", "72px"],
     ["--cf-footer-bottom", "36px"],
     ["--cf-footer-total", "108px"],
