@@ -704,7 +704,9 @@ describe("PdpInteractive (cf-3qt.2.1 + 2.2 integration)", () => {
           productOptions={[]}
           variants={[]}
           fallbackPrice="from $799"
-          // intentionally omit fallbackImageUrl + galleryImages
+          // Branch under test is "no resolvable image URL" — pass undefined
+          // explicitly (the prop is required-but-nullable in the contract).
+          fallbackImageUrl={undefined}
         />,
       );
       expect(screen.queryByTestId("pdp-main-image")).toBeNull();
