@@ -58,6 +58,28 @@ test.describe("PDP variant selection (cfw-1nm)", () => {
     await expect(price).toContainText(/\$1,?899/);
   });
 
+  // cfw-dnf: bug acceptance criterion is "verified on /products/kingston-futon-frame"
+  // for BOTH bugs. The original cfw-1nm fix is verified on Monterey for size→price,
+  // but the bead specifically calls out Kingston's price stuck at $619 across Full/
+  // Queen/King. Pin a Kingston-specific assertion here so a regression on the
+  // production-shape catalog (Frame Color × Size with distinct per-size prices)
+  // fails CI immediately.
+  test("(2k) Kingston: size selection updates price across Full / Queen / King", async ({
+    page,
+  }) => {
+    await page.goto("/products/kingston-futon-frame");
+
+    const price = page.getByTestId("variant-price").first();
+    await expect(price).toBeVisible();
+    await expect(price).toContainText(/\$619/);
+
+    await page.getByRole("radio", { name: /size: queen/i }).click();
+    await expect(price).toContainText(/\$719/);
+
+    await page.getByRole("radio", { name: /size: king/i }).click();
+    await expect(price).toContainText(/\$819/);
+  });
+
   test("(3) cart line carries the selected variant's price", async ({
     page,
   }) => {

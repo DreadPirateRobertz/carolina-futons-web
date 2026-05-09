@@ -2,14 +2,14 @@
  * PLP fixture-mode smoke tests — cf-3qt.2.14
  *
  * Covers all 5 PLP routes using NEXT_PUBLIC_USE_FIXTURE_PRODUCTS=1:
- *   /shop/futon-frames        — 2 fixture products (Kingston $399 in-stock,
+ *   /shop/futon-frames        — 2 fixture products (Kingston $619 in-stock,
  *                               Sedona $549 out-of-stock)
  *   /shop/mattresses          — 1 fixture product (Mesa Futon Mattress $119, in-stock)
  *   /shop/platform-beds       — 1 fixture product (Monterey $1,699, in-stock)
  *   /shop/murphy-cabinet-beds — 1 fixture product (Asheville $849, in-stock)
  *   /shop/sofa-beds            — 1 fixture product (Blue Ridge $799, in-stock)
  *   /shop/sale                — derived / on-sale filter sourcing all-products;
- *                               3 products (Kingston $399→$319, Monterey $1,699→$1,399,
+ *                               3 products (Kingston $619→$519, Monterey $1,699→$1,399,
  *                               Mesa $119→$89)
  *   /shop/mattresses-sale     — derived / on-sale filter sourcing mattresses;
  *                               1 product (Mesa $119→$89)
@@ -70,12 +70,12 @@ test.describe("/shop/futon-frames — fixture mode", () => {
     await expect(page.getByText(/kingston/i)).toBeVisible();
   });
 
-  test("price filter $500+ hides kingston ($399), shows sedona ($549)", async ({
+  test("price filter under $600 hides kingston ($619), shows sedona ($549)", async ({
     page,
   }) => {
-    await page.fill("input#plp-priceMin", "500");
+    await page.fill("input#plp-priceMax", "600");
     await page.click("button[type=submit]");
-    await page.waitForURL(/priceMin=500/);
+    await page.waitForURL(/priceMax=600/);
     await expect(page.locator('[data-slot="product-card"]')).toHaveCount(1);
     await expect(page.getByText(/sedona/i)).toBeVisible();
   });

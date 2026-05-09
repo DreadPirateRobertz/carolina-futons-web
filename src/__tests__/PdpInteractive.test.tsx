@@ -488,6 +488,113 @@ describe("PdpInteractive (cf-3qt.2.1 + 2.2 integration)", () => {
       );
     });
 
+    // cfw-dnf: regression guard for the production Kingston catalog shape —
+    // Frame Color × Size with per-color media on choices AND distinct per-size
+    // prices on variants. Both bindings must update independently when their
+    // option changes; the bug report observed image stuck on first color and
+    // price stuck at $619 across all three sizes.
+    it("Kingston-shape (Color × Size): color swaps image AND size updates price independently", () => {
+      const kingstonOptions: ProductOptionInput[] = [
+        {
+          name: "Frame Color",
+          choices: [
+            {
+              value: "Natural",
+              description: "Natural",
+              media: { mainMedia: { image: { url: "https://img/k-natural.jpg" } } },
+            },
+            {
+              value: "Espresso",
+              description: "Espresso",
+              media: { mainMedia: { image: { url: "https://img/k-espresso.jpg" } } },
+            },
+          ],
+        },
+        {
+          name: "Size",
+          choices: [
+            { value: "Full", description: "Full" },
+            { value: "Queen", description: "Queen" },
+            { value: "King", description: "King" },
+          ],
+        },
+      ];
+      const kingstonVariants: VariantInput[] = [
+        {
+          _id: "k-natural-full",
+          choices: { "Frame Color": "Natural", Size: "Full" },
+          variant: { priceData: { price: 619, currency: "USD" } },
+          stock: { inStock: true },
+        },
+        {
+          _id: "k-natural-queen",
+          choices: { "Frame Color": "Natural", Size: "Queen" },
+          variant: { priceData: { price: 719, currency: "USD" } },
+          stock: { inStock: true },
+        },
+        {
+          _id: "k-natural-king",
+          choices: { "Frame Color": "Natural", Size: "King" },
+          variant: { priceData: { price: 819, currency: "USD" } },
+          stock: { inStock: true },
+        },
+        {
+          _id: "k-espresso-full",
+          choices: { "Frame Color": "Espresso", Size: "Full" },
+          variant: { priceData: { price: 619, currency: "USD" } },
+          stock: { inStock: true },
+        },
+        {
+          _id: "k-espresso-queen",
+          choices: { "Frame Color": "Espresso", Size: "Queen" },
+          variant: { priceData: { price: 719, currency: "USD" } },
+          stock: { inStock: true },
+        },
+        {
+          _id: "k-espresso-king",
+          choices: { "Frame Color": "Espresso", Size: "King" },
+          variant: { priceData: { price: 819, currency: "USD" } },
+          stock: { inStock: true },
+        },
+      ];
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Kingston Futon Frame"
+          productOptions={kingstonOptions}
+          variants={kingstonVariants}
+          fallbackImageUrl="https://img/fallback.jpg"
+          fallbackPrice="$619"
+          fallbackPriceCents={61_900}
+        />,
+      );
+      // Initial: Natural + Full → $619 image and price.
+      expect(screen.getByTestId("pdp-main-image")).toHaveAttribute(
+        "src",
+        "https://img/k-natural.jpg",
+      );
+      expect(screen.getByTestId("variant-price")).toHaveTextContent("$619");
+
+      // Bug 1 acceptance: changing color swaps the image (price unchanged).
+      fireEvent.click(screen.getByRole("radio", { name: /frame color: espresso/i }));
+      expect(screen.getByTestId("pdp-main-image")).toHaveAttribute(
+        "src",
+        "https://img/k-espresso.jpg",
+      );
+      expect(screen.getByTestId("variant-price")).toHaveTextContent("$619");
+
+      // Bug 2 acceptance: changing size updates the price (image unchanged).
+      fireEvent.click(screen.getByRole("radio", { name: /size: queen/i }));
+      expect(screen.getByTestId("variant-price")).toHaveTextContent("$719");
+      expect(screen.getByTestId("pdp-main-image")).toHaveAttribute(
+        "src",
+        "https://img/k-espresso.jpg",
+      );
+
+      fireEvent.click(screen.getByRole("radio", { name: /size: king/i }));
+      expect(screen.getByTestId("variant-price")).toHaveTextContent("$819");
+    });
+
     it("PDP price reflects the selected variant's price (formatted from raw priceData.price)", () => {
       const sizeOptions: ProductOptionInput[] = [
         {

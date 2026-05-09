@@ -20,7 +20,7 @@
 import { test, expect } from "@playwright/test";
 
 // Fixture product slugs — must match src/lib/fixtures/products.ts
-const KINGSTON = "/products/kingston-futon-frame";    // $399, in-stock
+const KINGSTON = "/products/kingston-futon-frame";    // $619 (Full size default), in-stock
 const SEDONA   = "/products/sedona-futon-frame-oos";  // out-of-stock
 const MESA     = "/products/mesa-foam-mattress";      // $119, in-stock
 
@@ -74,9 +74,9 @@ test.describe("checkout smoke — fixture mode", () => {
     const cartLine = page.locator('[data-testid="cart-line"]');
     await expect(cartLine).toBeVisible();
 
-    // Subtotal reflects Kingston price ($399)
+    // Subtotal reflects Kingston price (Full default = $619)
     const subtotal = page.locator('[data-testid="cart-subtotal"]');
-    await expect(subtotal).toContainText("399");
+    await expect(subtotal).toContainText("619");
 
     // Checkout CTA present and shows "Go to checkout" (not "Saving…")
     const checkoutCta = page.locator('[data-testid="cart-checkout-cta"]');

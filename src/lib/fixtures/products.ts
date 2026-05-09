@@ -5,7 +5,8 @@
 // real Wix product IDs and any accidental prod leak is immediately obvious.
 //
 // Coverage matrix:
-//   kingston-futon-frame        — futon frame, ~$399, parcel, in-stock, 2 options (frame/mattress)
+//   kingston-futon-frame        — futon frame, parcel, in-stock, 2 options (frame color / size)
+//                                 prices vary per size: Full $619 / Queen $719 / King $819
 //   asheville-murphy-bed        — murphy bed, ~$849, LTL freight, in-stock, 1 option (finish)
 //   cube-murphy-cabinet-bed     — murphy bed, ~$1,199, LTL freight, in-stock, 1 option (finish)
 //   ranchero-murphy-cabinet-bed — murphy bed, ~$2,978, LTL freight, in-stock, 1 option (finish)
@@ -90,14 +91,18 @@ const KINGSTON_SPIN_FRAMES = Array.from({ length: 12 }, (_, i) => ({
   mediaType: "image",
 }));
 
-// --- Kingston Futon Frame (~$399 → $319 sale, parcel, in-stock, 2 options) ---
+// --- Kingston Futon Frame (parcel, in-stock, 2 options × 3 sizes) ---
+// cfw-dnf: mirror the production catalog shape so e2e exercises BOTH
+// color→image and size→price on Kingston specifically. Production lists
+// Frame Color × Size with distinct prices per size (Full / Queen / King),
+// and the bug report observed price stuck at $619 (Full) when changing size.
 const KINGSTON_BASE = makeProduct(
   "kingston-futon-frame",
   "kingston-futon-frame",
   "Kingston Futon Frame",
   "A classic hardwood futon frame with clean lines. Ships assembled to most US addresses.",
-  399,
-  { trackInventory: true, inStock: true, quantity: 12 },
+  619,
+  { trackInventory: true, inStock: true, quantity: 36 },
   [
     {
       name: "Frame Color",
@@ -118,43 +123,56 @@ const KINGSTON_BASE = makeProduct(
       ],
     },
     {
-      name: "Include Mattress",
+      name: "Size",
       optionType: "drop_down" as const,
       choices: [
-        { description: "Frame Only", value: "Frame Only", inStock: true },
-        { description: "With Mesa Mattress (+$119)", value: "With Mesa Mattress", inStock: true },
+        { description: "Full", value: "Full", inStock: true },
+        { description: "Queen", value: "Queen", inStock: true },
+        { description: "King", value: "King", inStock: true },
       ],
     },
   ],
   [
     {
       _id: "fixture-var-k1",
-      choices: { "Frame Color": "Natural", "Include Mattress": "Frame Only" },
+      choices: { "Frame Color": "Natural", Size: "Full" },
       stock: { trackQuantity: true, inStock: true, quantity: 6 },
-      variant: { priceData: { price: 399 } },
+      variant: { priceData: { price: 619 } },
     },
     {
       _id: "fixture-var-k2",
-      choices: { "Frame Color": "Natural", "Include Mattress": "With Mesa Mattress" },
+      choices: { "Frame Color": "Natural", Size: "Queen" },
       stock: { trackQuantity: true, inStock: true, quantity: 6 },
-      variant: { priceData: { price: 518 } },
+      variant: { priceData: { price: 719 } },
     },
     {
       _id: "fixture-var-k3",
-      choices: { "Frame Color": "Espresso", "Include Mattress": "Frame Only" },
+      choices: { "Frame Color": "Natural", Size: "King" },
       stock: { trackQuantity: true, inStock: true, quantity: 6 },
-      variant: { priceData: { price: 399 } },
+      variant: { priceData: { price: 819 } },
     },
     {
       _id: "fixture-var-k4",
-      choices: { "Frame Color": "Espresso", "Include Mattress": "With Mesa Mattress" },
+      choices: { "Frame Color": "Espresso", Size: "Full" },
       stock: { trackQuantity: true, inStock: true, quantity: 6 },
-      variant: { priceData: { price: 518 } },
+      variant: { priceData: { price: 619 } },
+    },
+    {
+      _id: "fixture-var-k5",
+      choices: { "Frame Color": "Espresso", Size: "Queen" },
+      stock: { trackQuantity: true, inStock: true, quantity: 6 },
+      variant: { priceData: { price: 719 } },
+    },
+    {
+      _id: "fixture-var-k6",
+      choices: { "Frame Color": "Espresso", Size: "King" },
+      stock: { trackQuantity: true, inStock: true, quantity: 6 },
+      variant: { priceData: { price: 819 } },
     },
   ],
   ["fixture-col-futon-frames", "fixture-col-all"],
-  undefined,
-  319,
+  819,
+  519,
 );
 
 const KINGSTON = {
@@ -371,7 +389,7 @@ const BLUE_RIDGE = makeProduct(
     {
       _id: "fixture-var-br1",
       choices: { Upholstery: "Charcoal" },
-      stock: { trackQuantity: true, inStock: true, quantity: 3 },
+      stock: { trackQuantity: true, inStock: true, quantity: 6 },
       variant: { priceData: { price: 799 } },
     },
     {

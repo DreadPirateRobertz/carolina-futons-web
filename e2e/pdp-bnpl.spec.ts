@@ -12,7 +12,7 @@
 
 import { test, expect } from "@playwright/test";
 
-const KINGSTON = "/products/kingston-futon-frame"; // $399 fixture
+const KINGSTON = "/products/kingston-futon-frame"; // $619 fixture (Full size default)
 const MESA = "/products/mesa-foam-mattress";        // $119 fixture (still > $50)
 
 const isFixtureMode = process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1";
