@@ -12,6 +12,7 @@ import {
 import { GalleryZoomLightbox } from "./GalleryZoomLightbox";
 import { PdpImageComparison } from "./PdpImageComparison";
 import { ProductSpinViewer } from "./ProductSpinViewer";
+import { wixImageUrl } from "@/lib/wix/wix-image";
 
 // cf-3qt.6.F.1 + cf-3qt.7.O.1: multi-image gallery for the PDP.
 //
@@ -277,7 +278,7 @@ export function PdpGallery({ images, productName, activeUrl, spinImages }: PdpGa
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={resolvedSrc(img.url)}
+                  src={wixImageUrl(resolvedSrc(img.url), 64, 64)}
                   alt=""
                   aria-hidden="true"
                   className="h-full w-full object-cover"
@@ -410,7 +411,7 @@ function ZoomMainImage({
         // stable on error-fallback swaps so the DOM ref stays valid.
         // In the VT path the browser handles the morph, no remount needed.
         key={useFramerCrossfade ? crossfadeKey : "static"}
-        src={src}
+        src={wixImageUrl(src, 600, 600)}
         alt={alt}
         data-testid="pdp-main-image"
         style={baseStyle}

@@ -37,6 +37,7 @@ import {
   type ProductOptionInput,
   type VariantInput,
 } from "@/lib/product/variant-selection";
+import { wixImageUrl } from "@/lib/wix/wix-image";
 
 function resolveInStock(
   selectedVariant: ReturnType<typeof findMatchingVariant>,
@@ -186,7 +187,7 @@ export function PdpInteractive({
         ) : imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={imageUrl}
+            src={wixImageUrl(imageUrl, 600, 600)}
             alt={productName}
             data-testid="pdp-main-image"
             className="aspect-square w-full rounded-lg object-cover"

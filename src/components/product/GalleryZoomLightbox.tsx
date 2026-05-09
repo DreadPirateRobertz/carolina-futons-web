@@ -12,6 +12,8 @@ import {
 } from "react";
 import { m, useReducedMotion } from "framer-motion";
 
+import { wixImageUrl } from "@/lib/wix/wix-image";
+
 type Point = { x: number; y: number };
 
 // cfw-zd8: full-screen gallery zoom lightbox. Replaces the cf-nmwy single-
@@ -371,7 +373,7 @@ export function GalleryZoomLightbox({
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={active.url}
+          src={wixImageUrl(active.url, 1280, 1280)}
           alt={altText}
           data-testid="gallery-zoom-image"
           draggable={false}
