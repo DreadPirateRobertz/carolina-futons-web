@@ -147,3 +147,154 @@ describe("EditableTextEditor — save", () => {
     expect(reloadMock).not.toHaveBeenCalled();
   });
 });
+
+describe("EditableTextEditor — cfw-plg ↶ undo flow", () => {
+  it("renders an undo button alongside the pencil in closed state", () => {
+    render(<EditableTextEditor contentKey="footer.tagline" initialValue="hi" />);
+    const undo = screen.getByTestId("editable-text-undo");
+    expect(undo).toHaveAttribute(
+      "aria-label",
+      "Show edit history for footer.tagline",
+    );
+  });
+
+  it("clicking ↶ fetches history and shows 'No prior versions yet' on empty result", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ ok: true, rows: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    render(<EditableTextEditor contentKey="footer.tagline" initialValue="hi" />);
+    await user.click(screen.getByTestId("editable-text-undo"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("editable-text-history-empty")).toBeInTheDocument(),
+    );
+    const [url] = fetchMock.mock.calls[0]!;
+    expect(url).toBe("/api/admin/site-content/history?key=footer.tagline");
+  });
+
+  it("renders a versions list with row buttons when history has rows", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          ok: true,
+          rows: [
+            {
+              _id: "h-2",
+              _createdDate: new Date(Date.now() - 60_000).toISOString(),
+              key: "footer.tagline",
+              before: "v1",
+              after: "v2",
+            },
+            {
+              _id: "h-1",
+              _createdDate: new Date(Date.now() - 3_600_000).toISOString(),
+              key: "footer.tagline",
+              before: "",
+              after: "v1",
+            },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+    render(<EditableTextEditor contentKey="footer.tagline" initialValue="v2" />);
+    await user.click(screen.getByTestId("editable-text-undo"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("editable-text-history-list")).toBeInTheDocument(),
+    );
+    const rows = screen.getAllByTestId("editable-text-history-row");
+    expect(rows).toHaveLength(2);
+    // First row's `before` is "v1" so the rollback would go back to v1.
+    expect(rows[0]).toHaveTextContent("v1");
+    // Empty before renders as "(empty)".
+    expect(rows[1]).toHaveTextContent("(empty)");
+  });
+
+  it("clicking a version row POSTs the rollback through /api/admin/site-content", async () => {
+    const user = userEvent.setup();
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ok: true,
+            rows: [
+              {
+                _id: "h-2",
+                _createdDate: new Date().toISOString(),
+                key: "footer.tagline",
+                before: "Old tagline",
+                after: "New tagline",
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 200 }));
+    render(<EditableTextEditor contentKey="footer.tagline" initialValue="New tagline" />);
+    await user.click(screen.getByTestId("editable-text-undo"));
+
+    const row = await screen.findByTestId("editable-text-history-row");
+    await user.click(row);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    const [url, init] = fetchMock.mock.calls[1]!;
+    expect(url).toBe("/api/admin/site-content");
+    expect(init?.method).toBe("POST");
+    const body = JSON.parse(String(init?.body));
+    expect(body).toEqual({ key: "footer.tagline", value: "Old tagline" });
+
+    await waitFor(() => expect(reloadMock).toHaveBeenCalledTimes(1));
+  });
+
+  it("surfaces a non-2xx GET response as an inline history error", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 502 }));
+    render(<EditableTextEditor contentKey="k" initialValue="v" />);
+    await user.click(screen.getByTestId("editable-text-undo"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("editable-text-history-error")).toHaveTextContent("502"),
+    );
+    expect(reloadMock).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a network failure during GET as an inline history error", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    render(<EditableTextEditor contentKey="k" initialValue="v" />);
+    await user.click(screen.getByTestId("editable-text-undo"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("editable-text-history-error")).toHaveTextContent(
+        /network/i,
+      ),
+    );
+    expect(reloadMock).not.toHaveBeenCalled();
+  });
+
+  it("Cancel from the history panel returns to closed state", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ ok: true, rows: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    render(<EditableTextEditor contentKey="k" initialValue="v" />);
+    await user.click(screen.getByTestId("editable-text-undo"));
+    await waitFor(() =>
+      expect(screen.getByTestId("editable-text-history-panel")).toBeInTheDocument(),
+    );
+
+    await user.click(screen.getByRole("button", { name: /cancel/i }));
+    expect(screen.queryByTestId("editable-text-history-panel")).toBeNull();
+    expect(screen.getByTestId("editable-text-pencil")).toBeInTheDocument();
+  });
+});
