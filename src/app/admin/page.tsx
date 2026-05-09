@@ -4,11 +4,38 @@ import Link from "next/link";
 // already enforced the `requireOwnerSession` gate, so reaching this
 // component is sufficient proof the visitor is an allowlisted owner.
 //
-// This is a deliberately minimal placeholder. Sub-bead 2 (EditableText)
-// adds the pencil-icon UI; sub-bead 3 wires the persistence endpoint;
-// sub-bead 5 adds the image-upload affordance. For now the page just
-// signals that the gate works — Brenda can confirm she can reach
-// /admin and a non-owner cannot.
+// cfw-vtx: replaced the original "up next" placeholder copy with a real
+// nav surface now that several sub-beads have shipped. The list below is
+// hand-maintained — when a new owner-mode surface lands, add an <AdminCard>
+// for it so Brenda doesn't have to memorise URLs.
+
+type AdminCard = {
+  title: string;
+  href: string;
+  description: string;
+};
+
+const SHIPPED_SURFACES: ReadonlyArray<AdminCard> = [
+  {
+    title: "Browse SiteContent",
+    href: "/admin/site-content",
+    description:
+      "Read-only list of every editable copy key on the site, with current values. Use it to audit what you can change inline.",
+  },
+];
+
+const STOREFRONT_AFFORDANCES: ReadonlyArray<{ title: string; description: string }> = [
+  {
+    title: "Inline pencils on copy",
+    description:
+      "Visit any storefront page (e.g. the homepage or footer). When owner mode is on, a small pencil sits next to each editable string — click to inline-edit.",
+  },
+  {
+    title: "Inline image replace",
+    description:
+      "Hover an editable image while owner mode is on; the replace affordance lets you swap the image without leaving the page.",
+  },
+];
 
 export default function AdminHomePage() {
   return (
@@ -24,23 +51,66 @@ export default function AdminHomePage() {
         Owner mode
       </h1>
       <p className="mt-3 text-cf-charcoal/80">
-        You&rsquo;re signed in as a Carolina Futons site owner. Inline editing
-        affordances will appear here as the next sub-beads ship; for now the
-        gate itself is the deliverable.
+        You&rsquo;re signed in as a Carolina Futons site owner. From here you
+        can browse editable content, jump back to the storefront, or sign out.
       </p>
 
-      <ul className="mt-6 space-y-2 text-sm text-cf-charcoal/70">
-        <li>
-          <span className="font-medium text-cf-espresso">Up next (cfw-6qd.2):</span>{" "}
-          EditableText component — pencil affordance on every SiteContent string.
-        </li>
-        <li>
-          <span className="font-medium text-cf-espresso">Up next (cfw-6qd.3):</span>{" "}
-          POST /api/admin/site-content — persist Brenda&rsquo;s edits to Wix Data.
-        </li>
+      <h2
+        id="admin-home-tools-heading"
+        className="mt-8 font-heading text-base font-semibold uppercase tracking-wide text-cf-charcoal/60"
+      >
+        Tools
+      </h2>
+      <ul
+        aria-labelledby="admin-home-tools-heading"
+        data-testid="admin-home-tools"
+        className="mt-3 space-y-3"
+      >
+        {SHIPPED_SURFACES.map((card) => (
+          <li
+            key={card.href}
+            data-slot="admin-home-card"
+            className="rounded-md border border-cf-divider/80 p-4"
+          >
+            <Link
+              href={card.href}
+              className="font-medium text-cf-espresso underline-offset-2 hover:underline"
+            >
+              {card.title}
+            </Link>
+            <p className="mt-1 text-sm text-cf-charcoal/70">
+              {card.description}
+            </p>
+          </li>
+        ))}
       </ul>
 
-      <p className="mt-6 text-sm">
+      <h2
+        id="admin-home-on-site-heading"
+        className="mt-8 font-heading text-base font-semibold uppercase tracking-wide text-cf-charcoal/60"
+      >
+        On the storefront
+      </h2>
+      <ul
+        aria-labelledby="admin-home-on-site-heading"
+        data-testid="admin-home-on-site"
+        className="mt-3 space-y-3"
+      >
+        {STOREFRONT_AFFORDANCES.map((item) => (
+          <li
+            key={item.title}
+            data-slot="admin-home-on-site-item"
+            className="rounded-md border border-cf-divider/80 p-4"
+          >
+            <p className="font-medium text-cf-espresso">{item.title}</p>
+            <p className="mt-1 text-sm text-cf-charcoal/70">
+              {item.description}
+            </p>
+          </li>
+        ))}
+      </ul>
+
+      <p className="mt-8 text-sm">
         <Link href="/" className="text-cf-cta underline-offset-2 hover:underline">
           ← Back to the storefront
         </Link>
