@@ -10,6 +10,7 @@ import {
 } from "@/lib/auth/sdk-error";
 import { SITE_CONTENT_CACHE_TAG } from "@/lib/cms/site-content";
 import { validateOwnerEditKey } from "@/lib/cms/owner-edit-validation";
+import { sanitizeOwnerHtml } from "@/lib/cms/owner-edit-sanitize";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +74,14 @@ export async function POST(req: NextRequest) {
     return badRequest(`Field 'value' exceeds ${MAX_VALUE_LENGTH} chars.`);
   }
 
+  // cfw-qyy: HTML allowlist sanitisation. Strips <script>/<iframe>/event
+  // handlers/javascript: hrefs before persistence so a stored payload can
+  // never reach a downstream renderer with active markup we didn't approve.
+  // The narrow allowlist (b/i/strong/em/a/ul/li/p/br) matches what the
+  // EditableText editor will eventually emit; anything else is silently
+  // dropped (DOMPurify default).
+  const value = sanitizeOwnerHtml(rawValue);
+
   // Wix Data write under the owner's member tokens. Permissions live on the
   // collection — Wix returns 4xx if the member isn't writer-permitted there
   // (we surface that as the same 422 path the auth routes use, so the diag
@@ -82,7 +91,7 @@ export async function POST(req: NextRequest) {
       collectionId: COLLECTION_ID,
       keyField: "key",
       keyValue: key,
-      fields: { value: rawValue },
+      fields: { value },
       tokens: owner.tokens,
     });
   } catch (err) {
@@ -106,5 +115,5 @@ export async function POST(req: NextRequest) {
   // tag-level invalidation.
   revalidateTag(SITE_CONTENT_CACHE_TAG, "default");
 
-  return NextResponse.json({ ok: true, key, value: rawValue });
+  return NextResponse.json({ ok: true, key, value });
 }

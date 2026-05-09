@@ -298,4 +298,57 @@ describe("POST /api/admin/site-content (cfw-6qd.3)", () => {
     expect(res.status).toBe(502);
     expect(mockLogWixFailure).toHaveBeenCalled();
   });
+
+  // cfw-qyy: HTML allowlist sanitisation runs between body validation and
+  // the upsert. These tests pin the contract at the route layer so a future
+  // refactor that bypasses sanitizeOwnerHtml() fails CI loudly.
+  describe("cfw-qyy — html sanitisation pipeline", () => {
+    it("strips <script> tag + content before persisting", async () => {
+      mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+      mockUpsert.mockResolvedValueOnce({});
+
+      const res = await callPost({
+        key: "footer.tagline",
+        value: 'Hello <script>alert("xss")</script>world',
+      });
+
+      expect(res.status).toBe(200);
+      const data = (await res.json()) as { value: string };
+      expect(data.value).toBe("Hello world");
+      expect(mockUpsert).toHaveBeenCalledWith(
+        expect.objectContaining({ fields: { value: "Hello world" } }),
+      );
+    });
+
+    it("strips on*= event handlers from <a> while keeping the link", async () => {
+      mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+      mockUpsert.mockResolvedValueOnce({});
+
+      await callPost({
+        key: "footer.contact",
+        value: '<a href="https://example.com" onclick="evil()">site</a>',
+      });
+
+      const persisted = (mockUpsert.mock.calls[0]?.[0] as { fields: { value: string } })
+        .fields.value;
+      expect(persisted).not.toMatch(/onclick/i);
+      expect(persisted).toContain("https://example.com");
+    });
+
+    it("preserves the simple-emphasis allowlist round-trip", async () => {
+      mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+      mockUpsert.mockResolvedValueOnce({});
+
+      await callPost({
+        key: "hero.headline",
+        value: "<strong>Sale</strong> — <em>limited time</em>",
+      });
+
+      expect(mockUpsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fields: { value: "<strong>Sale</strong> — <em>limited time</em>" },
+        }),
+      );
+    });
+  });
 });
