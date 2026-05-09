@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "provision:site-content": "node scripts/provision-site-content/index.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
