@@ -9,7 +9,10 @@ import {
   classifyAuthInputError,
 } from "@/lib/auth/sdk-error";
 import { SITE_CONTENT_CACHE_TAG } from "@/lib/cms/site-content";
-import { validateOwnerEditKey } from "@/lib/cms/owner-edit-validation";
+import {
+  sanitizeOwnerEditValue,
+  validateOwnerEditKey,
+} from "@/lib/cms/owner-edit-validation";
 import { sanitizeOwnerHtml } from "@/lib/cms/owner-edit-sanitize";
 
 export const dynamic = "force-dynamic";
@@ -28,15 +31,10 @@ export const dynamic = "force-dynamic";
 //
 // Out of scope:
 //   - undo/version history (sub-bead 9 — cfw-6qd.9)
-//   - XSS sanitisation beyond length limits (sub-bead 10 — cfw-6qd.10)
 //   - audit log (sub-bead 8 — cfw-6qd.8)
 //   - image-upload (sub-bead 6 — cfw-6qd.6)
 
 const COLLECTION_ID = "SiteContent";
-
-// SiteContent values are short labels and tagline copy. 4 KiB is generous
-// for any owner-edited string while still bounding payload size.
-const MAX_VALUE_LENGTH = 4096;
 
 type SiteContentBody = { key?: unknown; value?: unknown };
 
@@ -56,7 +54,6 @@ export async function POST(req: NextRequest) {
 
   // Body parse + validation.
   const body = (await req.json().catch(() => ({}))) as SiteContentBody;
-  const rawValue = typeof body.value === "string" ? body.value : "";
 
   // cfw-6qd.12: key validation runs through the shared validator so the
   // endpoint, the seed test (cfw-roi/cf-atze), and any future caller agree
@@ -67,20 +64,27 @@ export async function POST(req: NextRequest) {
   if (!keyCheck.ok) return badRequest(keyCheck.message);
   const key = keyCheck.key;
 
-  if (typeof body.value !== "string") {
-    return badRequest("Missing required field: value (must be a string).");
-  }
-  if (rawValue.length > MAX_VALUE_LENGTH) {
-    return badRequest(`Field 'value' exceeds ${MAX_VALUE_LENGTH} chars.`);
-  }
-
-  // cfw-qyy: HTML allowlist sanitisation. Strips <script>/<iframe>/event
-  // handlers/javascript: hrefs before persistence so a stored payload can
-  // never reach a downstream renderer with active markup we didn't approve.
-  // The narrow allowlist (b/i/strong/em/a/ul/li/p/br) matches what the
-  // EditableText editor will eventually emit; anything else is silently
-  // dropped (DOMPurify default).
-  const value = sanitizeOwnerHtml(rawValue);
+  // Sanitization stack: cheap structural pass first, then DOMPurify.
+  //
+  //   1. cfw-6qd.12 — sanitizeOwnerEditValue: strips ASCII control bytes
+  //      (\x00–\x1F except whitespace, \x7F), enforces the 4 KiB cap,
+  //      rejects values starting with `javascript:` / `vbscript:` /
+  //      `data:` URL schemes (the href-shaped keys like
+  //      `announcement.rotation.3.cta-href` end up in `<a href={value}>`
+  //      where React doesn't pre-block these schemes before render-time).
+  //      Empty strings are allowed — clearing a key is a valid edit.
+  //   2. cfw-qyy — sanitizeOwnerHtml: DOMPurify allowlist
+  //      (b/i/strong/em/a/ul/li/p/br + http/mailto/tel/relative hrefs).
+  //      Strips <script>/<iframe>/event handlers AND their content
+  //      (FORBID_CONTENTS) so a payload like
+  //      "Hello <script>alert(1)</script>world" persists as "Hello world".
+  //
+  // Order matters: the structural pass rejects malformed/dangerous-prefix
+  // input at the boundary so DOMPurify never wastes cycles on a payload
+  // that would have been rejected anyway.
+  const valueCheck = sanitizeOwnerEditValue(body.value);
+  if (!valueCheck.ok) return badRequest(valueCheck.message);
+  const value = sanitizeOwnerHtml(valueCheck.value);
 
   // Wix Data write under the owner's member tokens. Permissions live on the
   // collection — Wix returns 4xx if the member isn't writer-permitted there

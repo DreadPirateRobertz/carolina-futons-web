@@ -251,6 +251,46 @@ describe("POST /api/admin/site-content (cfw-6qd.3)", () => {
     expect(mockUpsert).not.toHaveBeenCalled();
   });
 
+  // cfw-6qd.12: dangerous URL schemes are rejected at the write boundary —
+  // some keys (e.g. `announcement.rotation.3.cta-href`) end up in
+  // `<a href={value}>`, where React doesn't pre-block `javascript:` hrefs
+  // before render-time.
+  it.each([
+    ["javascript:alert(1)"],
+    ["JavaScript:alert(1)"],
+    ["vbscript:msgbox(1)"],
+    ["data:text/html,<script>alert(1)</script>"],
+  ])("returns 400 + rejects dangerous URL scheme value: %s (cfw-6qd.12)", async (value) => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+
+    const res = await callPost({ key: "announcement.rotation.3.cta-href", value });
+
+    expect(res.status).toBe(400);
+    const data = (await res.json()) as { error: string };
+    expect(data.error).toMatch(/javascript|vbscript|data/i);
+    expect(mockUpsert).not.toHaveBeenCalled();
+    expect(mockRevalidateTag).not.toHaveBeenCalled();
+  });
+
+  it("strips ASCII control bytes from value before persisting (cfw-6qd.12)", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+    mockUpsert.mockResolvedValueOnce({});
+
+    const res = await callPost({
+      key: "footer.tagline",
+      value: "Quality\x00 futon\x07 since\x1B 1991",
+    });
+
+    expect(res.status).toBe(200);
+    // The persisted value has the control bytes removed; whitespace
+    // (\t \n \r) is preserved by sanitizeOwnerEditValue.
+    expect(mockUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fields: { value: "Quality futon since 1991" },
+      }),
+    );
+  });
+
   it("returns 422 when Wix throws code=invalidEmail-style validation (no Sentry)", async () => {
     mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
     mockUpsert.mockRejectedValueOnce(
