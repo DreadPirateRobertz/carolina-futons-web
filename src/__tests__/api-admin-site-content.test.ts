@@ -185,6 +185,49 @@ describe("POST /api/admin/site-content (cfw-6qd.3)", () => {
     expect(mockUpsert).not.toHaveBeenCalled();
   });
 
+  // ── cfw-6qd.12: key naming convention enforcement ────────────────────
+  // The SiteContent collection convention is lowercase dotted-path with
+  // hyphenated segments (≥ 2 segments). Without app-level validation, a
+  // typo'd key would silently land an orphan row that no reader can see.
+
+  it.each([
+    ["camelCase segment", "footer.showroomHours"],
+    ["capital initial", "Footer.tagline"],
+    ["single segment (no dot)", "footer"],
+    ["empty inner segment", "footer..tagline"],
+    ["leading dot", ".footer.tagline"],
+    ["trailing dot", "footer.tagline."],
+    ["space in key", "footer tagline"],
+    ["special char", "footer.tagline!"],
+    ["non-ASCII", "footer.taglinę"],
+  ])("returns 400 for malformed key: %s (cfw-6qd.12)", async (_label, key) => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+
+    const res = await callPost({ key, value: "ok" });
+
+    expect(res.status).toBe(400);
+    const data = (await res.json()) as { error: string };
+    expect(data.error).toMatch(/lowercase|dotted|key/i);
+    expect(mockUpsert).not.toHaveBeenCalled();
+    expect(mockRevalidateTag).not.toHaveBeenCalled();
+  });
+
+  it("accepts the seed-convention key shapes (cfw-6qd.12)", async () => {
+    const validKeys = [
+      "footer.tagline",
+      "footer.showroom-hours.label",
+      "announcement.rotation.0.cta-href",
+      "visit.hours.sun-tue",
+    ];
+    for (const key of validKeys) {
+      mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+      mockUpsert.mockResolvedValueOnce({});
+      const res = await callPost({ key, value: "ok" });
+      expect(res.status).toBe(200);
+    }
+    expect(mockUpsert).toHaveBeenCalledTimes(validKeys.length);
+  });
+
   it("returns 400 when value exceeds 4096 chars", async () => {
     mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
 

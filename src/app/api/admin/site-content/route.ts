@@ -9,6 +9,7 @@ import {
   classifyAuthInputError,
 } from "@/lib/auth/sdk-error";
 import { SITE_CONTENT_CACHE_TAG } from "@/lib/cms/site-content";
+import { validateOwnerEditKey } from "@/lib/cms/owner-edit-validation";
 
 export const dynamic = "force-dynamic";
 
@@ -35,9 +36,6 @@ const COLLECTION_ID = "SiteContent";
 // SiteContent values are short labels and tagline copy. 4 KiB is generous
 // for any owner-edited string while still bounding payload size.
 const MAX_VALUE_LENGTH = 4096;
-// Dotted-path keys (e.g. "footer.legal.copyright"). 256 chars is well above
-// any reasonable depth.
-const MAX_KEY_LENGTH = 256;
 
 type SiteContentBody = { key?: unknown; value?: unknown };
 
@@ -57,13 +55,17 @@ export async function POST(req: NextRequest) {
 
   // Body parse + validation.
   const body = (await req.json().catch(() => ({}))) as SiteContentBody;
-  const key = typeof body.key === "string" ? body.key.trim() : "";
   const rawValue = typeof body.value === "string" ? body.value : "";
 
-  if (!key) return badRequest("Missing required field: key.");
-  if (key.length > MAX_KEY_LENGTH) {
-    return badRequest(`Field 'key' exceeds ${MAX_KEY_LENGTH} chars.`);
-  }
+  // cfw-6qd.12: key validation runs through the shared validator so the
+  // endpoint, the seed test (cfw-roi/cf-atze), and any future caller agree
+  // on what a valid SiteContent key looks like (lowercase dotted-path with
+  // ≥ 2 hyphenated segments). Catches camelCase / typo'd / single-segment
+  // keys that would otherwise land orphan rows the readers can't see.
+  const keyCheck = validateOwnerEditKey(body.key);
+  if (!keyCheck.ok) return badRequest(keyCheck.message);
+  const key = keyCheck.key;
+
   if (typeof body.value !== "string") {
     return badRequest("Missing required field: value (must be a string).");
   }

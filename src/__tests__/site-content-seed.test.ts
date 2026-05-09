@@ -12,6 +12,8 @@ import { join } from "node:path";
 
 import { describe, it, expect } from "vitest";
 
+import { SITE_CONTENT_KEY_PATTERN } from "@/lib/cms/owner-edit-validation";
+
 const SEED_PATH = join(
   __dirname,
   "..",
@@ -28,11 +30,11 @@ function loadSeed(): { rows: Row[] } {
   return JSON.parse(raw);
 }
 
-// Mirror the reader's naming convention from
-// docs/design/cfw-66o-footer-announce-specs.md §2:
-//   lowercase, dotted-path, hyphenated segments
-//   e.g. "footer.tagline", "announcement.rotation.0.message"
-const KEY_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)+$/;
+// cfw-6qd.12: regex now lives in @/lib/cms/owner-edit-validation so the seed
+// test, the runtime endpoint validator, and any future caller share one
+// notion of what a valid SiteContent key looks like. Naming convention
+// docs: docs/design/cfw-66o-footer-announce-specs.md §2.
+const KEY_PATTERN = SITE_CONTENT_KEY_PATTERN;
 
 describe("provision-site-content seed-data.json", () => {
   it("parses to a non-empty rows array", () => {
