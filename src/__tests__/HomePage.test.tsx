@@ -11,7 +11,8 @@ vi.mock("@sentry/nextjs", () => ({
   flush: vi.fn().mockResolvedValue(true),
 }));
 
-// cfw-9uw: HomePage now reads home.valueProps.* keys from SiteContent. Mock
+// cfw-9uw + cfw-sbl: HomePage reads home.value-props.* keys from SiteContent
+// (hyphenated to match SITE_CONTENT_KEY_PATTERN enforced by cfw-6qd.12). Mock
 // the reader to return the caller's fallback by default, matching the
 // established pattern from VisitPage (cf-h21g). Tests that want to assert
 // the override path can set an implementation per-test.
@@ -270,16 +271,16 @@ describe("HomePage — value props (cfw-9uw, cfw-66o text-refactor)", () => {
         ([key, fallback]) => [key, fallback ?? ""] as const,
       ),
     );
-    expect(callMap.get("home.valueProps.0.title")).toBe("Hardwood, not plywood");
-    expect(callMap.get("home.valueProps.0.body")).toBe(
+    expect(callMap.get("home.value-props.0.title")).toBe("Hardwood, not plywood");
+    expect(callMap.get("home.value-props.0.body")).toBe(
       "Frames milled from solid oak, maple, and cherry. Built to outlive the apartment they ship to.",
     );
-    expect(callMap.get("home.valueProps.1.title")).toBe("Sleep on it first");
-    expect(callMap.get("home.valueProps.1.body")).toBe(
+    expect(callMap.get("home.value-props.1.title")).toBe("Sleep on it first");
+    expect(callMap.get("home.value-props.1.body")).toBe(
       "Visit the Hendersonville showroom and try every mattress we sell. No commission pressure.",
     );
-    expect(callMap.get("home.valueProps.2.title")).toBe("White-glove delivery");
-    expect(callMap.get("home.valueProps.2.body")).toBe(
+    expect(callMap.get("home.value-props.2.title")).toBe("White-glove delivery");
+    expect(callMap.get("home.value-props.2.body")).toBe(
       "Regional delivery teams set it up where you want it. Not on a curb in a box.",
     );
   });
@@ -287,7 +288,7 @@ describe("HomePage — value props (cfw-9uw, cfw-66o text-refactor)", () => {
   it("does not invoke a 4th value-prop key (catches accidental drift in VALUE_PROP_DEFAULTS length)", async () => {
     await HomePage();
     const queriedKeys = mockGetSiteContent.mock.calls.map(([key]) => key);
-    expect(queriedKeys).not.toContain("home.valueProps.3.title");
-    expect(queriedKeys).not.toContain("home.valueProps.3.body");
+    expect(queriedKeys).not.toContain("home.value-props.3.title");
+    expect(queriedKeys).not.toContain("home.value-props.3.body");
   });
 });

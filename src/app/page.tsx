@@ -212,14 +212,16 @@ const VALUE_PROP_DEFAULTS = [
   },
 ] as const;
 
+// cfw-sbl: keys conform to SITE_CONTENT_KEY_PATTERN (lowercase + hyphenated
+// segments) so the cfw-6qd.12 endpoint validator accepts Brenda's edits.
 async function loadValueProps(): Promise<
   ReadonlyArray<{ title: string; body: string }>
 > {
   return Promise.all(
     VALUE_PROP_DEFAULTS.map(async (defaults, i) => {
       const [title, body] = await Promise.all([
-        getSiteContent(`home.valueProps.${i}.title`, defaults.title),
-        getSiteContent(`home.valueProps.${i}.body`, defaults.body),
+        getSiteContent(`home.value-props.${i}.title`, defaults.title),
+        getSiteContent(`home.value-props.${i}.body`, defaults.body),
       ]);
       return { title, body };
     }),

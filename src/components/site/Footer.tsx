@@ -94,11 +94,12 @@ function SocialIcon({ path, label }: { path: string; label: string }) {
   );
 }
 
-// cfw-o2q: SiteContent-driven copy. Both strings are optional so existing
-// tests that render <Footer /> without props (the brand fallback contract)
-// keep passing — they assert the default copy. layout.tsx threads the
-// owner-editable values in via getSiteContent("footer.tagline", default)
-// and getSiteContent("footer.showroomHours", default).
+// cfw-o2q + cfw-sbl: SiteContent-driven copy. Both strings are optional so
+// existing tests that render <Footer /> without props (the brand fallback
+// contract) keep passing — they assert the default copy. layout.tsx
+// threads the owner-editable values in via getSiteContent("footer.tagline")
+// and getSiteContent("footer.showroom-hours.label") — both keys conform to
+// the SITE_CONTENT_KEY_PATTERN convention enforced by cfw-6qd.12.
 type FooterProps = {
   tagline?: string;
   showroomHoursLabel?: string;

@@ -90,7 +90,12 @@ export default async function RootLayout({
   // identical when the SiteContent collection is empty / Wix is down.
   const [footerTagline, footerShowroomHours] = await Promise.all([
     getSiteContent("footer.tagline", "Quality futon furniture since 1991"),
-    getSiteContent("footer.showroomHours", "Showroom hours: Sun–Tue, 10am–5pm"),
+    // cfw-sbl: key matches the seed convention (hyphenated, lowercase) and
+    // the existing seed-data.json row at "footer.showroom-hours.label".
+    getSiteContent(
+      "footer.showroom-hours.label",
+      "Showroom hours: Sun–Tue, 10am–5pm",
+    ),
   ]);
   return (
     <html
