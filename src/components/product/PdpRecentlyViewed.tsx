@@ -28,6 +28,7 @@ import {
   writeRecentlyViewed,
   type RecentlyViewedItem,
 } from "@/lib/product/recently-viewed";
+import { wixImageUrl } from "@/lib/wix/wix-image";
 
 export type PdpRecentlyViewedProps = {
   currentProductId: string;
@@ -149,7 +150,7 @@ function RecentTile({ item }: { item: RecentlyViewedItem }) {
         {item.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={item.imageUrl}
+            src={wixImageUrl(item.imageUrl, 240, 240)}
             alt={item.name}
             className="aspect-square w-full rounded-md object-cover"
           />

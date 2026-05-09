@@ -16,13 +16,43 @@ describe("wixImageUrl", () => {
     );
   });
 
-  it("preserves the original mode (fill stays fill) when mode is not overridden", () => {
+  it("normalizes mode to `fit` by default; caller must opt in to `fill` explicitly", () => {
+    // Default behavior: fit, regardless of what the source URL had.
     expect(wixImageUrl(WIX_FILL, 100, 100)).toBe(
       "https://static.wixstatic.com/media/abc_xyz~mv2.jpg/v1/fit/w_200,h_200,q_85/file.jpg",
     );
-    // Caller can still force a mode explicitly.
+    // Explicit `fill` is honored.
     expect(wixImageUrl(WIX_FILL, 100, 100, { mode: "fill" })).toBe(
       "https://static.wixstatic.com/media/abc_xyz~mv2.jpg/v1/fill/w_200,h_200,q_85/file.jpg",
+    );
+  });
+
+  it("rewrites `/v1/crop/...` slots (third mode in the source set) to fit by default", () => {
+    const cropUrl =
+      "https://static.wixstatic.com/media/abc_xyz~mv2.jpg/v1/crop/x_0,y_0,w_2000,h_2000/file.jpg";
+    expect(wixImageUrl(cropUrl, 200, 200)).toBe(
+      "https://static.wixstatic.com/media/abc_xyz~mv2.jpg/v1/fit/w_400,h_400,q_85/file.jpg",
+    );
+  });
+
+  it("preserves query strings (Wix signed URLs carry ?token=...)", () => {
+    const signedUrl = `${WIX_3K}?token=abc123&v=2`;
+    expect(wixImageUrl(signedUrl, 480, 480)).toBe(
+      "https://static.wixstatic.com/media/ed8a72_35006906fc78471cae8abb40b6f65006~mv2.jpg/v1/fit/w_960,h_960,q_85/file.jpg?token=abc123&v=2",
+    );
+  });
+
+  it("preserves fragment identifiers", () => {
+    const hashed = `${WIX_3K}#anchor`;
+    expect(wixImageUrl(hashed, 480, 480)).toBe(
+      "https://static.wixstatic.com/media/ed8a72_35006906fc78471cae8abb40b6f65006~mv2.jpg/v1/fit/w_960,h_960,q_85/file.jpg#anchor",
+    );
+  });
+
+  it("rewrites bare URLs that carry a query string", () => {
+    const bareSigned = `${WIX_BARE}?sig=xyz`;
+    expect(wixImageUrl(bareSigned, 64, 64)).toBe(
+      "https://static.wixstatic.com/media/ed8a72_99f11e8a3a1d4ce782e0dd3bcaa863d3~mv2.png/v1/fit/w_128,h_128,q_85/file.png?sig=xyz",
     );
   });
 
