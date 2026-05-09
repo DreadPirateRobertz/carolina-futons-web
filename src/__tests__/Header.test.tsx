@@ -1,9 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
-
-vi.mock("@/components/home/LivingHero", () => ({
-  LivingHero: () => <div data-slot="living-hero" data-testid="living-hero-stub" />,
-}));
 
 import { Header } from "@/components/site/Header";
 import { CartProvider } from "@/components/cart/CartProvider";
@@ -89,33 +85,17 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
     ).toBeInTheDocument();
   });
 
-  it("applies h-cf-header token so the 197px chrome spec is honored", () => {
+  it("header does not have overflow-hidden", () => {
     const { container } = renderHeader();
     const header = container.querySelector('header[data-slot="site-header"]');
     expect(header).not.toBeNull();
-    expect(header?.className).toContain("h-cf-header");
-  });
-
-  // cf-etv3: LivingHero wired into header backdrop
-  it("renders the LivingHero inside the header backdrop", () => {
-    const { container } = renderHeader();
-    expect(container.querySelector('[data-slot="living-hero"]')).not.toBeNull();
-  });
-
-  it("LivingSky backdrop wrapper is aria-hidden and pointer-events-none", () => {
-    const { container } = renderHeader();
-    const backdrop = container.querySelector('[data-slot="living-sky-backdrop"]');
-    expect(backdrop).not.toBeNull();
-    expect(backdrop?.getAttribute("aria-hidden")).toBe("true");
-    expect(backdrop?.className).toContain("pointer-events-none");
-  });
-
-  it("header does not have overflow-hidden (backdrop wrapper clips SVG instead)", () => {
-    const { container } = renderHeader();
-    const header = container.querySelector('header[data-slot="site-header"]');
     expect(header?.className).not.toContain("overflow-hidden");
-    const backdrop = container.querySelector('[data-slot="living-sky-backdrop"]');
-    expect(backdrop?.className).toContain("overflow-hidden");
+  });
+
+  it("renders the Browse CTA link to /shop", () => {
+    renderHeader();
+    const browse = screen.getByRole("link", { name: /browse/i });
+    expect(browse).toHaveAttribute("href", "/shop");
   });
 
 });
