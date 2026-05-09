@@ -67,7 +67,7 @@ window.pintrk('page');`;
     <>
       <Script
         id="cf-pinterest-tag"
-        strategy="lazyOnload"
+        strategy="afterInteractive"
         dangerouslySetInnerHTML={{ __html: snippet }}
       />
       {/* Static <noscript> img matches Pinterest's recommended fallback so

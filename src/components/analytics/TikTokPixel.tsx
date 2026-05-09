@@ -57,7 +57,7 @@ export function TikTokPixel() {
     <>
       <Script
         id="cf-tiktok-pixel"
-        strategy="lazyOnload"
+        strategy="afterInteractive"
         dangerouslySetInnerHTML={{ __html: snippet }}
       />
       {/* useSearchParams() suspends in App Router — wrap so the layout does
