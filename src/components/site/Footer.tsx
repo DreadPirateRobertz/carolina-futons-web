@@ -94,23 +94,27 @@ function SocialIcon({ path, label }: { path: string; label: string }) {
   );
 }
 
-// cfw-o2q + cfw-sbl: SiteContent-driven copy. Both strings are optional so
-// existing tests that render <Footer /> without props (the brand fallback
-// contract) keep passing — they assert the default copy. layout.tsx
-// threads the owner-editable values in via getSiteContent("footer.tagline")
-// and getSiteContent("footer.showroom-hours.label") — both keys conform to
-// the SITE_CONTENT_KEY_PATTERN convention enforced by cfw-6qd.12.
+// cfw-o2q + cfw-sbl + cfw-25t: SiteContent-driven copy. All three strings
+// are optional so existing tests that render <Footer /> without props (the
+// brand fallback contract) keep passing — they assert the default copy.
+// layout.tsx threads the owner-editable values in via getSiteContent for
+// "footer.tagline", "footer.showroom-hours.label", and
+// "footer.copyright.suffix" — all keys conform to the
+// SITE_CONTENT_KEY_PATTERN convention enforced by cfw-6qd.12.
 type FooterProps = {
   tagline?: string;
   showroomHoursLabel?: string;
+  copyrightSuffix?: string;
 };
 
 const DEFAULT_TAGLINE = "Quality futon furniture since 1991";
 const DEFAULT_SHOWROOM_HOURS = "Showroom hours: Sun–Tue, 10am–5pm";
+const DEFAULT_COPYRIGHT_SUFFIX = "Carolina Futons. Hendersonville, NC.";
 
 export function Footer({
   tagline = DEFAULT_TAGLINE,
   showroomHoursLabel = DEFAULT_SHOWROOM_HOURS,
+  copyrightSuffix = DEFAULT_COPYRIGHT_SUFFIX,
 }: FooterProps = {}) {
   const prefersReducedMotion = useReducedMotion() ?? false;
 
@@ -231,7 +235,7 @@ export function Footer({
         className="relative z-10 border-t border-cf-cream/10 text-xs text-cf-cream/70"
       >
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
-          <span>© {new Date().getFullYear()} Carolina Futons. Hendersonville, NC.</span>
+          <span>© {new Date().getFullYear()} {copyrightSuffix}</span>
           <div className="flex items-center gap-4">
             <Link
               href="/privacy"

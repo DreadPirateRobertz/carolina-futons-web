@@ -85,18 +85,25 @@ export default async function RootLayout({
     (await cookies()).get(CONSENT_COOKIE_NAME)?.value,
   );
 
-  // cfw-o2q: thread owner-editable footer copy from SiteContent. Fallbacks
-  // match the Footer component's defaults so the rendered shell is
-  // identical when the SiteContent collection is empty / Wix is down.
-  const [footerTagline, footerShowroomHours] = await Promise.all([
-    getSiteContent("footer.tagline", "Quality futon furniture since 1991"),
-    // cfw-sbl: key matches the seed convention (hyphenated, lowercase) and
-    // the existing seed-data.json row at "footer.showroom-hours.label".
-    getSiteContent(
-      "footer.showroom-hours.label",
-      "Showroom hours: Sun–Tue, 10am–5pm",
-    ),
-  ]);
+  // cfw-o2q + cfw-25t: thread owner-editable footer copy from SiteContent.
+  // Fallbacks match the Footer component's defaults so the rendered shell
+  // is identical when the SiteContent collection is empty / Wix is down.
+  const [footerTagline, footerShowroomHours, footerCopyrightSuffix] =
+    await Promise.all([
+      getSiteContent("footer.tagline", "Quality futon furniture since 1991"),
+      // cfw-sbl: key matches the seed convention (hyphenated, lowercase) and
+      // the existing seed-data.json row at "footer.showroom-hours.label".
+      getSiteContent(
+        "footer.showroom-hours.label",
+        "Showroom hours: Sun–Tue, 10am–5pm",
+      ),
+      // cfw-25t: third Footer key now wired. Reader and seed (cfw-roi) row
+      // at "footer.copyright.suffix" both align on the same key.
+      getSiteContent(
+        "footer.copyright.suffix",
+        "Carolina Futons. Hendersonville, NC.",
+      ),
+    ]);
   return (
     <html
       lang="en"
@@ -137,6 +144,7 @@ export default async function RootLayout({
             <Footer
               tagline={footerTagline}
               showroomHoursLabel={footerShowroomHours}
+              copyrightSuffix={footerCopyrightSuffix}
             />
             <CartDrawer />
             <BackToTop />

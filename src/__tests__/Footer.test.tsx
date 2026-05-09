@@ -69,6 +69,32 @@ describe("Footer — Phase 3 rebrand", () => {
     ).toBeInTheDocument();
   });
 
+  // cfw-25t: copyright suffix now flows from SiteContent via layout.tsx.
+  it("renders an owner-supplied copyright suffix when passed via prop (cfw-25t)", () => {
+    render(<Footer copyrightSuffix="Carolina Futons LLC. Asheville, NC." />);
+    const year = new Date().getFullYear();
+    expect(
+      screen.getByText(
+        new RegExp(`© ${year} Carolina Futons LLC\\. Asheville, NC\\.`),
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        new RegExp(`© ${year} Carolina Futons\\. Hendersonville, NC\\.`),
+      ),
+    ).not.toBeInTheDocument();
+  });
+
+  it("falls back to default copyright suffix when no prop is passed (cfw-25t)", () => {
+    render(<Footer />);
+    const year = new Date().getFullYear();
+    expect(
+      screen.getByText(
+        new RegExp(`© ${year} Carolina Futons\\. Hendersonville, NC\\.`),
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("renders BUSINESS.phone as a tel: link with Call/Text prefix", () => {
     render(<Footer />);
     const phone = screen.getByRole("link", {
