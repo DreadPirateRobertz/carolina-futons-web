@@ -40,7 +40,7 @@ export function CompareTable({ products, slugs }: CompareTableProps) {
               Product
             </th>
             {products.map((p, i) => {
-              const slug = p.slug ?? slugs[i] ?? "";
+              const slug = p.slug ?? "";
               const productHref = slug ? `/products/${slug}` : "#";
               return (
                 <th
