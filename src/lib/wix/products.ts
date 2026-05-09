@@ -46,6 +46,37 @@ export async function listProducts(limit = 24): Promise<WixProduct[]> {
   }
 }
 
+// cfw-cus: getProduct(_id) returns variants WITHOUT variant.priceData populated
+// (the SDK NonNullablePaths confirm: getProduct guarantees variant.weight/sku/
+// visible but NOT priceData; queryProductVariants is the API path that does).
+// Merge per-variant priceData by _id so the PDP variant picker can swap price
+// when a different size/option is selected. Falls through silently on failure
+// (network / auth) so a transient Wix outage degrades to the product-level
+// fallback price instead of breaking the page.
+export function mergeVariantPriceData<T extends WixProduct>(
+  product: T,
+  variantsWithPriceData: ReadonlyArray<{ _id?: string | null; variant?: { priceData?: unknown } | null }> | null,
+): T {
+  if (!variantsWithPriceData || variantsWithPriceData.length === 0) return product;
+  if (!product.variants || product.variants.length === 0) return product;
+  const priceById = new Map<string, unknown>();
+  for (const v of variantsWithPriceData) {
+    if (v?._id && v.variant?.priceData) priceById.set(v._id, v.variant.priceData);
+  }
+  if (priceById.size === 0) return product;
+  return {
+    ...product,
+    variants: product.variants.map((v: { _id?: string | null; variant?: object | null }) => {
+      const priceData = v?._id ? priceById.get(v._id) : undefined;
+      if (!priceData) return v;
+      return {
+        ...v,
+        variant: { ...(v.variant ?? {}), priceData },
+      };
+    }),
+  } as T;
+}
+
 // cfw-3l9: pick the longer media.items[] across the two-step Wix fetch.
 // queryProducts and getProduct don't return identical shapes — getProduct
 // occasionally drops items[] entirely. Merging keeps mainMedia + per-choice
@@ -91,7 +122,32 @@ export async function getProductBySlug(slug: string): Promise<WixProduct | null>
       );
       return null;
     }
-    const full = await client.products.getProduct(stub._id);
+    // cfw-cus: queryProductVariants is the only Wix Stores read API that
+    // includes variant.priceData. getProduct returns variants without it, so
+    // the PDP picker was stuck on the product fallback price across every
+    // size selection (Stilgar repro: Kingston Twin/Full/Queen/King all $619).
+    // Fire both calls in parallel; queryProductVariants is wrapped so a
+    // missing method (older mock clients) or a transient Wix outage degrades
+    // to the fallback price instead of taking the PDP down.
+    // Capture _id into a const so the inner closure keeps the type narrowing
+    // from the `!stub._id` guard above (TS2345 otherwise — closures lose it).
+    const productId: string = stub._id;
+    const queryVariantPriceData = async () => {
+      try {
+        const queryFn = (
+          client.products as { queryProductVariants?: (id: string, opts: object) => Promise<unknown> }
+        ).queryProductVariants;
+        if (typeof queryFn !== "function") return null;
+        return (await queryFn(productId, {})) as { variants?: ReadonlyArray<{ _id?: string | null; variant?: { priceData?: unknown } | null }> } | null;
+      } catch (err) {
+        await logWixFailure("wix", `queryProductVariants(${productId})`, err);
+        return null;
+      }
+    };
+    const [full, variantPriceResp] = await Promise.all([
+      client.products.getProduct(productId),
+      queryVariantPriceData(),
+    ]);
     if (!full.product) {
       await logWixFailure(
         "wix",
@@ -107,7 +163,11 @@ export async function getProductBySlug(slug: string): Promise<WixProduct | null>
     // Prefer whichever response has more image items so the gallery surfaces
     // every Wix-uploaded photo. Use queryProducts' mainMedia too when the
     // full response is missing it.
-    return mergeProductMedia(full.product, stub);
+    const merged = mergeProductMedia(full.product, stub);
+    return mergeVariantPriceData(
+      merged,
+      variantPriceResp?.variants ?? null,
+    );
   } catch (err) {
     await logWixFailure("wix", `getProductBySlug(${slug})`, err);
     return null;

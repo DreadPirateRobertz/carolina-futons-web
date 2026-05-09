@@ -27,7 +27,10 @@ const FULL_PRODUCT = {
   ],
 };
 
-function makeClient(overrides: { getProduct?: (_id: string) => Promise<unknown> } = {}) {
+function makeClient(overrides: {
+  getProduct?: (_id: string) => Promise<unknown>;
+  queryProductVariants?: (_id: string, opts: object) => Promise<unknown>;
+} = {}) {
   return {
     products: {
       queryProducts: () => ({
@@ -38,6 +41,13 @@ function makeClient(overrides: { getProduct?: (_id: string) => Promise<unknown> 
         }),
       }),
       getProduct: overrides.getProduct ?? (async (_id: string) => ({ product: FULL_PRODUCT })),
+      // cfw-cus: getProductBySlug now also fans out to queryProductVariants
+      // to merge per-variant priceData (which getProduct does not return).
+      // Default mock returns the same variants without priceData; tests that
+      // care about the merge override this.
+      queryProductVariants:
+        overrides.queryProductVariants ??
+        (async (_id: string, _opts: object) => ({ variants: FULL_PRODUCT.variants })),
     },
   };
 }
