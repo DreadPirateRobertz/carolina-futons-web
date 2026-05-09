@@ -125,12 +125,11 @@ describe("Footer — navigation columns", () => {
   it("Shop column links to futon-frames and murphy beds", () => {
     renderFooter();
     const shopNav = screen.getByRole("navigation", { name: "Shop" });
-    expect(within(shopNav).getByRole("link", { name: "Futons" })).toHaveAttribute(
-      "href",
-      "/shop/futon-frames",
-    );
     expect(
-      within(shopNav).getByRole("link", { name: "Murphy Beds" }),
+      within(shopNav).getByRole("link", { name: "Futon Frames" }),
+    ).toHaveAttribute("href", "/shop/futon-frames");
+    expect(
+      within(shopNav).getByRole("link", { name: "Murphy Cabinet Beds" }),
     ).toHaveAttribute("href", "/shop/murphy-cabinet-beds");
   });
 
@@ -150,9 +149,11 @@ describe("Footer — navigation columns", () => {
 });
 
 describe("Footer — contact section", () => {
-  it("renders the business phone number", () => {
+  it("renders the business phone number with Call/Text prefix", () => {
     renderFooter();
-    expect(screen.getByText("(828) 252-9449")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Call\/Text \(828\) 252-9449/),
+    ).toBeInTheDocument();
   });
 
   it("renders the business email", () => {

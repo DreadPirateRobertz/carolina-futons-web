@@ -83,11 +83,12 @@ export function FilterFirst({
           className="mt-3 text-5xl font-bold leading-[1.02] tracking-tight text-cf-espresso sm:text-6xl lg:text-7xl"
           style={{ fontFamily: "var(--font-theme-d-heading, var(--font-heading))" }}
         >
-          Find your perfect futon
+          Find your perfect _____
         </h1>
         <p className="mt-4 max-w-xl text-lg text-cf-charcoal/70">
-          Hardwood frames built by hand, mattresses we actually sleep on,
-          and shipping that shows up.
+          Choose from our selection of high-quality futon frames, bedroom
+          furniture and casegoods, Murphy Cabinet Beds, and craftsman-built
+          futon mattresses for your bed or futon frame.
         </p>
 
         {/* Category chips */}

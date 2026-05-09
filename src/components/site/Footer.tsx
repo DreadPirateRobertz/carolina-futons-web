@@ -58,8 +58,8 @@ const FOOTER_COLUMNS: ReadonlyArray<FooterColumn> = [
   {
     heading: "Shop",
     links: [
-      { label: "Futons", href: "/shop/futon-frames" },
-      { label: "Murphy Beds", href: "/shop/murphy-cabinet-beds" },
+      { label: "Futon Frames", href: "/shop/futon-frames" },
+      { label: "Murphy Cabinet Beds", href: "/shop/murphy-cabinet-beds" },
       { label: "Mattresses", href: "/shop/mattresses" },
       { label: "Platform Beds", href: "/shop/platform-beds" },
     ],
@@ -128,7 +128,7 @@ export function Footer() {
               </span>
             </Link>
             <p className="max-w-xs text-sm text-cf-cream/80">
-              Quality futons since 1991
+              Quality futon furniture since 1991
             </p>
             <ul className="mt-2 flex items-center gap-3 text-cf-cream/80">
               {FOOTER_SOCIALS.map((social) => (
@@ -181,7 +181,7 @@ export function Footer() {
               href={BUSINESS.phoneHref}
               className="text-cf-cream/90 transition-colors hover:text-cf-cream focus-visible:outline-none focus-visible:underline underline-offset-4"
             >
-              {BUSINESS.phone}
+              Call/Text {BUSINESS.phone}
             </a>
             <a
               href={BUSINESS.emailHref}
@@ -190,7 +190,7 @@ export function Footer() {
               {BUSINESS.email}
             </a>
             <p className="mt-1 text-cf-cream/70">
-              Showroom hours: Wed–Sat, 10am–5pm
+              Showroom hours: Sun–Tue, 10am–5pm
             </p>
           </div>
         </div>

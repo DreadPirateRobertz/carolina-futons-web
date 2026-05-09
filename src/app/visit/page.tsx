@@ -11,9 +11,8 @@ export const metadata: Metadata = {
 };
 
 const STORE_HOURS = [
-  { days: "Monday – Tuesday", hours: "Closed" },
-  { days: "Wednesday – Saturday", hours: "10 am – 5 pm" },
-  { days: "Sunday", hours: "Closed" },
+  { days: "Sunday – Tuesday", hours: "10 am – 5 pm" },
+  { days: "Wednesday – Saturday", hours: "Closed" },
 ] as const;
 
 export default function VisitPage() {
@@ -51,7 +50,7 @@ export default function VisitPage() {
             </address>
             <div className="mt-4 space-y-1 text-sm text-cf-charcoal/80">
               <p>
-                <span className="font-medium text-cf-ink">Phone: </span>
+                <span className="font-medium text-cf-ink">Call/Text: </span>
                 <a
                   href={BUSINESS.phoneHref}
                   className="hover:underline"

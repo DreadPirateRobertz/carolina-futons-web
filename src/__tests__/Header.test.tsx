@@ -50,7 +50,9 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
     const navs = screen.getAllByRole("navigation", { name: /primary/i });
     expect(navs.length).toBeGreaterThanOrEqual(1);
     const expected = [
-      ["Futons", "/shop/futon-frames"],
+      // cfw-3ty: hamburger label changed per Brenda's PDF; mobile drawer is
+      // what RTL queries see (desktop nav is rendered as buttons, not links).
+      ["Futon Frames", "/shop/futon-frames"],
       ["Murphy Beds", "/shop/murphy-cabinet-beds"],
       ["Platform Beds", "/shop/platform-beds"],
       ["Mattresses", "/shop/mattresses"],
