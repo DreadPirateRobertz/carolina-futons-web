@@ -27,6 +27,15 @@ vi.mock("@/lib/admin/audit-log", () => ({
   AUDIT_LOG_COLLECTION_ID: "OwnerAuditLog",
 }));
 
+// cfw-jgl: writeSiteContentHistory is a sibling best-effort writer for the
+// upcoming ↶ undo UI. Mock it so the route's call goes nowhere and tests
+// can pin the call shape below.
+const mockWriteSiteContentHistory = vi.fn();
+vi.mock("@/lib/cms/site-content-history", () => ({
+  writeSiteContentHistory: (...args: unknown[]) =>
+    mockWriteSiteContentHistory(...args),
+}));
+
 const mockLogWixFailure = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/lib/wix/errors", () => ({
   logWixFailure: (...args: unknown[]) => mockLogWixFailure(...args),
@@ -67,9 +76,10 @@ async function callPost(
 beforeEach(() => {
   vi.clearAllMocks();
   // Default: lookup returns no existing row (so before="" in audit) and
-  // recordOwnerEdit succeeds. Individual tests can override either.
+  // both best-effort writers succeed. Individual tests override.
   mockLookup.mockResolvedValue(null);
   mockRecordOwnerEdit.mockResolvedValue({ ok: true });
+  mockWriteSiteContentHistory.mockResolvedValue({ ok: true, id: "hist-1" });
 });
 
 describe("POST /api/admin/site-content (cfw-6qd.3)", () => {
@@ -509,5 +519,107 @@ describe("POST /api/admin/site-content — cfw-6qd.11 audit log", () => {
       "items.query (before)",
       expect.anything(),
     );
+  });
+});
+
+describe("POST /api/admin/site-content — cfw-jgl history wire-up", () => {
+  it("calls writeSiteContentHistory after a successful upsert with key/before/after/actorEmail/tokens", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+    mockLookup.mockResolvedValueOnce({ value: "old tagline" });
+    mockUpsert.mockResolvedValueOnce({});
+
+    const res = await callPost({
+      key: "footer.tagline",
+      value: "new tagline",
+    });
+
+    expect(res.status).toBe(200);
+    expect(mockWriteSiteContentHistory).toHaveBeenCalledTimes(1);
+    expect(mockWriteSiteContentHistory).toHaveBeenCalledWith({
+      tokens: OWNER_SESSION.tokens,
+      key: "footer.tagline",
+      before: "old tagline",
+      after: "new tagline",
+      actorEmail: OWNER_SESSION.email,
+    });
+  });
+
+  it("does NOT call writeSiteContentHistory when the upsert itself fails", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+    mockLookup.mockResolvedValueOnce({ value: "old" });
+    mockUpsert.mockRejectedValueOnce(new Error("permission denied"));
+
+    const res = await callPost({ key: "footer.tagline", value: "new" });
+
+    expect(res.status).toBe(502);
+    expect(mockWriteSiteContentHistory).not.toHaveBeenCalled();
+  });
+
+  it("does NOT call writeSiteContentHistory when no owner session", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(null);
+
+    await callPost({ key: "footer.tagline", value: "v" });
+
+    expect(mockWriteSiteContentHistory).not.toHaveBeenCalled();
+  });
+
+  it("still returns 200 + revalidates when writeSiteContentHistory itself fails (best-effort contract)", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+    mockLookup.mockResolvedValueOnce({ value: "old" });
+    mockUpsert.mockResolvedValueOnce({});
+    mockWriteSiteContentHistory.mockResolvedValueOnce({
+      ok: false,
+      reason: "wix_error",
+      status: 404,
+    });
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await callPost({ key: "footer.tagline", value: "new" });
+
+    expect(res.status).toBe(200);
+    expect(mockRevalidateTag).toHaveBeenCalledWith("site-content", "default");
+    // The route logs failed history writes for diagnostics — collection
+    // unprovisioned (404) is the most common production case.
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "[admin/site-content] history write failed for footer.tagline",
+      ),
+    );
+    consoleSpy.mockRestore();
+  });
+
+  it("history.before='' when no previous row existed (insert path)", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+    mockLookup.mockResolvedValueOnce(null);
+    mockUpsert.mockResolvedValueOnce({});
+
+    await callPost({ key: "hero.headline", value: "fresh copy" });
+
+    expect(mockWriteSiteContentHistory).toHaveBeenCalledWith(
+      expect.objectContaining({ before: "", after: "fresh copy" }),
+    );
+  });
+
+  it("history.after carries the SANITISED value (matches what was persisted)", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+    mockLookup.mockResolvedValueOnce({ value: "" });
+    mockUpsert.mockResolvedValueOnce({});
+
+    // Anything that looks like a script tag will be stripped by
+    // sanitizeOwnerHtml so the persisted value differs from the raw input.
+    await callPost({
+      key: "footer.tagline",
+      value: "Hello <script>alert(1)</script>world",
+    });
+
+    const args = mockWriteSiteContentHistory.mock.calls[0]![0] as {
+      after: string;
+    };
+    // Same value is persisted via upsert — the test isn't asserting the
+    // exact sanitiser output, just that history.after === upsert.fields.value.
+    const upsertCall = mockUpsert.mock.calls[0]![0] as {
+      fields: { value: string };
+    };
+    expect(args.after).toBe(upsertCall.fields.value);
   });
 });

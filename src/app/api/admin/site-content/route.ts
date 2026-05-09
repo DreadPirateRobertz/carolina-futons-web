@@ -18,6 +18,7 @@ import {
 } from "@/lib/cms/owner-edit-validation";
 import { sanitizeOwnerHtml } from "@/lib/cms/owner-edit-sanitize";
 import { recordOwnerEdit } from "@/lib/admin/audit-log";
+import { writeSiteContentHistory } from "@/lib/cms/site-content-history";
 
 export const dynamic = "force-dynamic";
 
@@ -38,10 +39,15 @@ export const dynamic = "force-dynamic";
 // before, after, ts }). Audit write is best-effort — a Wix outage during
 // audit doesn't fail the user-visible save.
 //
+// cfw-jgl (cfw-6qd.10 follow-up): every successful save ALSO writes one row
+// to the SiteContentHistory collection so the upcoming ↶ icon in
+// EditableText can roll back to a prior value. Same fail-soft pattern as
+// the audit log — a SiteContentHistory write failure just means undo is
+// unavailable for that one edit; the user-visible save still succeeds.
+//
 // Out of scope:
-//   - undo/version history (sub-bead 9 — cfw-6qd.9)
-//   - audit log (sub-bead 8 — cfw-6qd.8)
-//   - XSS sanitisation beyond length limits (sub-bead 10 — cfw-6qd.10)
+//   - GET /api/admin/site-content/history?key= endpoint (separate bead)
+//   - EditableText ↶ icon UI (separate bead)
 //   - image-upload (sub-bead 6 — cfw-6qd.6)
 
 const COLLECTION_ID = "SiteContent";
@@ -158,6 +164,25 @@ export async function POST(req: NextRequest) {
     },
     owner.tokens,
   );
+
+  // cfw-jgl (cfw-6qd.10 follow-up): best-effort history row so the upcoming
+  // ↶ undo icon in EditableText has a versions list to roll back from.
+  // writeSiteContentHistory returns { ok: false, reason: "wix_error" } on
+  // any failure (collection unprovisioned, member lacks write perm, network
+  // hiccup) — surface to console for diagnostics, do NOT fail the save.
+  // before/after match the audit log so the two trails stay aligned.
+  const historyResult = await writeSiteContentHistory({
+    tokens: owner.tokens,
+    key,
+    before: beforeValue,
+    after: value,
+    actorEmail: owner.email,
+  });
+  if (!historyResult.ok) {
+    console.error(
+      `[admin/site-content] history write failed for ${key}: ${historyResult.reason}${historyResult.status ? ` (${historyResult.status})` : ""}`,
+    );
+  }
 
   // Bust the unstable_cache snapshot so getSiteContent() sees the new value
   // on the next read. The reader's per-request React.cache layer is
