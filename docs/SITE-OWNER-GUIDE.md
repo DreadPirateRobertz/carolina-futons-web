@@ -1,12 +1,66 @@
 # Carolina Futons — Site Owner Guide
 
-A practical, plain-English reference for running the site without a developer in the loop. Tells you what you can change yourself in Wix, where it shows up on the site, and which things still require a dev change.
+A practical, plain-English reference for running the site without a developer in the loop. Tells you what you can change yourself, where it shows up on the site, and which things still require a dev change.
 
-> The site is built in two pieces:
-> 1. **Wix Dashboard** — your control panel. Products, prices, photos, blog posts, inventory.
-> 2. **The storefront at carolina-futons-web** — the website customers see. Pulls product/blog data from Wix in near-real-time.
+> The site has **two ways** for you to edit content yourself:
 >
-> When you add a product in Wix, it shows up on the storefront within a few minutes (caches refresh every 5 minutes). When you add a blog post, same thing. You don't deploy code or push anything — Wix is the source of truth.
+> 1. **Owner mode (on-site)** — visit carolinafutons.com signed in as you, flip on owner mode, and pencil icons appear next to anything editable. Click → inline editor → save. New as of 2026-05; covers site copy and image swaps.
+> 2. **Wix Dashboard** — products, prices, blog posts, inventory still live here. The dashboard is your control panel for the catalog and CMS collections that aren't yet wired into owner mode.
+>
+> Owner mode is the **primary** path for site copy + images. The Wix Dashboard is the **catalog** path for products and the **fallback** path when something isn't yet wired into owner mode.
+>
+> When you add a product in Wix, it shows up on the storefront within a few minutes (caches refresh every 5 minutes). When you change a tagline via owner mode, it's live within ~30 seconds. Wix is still the source of truth — owner mode just edits Wix on your behalf without making you click through the dashboard.
+
+---
+
+## 0. Owner mode — the on-site editing workflow
+
+> **TL;DR:** sign in → add `?cf-edit=1` to any URL → pencils appear next to editable copy → click → inline editor → save. Live in ~30 seconds.
+
+This is the fastest way to update site copy (taglines, headlines, footer hours, FAQ-style strings) and product photography without leaving the public site. New as of 2026-05.
+
+### Turning owner mode on
+
+1. Visit **carolinafutons.com** in a browser. (Production. Not the Wix Dashboard preview.)
+2. Sign in via the account button using your owner email. The owner allow-list is set in our deployment env (`OWNER_EMAILS`); only addresses on that list can enter owner mode. If yours isn't on it yet, mail rennala — adding an address is a one-line config flip, no code change.
+3. Append `?cf-edit=1` to any page URL — e.g. `https://carolinafutons.com/?cf-edit=1` for the homepage. (We may swap this for a clickable toggle in the header later; the query param is the stable, no-JS-required way in.)
+4. Pencil icons appear next to every string and image the storefront has wired into owner mode. If you don't see any pencils, either (a) you're not signed in as an owner, or (b) the page renders content that isn't yet covered (open a bead — `cfw-6qd.X` style — and we'll wire it).
+
+### Editing a string
+
+1. Click the ✎ pencil next to the string you want to change.
+2. An inline editor opens — type the new text. Press **Save** (or Enter) to commit, **Esc** to cancel.
+3. The change posts to `/api/admin/site-content` and is persisted to the Wix `SiteContent` collection. The page revalidates within seconds; reload to confirm.
+4. If save fails, the editor stays open and shows a one-line error (`That value is invalid.` for malformed input, `Save failed. Please try again.` for upstream issues). Network blips: just retry.
+
+### Editing an image (planned)
+
+The image-edit affordance — pencil over a hero image or product photo → file picker → upload — is on the way. As of 2026-05 the upload endpoint isn't shipped yet (waiting on the `@wix/media` SDK wiring). Until then, product photos are still uploaded via Wix Dashboard → Store Products → Media tab (see §2). Site-wide imagery (hero, mascot, etc.) is still code-managed.
+
+### What's covered today vs. via Dashboard
+
+| Surface | Owner mode | Wix Dashboard |
+|---|---|---|
+| Footer tagline | ✓ pencil | – |
+| Footer showroom hours | ✓ pencil | – |
+| Other SiteContent strings as we wire them in | ✓ pencil | – |
+| Product name / description / price / photos | – | ✓ Store Products |
+| Product variants, inventory, collections | – | ✓ Store Products |
+| Blog posts | – | ✓ Blog → Posts |
+| Hero / brand imagery | – | dev change |
+
+The "Owner mode" column will fill in over time as more strings are migrated to `SiteContent` and the EditableImage component lands. Until then, the table tells you which channel to use.
+
+### Audit / undo
+
+Coming soon. Every successful owner-mode save will be recorded with `{ actor email, timestamp, before, after }` so you can review or roll back a recent edit. Until that ships, the safest pattern is: copy the existing string into a scratch note before you replace it.
+
+### Troubleshooting
+
+- **Pencils don't appear.** You're either not signed in, your email isn't on the `OWNER_EMAILS` allow-list, or the page hasn't been wired yet. The order of likelihood is roughly that order — check the account menu first.
+- **Save says "That value is invalid."** The string failed validation (length cap, malformed key path). Shorten it or remove unusual characters and retry.
+- **Save says "Save failed. Please try again."** Transient upstream error. Try once more; if it persists, mail rennala — there's a diagnostic header (`x-debug-token`) we can use to inspect the actual SDK error from the deployed runtime without you having to re-create the failure.
+- **Edit lands but the storefront still shows the old value.** Caches: hard-refresh (Cmd+Shift+R on macOS, Ctrl+Shift+R on Windows). Owner-mode saves explicitly bust the relevant cache, but your browser may have cached the old HTML.
 
 ---
 
@@ -14,11 +68,12 @@ A practical, plain-English reference for running the site without a developer in
 
 | Thing | Where it lives | Who can change it |
 |---|---|---|
-| Products (name, price, photos, variants, stock, sale price) | Wix Dashboard → Store Products | **You** |
-| Categories / collections | Wix Dashboard → Store Collections | **You** |
-| Blog posts | Wix Dashboard → Blog → Posts | **You** |
+| Site copy in `SiteContent` (tagline, hours, etc.) | Wix `SiteContent` CMS, edited via owner mode (§0) | **You** (on-site pencils) |
+| Products (name, price, photos, variants, stock, sale price) | Wix Dashboard → Store Products | **You** (Dashboard) |
+| Categories / collections | Wix Dashboard → Store Collections | **You** (Dashboard) |
+| Blog posts | Wix Dashboard → Blog → Posts | **You** (Dashboard) |
 | Product reviews | Static file in code (`src/lib/discovery/reviews.ts`) | Dev change |
-| Page text (Shipping, Returns, About, etc.) | Code (`src/app/<page>/page.tsx`) | Dev change |
+| Page text not yet in `SiteContent` (Shipping, Returns, About, etc.) | Code (`src/app/<page>/page.tsx`) | Dev change *(migrating string-by-string into owner mode)* |
 | Header/footer links | Code | Dev change |
 | Sale lightbox / promo banners | **Combo** — see §4 | You + dev for first-time setup |
 
@@ -162,8 +217,8 @@ To add a new editable surface, the workflow is:
 3. I rewrite the page to read from that collection instead of from hard-coded text.
 4. From then on, you edit the CMS rows in Wix Dashboard → CMS → \<collection name\>, and the page updates within 5 minutes.
 
-Currently CMS-driven: blog posts.
-Currently hard-coded (would need step 2-3 above to become editable): all policy pages (Shipping, Returns, Warranty, Privacy, Terms), About, Contact, Press, FAQ, /reviews.
+Currently CMS-driven: blog posts; owner-mode copy via the `SiteContent` collection (§0).
+Currently hard-coded (would need step 2-3 above to become editable, OR migration into `SiteContent` + an `<EditableText>` wrap to be editable via owner mode): all policy pages (Shipping, Returns, Warranty, Privacy, Terms), About, Contact, Press, FAQ, /reviews. Migrating page-by-page into `SiteContent` is the planned path — once a string lives in `SiteContent`, it gets a pencil for free.
 
 ---
 
@@ -186,6 +241,7 @@ The fastest way to get one of these done: send a brief mail with **what you want
 ## 8. Quick reference card
 
 ```
+Edit a tagline/copy     → Sign in → ?cf-edit=1 → click pencil (owner mode, §0)
 Add a product           → Wix → Store Products → New Product
 Put on sale             → Wix → Store Products → click product → Sale price
 Site-wide promo         → Wix → Marketing Tools → Coupons (or §4 lightbox)
@@ -211,6 +267,15 @@ If something doesn't appear after 10+ minutes, mail rennala — most likely it's
 ## 9. How to test your changes
 
 You don't need a developer to verify a Wix change is live on the storefront. Quick checks for each surface:
+
+### Test an owner-mode edit
+
+1. Sign in via the account button using your owner email.
+2. Append `?cf-edit=1` to any page URL (e.g. `https://carolinafutons.com/?cf-edit=1`).
+3. Click the ✎ pencil next to a string, change it, hit **Save**.
+4. Reload (without the `?cf-edit=1`) — the new string should be live.
+5. If it's not, hard-refresh (Cmd+Shift+R / Ctrl+Shift+R) to bypass the browser cache.
+
 
 ### Test a new product appears
 
