@@ -116,3 +116,47 @@ describe("VisitPage — owner-editable hours (cf-h21g / cfw-66o.4)", () => {
     );
   });
 });
+
+// ── cfw-22e: remaining 8 visit.* keys (intro / location / hours / cta) ─────
+
+describe("VisitPage — owner-editable visit.* copy (cfw-22e / cfw-66o)", () => {
+  it("queries all 8 new visit.* keys with their fallback strings", async () => {
+    await renderPage();
+    const callMap = new Map<string, string>(
+      mockGetSiteContent.mock.calls.map(
+        ([key, fallback]) => [key, fallback ?? ""] as const,
+      ),
+    );
+    expect(callMap.get("visit.intro.heading")).toBe("Visit Us");
+    expect(callMap.get("visit.intro.body")).toMatch(/come try it in person/i);
+    expect(callMap.get("visit.location.heading")).toBe("Location");
+    expect(callMap.get("visit.hours.heading")).toBe("Store Hours");
+    expect(callMap.get("visit.directions-button.label")).toBe("Get directions");
+    expect(callMap.get("visit.cta.heading")).toBe("Ready to shop?");
+    expect(callMap.get("visit.cta.body")).toMatch(/browse online first/i);
+    expect(callMap.get("visit.cta.button-label")).toBe("Browse all products");
+  });
+
+  it("renders Brenda's edits when SiteContent returns overrides", async () => {
+    mockGetSiteContent.mockImplementation(async (key: string, fallback = "") => {
+      if (key === "visit.intro.heading") return "Come Say Hi";
+      if (key === "visit.cta.heading") return "Find your futon";
+      if (key === "visit.cta.button-label") return "Shop the showroom";
+      return fallback;
+    });
+    await renderPage();
+    expect(
+      screen.getByRole("heading", { name: /come say hi/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /find your futon/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /shop the showroom/i }),
+    ).toHaveAttribute("href", "/shop");
+    // Original strings should be gone when an override is supplied.
+    expect(
+      screen.queryByRole("heading", { name: /^visit us$/i }),
+    ).not.toBeInTheDocument();
+  });
+});

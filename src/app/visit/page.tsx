@@ -34,13 +34,58 @@ const STORE_HOURS_FALLBACK = [
   },
 ] as const;
 
+// cfw-22e: full visit.* SiteContent mapping. Fallbacks below match today's
+// hardcoded copy verbatim so a Wix-down / unprovisioned render is
+// byte-identical. cf-h21g already wired hours.sun-tue/wed-sat above; this
+// closes the loop on the remaining 8 keys.
+const VISIT_COPY_FALLBACKS = {
+  introHeading: "Visit Us",
+  introBody:
+    "Come try it in person. Our Hendersonville showroom has every frame, mattress, and Murphy bed we sell — no commission pressure, just honest answers.",
+  locationHeading: "Location",
+  hoursHeading: "Store Hours",
+  directionsButtonLabel: "Get directions",
+  ctaHeading: "Ready to shop?",
+  ctaBody: "Browse online first, then come in and try everything.",
+  ctaButtonLabel: "Browse all products",
+} as const;
+
 export default async function VisitPage() {
-  const storeHours = await Promise.all(
-    STORE_HOURS_FALLBACK.map(async ({ key, days, fallback }) => ({
-      days,
-      hours: await getSiteContent(key, fallback),
-    })),
-  );
+  const [
+    storeHours,
+    introHeading,
+    introBody,
+    locationHeading,
+    hoursHeading,
+    directionsButtonLabel,
+    ctaHeading,
+    ctaBody,
+    ctaButtonLabel,
+  ] = await Promise.all([
+    Promise.all(
+      STORE_HOURS_FALLBACK.map(async ({ key, days, fallback }) => ({
+        days,
+        hours: await getSiteContent(key, fallback),
+      })),
+    ),
+    getSiteContent("visit.intro.heading", VISIT_COPY_FALLBACKS.introHeading),
+    getSiteContent("visit.intro.body", VISIT_COPY_FALLBACKS.introBody),
+    getSiteContent(
+      "visit.location.heading",
+      VISIT_COPY_FALLBACKS.locationHeading,
+    ),
+    getSiteContent("visit.hours.heading", VISIT_COPY_FALLBACKS.hoursHeading),
+    getSiteContent(
+      "visit.directions-button.label",
+      VISIT_COPY_FALLBACKS.directionsButtonLabel,
+    ),
+    getSiteContent("visit.cta.heading", VISIT_COPY_FALLBACKS.ctaHeading),
+    getSiteContent("visit.cta.body", VISIT_COPY_FALLBACKS.ctaBody),
+    getSiteContent(
+      "visit.cta.button-label",
+      VISIT_COPY_FALLBACKS.ctaButtonLabel,
+    ),
+  ]);
   const fullAddress = `${BUSINESS.street}, ${BUSINESS.city}, ${BUSINESS.state} ${BUSINESS.zip}`;
   const mapsHref = `https://maps.google.com/?q=${encodeURIComponent(`${BUSINESS.name} ${fullAddress}`)}`;
   const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
@@ -52,12 +97,10 @@ export default async function VisitPage() {
       <CabinHero className="max-h-72" />
       <div className="mx-auto w-full max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
         <h1 className="font-heading text-4xl font-bold tracking-tight text-cf-navy sm:text-5xl">
-          Visit Us
+          {introHeading}
         </h1>
         <p className="mt-4 max-w-2xl text-lg text-cf-charcoal/80">
-          Come try it in person. Our Hendersonville showroom has every frame,
-          mattress, and Murphy bed we sell — no commission pressure, just honest
-          answers.
+          {introBody}
         </p>
 
         <div className="mt-12 grid gap-10 sm:grid-cols-2">
@@ -67,7 +110,7 @@ export default async function VisitPage() {
               id="location-heading"
               className="font-heading text-xl font-semibold text-cf-navy"
             >
-              Location
+              {locationHeading}
             </h2>
             <address className="mt-4 not-italic text-cf-charcoal/80">
               <p className="font-medium text-cf-ink">{BUSINESS.name}</p>
@@ -99,7 +142,7 @@ export default async function VisitPage() {
               rel="noopener noreferrer"
               className="mt-6 inline-flex h-10 items-center justify-center rounded-md border border-cf-navy px-5 text-sm font-medium text-cf-navy transition-colors hover:bg-cf-navy hover:text-cf-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              Get directions
+              {directionsButtonLabel}
             </a>
           </section>
 
@@ -109,7 +152,7 @@ export default async function VisitPage() {
               id="hours-heading"
               className="font-heading text-xl font-semibold text-cf-navy"
             >
-              Store Hours
+              {hoursHeading}
             </h2>
             <dl className="mt-4 space-y-2">
               {storeHours.map(({ days, hours }) => (
@@ -138,16 +181,14 @@ export default async function VisitPage() {
         {/* CTA */}
         <div className="mt-12 rounded-lg border border-cf-divider bg-cf-sand/40 p-8 text-center">
           <h2 className="font-heading text-2xl font-semibold text-cf-navy">
-            Ready to shop?
+            {ctaHeading}
           </h2>
-          <p className="mt-2 text-cf-charcoal/80">
-            Browse online first, then come in and try everything.
-          </p>
+          <p className="mt-2 text-cf-charcoal/80">{ctaBody}</p>
           <Link
             href="/shop"
             className="mt-6 inline-flex h-12 items-center justify-center rounded-md bg-cf-cta px-8 text-sm font-medium text-white shadow-sm transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
-            Browse all products
+            {ctaButtonLabel}
           </Link>
         </div>
       </div>
