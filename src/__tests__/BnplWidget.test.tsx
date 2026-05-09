@@ -84,3 +84,52 @@ describe("BnplWidget (cfw-8cx)", () => {
     expect(screen.getByTestId("bnpl-panel")).not.toBeVisible();
   });
 });
+
+describe("BnplWidget — Afterpay pay-in-4 (cf-cd9u)", () => {
+  it("shows Afterpay pay-in-4 schedule when price is within the $1,000 limit", () => {
+    render(<BnplWidget unitPriceCents={79_900} />);
+    fireEvent.click(screen.getByTestId("bnpl-trigger"));
+    expect(screen.getByTestId("afterpay-pay-in-4")).toBeInTheDocument();
+    expect(screen.getByTestId("afterpay-schedule")).toBeInTheDocument();
+  });
+
+  it("shows 4 schedule rows with equal installments (price / 4)", () => {
+    // $800 / 4 = $200.00 per installment
+    render(<BnplWidget unitPriceCents={80_000} />);
+    fireEvent.click(screen.getByTestId("bnpl-trigger"));
+    const schedule = screen.getByTestId("afterpay-schedule");
+    const rows = within(schedule).getAllByRole("listitem");
+    expect(rows).toHaveLength(4);
+    rows.forEach((row) => {
+      expect(row).toHaveTextContent("$200.00");
+    });
+  });
+
+  it("schedule rows carry the expected labels", () => {
+    render(<BnplWidget unitPriceCents={79_900} />);
+    fireEvent.click(screen.getByTestId("bnpl-trigger"));
+    const schedule = screen.getByTestId("afterpay-schedule");
+    expect(within(schedule).getByText("Today")).toBeInTheDocument();
+    expect(within(schedule).getByText("In 2 weeks")).toBeInTheDocument();
+    expect(within(schedule).getByText("In 4 weeks")).toBeInTheDocument();
+    expect(within(schedule).getByText("In 6 weeks")).toBeInTheDocument();
+  });
+
+  it("hides Afterpay pay-in-4 when price exceeds the $1,000 limit", () => {
+    render(<BnplWidget unitPriceCents={100_001} />);
+    fireEvent.click(screen.getByTestId("bnpl-trigger"));
+    expect(screen.queryByTestId("afterpay-pay-in-4")).not.toBeInTheDocument();
+  });
+
+  it("shows Afterpay badge in provider row when price exceeds $1,000 limit", () => {
+    render(<BnplWidget unitPriceCents={150_000} />);
+    fireEvent.click(screen.getByTestId("bnpl-trigger"));
+    expect(screen.getByTestId("bnpl-logo-afterpay")).toBeInTheDocument();
+  });
+
+  it("shows Afterpay pay-in-4 at exactly the $1,000 limit", () => {
+    render(<BnplWidget unitPriceCents={100_000} />);
+    fireEvent.click(screen.getByTestId("bnpl-trigger"));
+    expect(screen.getByTestId("afterpay-pay-in-4")).toBeInTheDocument();
+  });
+});

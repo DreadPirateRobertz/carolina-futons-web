@@ -20,7 +20,9 @@ import { useId, useState } from "react";
 import { ChevronDown } from "lucide-react";
 
 const BNPL_MIN_CENTS = 5_000; // $50 — Affirm/Afterpay minimum order thresholds.
+const AFTERPAY_MAX_CENTS = 100_000; // $1,000 — Afterpay pay-in-4 upper limit.
 const TERMS = [4, 12, 24] as const;
+const AFTERPAY_SCHEDULE = ["Today", "In 2 weeks", "In 4 weeks", "In 6 weeks"] as const;
 
 export type BnplWidgetProps = {
   unitPriceCents: number;
@@ -102,16 +104,44 @@ export function BnplWidget({ unitPriceCents }: BnplWidgetProps) {
             );
           })}
         </ul>
+        {unitPriceCents <= AFTERPAY_MAX_CENTS && (
+          <div data-testid="afterpay-pay-in-4">
+            <div className="mb-1.5 flex items-center gap-2">
+              <AfterpayBadge />
+              <span className="text-xs font-medium text-cf-espresso/70">
+                Pay in 4 — no interest
+              </span>
+            </div>
+            <ul
+              data-testid="afterpay-schedule"
+              aria-label="Afterpay pay-in-4 schedule"
+              className="divide-y divide-[#B2FCE4]/60 rounded-md border border-[#B2FCE4] bg-[#F0FFF9] text-xs"
+            >
+              {AFTERPAY_SCHEDULE.map((label) => (
+                <li
+                  key={label}
+                  className="flex items-center justify-between px-3 py-2"
+                >
+                  <span className="text-cf-espresso/70">{label}</span>
+                  <span className="font-semibold text-cf-espresso">
+                    {formatDollars(unitPriceCents / 4 / 100)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <p className="text-xs text-cf-espresso/60">
-          Subject to lender approval. Final terms shown at checkout. Pay in 4
-          available with Afterpay on orders up to $1,000.
+          Subject to lender approval. Final terms shown at checkout.
+          {unitPriceCents > AFTERPAY_MAX_CENTS &&
+            " Afterpay pay-in-4 available on orders up to $1,000."}
         </p>
         <div
           className="flex flex-wrap items-center gap-2"
           aria-label="Available BNPL providers"
         >
           <AffirmBadge />
-          <AfterpayBadge />
+          {unitPriceCents > AFTERPAY_MAX_CENTS && <AfterpayBadge />}
         </div>
       </div>
     </section>
