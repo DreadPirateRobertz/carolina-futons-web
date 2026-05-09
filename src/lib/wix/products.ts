@@ -129,20 +129,23 @@ export async function getProductBySlug(slug: string): Promise<WixProduct | null>
     // Fire both calls in parallel; queryProductVariants is wrapped so a
     // missing method (older mock clients) or a transient Wix outage degrades
     // to the fallback price instead of taking the PDP down.
+    // Capture _id into a const so the inner closure keeps the type narrowing
+    // from the `!stub._id` guard above (TS2345 otherwise — closures lose it).
+    const productId: string = stub._id;
     const queryVariantPriceData = async () => {
       try {
         const queryFn = (
           client.products as { queryProductVariants?: (id: string, opts: object) => Promise<unknown> }
         ).queryProductVariants;
         if (typeof queryFn !== "function") return null;
-        return (await queryFn(stub._id, {})) as { variants?: ReadonlyArray<{ _id?: string | null; variant?: { priceData?: unknown } | null }> } | null;
+        return (await queryFn(productId, {})) as { variants?: ReadonlyArray<{ _id?: string | null; variant?: { priceData?: unknown } | null }> } | null;
       } catch (err) {
-        await logWixFailure("wix", `queryProductVariants(${stub._id})`, err);
+        await logWixFailure("wix", `queryProductVariants(${productId})`, err);
         return null;
       }
     };
     const [full, variantPriceResp] = await Promise.all([
-      client.products.getProduct(stub._id),
+      client.products.getProduct(productId),
       queryVariantPriceData(),
     ]);
     if (!full.product) {
