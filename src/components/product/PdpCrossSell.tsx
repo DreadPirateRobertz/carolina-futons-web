@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { formatPlpPrice } from "@/lib/product/plp-price";
+import { wixImageUrl } from "@/lib/wix/wix-image";
 import type { WixProduct } from "@/lib/wix/products";
 import type { CrossSellError } from "@/lib/product/cross-sell";
 
@@ -51,7 +52,7 @@ function CrossSellTile({ product }: { product: WixProduct }) {
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={imageUrl}
+            src={wixImageUrl(imageUrl, 240, 240)}
             alt={name}
             className="aspect-square w-full rounded-md object-cover"
           />

@@ -2,6 +2,8 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
+import { wixImageUrl } from "@/lib/wix/wix-image";
+
 const AUTO_SPIN_ROTATIONS = 3;
 const AUTO_SPIN_INTERVAL_MS = 60;
 // cfw-x3w: continuous user-toggle auto-rotate uses 100 ms/frame per the spec.
@@ -220,7 +222,7 @@ export function ProductSpinViewer({ spinImages, productName = "product" }: Props
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={currentSrc}
+        src={wixImageUrl(currentSrc, 600, 600)}
         alt=""
         aria-hidden="true"
         className="pointer-events-none h-full w-full object-cover"
