@@ -82,7 +82,7 @@ export function FilterFirst({
           className="mt-3 text-5xl font-bold leading-[1.02] tracking-tight text-cf-espresso sm:text-6xl lg:text-7xl"
           style={{ fontFamily: "var(--font-theme-d-heading, var(--font-heading))" }}
         >
-          Find your perfect _____
+          Find your perfect futon
         </h1>
         <p className="mt-4 max-w-xl text-lg text-cf-charcoal/70">
           Choose from our selection of high-quality futon frames, bedroom
