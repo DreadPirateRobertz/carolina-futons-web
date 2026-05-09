@@ -44,3 +44,7 @@ next-env.d.ts
 
 # cf-newsletter-footer: runtime subscriber store (created on first write)
 /data/newsletter-contacts.json
+
+# cfw-3ty: Brenda admin guide capture artefacts (PII — never commit)
+/e2e/brenda-admin-guide-out
+/e2e/.wix-auth.json

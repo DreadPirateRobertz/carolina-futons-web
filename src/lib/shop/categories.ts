@@ -38,7 +38,8 @@ export const SHOP_CATEGORIES: readonly ShopCategory[] = [
   {
     slug: "futon-frames",
     name: "Futon Frames",
-    description: "Hardwood futon frames made in North Carolina.",
+    description:
+      "Choose from twin, full, or queen hardwood frames, with varying seat heights, finishes, and conversion mechanisms. Some models offer chair, full, and queen chairs with ottoman options.",
     collectionSlug: "futon-frames",
     image: "https://static.wixstatic.com/media/e04e89_4bea49a709a3470a8315b5acd7309b0f~mv2.jpg/v1/fill/w_600,h_400,q_90/file.jpg",
   },

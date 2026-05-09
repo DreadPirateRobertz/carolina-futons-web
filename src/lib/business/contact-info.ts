@@ -5,7 +5,7 @@
 
 export const BUSINESS = {
   name: "Carolina Futons",
-  street: "824 Locust",
+  street: "824 Locust Street, Suite 200",
   city: "Hendersonville",
   state: "NC",
   zip: "28792",

@@ -35,9 +35,11 @@ const YOUTUBE_VIDEO: VideoEntry = {
 
 describe("getVideoByProductSlug", () => {
   it("returns the video entry for a matching slug", () => {
-    const v = getVideoByProductSlug("asheville-futon-frame");
+    // cfw-3ty: vid-asheville no longer carries a productSlug — Brenda flagged
+    // it as mattress content, not the frame; pick another seeded slug.
+    const v = getVideoByProductSlug("sedona-futon-frame");
     expect(v).not.toBeNull();
-    expect(v?.id).toBe("vid-asheville");
+    expect(v?.id).toBe("vid-sedona");
   });
 
   it("returns null for a slug with no video", () => {

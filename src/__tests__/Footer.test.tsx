@@ -33,13 +33,15 @@ describe("Footer — Phase 3 rebrand", () => {
   it("renders the brand tagline", () => {
     render(<Footer />);
     expect(
-      screen.getByText(/quality futons since 1991/i),
+      screen.getByText(/quality futon furniture since 1991/i),
     ).toBeInTheDocument();
   });
 
-  it("renders BUSINESS.phone as a tel: link", () => {
+  it("renders BUSINESS.phone as a tel: link with Call/Text prefix", () => {
     render(<Footer />);
-    const phone = screen.getByRole("link", { name: BUSINESS.phone });
+    const phone = screen.getByRole("link", {
+      name: `Call/Text ${BUSINESS.phone}`,
+    });
     expect(phone).toHaveAttribute("href", BUSINESS.phoneHref);
   });
 
@@ -71,8 +73,8 @@ describe("Footer — Phase 3 rebrand", () => {
     render(<Footer />);
     const shopNav = screen.getByRole("navigation", { name: "Shop" });
     const expected = [
-      ["Futons", "/shop/futon-frames"],
-      ["Murphy Beds", "/shop/murphy-cabinet-beds"],
+      ["Futon Frames", "/shop/futon-frames"],
+      ["Murphy Cabinet Beds", "/shop/murphy-cabinet-beds"],
       ["Mattresses", "/shop/mattresses"],
       ["Platform Beds", "/shop/platform-beds"],
     ] as const;

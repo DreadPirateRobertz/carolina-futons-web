@@ -122,7 +122,7 @@ export default function PressPage() {
             on. We&rsquo;ll get back to you within one business day.
           </p>
           <p className="leading-relaxed">
-            Showroom: {BUSINESS.street} Street, {BUSINESS.city},{" "}
+            Showroom: {BUSINESS.street}, {BUSINESS.city},{" "}
             {BUSINESS.state} {BUSINESS.zip}.
           </p>
         </section>

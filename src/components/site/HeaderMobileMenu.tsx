@@ -15,7 +15,7 @@ import { Menu, X } from "lucide-react";
 // crash the App Router server pass).
 
 const PRIMARY_NAV = [
-  { label: "Futons", href: "/shop/futon-frames" },
+  { label: "Futon Frames", href: "/shop/futon-frames" },
   { label: "Murphy Beds", href: "/shop/murphy-cabinet-beds" },
   { label: "Platform Beds", href: "/shop/platform-beds" },
   { label: "Mattresses", href: "/shop/mattresses" },

@@ -40,7 +40,7 @@ describe("HeaderMobileMenu", () => {
 
   it("nav links are in the DOM even when closed", () => {
     renderMenu();
-    expect(screen.getByRole("link", { name: "Futons" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Futon Frames" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Mattresses" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Guides" })).toBeInTheDocument();
   });
@@ -163,7 +163,7 @@ describe("HeaderMobileMenu", () => {
   it("renders all primary nav links with correct hrefs", () => {
     renderMenu();
     const expected = [
-      ["Futons", "/shop/futon-frames"],
+      ["Futon Frames", "/shop/futon-frames"],
       ["Murphy Beds", "/shop/murphy-cabinet-beds"],
       ["Platform Beds", "/shop/platform-beds"],
       ["Mattresses", "/shop/mattresses"],
