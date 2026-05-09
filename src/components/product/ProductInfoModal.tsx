@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
-import type { CareGuide, ProductDimensions } from "@/lib/product/size-guide";
+import type { CareGuide, ProductDimensions } from "@/lib/product/size-guide-shared";
 import { PdpSizeGuide } from "@/components/product/PdpSizeGuide";
 
 export type ProductInfoModalProps = {
