@@ -59,12 +59,12 @@ export function GA4Tag() {
     <>
       <Script
         id="cf-ga4-loader"
-        strategy="lazyOnload"
+        strategy="afterInteractive"
         src={`https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}`}
       />
       <Script
         id="cf-ga4-config"
-        strategy="lazyOnload"
+        strategy="afterInteractive"
         dangerouslySetInnerHTML={{ __html: snippet }}
       />
       <Suspense fallback={null}>
