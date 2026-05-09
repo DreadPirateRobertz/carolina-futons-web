@@ -14,7 +14,7 @@ vi.mock("next/image", () => ({
     alt: string;
     fill?: boolean;
     sizes?: string;
-    // eslint-disable-next-line @next/next/no-img-element -- next/image stub for vitest; LCP/perf concern is moot in a jsdom unit test
+     
   }) => <img src={src} alt={alt} {...rest} />,
 }));
 

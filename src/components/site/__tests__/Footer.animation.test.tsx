@@ -51,7 +51,7 @@ vi.mock("@/components/site/NewsletterSignup", () => ({
 
 vi.mock("next/image", () => ({
   default: ({ alt, ...rest }: { alt: string; [key: string]: unknown }) => (
-    // eslint-disable-next-line @next/next/no-img-element
+     
     <img alt={alt} {...(rest as Record<string, unknown>)} />
   ),
 }));

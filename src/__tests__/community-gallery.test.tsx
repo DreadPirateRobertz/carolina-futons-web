@@ -19,7 +19,7 @@ vi.mock("next/image", () => ({
     width: number;
     height: number;
   } & React.ImgHTMLAttributes<HTMLImageElement>) => (
-    // eslint-disable-next-line @next/next/no-img-element
+     
     <img src={src} alt={alt} width={width} height={height} {...rest} />
   ),
 }));
