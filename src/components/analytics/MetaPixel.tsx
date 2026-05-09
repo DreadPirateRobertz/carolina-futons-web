@@ -72,7 +72,7 @@ fbq('track', 'PageView');`;
     <>
       <Script
         id="cf-meta-pixel"
-        strategy="afterInteractive"
+        strategy="lazyOnload"
         dangerouslySetInnerHTML={{ __html: snippet }}
       />
       {/* Static <noscript> img matches Meta's recommended fallback so
