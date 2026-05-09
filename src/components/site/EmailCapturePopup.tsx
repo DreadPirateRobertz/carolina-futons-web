@@ -3,8 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 
 const STORAGE_KEY = "cf-email-popup-dismissed";
-const DELAY_MS = 8_000;
-const SCROLL_THRESHOLD = 0.5;
+
+// cfw-l93: trigger only after the user has scrolled at least one full viewport
+// height past the top of the page. That guarantees the hero has been seen and
+// scrolled past before the popup can occlude it. The previous behaviour fired
+// on either an 8s mount timer OR 50% of total page scroll — on mobile, the 8s
+// timer popped the dialog while the user was still reading the hero, which
+// surfaced as the cfw-y2i.1 audit finding.
+const ENGAGEMENT_SCROLL_PX_FACTOR = 1;
 
 export function EmailCapturePopup() {
   const [visible, setVisible] = useState(false);
@@ -19,16 +25,13 @@ export function EmailCapturePopup() {
       setVisible(true);
     }
 
-    const timer = setTimeout(trigger, DELAY_MS);
-
     function onScroll() {
-      const scrollable = document.body.scrollHeight - window.innerHeight;
-      if (scrollable > 0 && window.scrollY / scrollable >= SCROLL_THRESHOLD) trigger();
+      const threshold = window.innerHeight * ENGAGEMENT_SCROLL_PX_FACTOR;
+      if (window.scrollY >= threshold) trigger();
     }
 
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
-      clearTimeout(timer);
       window.removeEventListener("scroll", onScroll);
     };
   }, []);
