@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import type { ReactNode } from "react";
 
 // `flush` is now invoked from logWixFailure (Sentry serverless-ship pattern);

@@ -31,9 +31,16 @@ function renderHeaderWithSlot(announcementBar: ReactNode) {
 
 describe("Header (cf-3qt.1 Phase 1)", () => {
   it("renders the brand wordmark linked to /", () => {
+    // cf-jo07: both the site header and the mobile-drawer header carry the
+    // "Carolina Futons — home" brand link now, so getByRole would throw on
+    // multiple matches. Assert at least one match and that the first (the
+    // site-header link) targets root.
     renderHeader();
-    const home = screen.getByRole("link", { name: /carolina futons.*home/i });
-    expect(home).toHaveAttribute("href", "/");
+    const homes = screen.getAllByRole("link", {
+      name: /carolina futons.*home/i,
+    });
+    expect(homes.length).toBeGreaterThan(0);
+    expect(homes[0]).toHaveAttribute("href", "/");
   });
 
   it("renders the CF logo + wordmark lockup in the brand link (cf-jo07)", () => {
@@ -44,7 +51,11 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
     // brand recognition; assertion guards against it. alt="" is intentional
     // — the link's aria-label already names the destination.
     renderHeader();
-    const home = screen.getByRole("link", { name: /carolina futons.*home/i });
+    // cf-jo07: site-header + mobile drawer both render the brand link.
+    // Pin the first match (site header) for the lockup assertion.
+    const [home] = screen.getAllByRole("link", {
+      name: /carolina futons.*home/i,
+    });
     const img = home.querySelector("img");
     expect(img).not.toBeNull();
     expect(img?.getAttribute("src") ?? "").toMatch(/cf-logo/);
