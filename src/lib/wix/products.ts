@@ -11,6 +11,15 @@
 // NEXT_PUBLIC_USE_FIXTURE_PRODUCTS=1 bakes fixture data at build time so
 // Vercel preview builds can exercise cart/checkout/shipping flows without
 // touching the production Wix catalog. This flag MUST NOT be set in prod.
+//
+// cfw-75m: gate to server-only. Type-only imports of WixProduct from
+// "use client" components stay safe (TS erases them), but a future diff
+// that drops the `type` keyword — or grabs a runtime helper from this
+// module client-side — would re-leak the Wix admin SDK chain via
+// getWixClient. The marker turns that into a build-time error naming
+// wix/products.ts. Companion to PR #485 (cf-r192) on wix-client.ts.
+import "server-only";
+
 import * as Sentry from "@sentry/nextjs";
 import type { Product as WixProductSDK } from "@wix/auto_sdk_stores_products";
 import type { Collection as WixCollectionSDK } from "@wix/auto_sdk_stores_collections";
