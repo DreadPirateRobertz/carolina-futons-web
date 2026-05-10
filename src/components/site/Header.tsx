@@ -13,6 +13,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useReducedMotion } from "framer-motion";
 import { Search, User } from "lucide-react";
 import { AnnouncementBarCartAware } from "@/components/site/AnnouncementBarCartAware";
@@ -52,6 +53,12 @@ type HeaderProps = {
 export function Header({ announcementBar }: HeaderProps = {}) {
   const prefersReducedMotion = useReducedMotion() ?? false;
   const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
+  // cf-1eb5 r2: v9 hero copy ("Sleep on it for fifteen years.") only on /,
+  // not /shop/* /products/* /about /etc. Everywhere else the header stays a
+  // slim chrome strip so product / category pages don't push content far
+  // below the fold.
+  const isHome = pathname === "/";
 
   useEffect(() => {
     const onScroll = () => {
@@ -76,12 +83,15 @@ export function Header({ announcementBar }: HeaderProps = {}) {
       data-slot="site-header"
       data-scrolled={scrolled ? "true" : "false"}
       className={[
-        // cf-1eb5: v9 full-header bear treatment. Removed `bg-white` so the
-        // bears illustration shows edge-to-edge as a hero backdrop behind
-        // the chrome (announce bar + nav + sub-nav). The medallion logo was
-        // rejected by Stilgar — wordmark only, on the illustration, with a
-        // warm v9-orange gradient veil for text contrast.
-        "sticky top-0 z-40 w-full border-b border-cf-divider text-cf-cream transition-shadow duration-200",
+        // cf-1eb5 r2: v9 full-header bear treatment per Stilgar feedback.
+        // - Bears illustration shows edge-to-edge as a hero backdrop.
+        // - Strong overlay (was /65 → ramped to /80 at top + bottom for
+        //   nav legibility — Stilgar said cream wasn't popping).
+        // - White text (not cream) with drop-shadow on every chrome label.
+        // - Hero band with v9 copy "Sleep on it for fifteen years." on /
+        //   only — exact wording from design-vision-cf-3qt.html mock-hero.
+        // - Header is taller on home (hero scale) and slim on other routes.
+        "sticky top-0 z-40 w-full border-b border-white/10 text-white transition-shadow duration-200",
         shadowClass,
       ]
         .filter(Boolean)
@@ -89,7 +99,7 @@ export function Header({ announcementBar }: HeaderProps = {}) {
     >
       {/* Hero bear backdrop — fills the entire header behind every chrome
           element. Object-position center-top keeps the bear faces in frame
-          across the announce-bar + main-row + sub-nav stack (~197px tall).
+          across announce + nav + (home-only) hero band + sub-nav stack.
           Marked priority so the LCP candidate ships with first paint. */}
       <div
         aria-hidden="true"
@@ -104,13 +114,15 @@ export function Header({ announcementBar }: HeaderProps = {}) {
           sizes="100vw"
           className="object-cover object-[center_top]"
         />
-        {/* v9 sunset overlay — coral/sun-glow tint warms the photo so it
-            reads as illustration, not a stock photograph, and gives nav
-            text a darker substrate at the bottom. */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#E8845C]/10 via-[#B8523A]/25 to-[#2A1810]/65" />
+        {/* v9 sunset overlay — strengthened r2 so the menu label text reads
+            against any patch of the photograph (Stilgar feedback). Top
+            band veils the announce + nav strip; bottom band veils the
+            sub-nav so its links are legible regardless of which patch of
+            bear sits behind them. */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#2A1810]/80 via-[#B8523A]/35 to-[#2A1810]/80" />
       </div>
 
-      <div className="relative z-20">
+      <div className="relative z-30">
         {announcementBar ?? <AnnouncementBarCartAware />}
 
         <div
@@ -126,10 +138,10 @@ export function Header({ announcementBar }: HeaderProps = {}) {
           <div className="mx-auto flex w-full max-w-7xl items-center gap-8 px-4 sm:px-6 lg:px-8">
             <Link
               href="/"
-              className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cream focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+              className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
               aria-label="Carolina Futons — home"
             >
-              <span className="font-heading text-2xl font-semibold tracking-tight text-cf-cream drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
+              <span className="font-heading text-2xl font-semibold tracking-tight text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)]">
                 Carolina Futons
               </span>
             </Link>
@@ -149,14 +161,14 @@ export function Header({ announcementBar }: HeaderProps = {}) {
               <Link
                 href="/search"
                 aria-label="Search"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-md text-cf-cream transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cream"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-md text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
               >
                 <Search className="size-5" aria-hidden="true" />
               </Link>
               <Link
                 href="/account"
                 aria-label="Account"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-md text-cf-cream transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cream"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-md text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
               >
                 <User className="size-5" aria-hidden="true" />
               </Link>
@@ -170,7 +182,7 @@ export function Header({ announcementBar }: HeaderProps = {}) {
                   "ml-2 hidden items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-widest transition-colors md:inline-flex",
                   scrolled
                     ? "border-[#E8845C] bg-[#E8845C] text-white hover:bg-[#B8523A] hover:border-[#B8523A]"
-                    : "border-cf-cream bg-transparent text-cf-cream hover:bg-[#E8845C] hover:border-[#E8845C] hover:text-white",
+                    : "border-white bg-white/10 text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] hover:bg-[#E8845C] hover:border-[#E8845C]",
                 ]
                   .filter(Boolean)
                   .join(" ")}
@@ -180,6 +192,40 @@ export function Header({ announcementBar }: HeaderProps = {}) {
             </div>
           </div>
         </div>
+
+        {/* cf-1eb5 r2: home-only hero band with v9 design copy.
+            Exact wording pulled from design-vision-cf-3qt.html mock-hero
+            ("Sleep on it for fifteen years.") + mock-sub
+            ("Futons, Murphy beds, platform beds, and mattresses —
+             handcrafted in Hendersonville, North Carolina since 1991.").
+            The italic on "fifteen years" matches v9's `--cf-rust` accent
+            (we use V3_PAL.coral / sun for that warm tone).
+            Gated to / so product / category pages keep a slim chrome and
+            don't push their own hero below 400+ px of header. */}
+        {isHome ? (
+          <div
+            data-slot="site-header-hero"
+            data-testid="site-header-hero"
+            className="mx-auto w-full max-w-7xl px-4 pt-10 pb-16 text-center sm:px-6 sm:pt-14 sm:pb-20 lg:px-8 lg:pt-20 lg:pb-28"
+          >
+            <h1 className="font-heading text-4xl font-semibold leading-[1.05] tracking-tight text-white drop-shadow-[0_3px_10px_rgba(0,0,0,0.65)] sm:text-5xl lg:text-6xl">
+              Sleep on it for{" "}
+              <em className="font-normal italic text-[#F5C97A]">
+                fifteen years.
+              </em>
+            </h1>
+            <p className="mx-auto mt-5 max-w-2xl text-base text-white/95 drop-shadow-[0_2px_6px_rgba(0,0,0,0.55)] sm:text-lg lg:text-xl">
+              Futons, Murphy beds, platform beds, and mattresses — handcrafted
+              in Hendersonville, North Carolina since 1991.
+            </p>
+            <Link
+              href="/shop/futon-frames"
+              className="mt-7 inline-flex items-center gap-1.5 rounded-full border border-[#E8845C] bg-[#E8845C] px-6 py-3 text-sm font-semibold uppercase tracking-widest text-white transition-colors hover:bg-[#B8523A] hover:border-[#B8523A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+            >
+              Shop futons <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+        ) : null}
 
         <nav
           aria-label="Secondary"
@@ -191,7 +237,7 @@ export function Header({ announcementBar }: HeaderProps = {}) {
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-xs font-medium uppercase tracking-wider text-cf-cream/85 transition-colors hover:text-[#F5C97A] focus-visible:outline-none focus-visible:text-[#F5C97A]"
+                className="text-xs font-medium uppercase tracking-wider text-white/90 drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] transition-colors hover:text-[#F5C97A] focus-visible:outline-none focus-visible:text-[#F5C97A]"
               >
                 {item.label}
               </Link>

@@ -45,7 +45,7 @@ export function HeaderWishlistLink() {
       aria-label={ariaLabel}
       data-testid="header-wishlist-link"
       data-count={count ?? ""}
-      className="relative inline-flex h-11 w-11 items-center justify-center rounded-md text-cf-cream transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cream"
+      className="relative inline-flex h-11 w-11 items-center justify-center rounded-md text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
     >
       <Heart className="size-5" aria-hidden="true" />
       {showBadge ? (

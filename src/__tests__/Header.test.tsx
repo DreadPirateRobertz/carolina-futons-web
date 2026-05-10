@@ -1,6 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
+
+// cf-1eb5 r2: Header now reads usePathname() to gate the home-only hero band
+// (v9 "Sleep on it for fifteen years." copy on / only). Default to "/" so
+// the broad render-suite picks up the hero band; specific non-home cases
+// override via vi.mocked(...) below.
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
+}));
 
 import { Header } from "@/components/site/Header";
 import { CartProvider } from "@/components/cart/CartProvider";
@@ -52,6 +60,25 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
     expect(img).not.toBeNull();
     expect(img?.getAttribute("src") ?? "").toMatch(/bears/);
     expect(img?.getAttribute("alt")).toBe("");
+  });
+
+  it("renders the v9 hero copy on / (cf-1eb5 r2: 'Sleep on it for fifteen years.')", () => {
+    // Stilgar rejection #2 required the EXACT mock-hero copy from
+    // design-vision-cf-3qt.html. Test pins both the headline and the
+    // mock-sub paragraph so a future drift to lorem-style placeholder
+    // copy fails CI loudly.
+    renderHeader();
+    expect(
+      screen.getByText(/sleep on it for/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/fifteen years\./i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /handcrafted in hendersonville, north carolina since 1991/i,
+      ),
+    ).toBeInTheDocument();
   });
 
   it("renders the primary nav with shop destinations", () => {
