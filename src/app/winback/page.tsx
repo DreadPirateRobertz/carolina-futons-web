@@ -4,17 +4,21 @@ import { CtaButton } from "@/components/ui/cta-button";
 
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 import { trackCustomEvent } from "@/lib/wix/custom-events";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
+
+const OPEN_GRAPH = {
+  title: "We miss you — Carolina Futons",
+  description:
+    "American-made comfort from Hendersonville, NC. Come see what's new.",
+};
 
 export const metadata: Metadata = {
   title: "We miss you — come back to Carolina Futons",
   description:
     "A note from Hendersonville: new arrivals, fresh fabrics, and a thank-you offer for our long-time customers. Welcome back.",
   robots: { index: false, follow: true },
-  openGraph: {
-    title: "We miss you — Carolina Futons",
-    description:
-      "American-made comfort from Hendersonville, NC. Come see what's new.",
-  },
+  openGraph: OPEN_GRAPH,
+  twitter: twitterFromOpenGraph(OPEN_GRAPH),
 };
 
 export const dynamic = "force-dynamic";

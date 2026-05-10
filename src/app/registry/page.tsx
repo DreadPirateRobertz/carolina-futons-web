@@ -5,18 +5,22 @@ import { getMemberSession } from "@/lib/auth/member";
 import { getMyRegistriesAction } from "@/app/actions/registry";
 import { RegistryDashboard } from "@/components/registry/RegistryDashboard";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
 export const dynamic = "force-dynamic";
+
+const OPEN_GRAPH = {
+  title: "Gift Registry — Carolina Futons",
+  description: "Create and share a gift registry for any occasion.",
+  images: [DEFAULT_OG_IMAGE],
+};
 
 export const metadata: Metadata = {
   title: "Gift Registry — Carolina Futons",
   description:
     "Create and share a gift registry for weddings, housewarmings, and other occasions. Friends and family can shop directly from your list.",
-  openGraph: {
-    title: "Gift Registry — Carolina Futons",
-    description: "Create and share a gift registry for any occasion.",
-    images: [DEFAULT_OG_IMAGE],
-  },
+  openGraph: OPEN_GRAPH,
+  twitter: twitterFromOpenGraph(OPEN_GRAPH),
   robots: { index: false },
 };
 

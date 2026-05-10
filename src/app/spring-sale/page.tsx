@@ -6,6 +6,7 @@ import { VintageSunRays } from "@/components/mascot/VintageSunRays";
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 import { findCategory } from "@/lib/shop/categories";
 import { resolveDerivedProducts } from "@/lib/shop/derived-products";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
 // cf-3qt.5.2: /spring-sale marketing landing.
 //
@@ -19,15 +20,18 @@ import { resolveDerivedProducts } from "@/lib/shop/derived-products";
 // the page with no strip rather than a misleading "no items on sale" copy
 // (the {items, error?} contract documented in derived-products.ts).
 
+const OPEN_GRAPH = {
+  title: "Spring Sale — Carolina Futons",
+  description:
+    "Mattress promotions running this season — American-made comfort from Hendersonville, NC.",
+};
+
 export const metadata: Metadata = {
   title: "Spring Sale — Carolina Futons",
   description:
     "Mattress promotions running this season at Carolina Futons in Hendersonville, North Carolina. American-made comfort, 15-year frame warranty.",
-  openGraph: {
-    title: "Spring Sale — Carolina Futons",
-    description:
-      "Mattress promotions running this season — American-made comfort from Hendersonville, NC.",
-  },
+  openGraph: OPEN_GRAPH,
+  twitter: twitterFromOpenGraph(OPEN_GRAPH),
 };
 
 export default async function SpringSalePage() {
