@@ -77,7 +77,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!event || !SUPPORTED_EVENTS.has(event)) {
     return bad(400, `unsupported event: ${event ?? "(missing)"}`);
   }
-  if (payload != null && (typeof payload !== "object" || Array.isArray(payload))) {
+  if (
+    payload != null &&
+    (typeof payload !== "object" || Array.isArray(payload))
+  ) {
     return bad(400, "payload must be an object");
   }
 
@@ -94,14 +97,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return bad(400, "tier_changed requires newTier (string)");
   }
 
-  // Serialize with fallback — arbitrary payload can contain non-serializable values.
-  let logPayload: string;
-  try {
-    logPayload = JSON.stringify({ event, sourceRig, payload: p });
-  } catch {
-    logPayload = JSON.stringify({ event, sourceRig, payload: "[unserializable]" });
-  }
-  console.log("[cross-rig]", logPayload);
+  // cfw-coc: log payload SHAPE (which keys were present) but not VALUES —
+  // payload contents are arbitrary user-data from the mobile rig and may
+  // include PII. Shape is enough to debug missing/unexpected fields; values
+  // are intentionally omitted from server stdout retention.
+  const payloadKeys = Object.keys(p).sort().join(",");
+  console.log(
+    `[cross-rig] event=${event} sourceRig=${sourceRig} payloadKeys=${payloadKeys || "(none)"}`,
+  );
 
   return NextResponse.json({ ok: true, event, memberId });
 }

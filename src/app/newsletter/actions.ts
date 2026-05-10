@@ -9,6 +9,7 @@ import {
   upsertSubscriber,
   NewsletterRateLimitError,
 } from "@/lib/newsletter/newsletter-store";
+import { hashEmail } from "@/lib/log/hash-pii";
 import type { NewsletterActionState } from "@/app/newsletter/newsletter-state";
 
 // Endpoint-only — no /newsletter page route exists or is planned (cf-7ue0).
@@ -35,12 +36,12 @@ export async function subscribeToNewsletter(
   try {
     const { created } = await upsertSubscriber(req.email);
     console.log(
-      `[newsletter] ${created ? "NEW" : "DUPLICATE"} subscriber: ${req.email}`,
+      `[newsletter] ${created ? "NEW" : "DUPLICATE"} subscriber: ${hashEmail(req.email)}`,
     );
     return { status: "success", alreadySubscribed: !created };
   } catch (err) {
     if (err instanceof NewsletterRateLimitError) {
-      console.warn("[newsletter] rate-limited:", req.email);
+      console.warn("[newsletter] rate-limited:", hashEmail(req.email));
       return {
         status: "error",
         errors: {},
