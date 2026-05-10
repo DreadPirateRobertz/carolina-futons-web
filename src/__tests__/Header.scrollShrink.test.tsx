@@ -98,4 +98,42 @@ describe("Header — scroll shrink (cf-nav-scroll-shrink)", () => {
     const header = container.querySelector("[data-slot='site-header']");
     expect(header!.className).toMatch(/transition-shadow/);
   });
+
+  // cf-h85f: bear backdrop fades to opacity-0 + hero band collapses to
+  // max-h-0 once scrolled past the threshold. Pinned so a future drive-by
+  // that re-removes the collapse logic fails CI loudly.
+  it("fades the bear backdrop to opacity-0 once scrolled (cf-h85f)", async () => {
+    const { container } = renderHeader();
+    const backdrop = container.querySelector(
+      '[data-slot="header-bear-backdrop"]',
+    );
+    expect(backdrop!.className).toMatch(/\bopacity-100\b/);
+    setScroll(120);
+    await Promise.resolve();
+    expect(backdrop!.className).toMatch(/\bopacity-0\b/);
+  });
+
+  it("collapses the home hero band to max-h-0 + opacity-0 once scrolled (cf-h85f)", async () => {
+    const { container } = renderHeader();
+    const hero = container.querySelector(
+      '[data-testid="site-header-hero"]',
+    );
+    // Unscrolled: visible (no collapse classes)
+    expect(hero!.className).not.toMatch(/\bmax-h-0\b/);
+    expect(hero!.getAttribute("aria-hidden")).toBeNull();
+    setScroll(120);
+    await Promise.resolve();
+    expect(hero!.className).toMatch(/\bmax-h-0\b/);
+    expect(hero!.className).toMatch(/\bopacity-0\b/);
+    expect(hero!.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("swaps the header surface to bg-white once scrolled so the slim chrome reads (cf-h85f)", async () => {
+    const { container } = renderHeader();
+    const header = container.querySelector("[data-slot='site-header']");
+    expect(header!.className).not.toMatch(/\bbg-white\b/);
+    setScroll(120);
+    await Promise.resolve();
+    expect(header!.className).toMatch(/\bbg-white\b/);
+  });
 });
