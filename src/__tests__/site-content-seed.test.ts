@@ -84,7 +84,7 @@ describe("provision-site-content seed-data.json", () => {
     const REQUIRED_KEYS = [
       "footer.tagline",
       "footer.showroom-hours.label",
-      "footer.copyright.suffix",
+      "footer.copyright-line",
       "visit.hours.sun-tue",
       "visit.hours.wed-sat",
       "announcement.rotation.0.message",

@@ -30,10 +30,10 @@ describe("Footer — Phase 3 rebrand", () => {
     expect(decodeURIComponent(src)).toContain("cf-logo-square");
   });
 
-  it("renders the brand tagline", () => {
+  it("renders the brand tagline (cf-n7ni: 'Quality futons since 1991')", () => {
     render(<Footer />);
     expect(
-      screen.getByText(/quality futon furniture since 1991/i),
+      screen.getByText(/quality futons since 1991/i),
     ).toBeInTheDocument();
   });
 
@@ -46,7 +46,7 @@ describe("Footer — Phase 3 rebrand", () => {
       screen.getByText(/hardwood futons, built for life/i),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText(/quality futon furniture since 1991/i),
+      screen.queryByText(/quality futons since 1991/i),
     ).not.toBeInTheDocument();
   });
 
@@ -69,9 +69,13 @@ describe("Footer — Phase 3 rebrand", () => {
     ).toBeInTheDocument();
   });
 
-  // cfw-25t: copyright suffix now flows from SiteContent via layout.tsx.
-  it("renders an owner-supplied copyright suffix when passed via prop (cfw-25t)", () => {
-    render(<Footer copyrightSuffix="Carolina Futons LLC. Asheville, NC." />);
+  // cf-n7ni: collapsed footer.copyright.suffix → footer.copyright-line. The
+  // {year} placeholder is substituted with the current year at render so a
+  // single Wix CMS edit covers the whole copyright string.
+  it("renders an owner-supplied copyright line when passed via prop (cf-n7ni)", () => {
+    render(
+      <Footer copyrightLine="© {year} Carolina Futons LLC. Asheville, NC." />,
+    );
     const year = new Date().getFullYear();
     expect(
       screen.getByText(
@@ -85,13 +89,28 @@ describe("Footer — Phase 3 rebrand", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("falls back to default copyright suffix when no prop is passed (cfw-25t)", () => {
+  it("falls back to default copyright line when no prop is passed (cf-n7ni)", () => {
     render(<Footer />);
     const year = new Date().getFullYear();
     expect(
       screen.getByText(
         new RegExp(`© ${year} Carolina Futons\\. Hendersonville, NC\\.`),
       ),
+    ).toBeInTheDocument();
+  });
+
+  it("substitutes {year} with the current year regardless of prop value (cf-n7ni)", () => {
+    render(<Footer copyrightLine="Custom prefix · ©{year}· suffix" />);
+    const year = new Date().getFullYear();
+    expect(
+      screen.getByText(`Custom prefix · ©${year}· suffix`),
+    ).toBeInTheDocument();
+  });
+
+  it("renders a literal copyright line with no {year} placeholder unchanged (cf-n7ni)", () => {
+    render(<Footer copyrightLine="© 1991 Carolina Futons. Forever." />);
+    expect(
+      screen.getByText(/© 1991 Carolina Futons\. Forever\./),
     ).toBeInTheDocument();
   });
 
