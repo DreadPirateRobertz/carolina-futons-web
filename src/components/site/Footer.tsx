@@ -13,7 +13,7 @@ import { Mail, Phone } from "lucide-react";
 
 import { BUSINESS } from "@/lib/business/contact-info";
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
-import { LivingFooterBg } from "@/components/site/LivingFooterBg";
+import { LivingSky } from "@/components/illustrations/LivingSky";
 import { MascotFooterDivider } from "@/components/mascot/MascotFooterDivider";
 
 type SocialLink = {
@@ -128,8 +128,19 @@ export function Footer({
       data-slot="site-footer"
       className="relative mt-auto overflow-hidden bg-cf-footer-bg text-cf-cream"
     >
-      {/* cf-j6ub: time-of-day animated atmosphere — absolute behind all content */}
-      <LivingFooterBg />
+      {/* cf-96m8: always-night LivingSky as the footer backdrop. Header
+          continues to cycle through day/dusk/night via its own LivingSky
+          instance — only this footer instance pins to midnight. */}
+      <div
+        aria-hidden="true"
+        data-slot="footer-living-sky"
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+      >
+        <LivingSky forceNight className="h-full" />
+        {/* Subtle veil keeps cf-cream text/links readable against the
+            night-sky illustration without washing out the moon/stars. */}
+        <div className="absolute inset-0 bg-cf-footer-bg/55" />
+      </div>
       {/* Animated mascot divider — sky → ridges → sleeping bear, floats gently */}
       <motion.div
         aria-hidden="true"

@@ -15,15 +15,22 @@ export type LivingSkyProps = {
   // Optional descriptive label override. Default lives inside the SVG
   // <title>; consumers normally don't need to override it.
   className?: string;
+  /**
+   * cf-96m8 — pin to midnight regardless of wall clock or theme. The
+   * footer renders the always-night backdrop while the header keeps
+   * cycling through day/dusk/night.
+   */
+  forceNight?: boolean;
 };
 
-export function LivingSky({ className }: LivingSkyProps = {}) {
+export function LivingSky({ className, forceNight = false }: LivingSkyProps = {}) {
   return (
     <div
       data-slot="living-sky"
+      data-force-night={forceNight ? "true" : undefined}
       className={`w-full ${className ?? ""}`.trim()}
     >
-      <LivingSkyClient />
+      <LivingSkyClient forceNight={forceNight} />
     </div>
   );
 }
