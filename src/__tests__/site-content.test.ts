@@ -120,6 +120,42 @@ describe("getSiteContent", () => {
     expect(missing).toBe("fb");
   });
 
+  it("returns the fallback when the row value is an empty string (cf-b3mf)", async () => {
+    // Brenda's blank CMS entries on production were overwriting the
+    // hardcoded announcement.rotation messages because `??` only catches
+    // null/undefined — empty strings flowed through. Switching to `||` so
+    // empty = "not set" = fallback wins. Regression pin so a future drive-by
+    // back to `??` fails CI loudly.
+    mockListCollectionItems.mockResolvedValue([
+      { key: "announcement.rotation.0.message", value: "" },
+      { key: "footer.tagline", value: "" },
+    ]);
+    const getSiteContent = await freshGetSiteContent();
+
+    expect(
+      await getSiteContent(
+        "announcement.rotation.0.message",
+        "Free shipping over $99",
+      ),
+    ).toBe("Free shipping over $99");
+    expect(await getSiteContent("footer.tagline", "Quality futons")).toBe(
+      "Quality futons",
+    );
+  });
+
+  it("returns '' when both value AND fallback are empty (cf-b3mf invariant)", async () => {
+    // The `||` rewrite must NOT change behavior when the caller intentionally
+    // wants an empty result — `'' || ''` is still `''`, which is the same
+    // observable outcome as the previous `'' ?? ''`.
+    mockListCollectionItems.mockResolvedValue([
+      { key: "optional.key", value: "" },
+    ]);
+    const getSiteContent = await freshGetSiteContent();
+
+    expect(await getSiteContent("optional.key", "")).toBe("");
+    expect(await getSiteContent("optional.key")).toBe("");
+  });
+
   it("ignores rows where value is not a string (defensive)", async () => {
     mockListCollectionItems.mockResolvedValue([
       { key: "good", value: "ok" },
