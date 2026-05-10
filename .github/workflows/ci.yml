@@ -114,6 +114,16 @@ jobs:
         if: github.event_name != 'pull_request' || steps.paths.outputs.run == 'true'
         run: npx playwright test
         env:
+          # cf-7ozz: e2e runs in fixture mode so the suite is deterministic
+          # without depending on a live Velo backend or specific Wix Stores
+          # category data. Several routes/lib paths short-circuit to local
+          # fixtures when this is set — chiefly /api/email/trigger which
+          # was failing because callVelo to queueWelcomeEmail and
+          # queueCartRecovery hit Velo HTTP wrappers that don't yet exist
+          # (production fix tracked as cf-7ozz.1). getCollectionBySlug also
+          # serves fixtures, so the 'sale' / 'mattresses-sale' 404 warnings
+          # disappear from logs.
+          NEXT_PUBLIC_USE_FIXTURE_PRODUCTS: '1'
           WIX_CLIENT_ID_HEADLESS: ${{ secrets.WIX_CLIENT_ID_HEADLESS }}
           WIX_BACKEND_KEY: ${{ secrets.WIX_BACKEND_KEY }}
           WIX_VELO_SITE_URL: ${{ secrets.WIX_VELO_SITE_URL }}
