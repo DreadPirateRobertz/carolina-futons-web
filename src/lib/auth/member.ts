@@ -1,3 +1,11 @@
+// cfw-rcc: gate to server-only. Reads cookies via next/headers and constructs
+// authenticated Wix clients via getWixClientWithTokens — both server-only.
+// No "use client" component imports this module today; the marker turns any
+// future "share auth state with the client" diff into a build error naming
+// auth/member.ts directly, instead of silently shipping Wix oauth secrets to
+// the browser. Companion to PR #485 (cf-r192) and PR #561 (cfw-75m).
+import "server-only";
+
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Tokens } from "@wix/sdk";
