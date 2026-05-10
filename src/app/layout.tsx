@@ -6,8 +6,6 @@ import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import {
   AnnouncementBarCartAware,
-  ROTATION_CTAS,
-  ROTATION_MESSAGES,
   type AnnouncementCta,
 } from "@/components/site/AnnouncementBarCartAware";
 import { getSiteContent } from "@/lib/cms/site-content";
@@ -125,22 +123,37 @@ export default async function RootLayout({
       "footer.copyright-line",
       "© {year} Carolina Futons. Hendersonville, NC.",
     ),
-    // cfw-61b: announcement rotation copy. Defaults pulled from the
-    // exported ROTATION_MESSAGES / ROTATION_CTAS so a Wix-down render is
-    // byte-identical to today's hardcoded path.
-    getSiteContent("announcement.rotation.0.message", ROTATION_MESSAGES[0]),
-    getSiteContent("announcement.rotation.1.message", ROTATION_MESSAGES[1]),
-    getSiteContent("announcement.rotation.2.message", ROTATION_MESSAGES[2]),
-    getSiteContent("announcement.rotation.3.message", ROTATION_MESSAGES[3]),
+    // cf-b3mf root cause: the previous defaults pulled from
+    // ROTATION_MESSAGES / ROTATION_CTAS, which are value exports from
+    // a "use client" module (AnnouncementBarCartAware.tsx). Next.js
+    // does NOT make `use client` value exports available to Server
+    // Components — they resolve as `undefined` at SSR. So the calls
+    // fed `getSiteContent(key, undefined)`, the `fallback = ""` default
+    // param kicked in, and the announcement bar rendered empty in prod.
+    // Inlining literal defaults so the server fallback path is byte-
+    // present at build time, independent of the client module.
     getSiteContent(
-      "announcement.rotation.3.cta-label",
-      ROTATION_CTAS[3]?.ctaLabel ?? "",
+      "announcement.rotation.0.message",
+      "Free white-glove delivery on orders over $1,500",
     ),
     getSiteContent(
-      "announcement.rotation.3.cta-href",
-      ROTATION_CTAS[3]?.ctaHref ?? "",
+      "announcement.rotation.1.message",
+      "10-year warranty on all hardwood futon frames",
     ),
-    getSiteContent("announcement.rotation.4.message", ROTATION_MESSAGES[4]),
+    getSiteContent(
+      "announcement.rotation.2.message",
+      "Family-owned since 1991 · Hendersonville, NC",
+    ),
+    getSiteContent(
+      "announcement.rotation.3.message",
+      "Free fabric swatches — find your perfect match",
+    ),
+    getSiteContent("announcement.rotation.3.cta-label", ""),
+    getSiteContent("announcement.rotation.3.cta-href", ""),
+    getSiteContent(
+      "announcement.rotation.4.message",
+      "Assembly included with every delivery",
+    ),
   ]);
 
   const rotationMessages: ReadonlyArray<string> = [
