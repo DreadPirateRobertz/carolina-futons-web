@@ -107,7 +107,7 @@ export function RegistryCreateForm({ onCreated }: Props) {
           htmlFor="registry-date"
           className="block text-sm font-medium text-cf-charcoal"
         >
-          Event date <span className="text-cf-charcoal/50">(optional)</span>
+          Event date <span className="text-cf-charcoal/60">(optional)</span>
         </label>
         <input
           id="registry-date"
@@ -123,7 +123,7 @@ export function RegistryCreateForm({ onCreated }: Props) {
           htmlFor="registry-message"
           className="block text-sm font-medium text-cf-charcoal"
         >
-          Note for guests <span className="text-cf-charcoal/50">(optional)</span>
+          Note for guests <span className="text-cf-charcoal/60">(optional)</span>
         </label>
         <textarea
           id="registry-message"

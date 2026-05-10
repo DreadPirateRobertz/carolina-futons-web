@@ -126,7 +126,7 @@ export function SpinWheel() {
           <p className="mt-1 text-sm text-cf-charcoal/70">
             {state.prize.description}
           </p>
-          <p className="mt-3 text-xs text-cf-charcoal/50">
+          <p className="mt-3 text-xs text-cf-charcoal/60">
             Come back in {state.cooldownHours} hours for another spin.
           </p>
         </div>

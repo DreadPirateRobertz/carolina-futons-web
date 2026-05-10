@@ -51,7 +51,7 @@ export function RegistryList({ registries, onDelete }: Props) {
               type="button"
               onClick={() => onDelete(reg._id)}
               aria-label={`Delete ${reg.title}`}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-cf-charcoal/50 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-navy"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-cf-charcoal/60 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-navy"
             >
               <Trash2 className="size-4" aria-hidden="true" />
             </button>
