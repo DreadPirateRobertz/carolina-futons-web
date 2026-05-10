@@ -101,7 +101,7 @@ export default async function RootLayout({
   const [
     footerTagline,
     footerShowroomHours,
-    footerCopyrightSuffix,
+    footerCopyrightLine,
     rotationMessage0,
     rotationMessage1,
     rotationMessage2,
@@ -110,18 +110,20 @@ export default async function RootLayout({
     rotationCta3Href,
     rotationMessage4,
   ] = await Promise.all([
-    getSiteContent("footer.tagline", "Quality futon furniture since 1991"),
+    getSiteContent("footer.tagline", "Quality futons since 1991"),
     // cfw-sbl: key matches the seed convention (hyphenated, lowercase) and
     // the existing seed-data.json row at "footer.showroom-hours.label".
     getSiteContent(
       "footer.showroom-hours.label",
       "Showroom hours: Sun–Tue, 10am–5pm",
     ),
-    // cfw-25t: third Footer key now wired. Reader and seed (cfw-roi) row
-    // at "footer.copyright.suffix" both align on the same key.
+    // cf-n7ni: collapsed footer.copyright.suffix → footer.copyright-line.
+    // Owners now edit the FULL copyright line including year placeholder
+    // ({year} is substituted at render). One CMS row covers the whole
+    // string instead of forcing the prefix/suffix split.
     getSiteContent(
-      "footer.copyright.suffix",
-      "Carolina Futons. Hendersonville, NC.",
+      "footer.copyright-line",
+      "© {year} Carolina Futons. Hendersonville, NC.",
     ),
     // cfw-61b: announcement rotation copy. Defaults pulled from the
     // exported ROTATION_MESSAGES / ROTATION_CTAS so a Wix-down render is
@@ -210,7 +212,7 @@ export default async function RootLayout({
             <Footer
               tagline={footerTagline}
               showroomHoursLabel={footerShowroomHours}
-              copyrightSuffix={footerCopyrightSuffix}
+              copyrightLine={footerCopyrightLine}
             />
             <CartDrawer />
             <BackToTop />

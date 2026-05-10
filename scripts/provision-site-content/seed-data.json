@@ -5,7 +5,7 @@
   "rows": [
     {
       "key": "footer.tagline",
-      "value": "Quality futon furniture since 1991",
+      "value": "Quality futons since 1991",
       "_source": "src/components/site/Footer.tsx:131"
     },
     {
@@ -14,8 +14,8 @@
       "_source": "src/components/site/Footer.tsx:193"
     },
     {
-      "key": "footer.copyright.suffix",
-      "value": "Carolina Futons. Hendersonville, NC.",
+      "key": "footer.copyright-line",
+      "value": "© {year} Carolina Futons. Hendersonville, NC.",
       "_source": "src/components/site/Footer.tsx:213"
     },
     {
