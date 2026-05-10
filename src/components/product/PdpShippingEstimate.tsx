@@ -76,12 +76,12 @@ export function PdpShippingEstimate({
           value={zip}
           onChange={(e) => setZip(e.target.value)}
           aria-describedby={describedBy}
-          className="w-32 rounded-md border border-cf-sand px-3 py-2 text-sm"
+          className="w-32 rounded-md border border-cf-sand px-3 py-2 text-sm dark:border-cf-sand dark:bg-cf-cream dark:text-cf-espresso"
           placeholder="28801"
         />
         <button
           type="submit"
-          className="rounded-md bg-cf-espresso px-4 py-2 text-sm font-medium text-white hover:bg-cf-espresso/90"
+          className="rounded-md bg-cf-espresso px-4 py-2 text-sm font-medium text-white hover:bg-cf-espresso/90 dark:bg-cf-sand dark:text-cf-ink dark:hover:bg-cf-sand/90"
         >
           Estimate
         </button>
