@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import Image from "next/image";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 
@@ -178,14 +179,26 @@ function DrawerTree({
           open ? "translate-x-0" : "-translate-x-full",
         ].join(" ")}
       >
-        {/* Drawer header */}
+        {/* Drawer header — cf-jo07: brand mark + wordmark match the site
+            header lockup so the drawer feels continuous with the chrome
+            it slid out of. Logo at size-9 fits the cf-header-main row. */}
         <div className="flex h-cf-header-main items-center justify-between border-b border-cf-divider/60 px-4">
           <Link
             href="/"
             onClick={onClose}
-            className="font-heading text-xl font-semibold tracking-tight text-cf-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+            aria-label="Carolina Futons — home"
+            className="flex items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            Carolina Futons
+            <Image
+              src="/brand/cf-logo-square.png"
+              alt=""
+              width={36}
+              height={36}
+              className="size-9 rounded-sm"
+            />
+            <span className="font-heading text-xl font-semibold tracking-tight text-cf-navy">
+              Carolina Futons
+            </span>
           </Link>
           <button
             type="button"
