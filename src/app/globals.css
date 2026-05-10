@@ -260,21 +260,26 @@
   animation-play-state: paused;
 }
 
-/* HomeCategoryGridV9 — animal medallion hover animations */
+/* HomeCategoryGridV9 — animal medallion hover animations.
+   cf-edw3: rewrote medallion-peck as a 2-keyframe `alternate` oscillation
+   to match medallion-tilt's smooth-pendulum mechanic. The original 6-key
+   peck (0/18/36/54/72/88/100) ran without `alternate`, so each cycle
+   restarted from a JUMP-CUT back to the 18% peck position — visually a
+   jittery stutter on the woodpecker while the other three medallions
+   tilted smoothly. The rewrite preserves the peck character (forward-
+   and-down on attack, back-and-up on retract) but uses the same
+   alternate-direction pattern as tilt so both classes share an identical
+   rendering path. */
 @keyframes medallion-peck {
-  0%,100% { transform: scale(1) rotate(0deg) translateY(0); }
-  18%      { transform: scale(1.08) rotate(-14deg) translateY(-6px); }
-  36%      { transform: scale(0.94) rotate(10deg) translateY(5px); }
-  54%      { transform: scale(1.08) rotate(-14deg) translateY(-6px); }
-  72%      { transform: scale(0.94) rotate(10deg) translateY(5px); }
-  88%      { transform: scale(1) rotate(0deg) translateY(0); }
+  from { transform: rotate(-12deg) scale(1.08) translateY(-4px); }
+  to   { transform: rotate(8deg)   scale(0.96) translateY(4px);  }
 }
 @keyframes medallion-tilt {
   0%,100% { transform: rotate(-9deg) scale(1.06); }
   50%      { transform: rotate(9deg) scale(1.06); }
 }
 .group:hover .anim-peck {
-  animation: medallion-peck 0.85s ease-in-out infinite;
+  animation: medallion-peck 0.42s ease-in-out infinite alternate;
 }
 .group:hover .anim-tilt {
   animation: medallion-tilt 0.75s ease-in-out infinite alternate;
