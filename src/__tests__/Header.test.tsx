@@ -33,7 +33,7 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
     const home = screen.getByRole("link", { name: /carolina futons.*home/i });
     const img = home.querySelector("img");
     expect(img).not.toBeNull();
-    expect(img?.getAttribute("src") ?? "").toMatch(/bears/);
+    expect(img?.getAttribute("src") ?? "").toMatch(/cf-logo-square/);
     expect(home.textContent).toContain("Carolina Futons");
   });
 

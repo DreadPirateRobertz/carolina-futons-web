@@ -102,12 +102,12 @@ export function Header({ announcementBar }: HeaderProps = {}) {
               aria-label="Carolina Futons — home"
             >
               <Image
-                src="/design/animals/bears.jpg"
+                src="/brand/cf-logo-square.png"
                 alt=""
-                width={40}
-                height={40}
+                width={36}
+                height={36}
                 priority
-                className="size-10 rounded-full object-cover ring-2 ring-cf-sand"
+                className="size-9 rounded-sm"
               />
               <span className="font-heading text-2xl font-semibold tracking-tight text-cf-navy">
                 Carolina Futons
