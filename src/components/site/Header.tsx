@@ -206,14 +206,14 @@ export function Header({ announcementBar }: HeaderProps = {}) {
               <Link
                 href="/search"
                 aria-label="Search"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-md text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-md text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)] transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
               >
                 <Search className="size-5" aria-hidden="true" />
               </Link>
               <Link
                 href="/account"
                 aria-label="Account"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-md text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-md text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)] transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
               >
                 <User className="size-5" aria-hidden="true" />
               </Link>
@@ -227,7 +227,7 @@ export function Header({ announcementBar }: HeaderProps = {}) {
                   "ml-2 hidden items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-widest transition-colors md:inline-flex",
                   scrolled
                     ? "border-[#E8845C] bg-[#E8845C] text-white hover:bg-[#B8523A] hover:border-[#B8523A]"
-                    : "border-white bg-white/10 text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] hover:bg-[#E8845C] hover:border-[#E8845C]",
+                    : "border-white bg-white/10 text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)] hover:bg-[#E8845C] hover:border-[#E8845C]",
                 ]
                   .filter(Boolean)
                   .join(" ")}
@@ -299,7 +299,7 @@ export function Header({ announcementBar }: HeaderProps = {}) {
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-xs font-medium uppercase tracking-wider text-cf-blue drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] transition-colors hover:text-[#F5C97A] focus-visible:outline-none focus-visible:text-[#F5C97A]"
+                className="text-xs font-medium uppercase tracking-wider text-cf-blue drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)] transition-colors hover:text-[#F5C97A] focus-visible:outline-none focus-visible:text-[#F5C97A]"
               >
                 {item.label}
               </Link>
