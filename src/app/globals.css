@@ -302,11 +302,23 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* cf-3lly: lock body + html to the layout viewport so mobile renders
+     edge-to-edge. Stilgar saw a thin right-side gap on iPhone — caused by
+     descendants whose width crossed 100vw (Lenis smooth-scroll wrapper +
+     a couple of components using vw without scrollbar correction). The
+     html `overflow-x: clip` already prevented the scrollbar; the body
+     `min-width: 100%` ensures the layout actually fills the visible
+     viewport instead of shrinking under whichever child decided the
+     content box. */
   body {
     @apply bg-background text-foreground;
+    width: 100%;
+    min-width: 100%;
+    overflow-x: clip;
   }
   html {
     @apply font-sans;
+    width: 100%;
     overflow-x: clip;
   }
   h1, h2, h3, h4, h5, h6 {
