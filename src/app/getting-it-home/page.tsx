@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "Getting It Home — Carolina Futons",
   description:
     "Check whether Carolina Futons delivers to your area. ZIP-based zone lookup with curbside and white-glove pricing for our four delivery tiers.",
+  alternates: { canonical: "/getting-it-home" },
 };
 
 // cf-3qt.4.4: Getting It Home page. Customer-facing distance/zone resolver

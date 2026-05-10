@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   title: "Buying Guides — Carolina Futons",
   description:
     "Plain-English guides to picking a futon mattress, comparing platform beds, sizing a Murphy bed, and getting the most out of a small room.",
+  alternates: { canonical: "/guides" },
 };
 
 export default async function GuidesIndexPage() {

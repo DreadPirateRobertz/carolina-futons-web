@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: "Contact — Carolina Futons",
   description:
     "Reach the Carolina Futons team with questions about frames, mattresses, delivery, or warranty. Family-owned in Hendersonville, NC since 1991.",
+  alternates: { canonical: "/contact" },
 };
 
 export default function ContactPage() {

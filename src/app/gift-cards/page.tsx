@@ -10,6 +10,7 @@ const DESCRIPTION =
 export const metadata: Metadata = {
   title: "Gift Cards — Carolina Futons",
   description: DESCRIPTION,
+  alternates: { canonical: "/gift-cards" },
   openGraph: {
     title: "Gift Cards — Carolina Futons",
     description: DESCRIPTION,
