@@ -47,9 +47,11 @@ export async function generateMetadata(props: {
     const ogImage = category.image
       ? { url: category.image, width: 600, height: 400 }
       : DEFAULT_OG_IMAGE;
+    const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
     return {
       title: `${category.name} — Carolina Futons`,
       description: category.description,
+      alternates: { canonical: `${siteUrl}/shop/${categorySlug}` },
       openGraph: {
         title: `${category.name} — Carolina Futons`,
         description: category.description,

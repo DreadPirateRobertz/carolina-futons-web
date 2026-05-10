@@ -75,9 +75,11 @@ export async function generateMetadata(props: {
       mainImageUrl && isUsableUrl(mainImageUrl)
         ? { url: mainImageUrl, alt: product.name ?? undefined }
         : DEFAULT_OG_IMAGE;
+    const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
     return {
       title: `${product.name} — Carolina Futons`,
       description,
+      alternates: { canonical: `${siteUrl}/products/${slug}` },
       openGraph: {
         title: `${product.name} — Carolina Futons`,
         description,
