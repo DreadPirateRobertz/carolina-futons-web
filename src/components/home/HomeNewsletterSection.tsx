@@ -15,7 +15,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="inline-flex h-11 shrink-0 items-center justify-center rounded-md bg-cf-navy px-6 text-sm font-semibold text-white transition-colors hover:bg-cf-navy/90 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-navy focus-visible:ring-offset-2"
+      className="inline-flex h-11 shrink-0 items-center justify-center rounded-md bg-cf-navy px-6 text-sm font-semibold text-white transition-colors hover:bg-cf-navy/90 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-navy focus-visible:ring-offset-2 dark:bg-cf-sand dark:text-cf-ink dark:hover:bg-cf-sand/90 dark:focus-visible:ring-cf-sand"
     >
       {pending ? "Subscribing…" : "Subscribe"}
     </button>
@@ -35,7 +35,7 @@ function NewsletterForm() {
       <div
         role="status"
         data-testid="home-newsletter-success"
-        className="rounded-md border border-cf-navy/20 bg-cf-navy/5 px-5 py-4 text-sm text-cf-navy"
+        className="rounded-md border border-cf-navy/20 bg-cf-navy/5 px-5 py-4 text-sm text-cf-navy dark:border-cf-sand/40 dark:bg-cf-sand/15 dark:text-cf-ink"
       >
         {state.alreadySubscribed
           ? "You're already on the list — thanks for being a part of it."
@@ -66,7 +66,7 @@ function NewsletterForm() {
         aria-invalid={fieldError ? true : undefined}
         aria-describedby={fieldError || storeError ? statusId : undefined}
         required
-        className="h-11 w-full min-w-0 flex-1 rounded-md border border-cf-divider bg-white px-4 text-sm text-cf-espresso placeholder:text-cf-charcoal/40 focus:border-cf-navy focus:outline-none focus:ring-1 focus:ring-cf-navy"
+        className="h-11 w-full min-w-0 flex-1 rounded-md border border-cf-divider bg-white px-4 text-sm text-cf-espresso placeholder:text-cf-charcoal/40 focus:border-cf-navy focus:outline-none focus:ring-1 focus:ring-cf-navy dark:border-cf-sand dark:bg-cf-cream dark:text-cf-espresso dark:placeholder:text-cf-charcoal/60 dark:focus:border-cf-sand dark:focus:ring-cf-sand"
       />
       <SubmitButton />
       {fieldError ? (

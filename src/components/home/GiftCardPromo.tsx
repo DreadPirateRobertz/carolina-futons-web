@@ -5,7 +5,7 @@ export function GiftCardPromo() {
     <section
       data-slot="gift-card-promo"
       aria-labelledby="gift-card-promo-heading"
-      className="border-t border-cf-divider bg-cf-navy"
+      className="border-t border-cf-divider bg-cf-navy dark:bg-cf-sand dark:text-cf-ink"
     >
       <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-6 px-4 py-14 text-center sm:px-6 lg:px-8">
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/50">
