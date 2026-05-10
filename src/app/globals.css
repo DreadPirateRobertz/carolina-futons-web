@@ -280,6 +280,24 @@
   animation: medallion-tilt 0.75s ease-in-out infinite alternate;
 }
 
+/* cfw-62b: brief highlight when an /admin/site-content row is the
+   :target of a fragment-anchor link from /admin/audit (cfw-wy0). The
+   keyframes animate from a soft cream highlight back to transparent,
+   then animation-fill-mode forwards to keep the row in the cleared
+   state once the flash ends. Reduced-motion users get a static (non-
+   animated) highlight via the @layer base @media rule below. */
+@keyframes cf-row-highlight {
+  0%, 30% {
+    background-color: rgb(255 245 224 / 0.85);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+[data-slot="admin-site-content-row"]:target {
+  animation: cf-row-highlight 1.6s ease-out forwards;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -304,6 +322,17 @@
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
+    }
+
+    /* cfw-62b: the global animation override above would make the
+       :target row highlight flash and disappear in 0.01ms. Replace
+       with a static background so reduce-motion users still see WHICH
+       row was linked to. The rule sits inside @layer base so the
+       global override above wins for animation-* properties but the
+       static background-color survives. */
+    [data-slot="admin-site-content-row"]:target {
+      animation: none !important;
+      background-color: rgb(255 245 224 / 0.85) !important;
     }
   }
 }
