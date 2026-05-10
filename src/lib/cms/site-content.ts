@@ -118,5 +118,9 @@ export async function getSiteContent(
   fallback = "",
 ): Promise<string> {
   const { map } = await loadSiteContent();
-  return map.get(key) ?? fallback;
+  // cf-b3mf: `||` (not `??`) so an empty string in the CMS row is treated as
+  // "not set" and the caller's fallback wins. cfw-61b's announcement.rotation
+  // bar surfaced the bug — Brenda's blank CMS entries returned '' through ??
+  // and overwrote the hardcoded rotation messages with empty strings.
+  return map.get(key) || fallback;
 }
