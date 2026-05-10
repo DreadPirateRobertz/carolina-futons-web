@@ -77,12 +77,23 @@ export default async function AdminAuditPage(props: {
       aria-labelledby="admin-audit-heading"
       className="rounded-lg border border-cf-divider bg-white p-6 shadow-sm sm:p-8"
     >
-      <h1
-        id="admin-audit-heading"
-        className="font-heading text-2xl font-semibold text-cf-espresso"
-      >
-        Audit log
-      </h1>
+      <header className="flex flex-wrap items-baseline justify-between gap-3">
+        <h1
+          id="admin-audit-heading"
+          className="font-heading text-2xl font-semibold text-cf-espresso"
+        >
+          Audit log
+        </h1>
+        {/* cfw-zjs: navigation consistency — /admin/site-content has the
+            same 'Back to owner home' link in its header. */}
+        <Link
+          href="/admin"
+          data-testid="admin-audit-back-link"
+          className="text-sm text-cf-espresso underline-offset-2 hover:underline"
+        >
+          ← Back to owner home
+        </Link>
+      </header>
       <p className="mt-2 text-sm text-cf-charcoal/70">
         The {ROW_LIMIT} most recent owner edits, newest first.
       </p>

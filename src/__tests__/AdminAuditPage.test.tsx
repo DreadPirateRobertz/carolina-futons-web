@@ -51,6 +51,18 @@ describe("/admin/audit page", () => {
     expect(screen.getByText(/100 most recent/i)).toBeInTheDocument();
   });
 
+  // cfw-zjs: navigation consistency — /admin/site-content has the same
+  // 'Back to owner home' link in its header. Without this, /admin/audit
+  // is the only owner-mode subpage missing the one-click jump back.
+  it("includes a 'Back to owner home' link in the header", async () => {
+    mockReadOwnerAuditLog.mockResolvedValueOnce({ ok: true, rows: [] });
+    const { default: AdminAuditPage } = await import("@/app/admin/audit/page");
+    render(await AdminAuditPage({ searchParams: Promise.resolve({}) }));
+    const link = screen.getByTestId("admin-audit-back-link");
+    expect(link).toHaveAttribute("href", "/admin");
+    expect(link).toHaveTextContent(/back to owner home/i);
+  });
+
   it("renders the empty-state message when no rows exist", async () => {
     mockReadOwnerAuditLog.mockResolvedValueOnce({ ok: true, rows: [] });
     const { default: AdminAuditPage } = await import("@/app/admin/audit/page");
