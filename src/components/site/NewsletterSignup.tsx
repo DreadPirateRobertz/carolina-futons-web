@@ -79,7 +79,7 @@ export function NewsletterSignup() {
           aria-invalid={fieldError ? true : undefined}
           aria-describedby={fieldError || storeError ? statusId : undefined}
           required
-          className="h-10 w-full min-w-0 flex-1 rounded-md border border-cf-cream/20 bg-cf-cream/5 px-3 text-sm text-cf-cream placeholder:text-cf-cream/40 focus:border-cf-cream/60 focus:outline-none focus:ring-1 focus:ring-cf-cream/40"
+          className="h-10 w-full min-w-0 flex-1 rounded-md border border-cf-cream/20 bg-cf-cream/5 px-3 text-sm text-cf-cream placeholder:text-cf-cream/60 focus:border-cf-cream/60 focus:outline-none focus:ring-1 focus:ring-cf-cream/40"
         />
         <SubmitButton />
       </div>

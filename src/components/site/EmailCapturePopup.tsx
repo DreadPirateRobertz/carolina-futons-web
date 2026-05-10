@@ -91,7 +91,7 @@ export function EmailCapturePopup() {
             required
             placeholder="your@email.com"
             aria-label="Email address"
-            className="w-full rounded-md border border-cf-cream/30 bg-white/10 px-4 py-2 text-cf-cream placeholder:text-cf-cream/40 focus:outline-none focus:ring-2 focus:ring-cf-cream/50"
+            className="w-full rounded-md border border-cf-cream/30 bg-white/10 px-4 py-2 text-cf-cream placeholder:text-cf-cream/60 focus:outline-none focus:ring-2 focus:ring-cf-cream/50"
           />
           <button
             type="submit"
