@@ -66,7 +66,7 @@ function NewsletterForm() {
         aria-invalid={fieldError ? true : undefined}
         aria-describedby={fieldError || storeError ? statusId : undefined}
         required
-        className="h-11 w-full min-w-0 flex-1 rounded-md border border-cf-divider bg-white px-4 text-sm text-cf-espresso placeholder:text-cf-charcoal/40 focus:border-cf-navy focus:outline-none focus:ring-1 focus:ring-cf-navy dark:border-cf-sand dark:bg-cf-cream dark:text-cf-espresso dark:placeholder:text-cf-charcoal/60 dark:focus:border-cf-sand dark:focus:ring-cf-sand"
+        className="h-11 w-full min-w-0 flex-1 rounded-md border border-cf-divider bg-white px-4 text-sm text-cf-espresso placeholder:text-cf-charcoal/60 focus:border-cf-navy focus:outline-none focus:ring-1 focus:ring-cf-navy dark:border-cf-sand dark:bg-cf-cream dark:text-cf-espresso dark:placeholder:text-cf-charcoal/60 dark:focus:border-cf-sand dark:focus:ring-cf-sand"
       />
       <SubmitButton />
       {fieldError ? (

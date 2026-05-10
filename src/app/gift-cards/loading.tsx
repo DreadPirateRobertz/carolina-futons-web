@@ -36,7 +36,7 @@ export default function GiftCardsLoading() {
         ))}
       </div>
 
-      <div className="mt-12 rounded-lg border border-cf-smoke bg-cf-sand/30 px-5 py-4">
+      <div className="mt-12 rounded-lg border border-cf-smoke bg-cf-sand/30 px-5 py-4 dark:border-cf-cream/20 dark:bg-cf-sand/60">
         <Skeleton className="h-4 w-48 rounded" />
         <Skeleton className="mt-2 h-3 w-full rounded" />
         <Skeleton className="mt-1 h-3 w-3/4 rounded" />

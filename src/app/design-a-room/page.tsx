@@ -22,7 +22,7 @@ export default function DesignARoomPage() {
       <div className="max-h-72 w-full overflow-hidden">
         <StargazingHero />
       </div>
-      <article className="mx-auto max-w-[65ch] space-y-24 px-4 py-12 font-source-sans text-cf-ink sm:px-6 sm:py-16">
+      <article className="mx-auto max-w-[65ch] space-y-24 px-4 py-12 font-source-sans text-cf-ink dark:text-cf-cream sm:px-6 sm:py-16">
         <HeroReveal>
           <header className="space-y-3">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">

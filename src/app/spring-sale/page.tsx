@@ -55,11 +55,11 @@ export default async function SpringSalePage() {
             </p>
             <h1
               id="spring-sale-hero"
-              className="mt-4 font-heading text-4xl font-bold uppercase leading-[1.05] tracking-tight text-cf-navy sm:text-5xl md:text-6xl"
+              className="mt-4 font-heading text-4xl font-bold uppercase leading-[1.05] tracking-tight text-cf-navy dark:text-cf-cream sm:text-5xl md:text-6xl"
             >
               Spring Sale on mattresses
             </h1>
-            <p className="mt-5 max-w-xl text-lg text-cf-charcoal/80">
+            <p className="mt-5 max-w-xl text-lg text-cf-charcoal/80 dark:text-cf-cream/80">
               Hendersonville, NC. American-made mattresses we actually sleep on,
               picked for the season and priced to move. Free local delivery on
               orders over $1,500.
@@ -86,11 +86,11 @@ export default async function SpringSalePage() {
         <div className="mx-auto w-full max-w-2xl px-4 py-12 sm:px-6 sm:py-16">
           <h2
             id="spring-sale-capture"
-            className="font-heading text-2xl font-semibold tracking-tight text-cf-navy sm:text-3xl"
+            className="font-heading text-2xl font-semibold tracking-tight text-cf-navy sm:text-3xl dark:text-cf-cream"
           >
             Heads up when the next price drops
           </h2>
-          <p className="mt-3 text-base text-cf-charcoal/80">
+          <p className="mt-3 text-base text-cf-charcoal/80 dark:text-cf-cream/80">
             One email per promotion — no daily blasts. Unsubscribe with one
             click any time.
           </p>

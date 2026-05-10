@@ -71,7 +71,7 @@ export function ReviewFilter({ reviews }: ReviewFilterProps) {
                         className={
                           i < review.rating
                             ? "text-cf-cta"
-                            : "text-cf-ink/20"
+                            : "text-cf-ink/20 dark:text-cf-cream/20"
                         }
                       >
                         ★
@@ -82,7 +82,7 @@ export function ReviewFilter({ reviews }: ReviewFilterProps) {
                 <h3 className="font-playfair text-lg font-semibold tracking-tight">
                   {review.title}
                 </h3>
-                <p className="leading-relaxed text-cf-ink">{review.body}</p>
+                <p className="leading-relaxed text-cf-ink dark:text-cf-cream">{review.body}</p>
                 <p className="text-xs uppercase tracking-[0.15em] text-cf-muted">
                   {review.author}
                   {review.productName ? ` · ${review.productName}` : ""}

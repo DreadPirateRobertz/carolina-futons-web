@@ -28,7 +28,7 @@ export default async function ReviewsPage() {
         />
       ) : null}
       <FallsScene className="max-h-64" />
-      <div className="mx-auto max-w-4xl space-y-12 px-4 py-12 font-source-sans text-cf-ink sm:px-6 sm:py-16">
+      <div className="mx-auto max-w-4xl space-y-12 px-4 py-12 font-source-sans text-cf-ink dark:text-cf-cream sm:px-6 sm:py-16">
         <HeroReveal>
           <header className="space-y-3">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
