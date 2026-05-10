@@ -193,36 +193,39 @@ export function Header({ announcementBar }: HeaderProps = {}) {
           </div>
         </div>
 
-        {/* cf-1eb5 r2: home-only hero band with v9 design copy.
-            Exact wording pulled from design-vision-cf-3qt.html mock-hero
-            ("Sleep on it for fifteen years.") + mock-sub
-            ("Futons, Murphy beds, platform beds, and mattresses —
-             handcrafted in Hendersonville, North Carolina since 1991.").
-            The italic on "fifteen years" matches v9's `--cf-rust` accent
-            (we use V3_PAL.coral / sun for that warm tone).
+        {/* cf-1eb5 r3: home-only hero band with v9 design copy.
+            Exact wording from /Users/hal/gt/cfutons/crew/melania/
+              design-vision/DESIGN-VISION.html `.hero-mockup` block
+              (the canonical v9 spec — supersedes the cf-3qt internal
+               proposal doc r2 used).
+            - h2: "Handcrafted Comfort,\nMountain Inspired." (line break
+              between phrases, font-family Playfair Display 56px / 700,
+              text-shadow 0 2px 12px rgba(0,0,0,0.3))
+            - p:  "Premium futons and furniture from the Blue Ridge
+              Mountains of North Carolina." (20px, sand-light)
+            - cta: "Shop Collection →" on var(--sunset-coral) #4A7D94
             Gated to / so product / category pages keep a slim chrome and
             don't push their own hero below 400+ px of header. */}
         {isHome ? (
           <div
             data-slot="site-header-hero"
             data-testid="site-header-hero"
-            className="mx-auto w-full max-w-7xl px-4 pt-10 pb-16 text-center sm:px-6 sm:pt-14 sm:pb-20 lg:px-8 lg:pt-20 lg:pb-28"
+            className="mx-auto w-full max-w-7xl px-4 pt-12 pb-20 text-center sm:px-6 sm:pt-16 sm:pb-24 lg:px-8 lg:pt-24 lg:pb-32"
           >
-            <h1 className="font-heading text-4xl font-semibold leading-[1.05] tracking-tight text-white drop-shadow-[0_3px_10px_rgba(0,0,0,0.65)] sm:text-5xl lg:text-6xl">
-              Sleep on it for{" "}
-              <em className="font-normal italic text-[#F5C97A]">
-                fifteen years.
-              </em>
+            <h1 className="font-heading text-4xl font-bold leading-[1.05] tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)] sm:text-5xl lg:text-[56px]">
+              Handcrafted Comfort,
+              <br />
+              Mountain Inspired.
             </h1>
-            <p className="mx-auto mt-5 max-w-2xl text-base text-white/95 drop-shadow-[0_2px_6px_rgba(0,0,0,0.55)] sm:text-lg lg:text-xl">
-              Futons, Murphy beds, platform beds, and mattresses — handcrafted
-              in Hendersonville, North Carolina since 1991.
+            <p className="mx-auto mt-6 max-w-2xl text-base text-white/95 drop-shadow-[0_2px_6px_rgba(0,0,0,0.55)] sm:text-lg lg:text-xl">
+              Premium futons and furniture from the Blue Ridge Mountains of
+              North Carolina.
             </p>
             <Link
               href="/shop/futon-frames"
-              className="mt-7 inline-flex items-center gap-1.5 rounded-full border border-[#E8845C] bg-[#E8845C] px-6 py-3 text-sm font-semibold uppercase tracking-widest text-white transition-colors hover:bg-[#B8523A] hover:border-[#B8523A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+              className="mt-8 inline-flex items-center gap-1.5 rounded-full bg-[#4A7D94] px-10 py-4 text-sm font-semibold uppercase tracking-widest text-white transition-colors hover:bg-[#3D6B80] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
             >
-              Shop futons <span aria-hidden="true">→</span>
+              Shop Collection <span aria-hidden="true">→</span>
             </Link>
           </div>
         ) : null}

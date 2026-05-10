@@ -62,22 +62,23 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
     expect(img?.getAttribute("alt")).toBe("");
   });
 
-  it("renders the v9 hero copy on / (cf-1eb5 r2: 'Sleep on it for fifteen years.')", () => {
-    // Stilgar rejection #2 required the EXACT mock-hero copy from
-    // design-vision-cf-3qt.html. Test pins both the headline and the
-    // mock-sub paragraph so a future drift to lorem-style placeholder
-    // copy fails CI loudly.
+  it("renders the v9 hero copy on / (cf-1eb5 r3: 'Handcrafted Comfort, Mountain Inspired.')", () => {
+    // Stilgar rejection #2 required the EXACT v9 mock-hero copy from
+    // /Users/hal/gt/cfutons/crew/melania/design-vision/DESIGN-VISION.html
+    // (the canonical v9 spec — supersedes the cf-3qt internal proposal).
+    // Test pins headline, subline, and CTA label so a future drift fails
+    // CI loudly.
     renderHeader();
-    expect(
-      screen.getByText(/sleep on it for/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/fifteen years\./i),
-    ).toBeInTheDocument();
+    // Headline is split across a <br>; query each phrase.
+    expect(screen.getByText(/handcrafted comfort,/i)).toBeInTheDocument();
+    expect(screen.getByText(/mountain inspired\./i)).toBeInTheDocument();
     expect(
       screen.getByText(
-        /handcrafted in hendersonville, north carolina since 1991/i,
+        /premium futons and furniture from the blue ridge mountains of north carolina/i,
       ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /shop collection/i }),
     ).toBeInTheDocument();
   });
 
