@@ -47,6 +47,13 @@ export async function generateMetadata(props: {
     const ogImage = category.image
       ? { url: category.image, width: 600, height: 400 }
       : DEFAULT_OG_IMAGE;
+    // cf-bbo8: canonical points every filtered URL (?sort, ?page, ?priceMin,
+    // ?priceMax, ?inStock) back to the base category. Without this, each
+    // filter combination is its own canonical from Google's POV — splits
+    // crawl budget and link equity across duplicate-content variants.
+    // Pagination is debatable (page=2 is genuinely different content) but
+    // we ship the base canonical for v1; revisit if Search Console reports
+    // wasted crawl on paginated PLPs.
     const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
     return {
       title: `${category.name} — Carolina Futons`,
