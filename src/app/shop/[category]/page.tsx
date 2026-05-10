@@ -23,6 +23,7 @@ import { PLPControls } from "@/components/plp/PLPControls";
 import { PLPPagination, buildPageUrl } from "@/components/plp/PLPPagination";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { buildBreadcrumbSchema, resolveSiteUrl } from "@/lib/seo/json-ld";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 import { Breadcrumbs } from "@/components/site/Breadcrumbs";
 import {
   ShopTheRoom,
@@ -48,15 +49,17 @@ export async function generateMetadata(props: {
       ? { url: category.image, width: 600, height: 400 }
       : DEFAULT_OG_IMAGE;
     const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+    const openGraph = {
+      title: `${category.name} — Carolina Futons`,
+      description: category.description,
+      images: [ogImage],
+    };
     return {
       title: `${category.name} — Carolina Futons`,
       description: category.description,
       alternates: { canonical: `${siteUrl}/shop/${categorySlug}` },
-      openGraph: {
-        title: `${category.name} — Carolina Futons`,
-        description: category.description,
-        images: [ogImage],
-      },
+      openGraph,
+      twitter: twitterFromOpenGraph(openGraph),
     };
   } catch (err) {
     await logWixFailure("category-generateMetadata", "params resolution", err);

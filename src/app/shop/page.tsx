@@ -6,6 +6,7 @@ import {
   SHOP_HOTSPOT_CONFIGS,
 } from "@/components/site/ShopTheRoom";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 import { MascotCategoryCard } from "@/components/mascot/MascotCategoryCard";
 
 type AnimalKey = "bear" | "fox" | "deer" | "owl";
@@ -26,14 +27,17 @@ const CATEGORY_META: Record<string, CategoryMeta> = {
 
 const DESCRIPTION = "Futon frames, Murphy cabinet beds, platform beds, and mattresses.";
 
+const OPEN_GRAPH = {
+  title: "Shop — Carolina Futons",
+  description: DESCRIPTION,
+  images: [DEFAULT_OG_IMAGE],
+};
+
 export const metadata: Metadata = {
   title: "Shop — Carolina Futons",
   description: DESCRIPTION,
-  openGraph: {
-    title: "Shop — Carolina Futons",
-    description: DESCRIPTION,
-    images: [DEFAULT_OG_IMAGE],
-  },
+  openGraph: OPEN_GRAPH,
+  twitter: twitterFromOpenGraph(OPEN_GRAPH),
 };
 
 export default async function ShopIndex() {
