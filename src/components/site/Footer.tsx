@@ -14,6 +14,7 @@ import { Mail, Phone } from "lucide-react";
 import { BUSINESS } from "@/lib/business/contact-info";
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 import { LivingSky } from "@/components/illustrations/LivingSky";
+import { LivingFooterBg } from "@/components/site/LivingFooterBg";
 import { MascotFooterDivider } from "@/components/mascot/MascotFooterDivider";
 
 type SocialLink = {
@@ -130,13 +131,19 @@ export function Footer({
     >
       {/* cf-96m8: always-night LivingSky as the footer backdrop. Header
           continues to cycle through day/dusk/night via its own LivingSky
-          instance — only this footer instance pins to midnight. */}
+          instance — only this footer instance pins to midnight.
+          LivingFooterBg sits behind as the gradient atmosphere layer so
+          the day/dusk/dawn ambient glow still shows through edges of the
+          moon/star scene without contradicting the always-night intent —
+          the veil between the two muted enough that the color-shift is
+          subtle, not a phase swap. */}
       <div
         aria-hidden="true"
         data-slot="footer-living-sky"
         className="pointer-events-none absolute inset-0 overflow-hidden"
       >
-        <LivingSky forceNight className="h-full" />
+        <LivingFooterBg />
+        <LivingSky forceNight className="absolute inset-0 h-full" />
         {/* Subtle veil keeps cf-cream text/links readable against the
             night-sky illustration without washing out the moon/stars. */}
         <div className="absolute inset-0 bg-cf-footer-bg/55" />
