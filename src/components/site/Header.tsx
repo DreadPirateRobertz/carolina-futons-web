@@ -76,19 +76,47 @@ export function Header({ announcementBar }: HeaderProps = {}) {
       data-slot="site-header"
       data-scrolled={scrolled ? "true" : "false"}
       className={[
-        "sticky top-0 z-40 w-full border-b border-cf-divider bg-white text-cf-ink transition-shadow duration-200",
+        // cf-1eb5: v9 full-header bear treatment. Removed `bg-white` so the
+        // bears illustration shows edge-to-edge as a hero backdrop behind
+        // the chrome (announce bar + nav + sub-nav). The medallion logo was
+        // rejected by Stilgar — wordmark only, on the illustration, with a
+        // warm v9-orange gradient veil for text contrast.
+        "sticky top-0 z-40 w-full border-b border-cf-divider text-cf-cream transition-shadow duration-200",
         shadowClass,
       ]
         .filter(Boolean)
         .join(" ")}
     >
+      {/* Hero bear backdrop — fills the entire header behind every chrome
+          element. Object-position center-top keeps the bear faces in frame
+          across the announce-bar + main-row + sub-nav stack (~197px tall).
+          Marked priority so the LCP candidate ships with first paint. */}
+      <div
+        aria-hidden="true"
+        data-slot="header-bear-backdrop"
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+      >
+        <Image
+          src="/design/animals/bears.jpg"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-[center_top]"
+        />
+        {/* v9 sunset overlay — coral/sun-glow tint warms the photo so it
+            reads as illustration, not a stock photograph, and gives nav
+            text a darker substrate at the bottom. */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#E8845C]/10 via-[#B8523A]/25 to-[#2A1810]/65" />
+      </div>
+
       <div className="relative z-20">
         {announcementBar ?? <AnnouncementBarCartAware />}
 
         <div
           data-slot="site-header-main"
           className={[
-            "flex items-center border-b border-cf-divider/60",
+            "flex items-center border-b border-white/10",
             mainRowPaddingClass,
             mainRowTransitionClass,
           ]
@@ -98,18 +126,10 @@ export function Header({ announcementBar }: HeaderProps = {}) {
           <div className="mx-auto flex w-full max-w-7xl items-center gap-8 px-4 sm:px-6 lg:px-8">
             <Link
               href="/"
-              className="flex items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cream focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
               aria-label="Carolina Futons — home"
             >
-              <Image
-                src="/brand/cf-logo-square.png"
-                alt=""
-                width={36}
-                height={36}
-                priority
-                className="size-9 rounded-sm"
-              />
-              <span className="font-heading text-2xl font-semibold tracking-tight text-cf-navy">
+              <span className="font-heading text-2xl font-semibold tracking-tight text-cf-cream drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
                 Carolina Futons
               </span>
             </Link>
@@ -129,14 +149,14 @@ export function Header({ announcementBar }: HeaderProps = {}) {
               <Link
                 href="/search"
                 aria-label="Search"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-md text-cf-charcoal transition-colors hover:bg-cf-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-md text-cf-cream transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cream"
               >
                 <Search className="size-5" aria-hidden="true" />
               </Link>
               <Link
                 href="/account"
                 aria-label="Account"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-md text-cf-charcoal transition-colors hover:bg-cf-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-md text-cf-cream transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cream"
               >
                 <User className="size-5" aria-hidden="true" />
               </Link>
@@ -145,10 +165,12 @@ export function Header({ announcementBar }: HeaderProps = {}) {
               <Link
                 href="/shop"
                 className={[
+                  // v9 orange CTA pill — coral border + warm fill on hover so
+                  // the Browse action pops against the bear illustration.
                   "ml-2 hidden items-center gap-1.5 rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-widest transition-colors md:inline-flex",
                   scrolled
-                    ? "border-cf-espresso bg-cf-espresso text-white hover:bg-cf-espresso/90"
-                    : "border-cf-espresso bg-transparent text-cf-espresso hover:bg-cf-espresso hover:text-white",
+                    ? "border-[#E8845C] bg-[#E8845C] text-white hover:bg-[#B8523A] hover:border-[#B8523A]"
+                    : "border-cf-cream bg-transparent text-cf-cream hover:bg-[#E8845C] hover:border-[#E8845C] hover:text-white",
                 ]
                   .filter(Boolean)
                   .join(" ")}
@@ -169,7 +191,7 @@ export function Header({ announcementBar }: HeaderProps = {}) {
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-xs font-medium uppercase tracking-wider text-cf-charcoal/80 transition-colors hover:text-cf-cta focus-visible:outline-none focus-visible:text-cf-cta"
+                className="text-xs font-medium uppercase tracking-wider text-cf-cream/85 transition-colors hover:text-[#F5C97A] focus-visible:outline-none focus-visible:text-[#F5C97A]"
               >
                 {item.label}
               </Link>

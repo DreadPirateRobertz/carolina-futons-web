@@ -21,7 +21,7 @@ export function CartTrigger() {
       onClick={openCart}
       aria-label={label}
       data-testid="cart-trigger"
-      className="relative inline-flex h-11 w-11 items-center justify-center rounded-md text-cf-charcoal transition-colors hover:bg-cf-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="relative inline-flex h-11 w-11 items-center justify-center rounded-md text-cf-cream transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cream"
     >
       <ShoppingBag className="size-5" aria-hidden="true" />
       {itemCount > 0 ? (
