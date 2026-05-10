@@ -113,10 +113,15 @@ export function ProductCard({
                 fill
                 sizes={sizes}
                 priority={priority}
+                // cf-3b6j: contain (not cover) so the whole product is visible
+                // on PLP cards. Cover combined with the hover scale-1.03 was
+                // double-cropping non-square product photos — Stilgar's "over-
+                // zoomed" complaint. The aspect-square wrapper's bg-zinc-100
+                // handles letterbox bars when product photos aren't square.
                 className={
                   prefersReducedMotion
-                    ? "object-cover"
-                    : "object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03] group-focus-within:scale-[1.03]"
+                    ? "object-contain"
+                    : "object-contain transition-transform duration-200 ease-out group-hover:scale-[1.03] group-focus-within:scale-[1.03]"
                 }
               />
               {hasSecondary && secondary && !prefersReducedMotion ? (
@@ -128,7 +133,8 @@ export function ProductCard({
                   fill
                   sizes={sizes}
                   loading="lazy"
-                  className="object-cover opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100"
+                  // cf-3b6j: match primary above — contain not cover.
+                  className="object-contain opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100"
                 />
               ) : null}
             </>
