@@ -1,6 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render } from "@testing-library/react";
 
+// cf-h85f: pin pathname so usePathname() returns "/" — the home-only hero
+// band only renders when isHome is true. Without this mock the scroll
+// tests for the hero-band collapse can't find the element (next/navigation
+// returns null in vitest's jsdom env without an app-router context).
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
+}));
+
 import { Header } from "@/components/site/Header";
 import { CartProvider } from "@/components/cart/CartProvider";
 
@@ -101,10 +109,12 @@ describe("Header — scroll shrink (cf-nav-scroll-shrink)", () => {
 
   // cf-h85f: bear backdrop fades to opacity-0 + hero band collapses to
   // max-h-0 once scrolled past the threshold. Pinned so a future drive-by
-  // that re-removes the collapse logic fails CI loudly. Re-query the
-  // node after setScroll so we read the post-render className (the
-  // scroll listener's setState commits between queries; reusing the
-  // pre-scroll reference would read a stale snapshot in CI).
+  // that re-removes the collapse logic fails CI loudly. Wrap the scroll
+  // trigger in act() so the React state update flushes before the
+  // assertion — the existing tests above don't need this because they
+  // assert on data-scrolled which the act-wrapped event handler already
+  // commits, but the className-derived classes (opacity-0, bg-white,
+  // max-h-0) need an explicit act flush to be observed in CI.
   it("fades the bear backdrop to opacity-0 once scrolled (cf-h85f)", () => {
     const { container } = renderHeader();
     expect(
@@ -112,7 +122,9 @@ describe("Header — scroll shrink (cf-nav-scroll-shrink)", () => {
         .querySelector('[data-slot="header-bear-backdrop"]')!
         .className,
     ).toMatch(/\bopacity-100\b/);
-    setScroll(120);
+    act(() => {
+      setScroll(120);
+    });
     expect(
       container
         .querySelector('[data-slot="header-bear-backdrop"]')!
@@ -125,9 +137,12 @@ describe("Header — scroll shrink (cf-nav-scroll-shrink)", () => {
     const heroBefore = container.querySelector(
       '[data-testid="site-header-hero"]',
     );
+    expect(heroBefore).not.toBeNull();
     expect(heroBefore!.className).not.toMatch(/\bmax-h-0\b/);
     expect(heroBefore!.getAttribute("aria-hidden")).toBeNull();
-    setScroll(120);
+    act(() => {
+      setScroll(120);
+    });
     const heroAfter = container.querySelector(
       '[data-testid="site-header-hero"]',
     );
@@ -141,7 +156,9 @@ describe("Header — scroll shrink (cf-nav-scroll-shrink)", () => {
     expect(
       container.querySelector("[data-slot='site-header']")!.className,
     ).not.toMatch(/\bbg-white\b/);
-    setScroll(120);
+    act(() => {
+      setScroll(120);
+    });
     expect(
       container.querySelector("[data-slot='site-header']")!.className,
     ).toMatch(/\bbg-white\b/);
