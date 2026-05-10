@@ -34,7 +34,7 @@ export default async function SurveyPage({
           less than a minute.
         </p>
         {orderId && (
-          <p className="text-sm text-cf-charcoal/50">
+          <p className="text-sm text-cf-charcoal/60">
             Order #{orderId}
           </p>
         )}

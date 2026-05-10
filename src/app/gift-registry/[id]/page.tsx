@@ -30,7 +30,7 @@ export default function RegistryPublicPage({
   if (registry === "loading") {
     return (
       <main id="main" className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
-        <p className="text-cf-charcoal/50">Loading…</p>
+        <p className="text-cf-charcoal/60">Loading…</p>
       </main>
     );
   }
@@ -67,7 +67,7 @@ export default function RegistryPublicPage({
     >
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-cf-charcoal/50">
+          <p className="text-xs font-medium uppercase tracking-wider text-cf-charcoal/60">
             {OCCASION_LABELS[registry.occasion]}
             {registry.eventDate ? ` · ${registry.eventDate}` : ""}
           </p>
