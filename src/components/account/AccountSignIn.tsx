@@ -68,10 +68,10 @@ export function AccountSignIn({ next }: { next?: string }) {
     return (
       <main className="flex min-h-[60vh] items-center justify-center px-4 py-16">
         <div className="w-full max-w-sm text-center">
-          <h1 className="font-heading text-3xl font-bold tracking-tight text-cf-navy">
+          <h1 className="font-heading text-3xl font-bold tracking-tight text-cf-navy dark:text-cf-cream">
             Check your email
           </h1>
-          <p className="mt-4 text-sm text-cf-charcoal/80">
+          <p className="mt-4 text-sm text-cf-charcoal/80 dark:text-cf-cream/80">
             We sent a verification link to <strong>{email}</strong>. Click it to
             activate your account, then return here to sign in.
           </p>
@@ -90,10 +90,10 @@ export function AccountSignIn({ next }: { next?: string }) {
   return (
     <main className="flex min-h-[60vh] items-center justify-center px-4 py-16">
       <div className="w-full max-w-sm">
-        <h1 className="font-heading text-3xl font-bold tracking-tight text-cf-navy">
+        <h1 className="font-heading text-3xl font-bold tracking-tight text-cf-navy dark:text-cf-cream">
           Sign in
         </h1>
-        <p className="mt-3 text-sm text-cf-charcoal/80">
+        <p className="mt-3 text-sm text-cf-charcoal/80 dark:text-cf-cream/80">
           Access your orders, wishlist, and account settings.
         </p>
 
@@ -101,7 +101,7 @@ export function AccountSignIn({ next }: { next?: string }) {
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-cf-charcoal"
+              className="block text-sm font-medium text-cf-charcoal dark:text-cf-cream"
             >
               Email
             </label>
@@ -120,7 +120,7 @@ export function AccountSignIn({ next }: { next?: string }) {
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-cf-charcoal"
+              className="block text-sm font-medium text-cf-charcoal dark:text-cf-cream"
             >
               Password
             </label>
@@ -159,13 +159,13 @@ export function AccountSignIn({ next }: { next?: string }) {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-cf-charcoal/60">
+        <p className="mt-6 text-center text-xs text-cf-charcoal/60 dark:text-cf-cream/60">
           Already signed in?{" "}
           <Link href="/dashboard" className="text-cf-cta hover:underline">
             Go to your dashboard
           </Link>
         </p>
-        <p className="mt-2 text-center text-xs text-cf-charcoal/60">
+        <p className="mt-2 text-center text-xs text-cf-charcoal/60 dark:text-cf-cream/60">
           Don&apos;t have an account?{" "}
           <Link href="/signup" className="text-cf-cta hover:underline">
             Create one

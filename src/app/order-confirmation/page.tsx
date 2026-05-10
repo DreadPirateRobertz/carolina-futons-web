@@ -105,7 +105,7 @@ export default async function OrderConfirmationPage(props: {
         <p className="text-sm font-medium uppercase tracking-[0.15em] text-cf-cta">
           Order confirmed
         </p>
-        <h1 className="mt-2 font-playfair text-3xl font-semibold tracking-tight text-cf-ink">
+        <h1 className="mt-2 font-playfair text-3xl font-semibold tracking-tight text-cf-ink dark:text-cf-cream">
           Thanks for your order
         </h1>
         {orderNumber ? (
@@ -118,10 +118,10 @@ export default async function OrderConfirmationPage(props: {
         data-testid="brenda-message"
         className="mt-8 rounded-lg border border-cf-blue/20 bg-cf-sand p-6"
       >
-        <p className="font-playfair text-lg font-semibold text-cf-ink">
+        <p className="font-playfair text-lg font-semibold text-cf-ink dark:text-cf-cream">
           A note from Brenda
         </p>
-        <p className="mt-2 leading-relaxed text-cf-ink">
+        <p className="mt-2 leading-relaxed text-cf-ink dark:text-cf-cream">
           Every futon that leaves our shop in Hendersonville is built by hand —
           the same way we&rsquo;ve been doing it since {BUSINESS.foundedYear}.
           Thank you for trusting us with your home. If you ever have a question,
@@ -148,7 +148,7 @@ export default async function OrderConfirmationPage(props: {
                 {i + 1}
               </span>
               <div className="pt-0.5">
-                <p className="font-medium text-cf-ink">{step.label}</p>
+                <p className="font-medium text-cf-ink dark:text-cf-cream">{step.label}</p>
                 <p className="mt-0.5 text-sm text-cf-muted">{step.detail}</p>
               </div>
             </li>
@@ -157,8 +157,8 @@ export default async function OrderConfirmationPage(props: {
       </section>
 
       {/* Items */}
-      <section className="mt-8 rounded-lg border border-cf-ink/10">
-        <h2 className="border-b border-cf-ink/10 px-5 py-3 text-sm font-semibold uppercase tracking-wide text-cf-muted">
+      <section className="mt-8 rounded-lg border border-cf-ink/10 dark:border-cf-cream/10">
+        <h2 className="border-b border-cf-ink/10 dark:border-cf-cream/10 px-5 py-3 text-sm font-semibold uppercase tracking-wide text-cf-muted">
           Items
         </h2>
         <ul className="divide-y divide-cf-ink/5">
@@ -175,10 +175,10 @@ export default async function OrderConfirmationPage(props: {
                 <div className="h-20 w-20 rounded bg-cf-sand" />
               )}
               <div className="flex-1">
-                <p className="font-medium text-cf-ink">{li.productName?.original ?? ""}</p>
+                <p className="font-medium text-cf-ink dark:text-cf-cream">{li.productName?.original ?? ""}</p>
                 <p className="mt-1 text-sm text-cf-muted">Qty {li.quantity ?? 1}</p>
               </div>
-              <p className="text-sm text-cf-ink">{li.price?.formattedAmount ?? ""}</p>
+              <p className="text-sm text-cf-ink dark:text-cf-cream">{li.price?.formattedAmount ?? ""}</p>
             </li>
           ))}
         </ul>
@@ -186,7 +186,7 @@ export default async function OrderConfirmationPage(props: {
 
       {/* Totals + Addresses */}
       <section className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
-        <div className="rounded-lg border border-cf-ink/10 p-5">
+        <div className="rounded-lg border border-cf-ink/10 dark:border-cf-cream/10 p-5">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-cf-muted">
             Totals
           </h2>
@@ -198,7 +198,7 @@ export default async function OrderConfirmationPage(props: {
           </dl>
         </div>
 
-        <div className="rounded-lg border border-cf-ink/10 p-5">
+        <div className="rounded-lg border border-cf-ink/10 dark:border-cf-cream/10 p-5">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-cf-muted">
             Shipping
           </h2>
@@ -215,9 +215,9 @@ export default async function OrderConfirmationPage(props: {
       {SHARE_SOCIALS.length > 0 ? (
         <section
           data-testid="social-share"
-          className="mt-8 rounded-lg border border-cf-ink/10 p-5 text-center"
+          className="mt-8 rounded-lg border border-cf-ink/10 dark:border-cf-cream/10 p-5 text-center"
         >
-          <p className="font-medium text-cf-ink">Love your new futon? Share it!</p>
+          <p className="font-medium text-cf-ink dark:text-cf-cream">Love your new futon? Share it!</p>
           <p className="mt-1 text-sm text-cf-muted">
             Show us how it looks in your home — tag us and you might be featured.
           </p>
@@ -228,7 +228,7 @@ export default async function OrderConfirmationPage(props: {
                 href={s.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-md border border-cf-ink/15 px-4 py-2 text-sm font-medium text-cf-ink hover:border-cf-cta hover:text-cf-cta"
+                className="rounded-md border border-cf-ink/15 dark:border-cf-cream/15 px-4 py-2 text-sm font-medium text-cf-ink dark:text-cf-cream hover:border-cf-cta hover:text-cf-cta"
               >
                 {s.name}
               </a>
@@ -261,7 +261,7 @@ export default async function OrderConfirmationPage(props: {
         </Link>
         <Link
           href="/signup"
-          className="rounded-md border border-cf-ink/20 px-5 py-2.5 text-sm font-medium text-cf-ink hover:border-cf-cta"
+          className="rounded-md border border-cf-ink/20 dark:border-cf-cream/20 px-5 py-2.5 text-sm font-medium text-cf-ink dark:text-cf-cream hover:border-cf-cta"
         >
           Create an account
         </Link>
@@ -283,8 +283,8 @@ function Row({
     <div
       className={
         emphasize
-          ? "flex justify-between border-t border-cf-ink/10 pt-2 text-base font-semibold text-cf-ink"
-          : "flex justify-between text-cf-ink"
+          ? "flex justify-between border-t border-cf-ink/10 dark:border-cf-cream/10 pt-2 text-base font-semibold text-cf-ink dark:text-cf-cream"
+          : "flex justify-between text-cf-ink dark:text-cf-cream"
       }
     >
       <dt>{label}</dt>
@@ -313,7 +313,7 @@ function AddressBlock({ address }: { address: AnyAddress }) {
     address.country,
   ].filter(Boolean) as string[];
   return (
-    <address className="mt-2 space-y-0.5 text-sm not-italic text-cf-ink">
+    <address className="mt-2 space-y-0.5 text-sm not-italic text-cf-ink dark:text-cf-cream">
       {parts.map((line, i) => (
         <p key={i}>{line}</p>
       ))}

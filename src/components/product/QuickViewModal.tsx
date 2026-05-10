@@ -100,7 +100,7 @@ export function QuickViewModal({
           type="button"
           onClick={onClose}
           aria-label="Close quick view"
-          className="absolute right-3 top-3 rounded-md p-2 text-cf-muted hover:text-cf-ink"
+          className="absolute right-3 top-3 rounded-md p-2 text-cf-muted hover:text-cf-ink dark:text-cf-cream/60 dark:hover:text-cf-cream"
         >
           <span aria-hidden="true">×</span>
         </button>
@@ -123,7 +123,7 @@ export function QuickViewModal({
               </div>
             ) : null}
             <div>
-              <h2 className="text-lg font-semibold text-cf-ink">{data.name}</h2>
+              <h2 className="text-lg font-semibold text-cf-ink dark:text-cf-cream">{data.name}</h2>
               <p className="mt-1 text-base text-cf-muted">{data.priceText}</p>
             </div>
             {data.colorChoices.length > 0 ? (
@@ -151,7 +151,7 @@ export function QuickViewModal({
               </div>
             ) : null}
             {data.description ? (
-              <p className="text-sm text-cf-ink/80">{data.description}</p>
+              <p className="text-sm text-cf-ink/80 dark:text-cf-cream/80">{data.description}</p>
             ) : null}
             <div className="flex items-center justify-between gap-3 pt-2">
               <Link

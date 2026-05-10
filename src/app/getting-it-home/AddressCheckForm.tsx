@@ -25,7 +25,7 @@ export function AddressCheckForm() {
         <div className="flex-1">
           <label
             htmlFor="gih-zip"
-            className="block text-sm font-medium text-cf-espresso"
+            className="block text-sm font-medium text-cf-espresso dark:text-cf-cream"
           >
             ZIP code
           </label>
@@ -39,13 +39,13 @@ export function AddressCheckForm() {
             required
             autoComplete="postal-code"
             placeholder="28792"
-            className="mt-1 w-full rounded-md border border-cf-divider bg-white px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta"
+            className="mt-1 w-full rounded-md border border-cf-divider bg-white px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta dark:border-cf-sand dark:bg-cf-cream dark:text-cf-espresso"
           />
         </div>
         <div className="w-28">
           <label
             htmlFor="gih-state"
-            className="block text-sm font-medium text-cf-espresso"
+            className="block text-sm font-medium text-cf-espresso dark:text-cf-cream"
           >
             State (optional)
           </label>
@@ -56,7 +56,7 @@ export function AddressCheckForm() {
             maxLength={2}
             autoComplete="address-level1"
             placeholder="NC"
-            className="mt-1 w-full rounded-md border border-cf-divider bg-white px-3 py-2 text-base uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta"
+            className="mt-1 w-full rounded-md border border-cf-divider bg-white px-3 py-2 text-base uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta dark:border-cf-sand dark:bg-cf-cream dark:text-cf-espresso"
           />
         </div>
         <button
@@ -80,7 +80,7 @@ function Result({ result }: { result: DeliveryZoneResult }) {
         <div
           role="status"
           data-slot="gih-result-invalid"
-          className="rounded-md border border-cf-error/30 bg-cf-error/10 p-4 text-sm text-cf-espresso"
+          className="rounded-md border border-cf-error/30 bg-cf-error/10 p-4 text-sm text-cf-espresso dark:bg-cf-error/20 dark:text-cf-cream"
         >
           Please enter a valid 5-digit US ZIP code.
         </div>
@@ -90,7 +90,7 @@ function Result({ result }: { result: DeliveryZoneResult }) {
       <div
         role="status"
         data-slot="gih-result-out-of-area"
-        className="rounded-md border border-cf-divider bg-cf-cream p-4 text-sm text-cf-espresso"
+        className="rounded-md border border-cf-divider bg-cf-cream p-4 text-sm text-cf-espresso dark:border-cf-sand dark:bg-cf-sand dark:text-cf-cream"
       >
         ZIP <strong>{result.zip}</strong> is outside our in-house delivery
         network. We can still ship via UPS/FedEx — see the{" "}
@@ -108,12 +108,12 @@ function Result({ result }: { result: DeliveryZoneResult }) {
       role="status"
       data-slot="gih-result-zone"
       data-zone={zone.code}
-      className="rounded-md border border-cf-cta/40 bg-cf-cream p-4 text-sm text-cf-espresso"
+      className="rounded-md border border-cf-cta/40 bg-cf-cream p-4 text-sm text-cf-espresso dark:bg-cf-sand dark:text-cf-cream"
     >
       <p className="font-medium">
         You&rsquo;re in <span className="text-cf-cta">{zone.name}</span>.
       </p>
-      <p className="mt-1 text-cf-espresso/80">{zone.description}</p>
+      <p className="mt-1 text-cf-espresso/80 dark:text-cf-cream/80">{zone.description}</p>
       <dl className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
         <Stat label="Curbside delivery" value={`$${zone.delivery}`} />
         <Stat label="White-glove" value={`$${zone.whiteGlove}`} />

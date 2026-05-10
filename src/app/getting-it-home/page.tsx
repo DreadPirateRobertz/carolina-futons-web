@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 export default function GettingItHomePage() {
   return (
     <main className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
-      <article className="mx-auto max-w-3xl space-y-10 font-source-sans text-cf-ink">
+      <article className="mx-auto max-w-3xl space-y-10 font-source-sans text-cf-ink dark:text-cf-cream">
         <header className="space-y-3">
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
             Delivery
@@ -66,7 +66,7 @@ export default function GettingItHomePage() {
                 data-zone={zone.code}
                 className="rounded-md border border-cf-divider bg-cf-cream p-4"
               >
-                <p className="font-medium text-cf-espresso">{zone.name}</p>
+                <p className="font-medium text-cf-espresso dark:text-cf-cream">{zone.name}</p>
                 <p className="text-sm text-cf-espresso/80">
                   {zone.description}
                 </p>
