@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildAboutPageSchema,
   buildArticleSchema,
   buildBreadcrumbSchema,
   buildLocalBusinessSchema,
@@ -330,5 +331,45 @@ describe("buildLocalBusinessSchema", () => {
       postalCode: BUSINESS.zip,
       addressCountry: "US",
     });
+  });
+});
+
+// cfw-6i4: AboutPage schema for /about. mainEntity must reference the
+// same Organization @id used by Organization (layout) and LocalBusiness
+// (/visit) so all three markups fold into one entity in Google's graph.
+describe("buildAboutPageSchema", () => {
+  const siteUrl = "https://carolinafutons.com";
+  const base = {
+    name: "About Carolina Futons",
+    description: "Family-owned since 1991.",
+    canonicalUrl: "https://carolinafutons.com/about",
+    siteUrl,
+  };
+
+  it("emits a schema.org AboutPage with name/description/url populated", () => {
+    const schema = buildAboutPageSchema(base);
+    expect(schema["@context"]).toBe("https://schema.org");
+    expect(schema["@type"]).toBe("AboutPage");
+    expect(schema.name).toBe("About Carolina Futons");
+    expect(schema.description).toBe("Family-owned since 1991.");
+    expect(schema.url).toBe("https://carolinafutons.com/about");
+  });
+
+  it("pins mainEntity @id to the homepage Organization so AboutPage/Organization/LocalBusiness fold into one entity", () => {
+    expect(buildAboutPageSchema(base).mainEntity).toEqual({
+      "@type": "Organization",
+      "@id": "https://carolinafutons.com#organization",
+      name: BUSINESS.name,
+    });
+  });
+
+  it("respects the resolved siteUrl override (preview/staging) when building the @id", () => {
+    const schema = buildAboutPageSchema({
+      ...base,
+      siteUrl: "https://preview.carolinafutons.com",
+    });
+    expect(schema.mainEntity["@id"]).toBe(
+      "https://preview.carolinafutons.com#organization",
+    );
   });
 });

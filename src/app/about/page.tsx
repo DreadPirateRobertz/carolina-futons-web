@@ -9,16 +9,28 @@ import {
   ABOUT_HOTSPOT_CONFIGS,
 } from "@/components/site/ShopTheRoom";
 import { BUSINESS } from "@/lib/business/contact-info";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildAboutPageSchema, resolveSiteUrl } from "@/lib/seo/json-ld";
+
+const ABOUT_DESCRIPTION =
+  "Family-owned since 1991, Carolina Futons has helped Hendersonville, NC customers find American-made frames and mattresses that last.";
 
 export const metadata: Metadata = {
   title: "About — Carolina Futons",
-  description:
-    "Family-owned since 1991, Carolina Futons has helped Hendersonville, NC customers find American-made frames and mattresses that last.",
+  description: ABOUT_DESCRIPTION,
 };
 
 export default async function AboutPage() {
+  const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+  const aboutSchema = buildAboutPageSchema({
+    name: "About Carolina Futons",
+    description: ABOUT_DESCRIPTION,
+    canonicalUrl: `${siteUrl}/about`,
+    siteUrl,
+  });
   return (
     <main className="w-full">
+      <JsonLd id="jsonld-about" schema={aboutSchema} />
       {/* v3 mascot porch scene — bear on Blue Ridge */}
       <div data-slot="about-illustration" className="w-full" style={{ height: "clamp(300px, 42vw, 640px)" }}>
         <MascotWorldHero />

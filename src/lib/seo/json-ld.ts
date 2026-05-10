@@ -336,3 +336,40 @@ export function buildArticleSchema(input: ArticleSchemaInput): ArticleSchema {
   }
   return schema;
 }
+
+// cfw-6i4: AboutPage schema for /about. mainEntity points at the same
+// Organization @id used by the global Organization markup in layout.tsx
+// and the LocalBusiness on /visit, so crawlers fold all three into one
+// entity instead of treating /about as a competing identity claim.
+export type AboutPageSchemaInput = {
+  name: string;
+  description: string;
+  canonicalUrl: string;
+  siteUrl: string;
+};
+
+export type AboutPageSchema = {
+  "@context": "https://schema.org";
+  "@type": "AboutPage";
+  name: string;
+  description: string;
+  url: string;
+  mainEntity: { "@type": "Organization"; "@id": string; name: string };
+};
+
+export function buildAboutPageSchema(
+  input: AboutPageSchemaInput,
+): AboutPageSchema {
+  return {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    name: input.name,
+    description: input.description,
+    url: input.canonicalUrl,
+    mainEntity: {
+      "@type": "Organization",
+      "@id": `${input.siteUrl}#organization`,
+      name: BUSINESS.name,
+    },
+  };
+}
