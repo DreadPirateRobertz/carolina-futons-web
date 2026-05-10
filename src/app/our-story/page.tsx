@@ -1,8 +1,8 @@
-import { redirect } from "next/navigation";
+import { permanentRedirect } from "next/navigation";
 
 // /our-story was a live-site URL that predates the cf-3qt migration.
-// The content now lives at /about — permanent redirect so inbound links
-// and any bookmarked URLs land on the right page.
+// The content now lives at /about — issue a 308 so caches/crawlers
+// consolidate /our-story link equity into /about.
 export default function OurStoryPage() {
-  redirect("/about");
+  permanentRedirect("/about");
 }
