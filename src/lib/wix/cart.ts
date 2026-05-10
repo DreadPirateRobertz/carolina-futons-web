@@ -4,13 +4,13 @@
 // Action that calls one of these — do not instantiate the Wix client in a
 // Client Component.
 //
-// Phase 2 dual-write plan (see docs/cf-3qt/WEBMETHOD-CATALOG.md § cross-cutting
-// concerns): the Velo `cartSessionService` is STILL authoritative for the
-// mobile app, which reads `CartSessions` directly by memberId. Once a line
-// item is added here, a subsequent RPC call to `cartSessionService.updateCartItems`
-// keeps the mobile bridge in sync. That secondary write is intentionally NOT
-// in this file — it lives in a higher-level Server Action so the cart write
-// succeeds or fails as one unit.
+// Velo `CartSessions` dual-write: the mobile app reads `CartSessions` by
+// memberId, so cart writes from the Next.js side must mirror to the Velo
+// `cartSession` HTTP function to keep the mobile bridge in sync. The
+// fire-and-forget mirror is implemented at the Server Action layer
+// (`@/app/actions/cart.ts → syncCartSession`) so cart writes here remain
+// pure Wix Stores SDK calls; failure to mirror does not roll back the
+// authoritative Stores write. See `cart-session-dual-write.ts`.
 import "server-only";
 
 import { makeLineId, type CartLineItem } from "@/lib/cart/cart-state";

@@ -11,6 +11,7 @@ import {
   type LineItemInput,
   type WixCart,
 } from "@/lib/wix/cart";
+import { syncCartSession } from "@/lib/wix/cart-session-dual-write";
 
 export type CartActionResult =
   | { ok: true; cart: WixCart | null }
@@ -35,6 +36,10 @@ export async function addItemAction(
     return { ok: true, cart: null };
   try {
     const cart = await addToCart([input]);
+    // cf-cart-session-dual-write: keep the legacy Velo CartSessions mirror
+    // in sync so the mobile app (which reads CartSessions by memberId) sees
+    // the new line. Fire-and-forget — failure must not block the response.
+    syncCartSession(cart);
     revalidatePath("/cart");
     return { ok: true, cart };
   } catch (err) {
@@ -48,6 +53,7 @@ export async function removeItemAction(
   if (!lineItemId) return { ok: false, error: "Missing lineItemId" };
   try {
     const cart = await removeFromCart([lineItemId]);
+    syncCartSession(cart);
     revalidatePath("/cart");
     return { ok: true, cart };
   } catch (err) {
@@ -65,6 +71,7 @@ export async function updateQuantityAction(
   }
   try {
     const cart = await updateLineItemQuantity(lineItemId, quantity);
+    syncCartSession(cart);
     revalidatePath("/cart");
     return { ok: true, cart };
   } catch (err) {
