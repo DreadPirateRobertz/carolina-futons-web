@@ -36,15 +36,19 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
     expect(home).toHaveAttribute("href", "/");
   });
 
-  it("renders the wordmark inside the brand link (cf-1eb5: no logo medallion)", () => {
-    // cf-1eb5 / cfw-v9: Stilgar rejected the medallion logo in favor of a
-    // full-header bear illustration treatment. The brand link is now text
-    // only — illustration lives in a separate `header-bear-backdrop` slot
-    // behind the chrome. A future drive-by to "add the logo back inline"
-    // would re-introduce the rejected lockup, so this guards against it.
+  it("renders the CF logo + wordmark lockup in the brand link (cf-jo07)", () => {
+    // cf-jo07: Stilgar restored the inline brand mark alongside the wordmark
+    // (visible in both full and shrunken header states). The bear treatment
+    // continues to live in the separate `header-bear-backdrop` slot. A
+    // future drive-by that drops the inline logo would break unscrolled
+    // brand recognition; assertion guards against it. alt="" is intentional
+    // — the link's aria-label already names the destination.
     renderHeader();
     const home = screen.getByRole("link", { name: /carolina futons.*home/i });
-    expect(home.querySelector("img")).toBeNull();
+    const img = home.querySelector("img");
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute("src") ?? "").toMatch(/cf-logo/);
+    expect(img?.getAttribute("alt")).toBe("");
     expect(home.textContent).toContain("Carolina Futons");
   });
 

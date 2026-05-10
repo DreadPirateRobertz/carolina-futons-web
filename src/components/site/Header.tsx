@@ -168,11 +168,30 @@ export function Header({ announcementBar }: HeaderProps = {}) {
             <Link
               href="/"
               className={[
-                "rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
+                "flex items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
                 scrolled ? "focus-visible:ring-cf-cta" : "focus-visible:ring-white",
               ].join(" ")}
               aria-label="Carolina Futons — home"
             >
+              {/* cf-jo07: CF logo restored alongside the wordmark — visible in
+                  BOTH full and shrunken states (Stilgar). Image scales 40→28px
+                  on scroll and the bear-state drop-shadow is dropped once the
+                  chrome surface goes white. The link's aria-label covers the
+                  destination, so alt="" keeps SR from double-announcing. */}
+              <Image
+                src="/brand/cf-logo-square.png"
+                alt=""
+                width={40}
+                height={40}
+                priority
+                className={[
+                  "rounded-sm",
+                  motionTransition,
+                  scrolled
+                    ? "size-7"
+                    : "size-10 drop-shadow-[0_2px_6px_rgba(0,0,0,0.55)]",
+                ].join(" ")}
+              />
               {/* cf-h85f: wordmark shrinks + recolors when chrome collapses.
                   text-2xl → text-lg on scroll so the slim chrome stays
                   visually balanced with the smaller utility row icons.
