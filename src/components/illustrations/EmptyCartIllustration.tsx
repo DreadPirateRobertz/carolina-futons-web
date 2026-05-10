@@ -4,7 +4,6 @@ import { V3_PAL as c } from "@/components/mascot/MascotPalette";
 export function EmptyCartIllustration({ className }: { className?: string }) {
   return (
     <svg
-      role="img"
       aria-hidden="true"
       data-slot="empty-cart-illustration"
       viewBox="0 0 220 140"
