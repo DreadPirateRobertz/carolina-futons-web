@@ -180,7 +180,7 @@ export function Header({ announcementBar }: HeaderProps = {}) {
               />
               <span
                 className={[
-                  "font-heading font-semibold tracking-tight text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)]",
+                  "font-heading font-semibold tracking-tight text-cf-blue drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)]",
                   motionTransition,
                   scrolled ? "text-lg" : "text-2xl",
                 ].join(" ")}
