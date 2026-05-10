@@ -299,7 +299,7 @@ export function Header({ announcementBar }: HeaderProps = {}) {
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-xs font-medium uppercase tracking-wider text-white/90 drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] transition-colors hover:text-[#F5C97A] focus-visible:outline-none focus-visible:text-[#F5C97A]"
+                className="text-xs font-medium uppercase tracking-wider text-cf-blue drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] transition-colors hover:text-[#F5C97A] focus-visible:outline-none focus-visible:text-[#F5C97A]"
               >
                 {item.label}
               </Link>
