@@ -11,6 +11,33 @@ import {
   type LineItemInput,
   type WixCart,
 } from "@/lib/wix/cart";
+import { notifyCartSessionUpdate } from "@/lib/wix/cart-session-dual-write";
+
+// cf-cart-session-dual-write — extract the (cartId, items) shape Velo expects
+// from the Wix cart so add/remove/update actions can fire the same dual-write
+// helper. Filters out malformed line items defensively; the Velo endpoint is
+// fire-and-forget so a bad payload should fail closed without breaking cart.
+function dualWritePayload(cart: WixCart | null) {
+  if (!cart || !cart._id) return null;
+  const items = (cart.lineItems ?? [])
+    .map((li) => {
+      const productId = li.catalogReference?.catalogItemId;
+      const qty = typeof li.quantity === "number" ? li.quantity : 0;
+      const priceRaw = li.price?.amount;
+      const price =
+        typeof priceRaw === "string" ? Number(priceRaw) : undefined;
+      if (!productId || qty <= 0) return null;
+      return {
+        productId,
+        qty,
+        ...(Number.isFinite(price) ? { price } : {}),
+      };
+    })
+    .filter((x): x is { productId: string; qty: number; price?: number } =>
+      x !== null,
+    );
+  return { sessionToken: cart._id, items };
+}
 
 export type CartActionResult =
   | { ok: true; cart: WixCart | null }
@@ -36,6 +63,7 @@ export async function addItemAction(
   try {
     const cart = await addToCart([input]);
     revalidatePath("/cart");
+    fireDualWrite(cart);
     return { ok: true, cart };
   } catch (err) {
     return { ok: false, error: toMessage(err) };
@@ -49,6 +77,7 @@ export async function removeItemAction(
   try {
     const cart = await removeFromCart([lineItemId]);
     revalidatePath("/cart");
+    fireDualWrite(cart);
     return { ok: true, cart };
   } catch (err) {
     return { ok: false, error: toMessage(err) };
@@ -66,10 +95,21 @@ export async function updateQuantityAction(
   try {
     const cart = await updateLineItemQuantity(lineItemId, quantity);
     revalidatePath("/cart");
+    fireDualWrite(cart);
     return { ok: true, cart };
   } catch (err) {
     return { ok: false, error: toMessage(err) };
   }
+}
+
+// cf-cart-session-dual-write — best-effort sync to Velo CartSessions.
+// Discarding the returned promise is intentional: the action returns to the
+// caller while the dual-write is still in flight. The helper itself swallows
+// errors so an unhandled-rejection warning is impossible.
+function fireDualWrite(cart: WixCart | null): void {
+  const payload = dualWritePayload(cart);
+  if (!payload) return;
+  void notifyCartSessionUpdate(payload.sessionToken, payload.items);
 }
 
 export async function getCartAction(): Promise<CartActionResult> {
