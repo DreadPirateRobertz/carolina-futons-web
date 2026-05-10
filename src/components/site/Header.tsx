@@ -112,20 +112,17 @@ export function Header({ announcementBar }: HeaderProps = {}) {
           fill
           priority
           sizes="100vw"
-          className="object-cover object-[right_center]"
+          className="object-cover object-[center_40%]"
         />
-        {/* cf-1eb5 r4: bears must show through, copy moved to left half.
-            Switched object-position to right-center so the bear faces sit
-            in the right ~50% of the band where the copy column doesn't
-            overlay them. Overlay is now an asymmetric horizontal gradient:
-            opaque dark wash on the LEFT (where the orange copy lives) so
-            the text reads cleanly against any photo patch, fading to
-            near-clear on the right so bears render at full saturation.
-            Top + bottom bands keep the chrome (announce, nav, sub-nav)
-            legible regardless of left/right positioning. */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#2A1810]/85 via-[#2A1810]/40 to-transparent" />
+        {/* cf-1eb5 r5: copy moves to BOTTOM of hero (flex-col justify-end),
+            so the top 65% is unobstructed bears. Drop the horizontal
+            left→right wash from r4 (it was covering bear #2 in the center)
+            and replace with a single bottom-up gradient: dark in the
+            bottom ~200px under the text, fully transparent above so all
+            three bears render at full saturation.
+            Top strip kept thin so the announce/nav chrome reads. */}
+        <div className="absolute inset-x-0 bottom-0 h-[280px] bg-gradient-to-t from-[#2A1810]/90 via-[#2A1810]/55 to-transparent" />
         <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#2A1810]/85 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#2A1810]/80 to-transparent" />
       </div>
 
       <div className="relative z-30">
@@ -199,32 +196,31 @@ export function Header({ announcementBar }: HeaderProps = {}) {
           </div>
         </div>
 
-        {/* cf-1eb5 r4: home-only hero band, v9 copy in LEFT half so bears
-            stay visible in the right half (Stilgar feedback). Text in
-            V3_PAL.coral #E8845C — the v9 orange accent — instead of white
-            so the copy reads as illustrative typography over the photo,
-            not a stock-photo overlay.
-            Source spec: /Users/hal/gt/cfutons/crew/melania/design-vision/
-              DESIGN-VISION.html `.hero-mockup` block (canonical v9).
-            - h2: "Handcrafted Comfort, / Mountain Inspired."
-              Playfair Display (font-heading), 700, 56px @ lg
-            - p:  "Premium futons and furniture from the Blue Ridge
-              Mountains of North Carolina."
-            - cta: "Shop Collection →" on V3_PAL.coral background
+        {/* cf-1eb5 r5: home-only hero band per Stilgar feedback.
+            - TALLER: lg:min-h-[80vh] so the band is genuinely hero-scale
+              and the bears get vertical room (Stilgar: "expand the
+              section").
+            - TEXT AT BOTTOM: flex-col + justify-end places copy in the
+              bottom-left quadrant. Top 65% is open sky for the bears so
+              all three faces are visible.
+            - ORANGE COPY: headline V3_PAL.coral #E8845C, subline #F0A882
+              (sunGlow). v9 sunset palette per Stilgar.
+            - V9 STYLE: Playfair Display 700, 56px @ lg, exact mockup
+              copy from DESIGN-VISION.html `.hero-mockup`.
             Gated to / so product / category pages keep a slim chrome. */}
         {isHome ? (
           <div
             data-slot="site-header-hero"
             data-testid="site-header-hero"
-            className="mx-auto w-full max-w-7xl px-4 pt-12 pb-20 sm:px-6 sm:pt-16 sm:pb-24 lg:px-8 lg:pt-24 lg:pb-32"
+            className="mx-auto flex w-full max-w-7xl flex-col justify-end px-4 pt-32 pb-12 min-h-[440px] sm:min-h-[560px] sm:px-6 sm:pt-40 sm:pb-14 lg:px-8 lg:min-h-[80vh] lg:pt-48 lg:pb-16"
           >
             <div className="max-w-xl text-left">
-              <h1 className="font-heading text-4xl font-bold leading-[1.05] tracking-tight text-[#E8845C] drop-shadow-[0_3px_14px_rgba(0,0,0,0.55)] sm:text-5xl lg:text-[56px]">
+              <h1 className="font-heading text-4xl font-bold leading-[1.05] tracking-tight text-[#E8845C] drop-shadow-[0_3px_14px_rgba(0,0,0,0.65)] sm:text-5xl lg:text-[56px]">
                 Handcrafted Comfort,
                 <br />
                 Mountain Inspired.
               </h1>
-              <p className="mt-6 max-w-lg text-base text-[#F0A882] drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] sm:text-lg lg:text-xl">
+              <p className="mt-6 max-w-lg text-base text-[#F0A882] drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] sm:text-lg lg:text-xl">
                 Premium futons and furniture from the Blue Ridge Mountains of
                 North Carolina.
               </p>
