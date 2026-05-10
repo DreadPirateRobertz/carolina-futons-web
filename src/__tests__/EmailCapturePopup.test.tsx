@@ -1,9 +1,49 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 
-import { EmailCapturePopup } from "@/components/site/EmailCapturePopup";
-
 const STORAGE_KEY = "cf-email-popup-dismissed";
+
+// cfw-xnd: EmailCapturePopup now wires submit to the subscribeToNewsletter
+// Server Action via useActionState (matching NewsletterSignup +
+// HomeNewsletterSection). Mock react's useActionState + the action import so
+// we can drive the success/error/idle render paths without spinning up the
+// Velo backend in jsdom.
+const reactDomMocks = vi.hoisted(() => ({
+  useFormStatus: vi.fn<() => { pending: boolean }>(() => ({ pending: false })),
+}));
+
+const reactMocks = vi.hoisted(() => {
+  type Action = (
+    prev: unknown,
+    formData: FormData,
+  ) => unknown | Promise<unknown>;
+  return {
+    state: { status: "idle" } as unknown,
+    useActionState: vi.fn(
+      (action: Action, _initial: unknown) =>
+        [reactMocks.state, action, false] as const,
+    ),
+  };
+});
+
+vi.mock("react", async () => {
+  const actual = await vi.importActual<typeof import("react")>("react");
+  return { ...actual, useActionState: reactMocks.useActionState };
+});
+
+vi.mock("react-dom", async () => {
+  const actual = await vi.importActual<typeof import("react-dom")>("react-dom");
+  return { ...actual, useFormStatus: reactDomMocks.useFormStatus };
+});
+
+vi.mock("@/app/newsletter/actions", () => ({
+  subscribeToNewsletter: vi.fn(async () => ({ status: "idle" })),
+}));
+vi.mock("@/app/newsletter/newsletter-state", () => ({
+  initialNewsletterActionState: { status: "idle" },
+}));
+
+import { EmailCapturePopup } from "@/components/site/EmailCapturePopup";
 
 // --- localStorage mock ---
 const lsMock = (() => {
@@ -19,7 +59,6 @@ const lsMock = (() => {
     removeItem: vi.fn(impl.removeItem),
     clear() {
       store = {};
-      // mockReset + restore base impl so mockReturnValue from prior tests doesn't leak
       fns.getItem.mockReset().mockImplementation(impl.getItem);
       fns.setItem.mockReset().mockImplementation(impl.setItem);
       fns.removeItem.mockReset().mockImplementation(impl.removeItem);
@@ -31,6 +70,8 @@ const lsMock = (() => {
 beforeEach(() => {
   vi.useFakeTimers();
   lsMock.clear();
+  reactMocks.state = { status: "idle" };
+  reactDomMocks.useFormStatus.mockReturnValue({ pending: false });
   Object.defineProperty(window, "localStorage", { value: lsMock, writable: true, configurable: true });
   Object.defineProperty(window, "scrollY", { value: 0, writable: true, configurable: true });
   Object.defineProperty(document.body, "scrollHeight", { value: 2000, writable: true, configurable: true });
@@ -109,18 +150,77 @@ describe("EmailCapturePopup", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("logs email to console and dismisses on form submit", async () => {
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+  it("binds the form submit to the newsletter Server Action (cfw-xnd)", async () => {
     render(<EmailCapturePopup />);
     await engageAndOpen();
+    // The form's `action` prop is set to the formAction returned by
+    // useActionState — which we mock to pass the action through. Verify that
+    // useActionState was called with subscribeToNewsletter as the action.
+    expect(reactMocks.useActionState).toHaveBeenCalled();
+    const [actionArg] = reactMocks.useActionState.mock.calls[0];
+    expect(typeof actionArg).toBe("function");
+    expect(screen.getByRole("form", { name: /email signup/i })).toBeInTheDocument();
+  });
 
-    const input = screen.getByRole("textbox", { name: /email address/i });
-    fireEvent.change(input, { target: { value: "test@example.com" } });
-    fireEvent.submit(screen.getByRole("form", { name: /email signup/i }));
+  it("renders the success message and persists the dismiss flag when the action returns success (cfw-xnd)", async () => {
+    reactMocks.state = { status: "success", alreadySubscribed: false };
+    render(<EmailCapturePopup />);
+    await engageAndOpen();
+    expect(screen.getByTestId("email-capture-success")).toHaveTextContent(
+      /thanks — you're on the list/i,
+    );
+    // Form is replaced by the success message; the popup itself stays
+    // visible until the user dismisses it via X / outside click.
+    expect(screen.queryByRole("form")).toBeNull();
+    // Success persists the dismiss flag so the popup doesn't re-show on the
+    // next page load.
+    expect(lsMock.setItem).toHaveBeenCalledWith(STORAGE_KEY, "1");
+  });
 
-    expect(logSpy).toHaveBeenCalledWith("[EmailCapture] email captured:", "test@example.com");
-    expect(screen.queryByRole("dialog")).toBeNull();
-    logSpy.mockRestore();
+  it("renders the already-subscribed copy when the action says so (cfw-xnd)", async () => {
+    reactMocks.state = { status: "success", alreadySubscribed: true };
+    render(<EmailCapturePopup />);
+    await engageAndOpen();
+    expect(screen.getByTestId("email-capture-success")).toHaveTextContent(
+      /you're already on the list/i,
+    );
+  });
+
+  it("renders an inline field error when the action reports a validation problem (cfw-xnd)", async () => {
+    reactMocks.state = {
+      status: "error",
+      errors: { email: "That email doesn't look right." },
+    };
+    render(<EmailCapturePopup />);
+    await engageAndOpen();
+    expect(
+      screen.getByText(/that email doesn't look right/i),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/email address/i)).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+  });
+
+  it("renders a storeError alert when the persistence layer fails (cfw-xnd)", async () => {
+    reactMocks.state = {
+      status: "error",
+      errors: {},
+      storeError: "We couldn't save that right now — please try again shortly.",
+    };
+    render(<EmailCapturePopup />);
+    await engageAndOpen();
+    expect(
+      screen.getByText(/we couldn't save that right now/i),
+    ).toBeInTheDocument();
+  });
+
+  it("disables the submit button while the action is pending (cfw-xnd)", async () => {
+    reactDomMocks.useFormStatus.mockReturnValue({ pending: true });
+    render(<EmailCapturePopup />);
+    await engageAndOpen();
+    const button = screen.getByRole("button", { name: /subscribing/i });
+    expect(button).toBeDisabled();
   });
 
   it("renders headline, email input, CTA button, and close button", async () => {
