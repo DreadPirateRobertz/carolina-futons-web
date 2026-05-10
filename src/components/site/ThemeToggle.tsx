@@ -21,7 +21,7 @@ export function ThemeToggle() {
       type="button"
       aria-label="Toggle color theme"
       onClick={toggle}
-      className="inline-flex h-11 w-11 items-center justify-center rounded-md text-cf-charcoal dark:text-cf-cream transition-colors hover:bg-cf-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="inline-flex h-11 w-11 items-center justify-center rounded-md text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
     >
       {/* Sun shown only in dark mode; Moon shown only in light mode */}
       <Sun className="hidden size-5 dark:block" aria-hidden="true" />

@@ -1,6 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
+
+// cf-1eb5 r2: Header now reads usePathname() to gate the home-only hero band
+// (v9 "Sleep on it for fifteen years." copy on / only). Default to "/" so
+// the broad render-suite picks up the hero band; specific non-home cases
+// override via vi.mocked(...) below.
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
+}));
 
 import { Header } from "@/components/site/Header";
 import { CartProvider } from "@/components/cart/CartProvider";
@@ -28,25 +36,50 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
     expect(home).toHaveAttribute("href", "/");
   });
 
-  it("renders the logo + wordmark lockup in the brand link", () => {
+  it("renders the wordmark inside the brand link (cf-1eb5: no logo medallion)", () => {
+    // cf-1eb5 / cfw-v9: Stilgar rejected the medallion logo in favor of a
+    // full-header bear illustration treatment. The brand link is now text
+    // only — illustration lives in a separate `header-bear-backdrop` slot
+    // behind the chrome. A future drive-by to "add the logo back inline"
+    // would re-introduce the rejected lockup, so this guards against it.
     renderHeader();
     const home = screen.getByRole("link", { name: /carolina futons.*home/i });
-    const img = home.querySelector("img");
-    expect(img).not.toBeNull();
-    expect(img?.getAttribute("src") ?? "").toMatch(/cf-logo-square/);
+    expect(home.querySelector("img")).toBeNull();
     expect(home.textContent).toContain("Carolina Futons");
   });
 
-  it("marks the brand-lockup image as decorative (alt='') to avoid duplicate SR announcement", () => {
-    // The parent link's aria-label already names the destination ("Carolina
-    // Futons — home"); a non-empty alt would make a screen reader speak the
-    // brand name twice. Locking alt="" here is a regression guard: a future
-    // "fix the empty alt" drive-by would break this assertion loudly.
-    renderHeader();
-    const home = screen.getByRole("link", { name: /carolina futons.*home/i });
-    const img = home.querySelector("img");
+  it("renders a decorative bear illustration backdrop in the header (cf-1eb5)", () => {
+    // cf-1eb5: v9 full-header treatment renders bears.jpg as a hero-scale
+    // backdrop behind the chrome (announce + nav + sub-nav). The image is
+    // marked aria-hidden + alt="" so screen readers don't double-announce
+    // brand context already covered by the wordmark link.
+    const { container } = renderHeader();
+    const backdrop = container.querySelector('[data-slot="header-bear-backdrop"]');
+    expect(backdrop).not.toBeNull();
+    const img = backdrop!.querySelector("img");
     expect(img).not.toBeNull();
+    expect(img?.getAttribute("src") ?? "").toMatch(/bears/);
     expect(img?.getAttribute("alt")).toBe("");
+  });
+
+  it("renders the v9 hero copy on / (cf-1eb5 r3: 'Handcrafted Comfort, Mountain Inspired.')", () => {
+    // Stilgar rejection #2 required the EXACT v9 mock-hero copy from
+    // /Users/hal/gt/cfutons/crew/melania/design-vision/DESIGN-VISION.html
+    // (the canonical v9 spec — supersedes the cf-3qt internal proposal).
+    // Test pins headline, subline, and CTA label so a future drift fails
+    // CI loudly.
+    renderHeader();
+    // Headline is split across a <br>; query each phrase.
+    expect(screen.getByText(/handcrafted comfort,/i)).toBeInTheDocument();
+    expect(screen.getByText(/mountain inspired\./i)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /premium futons and furniture from the blue ridge mountains of north carolina/i,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /shop collection/i }),
+    ).toBeInTheDocument();
   });
 
   it("renders the primary nav with shop destinations", () => {

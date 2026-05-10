@@ -54,7 +54,7 @@ export function MegaMenuItem({ label, href }: MegaMenuItemProps) {
     return (
       <Link
         href={href}
-        className="text-sm font-medium text-cf-charcoal transition-colors hover:text-cf-cta focus-visible:outline-none focus-visible:text-cf-cta"
+        className="text-sm font-medium text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)] transition-colors hover:text-[#F5C97A] focus-visible:outline-none focus-visible:text-[#F5C97A]"
       >
         {label}
       </Link>
@@ -74,7 +74,7 @@ export function MegaMenuItem({ label, href }: MegaMenuItemProps) {
         type="button"
         aria-expanded={open}
         aria-controls={panelId}
-        className="inline-flex items-center gap-1 text-sm font-medium text-cf-charcoal transition-colors hover:text-cf-cta focus-visible:outline-none focus-visible:text-cf-cta"
+        className="inline-flex items-center gap-1 text-sm font-medium text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)] transition-colors hover:text-[#F5C97A] focus-visible:outline-none focus-visible:text-[#F5C97A]"
       >
         {label}
         <svg
