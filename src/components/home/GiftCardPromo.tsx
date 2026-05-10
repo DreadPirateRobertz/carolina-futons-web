@@ -13,7 +13,7 @@ export function GiftCardPromo() {
         </p>
         <h2
           id="gift-card-promo-heading"
-          className="font-heading text-2xl font-semibold text-white sm:text-3xl"
+          className="font-heading text-2xl font-semibold text-cf-blue sm:text-3xl"
         >
           Carolina Futons Gift Cards
         </h2>

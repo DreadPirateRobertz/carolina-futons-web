@@ -168,7 +168,7 @@ export function Footer({
                 height={56}
                 className="rounded-md bg-cf-cream/5"
               />
-              <span className="font-heading text-lg font-semibold text-cf-cream">
+              <span className="font-heading text-lg font-semibold text-cf-blue">
                 Carolina Futons
               </span>
             </Link>

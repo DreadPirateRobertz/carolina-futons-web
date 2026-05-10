@@ -26,7 +26,7 @@ export function AnnouncementBar({
         {ctaLabel && ctaHref ? (
           <a
             href={ctaHref}
-            className="underline underline-offset-4 decoration-cf-cream/60 hover:decoration-cf-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cream rounded-sm"
+            className="text-cf-blue underline underline-offset-4 decoration-cf-blue/60 hover:decoration-cf-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-blue rounded-sm"
           >
             {ctaLabel}
           </a>
