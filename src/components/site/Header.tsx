@@ -112,14 +112,20 @@ export function Header({ announcementBar }: HeaderProps = {}) {
           fill
           priority
           sizes="100vw"
-          className="object-cover object-[center_top]"
+          className="object-cover object-[right_center]"
         />
-        {/* v9 sunset overlay — strengthened r2 so the menu label text reads
-            against any patch of the photograph (Stilgar feedback). Top
-            band veils the announce + nav strip; bottom band veils the
-            sub-nav so its links are legible regardless of which patch of
-            bear sits behind them. */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#2A1810]/80 via-[#B8523A]/35 to-[#2A1810]/80" />
+        {/* cf-1eb5 r4: bears must show through, copy moved to left half.
+            Switched object-position to right-center so the bear faces sit
+            in the right ~50% of the band where the copy column doesn't
+            overlay them. Overlay is now an asymmetric horizontal gradient:
+            opaque dark wash on the LEFT (where the orange copy lives) so
+            the text reads cleanly against any photo patch, fading to
+            near-clear on the right so bears render at full saturation.
+            Top + bottom bands keep the chrome (announce, nav, sub-nav)
+            legible regardless of left/right positioning. */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#2A1810]/85 via-[#2A1810]/40 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#2A1810]/85 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#2A1810]/80 to-transparent" />
       </div>
 
       <div className="relative z-30">
@@ -193,40 +199,42 @@ export function Header({ announcementBar }: HeaderProps = {}) {
           </div>
         </div>
 
-        {/* cf-1eb5 r3: home-only hero band with v9 design copy.
-            Exact wording from /Users/hal/gt/cfutons/crew/melania/
-              design-vision/DESIGN-VISION.html `.hero-mockup` block
-              (the canonical v9 spec — supersedes the cf-3qt internal
-               proposal doc r2 used).
-            - h2: "Handcrafted Comfort,\nMountain Inspired." (line break
-              between phrases, font-family Playfair Display 56px / 700,
-              text-shadow 0 2px 12px rgba(0,0,0,0.3))
+        {/* cf-1eb5 r4: home-only hero band, v9 copy in LEFT half so bears
+            stay visible in the right half (Stilgar feedback). Text in
+            V3_PAL.coral #E8845C — the v9 orange accent — instead of white
+            so the copy reads as illustrative typography over the photo,
+            not a stock-photo overlay.
+            Source spec: /Users/hal/gt/cfutons/crew/melania/design-vision/
+              DESIGN-VISION.html `.hero-mockup` block (canonical v9).
+            - h2: "Handcrafted Comfort, / Mountain Inspired."
+              Playfair Display (font-heading), 700, 56px @ lg
             - p:  "Premium futons and furniture from the Blue Ridge
-              Mountains of North Carolina." (20px, sand-light)
-            - cta: "Shop Collection →" on var(--sunset-coral) #4A7D94
-            Gated to / so product / category pages keep a slim chrome and
-            don't push their own hero below 400+ px of header. */}
+              Mountains of North Carolina."
+            - cta: "Shop Collection →" on V3_PAL.coral background
+            Gated to / so product / category pages keep a slim chrome. */}
         {isHome ? (
           <div
             data-slot="site-header-hero"
             data-testid="site-header-hero"
-            className="mx-auto w-full max-w-7xl px-4 pt-12 pb-20 text-center sm:px-6 sm:pt-16 sm:pb-24 lg:px-8 lg:pt-24 lg:pb-32"
+            className="mx-auto w-full max-w-7xl px-4 pt-12 pb-20 sm:px-6 sm:pt-16 sm:pb-24 lg:px-8 lg:pt-24 lg:pb-32"
           >
-            <h1 className="font-heading text-4xl font-bold leading-[1.05] tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)] sm:text-5xl lg:text-[56px]">
-              Handcrafted Comfort,
-              <br />
-              Mountain Inspired.
-            </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-base text-white/95 drop-shadow-[0_2px_6px_rgba(0,0,0,0.55)] sm:text-lg lg:text-xl">
-              Premium futons and furniture from the Blue Ridge Mountains of
-              North Carolina.
-            </p>
-            <Link
-              href="/shop/futon-frames"
-              className="mt-8 inline-flex items-center gap-1.5 rounded-full bg-[#4A7D94] px-10 py-4 text-sm font-semibold uppercase tracking-widest text-white transition-colors hover:bg-[#3D6B80] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
-            >
-              Shop Collection <span aria-hidden="true">→</span>
-            </Link>
+            <div className="max-w-xl text-left">
+              <h1 className="font-heading text-4xl font-bold leading-[1.05] tracking-tight text-[#E8845C] drop-shadow-[0_3px_14px_rgba(0,0,0,0.55)] sm:text-5xl lg:text-[56px]">
+                Handcrafted Comfort,
+                <br />
+                Mountain Inspired.
+              </h1>
+              <p className="mt-6 max-w-lg text-base text-[#F0A882] drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] sm:text-lg lg:text-xl">
+                Premium futons and furniture from the Blue Ridge Mountains of
+                North Carolina.
+              </p>
+              <Link
+                href="/shop/futon-frames"
+                className="mt-8 inline-flex items-center gap-1.5 rounded-full bg-[#E8845C] px-10 py-4 text-sm font-semibold uppercase tracking-widest text-white transition-colors hover:bg-[#B8523A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+              >
+                Shop Collection <span aria-hidden="true">→</span>
+              </Link>
+            </div>
           </div>
         ) : null}
 
