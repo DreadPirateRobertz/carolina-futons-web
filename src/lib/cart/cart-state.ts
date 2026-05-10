@@ -6,6 +6,8 @@
 // (e.g. "$799.00" or "$1,099"); we keep it alongside instead of reformatting
 // client-side so we don't drift from the server's currency/locale.
 
+import { trackCartDropInvalid } from "@/lib/analytics/ga4-events";
+
 export type CartLineItem = {
   id: string;
   productId: string;
@@ -117,17 +119,19 @@ type BadInputField =
   | "setQuantity.quantity"
   | "setQuantity.id";
 
-// Dev-only breadcrumb when we drop an action. In production the reducer still
-// silently returns prior state — cart is a hot path and we don't want to spam
-// an error tracker. In dev the warning makes "Add to Cart does nothing"
-// debuggable without attaching a debugger to the reducer. TODO: attach a real
-// telemetry sink once the analytics layer lands.
+// Dev-only console.warn keeps "Add to Cart does nothing" debuggable without
+// attaching a debugger. In production the reducer still silently returns
+// prior state — cart is a hot path. cfw-aor: also fire a GA4 custom event
+// so dropped actions show up in product-side analytics. The GA4 helper
+// no-ops when window.gtag is unavailable (SSR, ad-blocker, env unset),
+// matching the pattern used by the rest of src/lib/analytics/ga4-events.ts.
 function warnBadInput(field: BadInputField, value: unknown): void {
   if (process.env.NODE_ENV !== "production") {
     console.warn(
       `[cart-state] ignored action with invalid ${field}: ${String(value)}`,
     );
   }
+  trackCartDropInvalid(field, value);
 }
 
 export function cartItemCount(state: CartState): number {
