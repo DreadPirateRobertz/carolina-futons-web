@@ -4,10 +4,16 @@ import { DEFAULT_OG_IMAGE } from "@/lib/og";
 import "./globals.css";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
+import { AnnouncementBarCartAware } from "@/components/site/AnnouncementBarCartAware";
+// cf-xqc0: literal fallbacks moved into a non-"use client" constants
+// module so layout.tsx (a Server Component) can also read them as the
+// `fallback` arg to getSiteContent. See cf-b3mf for the original cross-
+// boundary regression and cf-xqc0 for the architectural fix.
 import {
-  AnnouncementBarCartAware,
   type AnnouncementCta,
-} from "@/components/site/AnnouncementBarCartAware";
+  ROTATION_CTAS_DEFAULT,
+  ROTATION_MESSAGES_DEFAULT,
+} from "@/lib/cms/announcement-defaults";
 import { getSiteContent } from "@/lib/cms/site-content";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { CartAbandonmentTracker } from "@/components/cart/CartAbandonmentTracker";
@@ -123,36 +129,40 @@ export default async function RootLayout({
       "footer.copyright-line",
       "© {year} Carolina Futons. Hendersonville, NC.",
     ),
-    // cf-b3mf root cause: the previous defaults pulled from
-    // ROTATION_MESSAGES / ROTATION_CTAS, which are value exports from
-    // a "use client" module (AnnouncementBarCartAware.tsx). Next.js
-    // does NOT make `use client` value exports available to Server
-    // Components — they resolve as `undefined` at SSR. So the calls
-    // fed `getSiteContent(key, undefined)`, the `fallback = ""` default
-    // param kicked in, and the announcement bar rendered empty in prod.
-    // Inlining literal defaults so the server fallback path is byte-
-    // present at build time, independent of the client module.
+    // cf-xqc0: ROTATION_MESSAGES_DEFAULT / ROTATION_CTAS_DEFAULT are
+    // value exports from a NON-"use client" module (announcement-
+    // defaults.ts), so they're available to Server Components at SSR
+    // — unlike the original cf-b3mf-era imports from
+    // AnnouncementBarCartAware.tsx which is "use client" and would
+    // resolve as undefined here. See cf-b3mf for the original blank-bar
+    // outage that mandated this split.
     getSiteContent(
       "announcement.rotation.0.message",
-      "Free white-glove delivery on orders over $1,500",
+      ROTATION_MESSAGES_DEFAULT[0],
     ),
     getSiteContent(
       "announcement.rotation.1.message",
-      "10-year warranty on all hardwood futon frames",
+      ROTATION_MESSAGES_DEFAULT[1],
     ),
     getSiteContent(
       "announcement.rotation.2.message",
-      "Family-owned since 1991 · Hendersonville, NC",
+      ROTATION_MESSAGES_DEFAULT[2],
     ),
     getSiteContent(
       "announcement.rotation.3.message",
-      "Free fabric swatches — find your perfect match",
+      ROTATION_MESSAGES_DEFAULT[3],
     ),
-    getSiteContent("announcement.rotation.3.cta-label", ""),
-    getSiteContent("announcement.rotation.3.cta-href", ""),
+    getSiteContent(
+      "announcement.rotation.3.cta-label",
+      ROTATION_CTAS_DEFAULT[3]?.ctaLabel ?? "",
+    ),
+    getSiteContent(
+      "announcement.rotation.3.cta-href",
+      ROTATION_CTAS_DEFAULT[3]?.ctaHref ?? "",
+    ),
     getSiteContent(
       "announcement.rotation.4.message",
-      "Assembly included with every delivery",
+      ROTATION_MESSAGES_DEFAULT[4],
     ),
   ]);
 
