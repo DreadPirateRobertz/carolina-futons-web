@@ -122,7 +122,17 @@ function isDarkMode(): boolean {
   return document.documentElement.classList.contains("dark");
 }
 
-export function LivingSkyClient() {
+export function LivingSkyClient({
+  forceNight = false,
+}: {
+  /**
+   * cf-96m8 — when true, freeze the sky on midnight regardless of wall
+   * clock or theme. Skips all subscriptions (matchMedia, MutationObserver,
+   * setInterval). Used by the footer for the always-night backdrop while
+   * the header's LivingSky keeps cycling normally.
+   */
+  forceNight?: boolean;
+} = {}) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   // Track reduced-motion as state so a user toggle in OS settings is
   // picked up on next render without a full reload. The init function
@@ -136,16 +146,22 @@ export function LivingSkyClient() {
   const [dark, setDark] = useState<boolean>(isDarkMode);
 
   useEffect(() => {
+    // cf-96m8: footer instance pins to midnight; no need to listen for OS
+    // motion-toggle changes since the only state we render is static night.
+    if (forceNight) return;
     if (typeof window === "undefined" || !window.matchMedia) return;
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     const handler = () => setReduced(mq.matches);
     mq.addEventListener?.("change", handler);
     return () => mq.removeEventListener?.("change", handler);
-  }, []);
+  }, [forceNight]);
 
   // cf-wzl3: watch <html> classList changes so toggling the theme
   // toggle in the header re-runs the sky effect immediately.
   useEffect(() => {
+    // cf-96m8: forceNight ignores the theme toggle — footer is always-night
+    // even when the user is on a light theme.
+    if (forceNight) return;
     if (typeof MutationObserver === "undefined") return;
     const observer = new MutationObserver(() => {
       setDark(document.documentElement.classList.contains("dark"));
@@ -155,12 +171,20 @@ export function LivingSkyClient() {
       attributeFilter: ["class"],
     });
     return () => observer.disconnect();
-  }, []);
+  }, [forceNight]);
 
   useEffect(() => {
     const root = containerRef.current;
     if (!root) return;
     const svg = root.querySelector("svg") as SVGSVGElement | null;
+
+    // cf-96m8: footer always-night branch beats every other gate. Renders
+    // midnight once, pauses animations, exits — no interval, no listeners.
+    if (forceNight) {
+      applyState(root, computeLivingSky(MIDNIGHT_MINUTES));
+      svg?.pauseAnimations?.();
+      return;
+    }
 
     if (reduced) {
       applyState(root, computeLivingSky(NOON_MINUTES));
@@ -180,7 +204,7 @@ export function LivingSkyClient() {
     tick();
     const id = window.setInterval(tick, TICK_INTERVAL_MS);
     return () => window.clearInterval(id);
-  }, [reduced, dark]);
+  }, [reduced, dark, forceNight]);
 
   return (
     <div
