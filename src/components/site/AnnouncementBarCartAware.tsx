@@ -5,44 +5,33 @@ import { useEffect, useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
 import { AnnouncementBar } from "@/components/site/AnnouncementBar";
 import { formatCents } from "@/lib/cart/cart-state";
+// cf-xqc0: constants live in a non-"use client" module so layout.tsx
+// (Server Component) can also import them as fallbacks for the Wix
+// CMS reads. Re-exported below so existing test imports (which point
+// at this file) keep working.
+import {
+  AnnouncementCta,
+  FREE_DELIVERY_THRESHOLD_CENTS,
+  ROTATION_CTAS_DEFAULT,
+  ROTATION_INTERVAL_MS,
+  ROTATION_MESSAGES_DEFAULT,
+} from "@/lib/cms/announcement-defaults";
 
-export const FREE_DELIVERY_THRESHOLD_CENTS = 150_000;
+export {
+  FREE_DELIVERY_THRESHOLD_CENTS,
+  ROTATION_INTERVAL_MS,
+};
+export type { AnnouncementCta };
+// cf-xqc0: legacy export aliases. Old name → new name. Kept as named
+// re-exports so existing call sites (tests + any server wrapper that
+// already adopted the cfw-xyw shape) continue to resolve.
+export const ROTATION_MESSAGES = ROTATION_MESSAGES_DEFAULT;
+export const ROTATION_CTAS = ROTATION_CTAS_DEFAULT;
 
 const STATIC_PROMPT = `Free white-glove delivery on orders over ${formatCents(
   FREE_DELIVERY_THRESHOLD_CENTS,
 )}`;
 const QUALIFIED = "You qualify for free white-glove delivery! 🎉";
-
-// Shown when the cart is empty, cycling every ROTATION_INTERVAL_MS.
-// cfw-xyw: still exported as the canonical default so existing tests +
-// non-server callers don't break, AND so the SiteContent reader has a
-// safe fallback when Wix is down or the announcement.rotation.* keys
-// aren't provisioned. The component itself accepts a `rotationMessages`
-// prop (cfw-66o pass-1) so a future server wrapper can thread Brenda's
-// edits in without touching this file.
-export const ROTATION_MESSAGES = [
-  STATIC_PROMPT,
-  "10-year warranty on all hardwood futon frames",
-  "Family-owned since 1991 · Hendersonville, NC",
-  "Free fabric swatches — find your perfect match",
-  "Assembly included with every delivery",
-] as const;
-
-export type AnnouncementCta = { ctaLabel: string; ctaHref: string };
-
-// CTA links paired with ROTATION_MESSAGES by index; undefined = message-only.
-// cfw-xyw: exported (was previously module-private) so server-side
-// rebuilders can derive a Brenda-overridable variant while preserving
-// today's pairing for keys without an override.
-export const ROTATION_CTAS: ReadonlyArray<AnnouncementCta | undefined> = [
-  undefined,
-  undefined,
-  undefined,
-  { ctaLabel: "Order free swatches", ctaHref: "/swatch-request" },
-  undefined,
-];
-
-export const ROTATION_INTERVAL_MS = 5_000;
 
 // cfw-xyw: prop-driven rotation copy. Defaults preserve today's hardcoded
 // strings byte-identical so a `<AnnouncementBarCartAware />` render
