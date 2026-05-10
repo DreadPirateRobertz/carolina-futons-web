@@ -96,7 +96,10 @@ export function ProductCard({
       data-slot="product-card"
       data-has-secondary={hasSecondary ? "true" : "false"}
       data-reduced-motion={prefersReducedMotion ? "true" : "false"}
-      className="relative overflow-hidden rounded-lg border border-zinc-200 shadow-sm transition-shadow duration-200 hover:border-zinc-400 hover:shadow-lg focus-within:border-zinc-400 focus-within:shadow-lg dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-zinc-500 dark:focus-within:border-zinc-500"
+      // cf-id20: namespaced `group/card` so the corner buttons (compare,
+      // quick-view) can reveal on hover/focus of the entire card surface,
+      // not just the inner Link.
+      className="group/card relative overflow-hidden rounded-lg border border-zinc-200 shadow-sm transition-shadow duration-200 hover:border-zinc-400 hover:shadow-lg focus-within:border-zinc-400 focus-within:shadow-lg dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-zinc-500 dark:focus-within:border-zinc-500"
       initial={{ opacity: 1, y: 0 }}
       whileHover={hoverVariant}
       whileFocus={hoverVariant}
@@ -179,14 +182,23 @@ export function ProductCard({
       {product.slug ? (
         // Sibling of Link inside m.div so hover-lift carries the button with
         // the card. bottom-12/right-2 stays within overflow-hidden bounds.
-        <div className="absolute bottom-12 right-2 z-10">
+        //
+        // cf-id20: hide on fine-pointer (mouse) devices until the card is
+        // hovered or focus-within. Stilgar reported the corner buttons
+        // floating on top of page content during PLP scroll. On touch
+        // devices (pointer: coarse) the buttons stay always-visible because
+        // there is no hover affordance to discover them otherwise.
+        // focus-within keeps keyboard navigation usable: tabbing into the
+        // card surfaces both buttons.
+        <div className="absolute bottom-12 right-2 z-10 pointer-fine:opacity-0 pointer-fine:transition-opacity pointer-fine:duration-150 pointer-fine:group-hover/card:opacity-100 pointer-fine:group-focus-within/card:opacity-100">
           <AddToCompareButton slug={product.slug} />
         </div>
       ) : null}
       {product.slug ? (
         // Top-right quick-view trigger; sibling of Link to avoid nested-anchor
         // semantics and to keep card-click → PDP navigation intact.
-        <div className="absolute right-2 top-2 z-10">
+        // cf-id20: same hover/focus reveal as the compare button above.
+        <div className="absolute right-2 top-2 z-10 pointer-fine:opacity-0 pointer-fine:transition-opacity pointer-fine:duration-150 pointer-fine:group-hover/card:opacity-100 pointer-fine:group-focus-within/card:opacity-100">
           <QuickViewButton slug={product.slug} productName={product.name ?? ""} />
         </div>
       ) : null}
