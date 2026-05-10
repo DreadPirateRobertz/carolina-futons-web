@@ -303,6 +303,27 @@
   animation: cf-row-highlight 1.6s ease-out forwards;
 }
 
+/* cf-h85f: when the header collapses post-scroll, the bear backdrop fades
+   out and the surface goes white. The cf-1eb5 chrome was painted white +
+   drop-shadow for legibility on the bear photo — that becomes invisible
+   on white. Force the descendant nav links / utility buttons / sub-nav
+   into a dark palette + clear the drop-shadow filter so they read on
+   the slim chrome. Scoped tightly to header descendants so other
+   `text-white` usages on the page are untouched. */
+[data-slot="site-header"][data-scrolled="true"] [data-slot="site-header-main"] a,
+[data-slot="site-header"][data-scrolled="true"] [data-slot="site-header-main"] button,
+[data-slot="site-header"][data-scrolled="true"] [data-slot="site-header-sub"] a {
+  color: var(--cf-espresso);
+  --tw-drop-shadow: none;
+  filter: none;
+}
+[data-slot="site-header"][data-scrolled="true"] [data-slot="site-header-main"] a:hover,
+[data-slot="site-header"][data-scrolled="true"] [data-slot="site-header-main"] button:hover,
+[data-slot="site-header"][data-scrolled="true"] [data-slot="site-header-sub"] a:hover {
+  background-color: rgb(232 213 183 / 0.4); /* cf-sand at 40% — matches pre-cf-1eb5 hover */
+  color: var(--cf-cta);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

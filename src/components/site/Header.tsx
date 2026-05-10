@@ -70,28 +70,44 @@ export function Header({ announcementBar }: HeaderProps = {}) {
   }, []);
 
   const shadowClass = scrolled ? "shadow-md" : "";
-  // Height shrink is motion — suppress under reduced-motion so the chrome
-  // doesn't reflow under the user's eye. Shadow stays either way.
+  // cf-h85f: once scrolled past the threshold the header collapses to a
+  // slim chrome — bears + hero band fade out, wordmark + nav darken to read
+  // on a solid white surface. Mobile is the priority case (Stilgar's bear
+  // header was eating the fold); desktop gets the same shrink, but the
+  // hero band sits at min-h-[80vh] so the desktop transition feels gentler
+  // because the user has more distance to scroll before crossing the
+  // threshold. Motion-respect: under prefers-reduced-motion we drop the
+  // `transition-*` classes so the change is instant — the collapse still
+  // happens, it just doesn't animate (vestibular-friendly).
   const compressMainRow = scrolled && !prefersReducedMotion;
   const mainRowPaddingClass = compressMainRow ? "py-2" : "py-4";
   const mainRowTransitionClass = prefersReducedMotion
     ? ""
     : "transition-[padding] duration-200 ease-out";
+  // cf-h85f: bear-backdrop fade + hero-band collapse + wordmark recolor
+  // happen on `scrolled` regardless of reduced-motion (vestibular concern
+  // is animated movement; instant state change is fine). Drop the
+  // `transition-*` class under reduced-motion so users see an instant
+  // snap rather than a 300ms ease.
+  const motionTransition = prefersReducedMotion
+    ? ""
+    : "transition-all duration-300 ease-out";
 
   return (
     <header
       data-slot="site-header"
       data-scrolled={scrolled ? "true" : "false"}
       className={[
-        // cf-1eb5 r2: v9 full-header bear treatment per Stilgar feedback.
-        // - Bears illustration shows edge-to-edge as a hero backdrop.
-        // - Strong overlay (was /65 → ramped to /80 at top + bottom for
-        //   nav legibility — Stilgar said cream wasn't popping).
-        // - White text (not cream) with drop-shadow on every chrome label.
-        // - Hero band with v9 copy "Sleep on it for fifteen years." on /
-        //   only — exact wording from design-vision-cf-3qt.html mock-hero.
-        // - Header is taller on home (hero scale) and slim on other routes.
-        "sticky top-0 z-40 w-full border-b border-white/10 text-white transition-shadow duration-200",
+        // cf-1eb5 + cf-h85f: full-header bear treatment at top → slim chrome
+        // post-scroll. The transparent surface lets the bear backdrop show
+        // through unscrolled; once `scrolled`, we swap to bg-white so the
+        // collapsed chrome reads on a clean surface even after the bears
+        // fade out.
+        "sticky top-0 z-40 w-full border-b transition-colors duration-300",
+        scrolled
+          ? "border-cf-divider bg-white text-cf-espresso"
+          : "border-white/10 text-white",
+        prefersReducedMotion ? "" : "transition-shadow duration-200",
         shadowClass,
       ]
         .filter(Boolean)
@@ -104,7 +120,17 @@ export function Header({ announcementBar }: HeaderProps = {}) {
       <div
         aria-hidden="true"
         data-slot="header-bear-backdrop"
-        className="pointer-events-none absolute inset-0 overflow-hidden"
+        className={[
+          // cf-h85f: fade the bear backdrop out when the user scrolls past
+          // the threshold. opacity-0 keeps the DOM stable (regression-pin
+          // tests still find the slot), but hides the photo so the slim
+          // chrome reads on the white surface above.
+          "pointer-events-none absolute inset-0 overflow-hidden",
+          motionTransition,
+          scrolled ? "opacity-0" : "opacity-100",
+        ]
+          .filter(Boolean)
+          .join(" ")}
       >
         <Image
           src="/design/animals/bears.jpg"
@@ -141,10 +167,26 @@ export function Header({ announcementBar }: HeaderProps = {}) {
           <div className="mx-auto flex w-full max-w-7xl items-center gap-8 px-4 sm:px-6 lg:px-8">
             <Link
               href="/"
-              className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+              className={[
+                "rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
+                scrolled ? "focus-visible:ring-cf-cta" : "focus-visible:ring-white",
+              ].join(" ")}
               aria-label="Carolina Futons — home"
             >
-              <span className="font-heading text-2xl font-semibold tracking-tight text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)]">
+              {/* cf-h85f: wordmark shrinks + recolors when chrome collapses.
+                  text-2xl → text-lg on scroll so the slim chrome stays
+                  visually balanced with the smaller utility row icons.
+                  Drop-shadow is for legibility on the bear photo only —
+                  removed once the bg goes white. */}
+              <span
+                className={[
+                  "font-heading font-semibold tracking-tight",
+                  motionTransition,
+                  scrolled
+                    ? "text-lg text-cf-espresso"
+                    : "text-2xl text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)]",
+                ].join(" ")}
+              >
                 Carolina Futons
               </span>
             </Link>
@@ -212,7 +254,20 @@ export function Header({ announcementBar }: HeaderProps = {}) {
           <div
             data-slot="site-header-hero"
             data-testid="site-header-hero"
-            className="mx-auto flex w-full max-w-7xl flex-col justify-end px-4 pt-32 pb-12 min-h-[440px] sm:min-h-[560px] sm:px-6 sm:pt-40 sm:pb-14 lg:px-8 lg:min-h-[80vh] lg:pt-48 lg:pb-16"
+            aria-hidden={scrolled ? "true" : undefined}
+            className={[
+              // cf-h85f: hero band collapses on scroll. We use max-h + opacity
+              // so the transition is smooth, and the post-collapse layout
+              // doesn't reserve any vertical space (max-h-0 + overflow-hidden
+              // + padding zeroed). aria-hidden flips when collapsed so SR
+              // users don't keep getting the headline read out from a hidden
+              // surface.
+              "mx-auto flex w-full max-w-7xl flex-col justify-end overflow-hidden",
+              motionTransition,
+              scrolled
+                ? "max-h-0 px-4 py-0 opacity-0 sm:px-6 lg:px-8"
+                : "px-4 pt-32 pb-12 min-h-[440px] sm:min-h-[560px] sm:px-6 sm:pt-40 sm:pb-14 lg:px-8 lg:min-h-[80vh] lg:pt-48 lg:pb-16",
+            ].join(" ")}
           >
             <div className="max-w-xl text-left">
               <h1 className="font-heading text-4xl font-bold leading-[1.05] tracking-tight text-[#E8845C] drop-shadow-[0_3px_14px_rgba(0,0,0,0.65)] sm:text-5xl lg:text-[56px]">
