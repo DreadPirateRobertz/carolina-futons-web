@@ -5,12 +5,21 @@ import { AppointmentForm } from "@/components/contact/AppointmentForm";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { FogScene } from "@/components/mascot/FogScene";
 import { BUSINESS } from "@/lib/business/contact-info";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
+
+const TITLE = "Contact — Carolina Futons";
+const DESCRIPTION =
+  "Reach the Carolina Futons team with questions about frames, mattresses, delivery, or warranty. Family-owned in Hendersonville, NC since 1991.";
 
 export const metadata: Metadata = {
-  title: "Contact — Carolina Futons",
-  description:
-    "Reach the Carolina Futons team with questions about frames, mattresses, delivery, or warranty. Family-owned in Hendersonville, NC since 1991.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: "/contact" },
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [DEFAULT_OG_IMAGE],
+  },
 };
 
 export default function ContactPage() {

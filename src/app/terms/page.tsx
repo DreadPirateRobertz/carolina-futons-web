@@ -1,9 +1,19 @@
 import type { Metadata } from "next";
 
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
+
+const TITLE = "Terms of Service — Carolina Futons";
+const DESCRIPTION =
+  "The terms that govern your use of the Carolina Futons website, including ordering, delivery, returns, and warranty.";
+
 export const metadata: Metadata = {
-  title: "Terms of Service — Carolina Futons",
-  description:
-    "The terms that govern your use of the Carolina Futons website, including ordering, delivery, returns, and warranty.",
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [DEFAULT_OG_IMAGE],
+  },
 };
 
 const LAST_UPDATED = "April 18, 2026";

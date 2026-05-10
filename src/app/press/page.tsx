@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { FogScene } from "@/components/mascot/FogScene";
 import { BUSINESS } from "@/lib/business/contact-info";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
 
 // cf-3qt.5.6: hero + press inquiries CTA + media-contact form. The form
 // reuses the shared sendContactForm Server Action so press inquiries land
@@ -12,10 +13,18 @@ import { BUSINESS } from "@/lib/business/contact-info";
 // filters on when triaging the queue. (Soft routing, not enforced — a
 // reporter can clear it; on the wire it's just text.)
 
+const TITLE = "Press & Media — Carolina Futons";
+const DESCRIPTION =
+  "Press resources, story angles, and a direct line to Carolina Futons — a family-owned futon and natural-mattress retailer in Hendersonville, North Carolina, in business since 1991.";
+
 export const metadata: Metadata = {
-  title: "Press & Media — Carolina Futons",
-  description:
-    "Press resources, story angles, and a direct line to Carolina Futons — a family-owned futon and natural-mattress retailer in Hendersonville, North Carolina, in business since 1991.",
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [DEFAULT_OG_IMAGE],
+  },
 };
 
 // Revalidate at most once per day so the years-in-business claim flips

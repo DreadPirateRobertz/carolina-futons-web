@@ -1,11 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PhotoSubmitForm } from "@/components/gallery/PhotoSubmitForm";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
+
+const TITLE = "Share Your Photo — Community Gallery | Carolina Futons";
+const DESCRIPTION =
+  "Show us your Carolina Futons setup. Submit a photo and we may feature it in our community gallery.";
 
 export const metadata: Metadata = {
-  title: "Share Your Photo — Community Gallery | Carolina Futons",
-  description:
-    "Show us your Carolina Futons setup. Submit a photo and we may feature it in our community gallery.",
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [DEFAULT_OG_IMAGE],
+  },
 };
 
 export default async function GallerySubmitPage({
