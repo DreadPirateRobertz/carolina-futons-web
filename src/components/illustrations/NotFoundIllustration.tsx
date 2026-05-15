@@ -7,7 +7,6 @@ import { V3_NIGHT as NIGHT } from "@/components/mascot/MascotPalette";
 export function NotFoundIllustration({ className }: { className?: string }) {
   return (
     <svg
-      role="img"
       aria-hidden="true"
       data-slot="not-found-illustration"
       viewBox="0 0 220 140"
