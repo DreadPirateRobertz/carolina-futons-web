@@ -383,3 +383,61 @@ describe("AccountPage — ?next= redirect (cf-w5ks)", () => {
     expect(window.location.href).toBe("/dashboard");
   });
 });
+
+// cf-2oku: /account scored Lighthouse A11y 93/100 in cf-d41j member-pages
+// parity audit, vs Wix's 100. Two WCAG violations:
+//   1. WCAG 1.4.3 contrast — muted helper text + form placeholder failed
+//      4.5:1 against white background. Surfaces below 80% opacity on the
+//      cf-charcoal token fall under the threshold.
+//   2. WCAG 1.4.1 link distinguishability — secondary links used
+//      `hover:underline` so the default state was color-only.
+// Tests pin the classNames so a future Tailwind refactor that re-introduces
+// `/60` or drops the persistent underline fails CI loudly.
+describe("AccountSignIn a11y — cf-2oku contrast + link distinguishability", () => {
+  it("Forgot password link carries persistent underline (not hover-only)", async () => {
+    await renderPage();
+    const link = screen.getByRole("link", { name: /forgot your password/i });
+    // Class-list membership check — `hover:underline` is NOT enough
+    // (default state would still be color-only). Need `underline` as a
+    // standalone class in the default state to satisfy WCAG 1.4.1.
+    expect(link.className.split(/\s+/)).toContain("underline");
+  });
+
+  it("'Go to your dashboard' link carries persistent underline", async () => {
+    await renderPage();
+    const link = screen.getByRole("link", { name: /go to your dashboard/i });
+    expect(link.className.split(/\s+/)).toContain("underline");
+  });
+
+  it("'Create one' link carries persistent underline", async () => {
+    await renderPage();
+    const link = screen.getByRole("link", { name: /create one/i });
+    expect(link.className.split(/\s+/)).toContain("underline");
+  });
+
+  it("Muted helper paragraphs use ≥/80 opacity (not /60) for AA contrast", async () => {
+    const { container } = await renderPage();
+    const muted = Array.from(
+      container.querySelectorAll<HTMLElement>("p"),
+    ).filter((p) => /text-cf-charcoal\//.test(p.className));
+    // Every muted paragraph that's still using the cf-charcoal token must
+    // be at /80 or higher (4.5:1 against the cf-cream / white form bg).
+    expect(muted.length).toBeGreaterThan(0);
+    for (const p of muted) {
+      expect(p.className).not.toMatch(/text-cf-charcoal\/60(?!\d)/);
+      expect(p.className).not.toMatch(/text-cf-charcoal\/40(?!\d)/);
+    }
+  });
+
+  it("Form input placeholders use ≥/60 opacity (not /40) for AA contrast", async () => {
+    const { container } = await renderPage();
+    const inputs = Array.from(container.querySelectorAll<HTMLInputElement>("input"));
+    // Email + password inputs both have placeholder text. Default browser
+    // renderers apply ~50% opacity to placeholders already, stacking with
+    // a /40 class gives ~20% effective — far below 4.5:1.
+    expect(inputs.length).toBeGreaterThan(0);
+    for (const input of inputs) {
+      expect(input.className).not.toMatch(/placeholder-cf-charcoal\/40(?!\d)/);
+    }
+  });
+});
