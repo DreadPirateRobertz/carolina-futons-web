@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   title: "Visit Us — Carolina Futons",
   description:
     "Visit the Carolina Futons showroom in Hendersonville, NC. Try every futon, mattress, and Murphy bed before you buy.",
+  alternates: { canonical: "/visit" },
 };
 
 // Days are layout (the label column); only the hours string is owner-editable

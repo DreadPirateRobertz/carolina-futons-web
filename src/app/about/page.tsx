@@ -18,6 +18,7 @@ const ABOUT_DESCRIPTION =
 export const metadata: Metadata = {
   title: "About — Carolina Futons",
   description: ABOUT_DESCRIPTION,
+  alternates: { canonical: "/about" },
 };
 
 export default async function AboutPage() {

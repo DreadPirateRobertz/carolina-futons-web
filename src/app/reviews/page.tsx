@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: "Customer Reviews — Carolina Futons",
   description:
     "Real reviews from Carolina Futons customers on our hardwood frames, hand-built mattresses, and Murphy beds.",
+  alternates: { canonical: "/reviews" },
 };
 
 export default async function ReviewsPage() {

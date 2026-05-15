@@ -43,6 +43,7 @@ export const metadata: Metadata = {
   title: "Carolina Futons — Hardwood Frames & Mattresses | Hendersonville, NC",
   description:
     "Family-owned since 1991. Solid hardwood futon frames, natural mattresses, Murphy beds, and platform beds. Visit our Hendersonville, NC showroom or shop online.",
+  alternates: { canonical: "/" },
 };
 
 export const dynamic = "force-dynamic";
