@@ -66,6 +66,7 @@ export async function removeItemAction(
     revalidatePath("/cart");
     return { ok: true, cart };
   } catch (err) {
+    void logWixFailure("cart", "removeItemAction", err);
     return { ok: false, error: toMessage(err) };
   }
 }
@@ -84,6 +85,7 @@ export async function updateQuantityAction(
     revalidatePath("/cart");
     return { ok: true, cart };
   } catch (err) {
+    void logWixFailure("cart", "updateQuantityAction", err);
     return { ok: false, error: toMessage(err) };
   }
 }
@@ -93,6 +95,7 @@ export async function getCartAction(): Promise<CartActionResult> {
     const cart = await getCurrentCart();
     return { ok: true, cart };
   } catch (err) {
+    void logWixFailure("cart", "getCartAction", err);
     return { ok: false, error: toMessage(err) };
   }
 }
@@ -105,6 +108,10 @@ export async function hydrateCartAction(): Promise<HydrateCartResult> {
     const cart = await getCurrentCart();
     return { ok: true, lines: cart ? wixCartToLines(cart) : [] };
   } catch (err) {
+    // cf-8ys6: worst silent-failure offender — failure means
+    // CartHydrator renders an empty /cart with no error signal to the
+    // user. Sentry tag is the only breadcrumb the on-call has.
+    void logWixFailure("cart", "hydrateCartAction", err);
     return { ok: false, error: toMessage(err) };
   }
 }

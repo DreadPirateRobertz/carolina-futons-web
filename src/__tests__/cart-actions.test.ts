@@ -109,6 +109,19 @@ describe("cart server actions", () => {
       expect(result.ok).toBe(true);
       expect(removeFromCart).toHaveBeenCalledWith(["li1"]);
     });
+
+    it("tags Sentry on thrown failure (cf-8ys6)", async () => {
+      const err = new Error("remove failed");
+      removeFromCart.mockRejectedValueOnce(err);
+      const { removeItemAction } = await import("@/app/actions/cart");
+      const result = await removeItemAction("li1");
+      expect(result).toEqual({ ok: false, error: "remove failed" });
+      expect(logWixFailure).toHaveBeenCalledWith(
+        "cart",
+        "removeItemAction",
+        err,
+      );
+    });
   });
 
   describe("updateQuantityAction", () => {
@@ -129,6 +142,19 @@ describe("cart server actions", () => {
       expect(result.ok).toBe(true);
       expect(updateLineItemQuantity).toHaveBeenCalledWith("li1", 3);
     });
+
+    it("tags Sentry on thrown failure (cf-8ys6)", async () => {
+      const err = new Error("update failed");
+      updateLineItemQuantity.mockRejectedValueOnce(err);
+      const { updateQuantityAction } = await import("@/app/actions/cart");
+      const result = await updateQuantityAction("li1", 3);
+      expect(result).toEqual({ ok: false, error: "update failed" });
+      expect(logWixFailure).toHaveBeenCalledWith(
+        "cart",
+        "updateQuantityAction",
+        err,
+      );
+    });
   });
 
   describe("getCartAction", () => {
@@ -140,10 +166,13 @@ describe("cart server actions", () => {
     });
 
     it("returns error on throw", async () => {
-      getCurrentCart.mockRejectedValueOnce(new Error("boom"));
+      const err = new Error("boom");
+      getCurrentCart.mockRejectedValueOnce(err);
       const { getCartAction } = await import("@/app/actions/cart");
       const result = await getCartAction();
       expect(result).toEqual({ ok: false, error: "boom" });
+      // cf-8ys6: same Sentry tagging convention as addItemAction.
+      expect(logWixFailure).toHaveBeenCalledWith("cart", "getCartAction", err);
     });
   });
 
@@ -176,10 +205,19 @@ describe("cart server actions", () => {
     });
 
     it("returns error result when getCurrentCart throws", async () => {
-      getCurrentCart.mockRejectedValueOnce(new Error("Wix down"));
+      const err = new Error("Wix down");
+      getCurrentCart.mockRejectedValueOnce(err);
       const { hydrateCartAction } = await import("@/app/actions/cart");
       const result = await hydrateCartAction();
       expect(result).toEqual({ ok: false, error: "Wix down" });
+      // cf-8ys6: hydrateCartAction is the worst silent-failure offender —
+      // its failure means CartHydrator renders empty /cart with no signal.
+      // Sentry tag is the only breadcrumb.
+      expect(logWixFailure).toHaveBeenCalledWith(
+        "cart",
+        "hydrateCartAction",
+        err,
+      );
     });
   });
 });
