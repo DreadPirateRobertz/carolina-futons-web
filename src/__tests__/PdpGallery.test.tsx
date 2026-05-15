@@ -547,6 +547,26 @@ describe("PdpGallery — activeUrl variant-picker integration (cf-q9zi)", () => 
     expect(main.src).toBe("https://img/a.jpg");
   });
 
+  // cf-pdp-g3: when the variant-resolved activeUrl is rendered as the main
+  // image but NOT present in the gallery `images` array (cf-pdp-g2 path),
+  // the GalleryZoomLightbox MUST open onto that same variant image — not
+  // on `images[0]`. Pre-fix, the lightbox built its image array from raw
+  // `images.map(...)` so opening zoom on a variant-only URL silently
+  // zoomed into the wrong product photo. Validated visually during
+  // rennala's cf-lc1c follow-up.
+  it("zoom modal opens onto activeUrl when activeUrl is not in images (cf-pdp-g3)", () => {
+    render(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        activeUrl="https://img/variant-only.jpg"
+      />,
+    );
+    fireEvent.click(screen.getByTestId("pdp-main-image-zoom-trigger"));
+    const zoomed = screen.getByTestId("gallery-zoom-image") as HTMLImageElement;
+    expect(zoomed.src).toBe("https://img/variant-only.jpg");
+  });
+
   it("activeUrl from parent overrides a previous thumb click", () => {
     const { rerender } = render(
       <PdpGallery images={multiImages} productName="Kingston Futon" />,

@@ -255,11 +255,20 @@ export function PdpGallery({ images, productName, activeUrl, spinImages }: PdpGa
       <GalleryZoomLightbox
         open={zoomOpen}
         onClose={() => setZoomOpen(false)}
-        images={images.map((img) => ({
+        // cf-pdp-g3: when the variant-resolved activeUrl isn't in `images`,
+        // the main image renders that URL directly (cf-pdp-g2). The zoom
+        // lightbox MUST receive the same synthetic image at the front of
+        // its list with initialIndex=0 — otherwise opening zoom on a
+        // variant-only product silently zoomed into images[0] (the wrong
+        // product photo) while the gallery showed the correct one.
+        images={(activeUrl && !activeUrlInImages
+          ? [{ url: activeUrl, alt: undefined }, ...images]
+          : images
+        ).map((img) => ({
           url: resolvedSrc(img.url),
           alt: img.alt,
         }))}
-        initialIndex={index}
+        initialIndex={activeUrl && !activeUrlInImages ? 0 : index}
         productName={productName}
       />
       {images.length > 1 ? (
