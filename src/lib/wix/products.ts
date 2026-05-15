@@ -324,22 +324,48 @@ async function getAllProductsForSearch(): Promise<WixProduct[]> {
   return listAllProducts(SEARCH_CATALOG_CAP);
 }
 
+/**
+ * Paginated catalog substring search by product name.
+ *
+ * @param q - User-typed query.
+ * @param opts - Pagination + cap options.
+ * @param opts.page - 1-indexed page number (default 1). Over-pagination
+ *   (page > last) returns empty `items` but the real `total`.
+ * @param opts.pageSize - Items per page (default 12).
+ * @returns `{ items, total }`. `total` is the full match count (used
+ *   by /search's "Showing 1–12 of 41" header + pagination footer);
+ *   `items` is the slice for the requested page.
+ *
+ * WHY paginated: cf-94l (cf-ruhm.2) — Wix Studio prod surfaces "41
+ * results found" for "futon" and paginates; cfw previously hard-capped
+ * at 12 silently. Total must reflect the full match set so callers can
+ * tell when they've hit the cap. See cf-ruhm audit §P1.2.
+ */
+export type SearchProductsResult = {
+  items: WixProduct[];
+  total: number;
+};
+
 export async function searchProducts(
   q: string,
-  limit = 12,
-): Promise<WixProduct[]> {
+  opts: { page?: number; pageSize?: number } = {},
+): Promise<SearchProductsResult> {
   const trimmed = q.trim();
-  if (!trimmed) return [];
+  if (!trimmed) return { items: [], total: 0 };
   const lower = trimmed.toLowerCase();
-  if (USE_FIXTURES) {
-    return FIXTURE_PRODUCTS
-      .filter((p) => (p.name as string | undefined ?? "").toLowerCase().includes(lower))
-      .slice(0, limit) as unknown as WixProduct[];
-  }
-  const all = await getAllProductsForSearch();
-  return all
-    .filter((p) => (p.name ?? "").toLowerCase().includes(lower))
-    .slice(0, limit);
+  const page = Math.max(1, opts.page ?? 1);
+  const pageSize = Math.max(1, opts.pageSize ?? 12);
+  const source = USE_FIXTURES
+    ? (FIXTURE_PRODUCTS as unknown as WixProduct[])
+    : await getAllProductsForSearch();
+  const matched = source.filter((p) =>
+    (p.name ?? "").toLowerCase().includes(lower),
+  );
+  const start = (page - 1) * pageSize;
+  return {
+    items: matched.slice(start, start + pageSize),
+    total: matched.length,
+  };
 }
 
 export async function listGiftCards(): Promise<WixProduct[]> {

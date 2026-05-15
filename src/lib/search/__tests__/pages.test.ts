@@ -9,13 +9,13 @@ import { searchPages, PAGES } from "@/lib/search/pages";
 
 describe("searchPages — happy path", () => {
   it("matches title substring (case-insensitive)", () => {
-    const results = searchPages("futon");
+    const { items: results } = searchPages("futon");
     expect(results.length).toBeGreaterThan(0);
     expect(results.some((p) => p.slug === "/futon-sommelier")).toBe(true);
   });
 
   it("matches description substring", () => {
-    const results = searchPages("hendersonville");
+    const { items: results } = searchPages("hendersonville");
     // Both /about and /faq mention hendersonville
     expect(results.some((p) => p.slug === "/about")).toBe(true);
     expect(results.length).toBeGreaterThanOrEqual(1);
@@ -23,14 +23,14 @@ describe("searchPages — happy path", () => {
 
   it("matches keyword substring", () => {
     // /accessibility lists 'wcag' as a keyword
-    const results = searchPages("wcag");
+    const { items: results } = searchPages("wcag");
     expect(results.map((p) => p.slug)).toEqual(["/accessibility"]);
   });
 
   it("matches case-insensitively across all fields", () => {
-    const lower = searchPages("warranty");
-    const upper = searchPages("WARRANTY");
-    const mixed = searchPages("WaRrAnTy");
+    const lower = searchPages("warranty").items;
+    const upper = searchPages("WARRANTY").items;
+    const mixed = searchPages("WaRrAnTy").items;
     expect(lower.map((p) => p.slug).sort()).toEqual(
       upper.map((p) => p.slug).sort(),
     );
@@ -41,30 +41,62 @@ describe("searchPages — happy path", () => {
 });
 
 describe("searchPages — empty / whitespace q", () => {
-  it("returns [] for empty string", () => {
-    expect(searchPages("")).toEqual([]);
+  it("returns { items: [], total: 0 } for empty string", () => {
+    expect(searchPages("")).toEqual({ items: [], total: 0 });
   });
 
-  it("returns [] for whitespace-only q", () => {
-    expect(searchPages("   ")).toEqual([]);
+  it("returns { items: [], total: 0 } for whitespace-only q", () => {
+    expect(searchPages("   ")).toEqual({ items: [], total: 0 });
   });
 
-  it("returns [] for q with no matches", () => {
-    expect(searchPages("zzzzzz-no-such-term")).toEqual([]);
+  it("returns { items: [], total: 0 } for q with no matches", () => {
+    expect(searchPages("zzzzzz-no-such-term")).toEqual({ items: [], total: 0 });
   });
 });
 
-describe("searchPages — limit", () => {
-  it("respects the limit parameter (slices AFTER filtering)", () => {
+describe("searchPages — pagination (cf-94l)", () => {
+  it("respects the pageSize parameter (slices AFTER filtering)", () => {
     // "a" appears in many manifest entries; limit it.
-    const results = searchPages("a", 3);
-    expect(results.length).toBeLessThanOrEqual(3);
+    const { items, total } = searchPages("a", { pageSize: 3 });
+    expect(items.length).toBeLessThanOrEqual(3);
+    expect(total).toBeGreaterThanOrEqual(items.length);
   });
 
-  it("uses default limit of 12 when not specified", () => {
+  it("uses default pageSize of 12 when not specified", () => {
     // Force a broad match: "the" appears in many descriptions.
-    const results = searchPages("the");
-    expect(results.length).toBeLessThanOrEqual(12);
+    const { items } = searchPages("the");
+    expect(items.length).toBeLessThanOrEqual(12);
+  });
+
+  it("returns the second page when page=2", () => {
+    // Get all matches for a broad query so pagination is meaningful.
+    const all = searchPages("a", { pageSize: 100 }).items;
+    const pageSize = 3;
+    const page1 = searchPages("a", { page: 1, pageSize }).items;
+    const page2 = searchPages("a", { page: 2, pageSize }).items;
+    expect(page1.length).toBe(Math.min(pageSize, all.length));
+    expect(page2.length).toBe(
+      Math.min(pageSize, Math.max(0, all.length - pageSize)),
+    );
+    // Page 1 and page 2 must not overlap.
+    const overlap = page1.filter((p) =>
+      page2.some((q) => q.slug === p.slug),
+    );
+    expect(overlap).toEqual([]);
+  });
+
+  it("over-pagination returns empty items but full total", () => {
+    const { items, total } = searchPages("warranty", { page: 999 });
+    expect(items).toEqual([]);
+    expect(total).toBeGreaterThan(0);
+  });
+
+  it("clamps non-positive page numbers to page 1", () => {
+    const page0 = searchPages("warranty", { page: 0 }).items;
+    const pageNeg = searchPages("warranty", { page: -5 }).items;
+    const page1 = searchPages("warranty", { page: 1 }).items;
+    expect(page0).toEqual(page1);
+    expect(pageNeg).toEqual(page1);
   });
 });
 
@@ -73,7 +105,7 @@ describe("searchPages — preserves manifest order", () => {
     // Pick a query that matches multiple pages and verify the result
     // order matches the order those pages appear in PAGES.
     const q = "the";
-    const results = searchPages(q);
+    const { items: results } = searchPages(q);
     const slugs = results.map((p) => p.slug);
     const manifestOrder = PAGES.map((p) => p.slug).filter((slug) =>
       slugs.includes(slug),

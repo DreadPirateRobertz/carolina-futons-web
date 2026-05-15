@@ -53,39 +53,63 @@ describe("searchProducts — in-memory substring search", () => {
   it("matches mid-word substring (futon anywhere in name)", async () => {
     vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => makeClient() }));
     const { searchProducts } = await import("@/lib/wix/products");
-    const results = await searchProducts("futon");
-    expect(results.map((p) => p._id)).toEqual(["1", "4"]);
+    const { items } = await searchProducts("futon");
+    expect(items.map((p) => p._id)).toEqual(["1", "4"]);
   });
 
   it("is case-insensitive — uppercase query matches mixed-case names", async () => {
     vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => makeClient() }));
     const { searchProducts } = await import("@/lib/wix/products");
-    const upper = await searchProducts("MATTRESS");
-    const lower = await searchProducts("mattress");
+    const upper = (await searchProducts("MATTRESS")).items;
+    const lower = (await searchProducts("mattress")).items;
     expect(upper.map((p) => p._id)).toEqual(["2", "3"]);
     expect(lower.map((p) => p._id)).toEqual(upper.map((p) => p._id));
   });
 
-  it("returns empty array for empty string", async () => {
+  it("returns { items: [], total: 0 } for empty string", async () => {
     vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => makeClient() }));
     const { searchProducts } = await import("@/lib/wix/products");
-    expect(await searchProducts("")).toEqual([]);
+    expect(await searchProducts("")).toEqual({ items: [], total: 0 });
   });
 
-  it("returns empty array for whitespace-only string", async () => {
+  it("returns { items: [], total: 0 } for whitespace-only string", async () => {
     vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => makeClient() }));
     const { searchProducts } = await import("@/lib/wix/products");
-    expect(await searchProducts("   ")).toEqual([]);
+    expect(await searchProducts("   ")).toEqual({ items: [], total: 0 });
   });
 
-  it("respects the limit parameter", async () => {
+  it("respects the pageSize parameter (cf-94l)", async () => {
     vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => makeClient() }));
     const { searchProducts } = await import("@/lib/wix/products");
-    const results = await searchProducts("a", 2);
-    expect(results.length).toBeLessThanOrEqual(2);
+    const { items, total } = await searchProducts("a", { pageSize: 2 });
+    expect(items.length).toBeLessThanOrEqual(2);
+    // total is the full match count, may exceed items.length
+    expect(total).toBeGreaterThanOrEqual(items.length);
   });
 
-  it("returns empty array when SDK throws", async () => {
+  it("paginates via the page option (cf-94l)", async () => {
+    vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => makeClient() }));
+    const { searchProducts } = await import("@/lib/wix/products");
+    const all = (await searchProducts("a", { pageSize: 100 })).items;
+    if (all.length >= 2) {
+      const pageSize = 1;
+      const page1 = (await searchProducts("a", { page: 1, pageSize })).items;
+      const page2 = (await searchProducts("a", { page: 2, pageSize })).items;
+      expect(page1.length).toBe(1);
+      expect(page2.length).toBe(1);
+      expect(page1[0]._id).not.toBe(page2[0]._id);
+    }
+  });
+
+  it("over-pagination returns empty items but full total (cf-94l)", async () => {
+    vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => makeClient() }));
+    const { searchProducts } = await import("@/lib/wix/products");
+    const { items, total } = await searchProducts("futon", { page: 999 });
+    expect(items).toEqual([]);
+    expect(total).toBeGreaterThan(0);
+  });
+
+  it("returns { items: [], total: 0 } when SDK throws", async () => {
     vi.doMock("@/lib/wix-client", () => ({
       getWixClient: () => ({
         products: {
@@ -100,7 +124,7 @@ describe("searchProducts — in-memory substring search", () => {
       }),
     }));
     const { searchProducts } = await import("@/lib/wix/products");
-    expect(await searchProducts("futon")).toEqual([]);
+    expect(await searchProducts("futon")).toEqual({ items: [], total: 0 });
   });
 
   it("paginates when catalog spans multiple Wix pages (cf-ni0z regression)", async () => {
@@ -108,15 +132,15 @@ describe("searchProducts — in-memory substring search", () => {
     const page2 = [{ _id: "b", name: "Page-2 Futon", slug: "p2-futon" }];
     vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => makeClient(page1, page2) }));
     const { searchProducts } = await import("@/lib/wix/products");
-    const results = await searchProducts("futon");
-    expect(results.map((p) => p._id)).toEqual(["a", "b"]);
+    const { items } = await searchProducts("futon");
+    expect(items.map((p) => p._id)).toEqual(["a", "b"]);
   });
 
   it("matches a product slug-style query spanning a word boundary", async () => {
     vi.doMock("@/lib/wix-client", () => ({ getWixClient: () => makeClient() }));
     const { searchProducts } = await import("@/lib/wix/products");
-    const results = await searchProducts("monterey");
-    expect(results).toHaveLength(1);
-    expect(results[0]._id).toBe("4");
+    const { items } = await searchProducts("monterey");
+    expect(items).toHaveLength(1);
+    expect(items[0]._id).toBe("4");
   });
 });
