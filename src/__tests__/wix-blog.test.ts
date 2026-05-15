@@ -235,6 +235,74 @@ describe("listPosts — static fallback", () => {
   });
 });
 
+// cf-1lf (cf-ruhm.3): substring match across post titles. Wix Blog SDK only
+// exposes startsWith() on title; cfw switches to listPosts + in-memory
+// .includes() so articles whose title contains q anywhere match — same
+// pattern as searchProducts. Old behaviour: "futon mattress care" matched
+// "futon" but "Best mattress for a futon" did not. New behaviour: both match.
+describe("searchPosts — substring match (cf-1lf)", () => {
+  const POSTS = [
+    { _id: "1", slug: "futon-mattress-care", title: "Futon mattress care", excerpt: "" },
+    { _id: "2", slug: "best-mattress-for-a-futon", title: "Best mattress for a futon", excerpt: "" },
+    { _id: "3", slug: "murphy-bed-buying-guide", title: "Murphy bed buying guide", excerpt: "" },
+    { _id: "4", slug: "the-warranty-explained", title: "The warranty explained", excerpt: "" },
+  ];
+
+  it("returns posts whose title contains q anywhere (not just startsWith)", async () => {
+    queryPosts.mockReturnValue(builderReturning(POSTS));
+    const results = await blog.searchPosts("futon");
+    const slugs = results.map((p) => p.slug);
+    expect(slugs).toContain("futon-mattress-care");
+    expect(slugs).toContain("best-mattress-for-a-futon");
+    expect(slugs).not.toContain("murphy-bed-buying-guide");
+  });
+
+  it("matches case-insensitively", async () => {
+    queryPosts.mockReturnValue(builderReturning(POSTS));
+    const results = await blog.searchPosts("WARRANTY");
+    expect(results.map((p) => p.slug)).toEqual(["the-warranty-explained"]);
+  });
+
+  it("returns [] for empty q without hitting the SDK", async () => {
+    const results = await blog.searchPosts("");
+    expect(results).toEqual([]);
+    expect(queryPosts).not.toHaveBeenCalled();
+  });
+
+  it("returns [] for whitespace-only q without hitting the SDK", async () => {
+    const results = await blog.searchPosts("   ");
+    expect(results).toEqual([]);
+    expect(queryPosts).not.toHaveBeenCalled();
+  });
+
+  it("respects the limit parameter (slices after filtering)", async () => {
+    queryPosts.mockReturnValue(builderReturning(POSTS));
+    const results = await blog.searchPosts("a", 2); // "a" matches every title
+    expect(results.length).toBeLessThanOrEqual(2);
+  });
+
+  it("returns [] and logs when the SDK throws", async () => {
+    queryPosts.mockImplementationOnce(() => {
+      throw new Error("Wix Blog down");
+    });
+    const results = await blog.searchPosts("futon");
+    expect(results).toEqual([]);
+    expect(logWixFailure).toHaveBeenCalledWith(
+      "wix",
+      "searchPosts(futon)",
+      expect.any(Error),
+    );
+  });
+
+  it("does NOT call the SDK's .startsWith() (impl now uses listPosts-style scan)", async () => {
+    // Bedrock guard: if anyone re-introduces a startsWith() call we want to know.
+    // The mock's builderReturning() doesn't expose startsWith, so a call would
+    // throw TypeError; this test passes as long as the impl path doesn't use it.
+    queryPosts.mockReturnValue(builderReturning(POSTS));
+    await expect(blog.searchPosts("futon")).resolves.not.toThrow();
+  });
+});
+
 describe("getPostBySlug — static fallback", () => {
   it("falls back to static post when Wix Blog throws", async () => {
     getPostBySlug.mockRejectedValueOnce(new Error("Wix Blog not installed"));
