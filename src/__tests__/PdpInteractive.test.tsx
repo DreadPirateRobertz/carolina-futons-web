@@ -344,6 +344,74 @@ describe("PdpInteractive (cf-3qt.2.1 + 2.2 integration)", () => {
     });
   });
 
+  describe("cf-pdp-g4 — call-for-price guard", () => {
+    it("disables Add to Cart on a $0 placeholder SKU (catalogPriceFix scenario)", () => {
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Callable Frame"
+          productOptions={[]}
+          variants={[]}
+          fallbackImageUrl={undefined}
+          fallbackPrice=""
+          fallbackPriceCents={0}
+        />,
+      );
+      const button = screen.getByRole("button", { name: /add to cart/i });
+      expect(button).toBeDisabled();
+    });
+
+    it("displays the call-for-price label instead of the empty fallback string", () => {
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Callable Frame"
+          productOptions={[]}
+          variants={[]}
+          fallbackImageUrl={undefined}
+          fallbackPrice=""
+          fallbackPriceCents={0}
+        />,
+      );
+      expect(
+        screen.getByText(/call for current pricing/i),
+      ).toBeInTheDocument();
+    });
+
+    it("does NOT trigger the guard for a normal $799 SKU", () => {
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Normal Frame"
+          productOptions={[]}
+          variants={[]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$799"
+          fallbackPriceCents={79900}
+        />,
+      );
+      const button = screen.getByRole("button", { name: /add to cart/i });
+      expect(button).not.toBeDisabled();
+      expect(screen.queryByText(/call for current pricing/i)).toBeNull();
+    });
+
+    it("treats the $1 boundary as call-for-price (matches Wix Velo isCallForPrice)", () => {
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Boundary Frame"
+          productOptions={[]}
+          variants={[]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$1"
+          fallbackPriceCents={100}
+        />,
+      );
+      expect(screen.getByRole("button", { name: /add to cart/i })).toBeDisabled();
+      expect(screen.getByText(/call for current pricing/i)).toBeInTheDocument();
+    });
+  });
+
   describe("fabricSwatches prop", () => {
     it("renders fabric swatches section when swatches are provided", () => {
       render(
