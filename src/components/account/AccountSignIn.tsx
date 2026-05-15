@@ -71,14 +71,14 @@ export function AccountSignIn({ next }: { next?: string }) {
           <h1 className="font-heading text-3xl font-bold tracking-tight text-cf-navy dark:text-cf-cream">
             Check your email
           </h1>
-          <p className="mt-4 text-sm text-cf-charcoal/80 dark:text-cf-cream/80">
+          <p className="mt-4 text-sm text-cf-charcoal/80 dark:text-cf-charcoal">
             We sent a verification link to <strong>{email}</strong>. Click it to
             activate your account, then return here to sign in.
           </p>
           <button
             type="button"
             onClick={() => setVerifyPending(false)}
-            className="mt-6 text-sm text-cf-cta hover:underline"
+            className="mt-6 text-sm text-cf-cta underline underline-offset-2"
           >
             Back to sign in
           </button>
@@ -93,7 +93,7 @@ export function AccountSignIn({ next }: { next?: string }) {
         <h1 className="font-heading text-3xl font-bold tracking-tight text-cf-navy dark:text-cf-cream">
           Sign in
         </h1>
-        <p className="mt-3 text-sm text-cf-charcoal/80 dark:text-cf-cream/80">
+        <p className="mt-3 text-sm text-cf-charcoal/80 dark:text-cf-charcoal">
           Access your orders, wishlist, and account settings.
         </p>
 
@@ -137,7 +137,7 @@ export function AccountSignIn({ next }: { next?: string }) {
             <div className="mt-2 text-right">
               <Link
                 href="/account/forgot-password"
-                className="text-xs text-cf-cta hover:underline"
+                className="text-xs text-cf-cta underline underline-offset-2"
               >
                 Forgot your password?
               </Link>
@@ -159,20 +159,20 @@ export function AccountSignIn({ next }: { next?: string }) {
           </button>
         </form>
 
-        {/* cf-2oku (cf-d41j.fu1): WCAG AA contrast + non-color link
-            affordance. /80 (not /60) clears the 4.5:1 ratio on 12px
-            text — the Lighthouse audit measured the prior /60 at
-            4.4:1, just short of AA. Persistent `underline` on the
-            sibling Links closes the "links rely on color alone"
-            WCAG 1.4.1 finding so users with color-vision differences
-            still see the link affordance. */}
-        <p className="mt-6 text-center text-xs text-cf-charcoal/80 dark:text-cf-cream/80">
+        {/* WCAG AA contrast + non-color link affordance.
+            /60 measures ~4.4:1 contrast on this 12px copy — just under
+            AA's 4.5:1 floor; /80 clears it. Persistent `underline` on
+            the inline Links satisfies WCAG 1.4.1 (links must be
+            distinguishable by more than color alone) so users with
+            color-vision differences still see the link affordance
+            without hovering. */}
+        <p className="mt-6 text-center text-xs text-cf-charcoal/80 dark:text-cf-charcoal">
           Already signed in?{" "}
           <Link href="/dashboard" className="text-cf-cta underline underline-offset-2">
             Go to your dashboard
           </Link>
         </p>
-        <p className="mt-2 text-center text-xs text-cf-charcoal/80 dark:text-cf-cream/80">
+        <p className="mt-2 text-center text-xs text-cf-charcoal/80 dark:text-cf-charcoal">
           Don&apos;t have an account?{" "}
           <Link href="/signup" className="text-cf-cta underline underline-offset-2">
             Create one
