@@ -336,3 +336,38 @@ describe("ProductCard — dark mode (cf-b3ai)", () => {
     expect(saleSpan?.className).toContain("dark:text-red-400");
   });
 });
+
+// cf-lmwq (cf-zmsq.followup): the outer <Link> was previously
+// `focus:outline-none` with no replacement ring — keyboard users tabbing
+// through the PLP grid saw no focus affordance on the card click target
+// beyond the focus-within border on the parent motion.div. Add an
+// explicit cf-cta focus-visible ring matching the site-wide convention.
+describe("ProductCard — focus-visible ring on outer Link (cf-lmwq)", () => {
+  it("the outer card Link carries focus-visible:ring-cf-cta in its classList", () => {
+    const { container } = render(<ProductCard product={buildProduct()} />);
+    const link = container.querySelector("a[href]");
+    expect(link).not.toBeNull();
+    const classes = (link?.className ?? "").split(/\s+/);
+    expect(classes).toContain("focus-visible:ring-cf-cta");
+  });
+
+  it("the outer card Link uses focus-visible:outline-none (not bare focus:outline-none)", () => {
+    const { container } = render(<ProductCard product={buildProduct()} />);
+    const link = container.querySelector("a[href]");
+    const classes = (link?.className ?? "").split(/\s+/);
+    // We're moving away from `focus:outline-none` (strips outline for any
+    // focus — including click — without re-adding a visible cue) to
+    // `focus-visible:outline-none` paired with the cf-cta ring. The bare
+    // `focus:outline-none` must NOT remain as the only outline-handling
+    // class.
+    expect(classes).toContain("focus-visible:outline-none");
+  });
+
+  it("the outer card Link has focus-visible:ring-2 + ring-offset-2 for ring visibility", () => {
+    const { container } = render(<ProductCard product={buildProduct()} />);
+    const link = container.querySelector("a[href]");
+    const classes = (link?.className ?? "").split(/\s+/);
+    expect(classes).toContain("focus-visible:ring-2");
+    expect(classes).toContain("focus-visible:ring-offset-2");
+  });
+});

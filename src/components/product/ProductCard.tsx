@@ -105,7 +105,10 @@ export function ProductCard({
       whileFocus={hoverVariant}
       transition={{ duration: MOTION_DURATION_SEC, ease: "easeOut" }}
     >
-      <Link href={href} className="group block focus:outline-none">
+      <Link
+        href={href}
+        className="group block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
+      >
         <div className="relative aspect-square w-full overflow-hidden rounded-t-lg bg-zinc-100 dark:bg-zinc-700">
           {primary ? (
             <>
