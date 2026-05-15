@@ -41,6 +41,7 @@ import {
   buildProductSchema,
   resolveSiteUrl,
 } from "@/lib/seo/json-ld";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 import { AppDownloadBanner } from "@/components/site/AppDownloadBanner";
 import { ArModelViewer } from "@/components/product/ArModelViewer";
 import type { StockBadgeInput } from "@/lib/product/stock-badge-state";
@@ -76,15 +77,17 @@ export async function generateMetadata(props: {
         ? { url: mainImageUrl, alt: product.name ?? undefined }
         : DEFAULT_OG_IMAGE;
     const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+    const openGraph = {
+      title: `${product.name} — Carolina Futons`,
+      description,
+      images: [ogImage],
+    };
     return {
       title: `${product.name} — Carolina Futons`,
       description,
       alternates: { canonical: `${siteUrl}/products/${slug}` },
-      openGraph: {
-        title: `${product.name} — Carolina Futons`,
-        description,
-        images: [ogImage],
-      },
+      openGraph,
+      twitter: twitterFromOpenGraph(openGraph),
     };
   } catch (err) {
     await logWixFailure("pdp-generateMetadata", "params or product fetch", err);

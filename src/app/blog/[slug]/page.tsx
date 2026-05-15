@@ -10,6 +10,7 @@ import {
 } from "@/lib/wix/blog";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { buildArticleSchema, resolveSiteUrl } from "@/lib/seo/json-ld";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
 // cf-l11g: dynamic blog post route. ISR-compatible — generateStaticParams
 // pre-renders the latest published posts at build time so they're indexable
@@ -39,27 +40,26 @@ export async function generateMetadata(props: {
   if (!post) return { title: "Post — Carolina Futons" };
   const description = postDescription(post);
   const canonicalUrl = `${SITE_URL}/blog/${post.slug}`;
+  const openGraph = {
+    type: "article" as const,
+    title: post.title,
+    description,
+    url: canonicalUrl,
+    ...(post.firstPublishedDate && {
+      publishedTime: post.firstPublishedDate instanceof Date
+        ? post.firstPublishedDate.toISOString()
+        : String(post.firstPublishedDate),
+    }),
+    ...(post.heroImageUrl && { images: [{ url: post.heroImageUrl }] }),
+  };
   return {
     title: `${post.title} — Carolina Futons`,
     description,
-    openGraph: {
-      type: "article",
-      title: post.title,
-      description,
-      url: canonicalUrl,
-      ...(post.firstPublishedDate && {
-        publishedTime: post.firstPublishedDate instanceof Date
-          ? post.firstPublishedDate.toISOString()
-          : String(post.firstPublishedDate),
-      }),
-      ...(post.heroImageUrl && { images: [{ url: post.heroImageUrl }] }),
-    },
-    twitter: {
-      card: post.heroImageUrl ? "summary_large_image" : "summary",
-      title: post.title,
-      description,
-      ...(post.heroImageUrl && { images: [post.heroImageUrl] }),
-    },
+    openGraph,
+    twitter: twitterFromOpenGraph(
+      openGraph,
+      post.heroImageUrl ? "summary_large_image" : "summary",
+    ),
   };
 }
 
