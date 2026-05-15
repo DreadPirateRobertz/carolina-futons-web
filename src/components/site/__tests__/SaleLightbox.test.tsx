@@ -8,6 +8,11 @@ vi.mock("@/components/site/NewsletterSignup", () => ({
 
 const mockWriteText = vi.fn().mockResolvedValue(undefined);
 
+// A fixed point in time before SALE_END_DATE (2026-05-12) so tests that
+// advance fake timers do not hit the `if (expired) return` guard in the
+// component and end up rendering nothing.
+const BEFORE_SALE_END = new Date("2026-05-01T12:00:00");
+
 beforeEach(() => {
   localStorage.clear();
   mockWriteText.mockClear();
@@ -24,7 +29,7 @@ afterEach(() => {
 });
 
 function openLightbox() {
-  vi.useFakeTimers();
+  vi.useFakeTimers({ now: BEFORE_SALE_END });
   render(<SaleLightbox />);
   act(() => vi.advanceTimersByTime(3500));
 }
@@ -32,7 +37,7 @@ function openLightbox() {
 describe("SaleLightbox", () => {
   describe("visibility gate", () => {
     it("is hidden before the 3 s delay fires", () => {
-      vi.useFakeTimers();
+      vi.useFakeTimers({ now: BEFORE_SALE_END });
       render(<SaleLightbox />);
       expect(screen.queryByRole("dialog")).toBeNull();
     });
@@ -48,7 +53,7 @@ describe("SaleLightbox", () => {
         configurable: true,
         value: true,
       });
-      vi.useFakeTimers();
+      vi.useFakeTimers({ now: BEFORE_SALE_END });
       render(<SaleLightbox />);
       act(() => vi.advanceTimersByTime(3500));
       expect(screen.queryByRole("dialog")).toBeNull();
@@ -60,16 +65,16 @@ describe("SaleLightbox", () => {
     });
 
     it("stays hidden when dismissed within the last 24 h", () => {
-      localStorage.setItem("cf-promo-dismissed", String(Date.now() - 1000));
-      vi.useFakeTimers();
+      vi.useFakeTimers({ now: BEFORE_SALE_END });
+      localStorage.setItem("cf-promo-dismissed", String(BEFORE_SALE_END.getTime() - 1000));
       render(<SaleLightbox />);
       act(() => vi.advanceTimersByTime(3500));
       expect(screen.queryByRole("dialog")).toBeNull();
     });
 
     it("re-shows after the 24 h cooldown has elapsed", () => {
-      localStorage.setItem("cf-promo-dismissed", String(Date.now() - 25 * 60 * 60 * 1000));
-      vi.useFakeTimers();
+      vi.useFakeTimers({ now: BEFORE_SALE_END });
+      localStorage.setItem("cf-promo-dismissed", String(BEFORE_SALE_END.getTime() - 25 * 60 * 60 * 1000));
       render(<SaleLightbox />);
       act(() => vi.advanceTimersByTime(3500));
       expect(screen.getByRole("dialog")).toBeInTheDocument();
