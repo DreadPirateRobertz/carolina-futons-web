@@ -85,7 +85,9 @@ function GridItem({
             />
           ) : (
             <div className="flex h-full items-center justify-center text-cf-charcoal/20">
-              <span className="font-heading text-sm italic">No image</span>
+              <span aria-hidden="true" className="font-heading text-sm italic">
+                No image
+              </span>
             </div>
           )}
         </div>

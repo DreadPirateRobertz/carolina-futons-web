@@ -55,7 +55,10 @@ export async function BlogTeasers() {
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center">
-                      <span className="font-heading text-4xl text-cf-charcoal/20">
+                      <span
+                        aria-hidden="true"
+                        className="font-heading text-4xl text-cf-charcoal/20"
+                      >
                         CF
                       </span>
                     </div>
