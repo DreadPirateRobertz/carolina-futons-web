@@ -3,16 +3,20 @@ import type { Metadata } from "next";
 import { HeroReveal } from "@/components/motion/HeroReveal";
 import { VideoGallery } from "@/components/videos/VideoGallery";
 import { listVideos } from "@/lib/cms/videos";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
+
+const OPEN_GRAPH = {
+  title: "Product Videos — Carolina Futons",
+  description:
+    "Demos and assembly guides for our American-made futon frames, platform beds, and Murphy mechanisms.",
+};
 
 export const metadata: Metadata = {
   title: "Product Videos — Carolina Futons",
   description:
     "Watch our futon frames, Murphy beds, and conversion mechanisms in action. Wix-hosted demos plus KD Frames assembly guides and Strata wall-hugger conversions.",
-  openGraph: {
-    title: "Product Videos — Carolina Futons",
-    description:
-      "Demos and assembly guides for our American-made futon frames, platform beds, and Murphy mechanisms.",
-  },
+  openGraph: OPEN_GRAPH,
+  twitter: twitterFromOpenGraph(OPEN_GRAPH),
 };
 
 export default async function VideosPage() {
