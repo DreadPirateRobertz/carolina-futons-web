@@ -31,6 +31,7 @@ import { resolveVerification } from "@/lib/seo/webmaster-verification";
 import { RouteProgressBar } from "@/components/site/RouteProgressBar";
 import { SaleLightbox } from "@/components/site/SaleLightbox";
 import { BackToTop } from "@/components/site/BackToTop";
+import { CompareBar } from "@/components/compare/CompareBar";
 import { PwaInstallBanner } from "@/components/site/PwaInstallBanner";
 import { TikTokPixel } from "@/components/analytics/TikTokPixel";
 import { PinterestTag } from "@/components/analytics/PinterestTag";
@@ -239,6 +240,7 @@ export default async function RootLayout({
             />
             <CartDrawer />
             <BackToTop />
+            <CompareBar />
             <PwaInstallBanner />
             <SaleLightbox />
           </CartProvider>
