@@ -66,6 +66,17 @@ export function getCompareSlugs(): string[] {
           .slice(0, COMPARE_MAX)
       : [];
   } catch {
+    // cf-eqaj self-heal: clear the poisoned key so subsequent reads
+    // don't keep re-dispatching the same parse-error event. Wrapped in
+    // its own try/catch — if removeItem also throws (unavailable
+    // storage), the read already returned a `parse-error` event so the
+    // consumer has enough signal; we don't want to mask it with a
+    // second event class.
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* read-only storage — fine, single parse-error event still fires */
+    }
     dispatchCompareError("parse-error");
     return [];
   }

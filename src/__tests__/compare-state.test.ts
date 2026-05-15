@@ -191,6 +191,28 @@ describe("cf-eqaj — error-event feedback when localStorage is unavailable", ()
     expect(detail?.reason).toBe("parse-error");
   });
 
+  // cf-eqaj self-heal: a poisoned key should be evicted on first read so
+  // a subsequent read doesn't re-dispatch the same parse-error every time.
+  it("getCompareSlugs self-heals the poisoned key after dispatching parse-error", () => {
+    storage["cf-compare-slugs"] = "{{invalid}}";
+    const dispatched: Event[] = [];
+    (window.dispatchEvent as ReturnType<typeof vi.fn>).mockImplementation((e: Event) => {
+      dispatched.push(e);
+      return true;
+    });
+
+    // First read: dispatches parse-error + clears the poisoned key
+    expect(getCompareSlugs()).toEqual([]);
+    expect(dispatched.filter((e) => e.type === "cf-compare-change-error")).toHaveLength(1);
+    expect(storage["cf-compare-slugs"]).toBeUndefined();
+
+    // Second read: no new error event because the key is now absent
+    // (normal empty-state path, not a failure).
+    dispatched.length = 0;
+    expect(getCompareSlugs()).toEqual([]);
+    expect(dispatched.filter((e) => e.type === "cf-compare-change-error")).toHaveLength(0);
+  });
+
   it("happy-path read does not dispatch an error event", () => {
     storage["cf-compare-slugs"] = JSON.stringify(["kingston"]);
     const dispatched: Event[] = [];
