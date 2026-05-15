@@ -251,3 +251,78 @@ describe("PDP generateMetadata", () => {
     expect(meta.title).toBe("Product — Carolina Futons");
   });
 });
+
+// ── cf-ceex: per-page OG sweep on 13 pages ────────────────────────────────
+
+describe("cf-ceex per-page OG sweep", () => {
+  it("/about has openGraph + ABOUT_HERO_PHOTO image", async () => {
+    const { metadata } = await import("@/app/about/page");
+    expect(metadata.openGraph?.title).toBe("About — Carolina Futons");
+    expect(metadata.openGraph?.description).toContain("Family-owned");
+    expect(ogImageUrls(metadata.openGraph?.images)[0]).toMatch(
+      /^https:\/\/static\.wixstatic\.com\//,
+    );
+  });
+
+  it("/visit has openGraph with distinct description", async () => {
+    const { metadata } = await import("@/app/visit/page");
+    expect(metadata.openGraph?.description).toContain("showroom");
+    expect(ogImageUrls(metadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+
+  it("/getting-it-home has openGraph with distinct description", async () => {
+    const { metadata } = await import("@/app/getting-it-home/page");
+    expect(metadata.openGraph?.description).toContain("delivers");
+    expect(ogImageUrls(metadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+
+  it("/design-a-room has openGraph + canonical", async () => {
+    const { metadata } = await import("@/app/design-a-room/page");
+    expect(metadata.openGraph?.description).toContain("plan a room");
+    expect(metadata.alternates?.canonical).toBe("/design-a-room");
+  });
+
+  it("/reviews has openGraph with distinct description", async () => {
+    const { metadata } = await import("@/app/reviews/page");
+    expect(metadata.openGraph?.description).toContain("Real reviews");
+  });
+
+  it("/guides (listing) has openGraph with distinct description", async () => {
+    const { metadata } = await import("@/app/guides/page");
+    expect(metadata.openGraph?.description).toContain("guides");
+    expect(metadata.openGraph?.url).toBe("/guides");
+  });
+
+  it("/guides/[slug] generateMetadata emits og:type article with canonical", async () => {
+    const { generateMetadata } = await import("@/app/guides/[slug]/page");
+    // Use a real guide slug — listGuides() is a static module-internal source
+    // of truth and doesn't need mocking for this assertion.
+    const meta = await generateMetadata({
+      params: Promise.resolve({ slug: "how-to-pick-a-futon-mattress" }),
+    });
+    expect((meta.openGraph as { type?: string })?.type).toBe("article");
+    expect(meta.alternates?.canonical).toBe("/guides/how-to-pick-a-futon-mattress");
+  });
+
+  it("/compare empty-state generateMetadata has openGraph + description", async () => {
+    const { generateMetadata } = await import("@/app/compare/page");
+    const meta = await generateMetadata({
+      searchParams: Promise.resolve({}),
+    });
+    expect(meta.openGraph?.description).toContain("side-by-side");
+    expect(ogImageUrls(meta.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+
+  it("all sweep pages have distinct openGraph.description (no duplicates)", async () => {
+    const modules = await Promise.all([
+      import("@/app/about/page"),
+      import("@/app/visit/page"),
+      import("@/app/getting-it-home/page"),
+      import("@/app/design-a-room/page"),
+      import("@/app/reviews/page"),
+      import("@/app/guides/page"),
+    ]);
+    const descriptions = modules.map((m) => m.metadata.openGraph?.description);
+    expect(new Set(descriptions).size).toBe(descriptions.length);
+  });
+});

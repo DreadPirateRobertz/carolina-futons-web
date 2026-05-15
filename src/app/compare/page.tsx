@@ -11,8 +11,12 @@ import {
   type CompareProduct,
 } from "@/lib/product/compare";
 import { getProductBySlug } from "@/lib/wix/products";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
 
 export const dynamic = "force-dynamic";
+
+const COMPARE_DESCRIPTION =
+  "Compare Carolina Futons frames and mattresses side-by-side — dimensions, materials, mattress depth, and price differences for up to four products at once.";
 
 export async function generateMetadata(props: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -20,12 +24,30 @@ export async function generateMetadata(props: {
   const sp = await props.searchParams;
   const slugs = parseCompareSlugs(sp.slugs);
   if (slugs.length < COMPARE_MIN) {
-    return { title: "Compare — Carolina Futons" };
+    return {
+      title: "Compare — Carolina Futons",
+      description: COMPARE_DESCRIPTION,
+      openGraph: {
+        title: "Compare — Carolina Futons",
+        description: COMPARE_DESCRIPTION,
+        url: "/compare",
+        type: "website",
+        images: [DEFAULT_OG_IMAGE],
+      },
+    };
   }
   const products = await fetchCompareProducts(slugs);
+  const title = buildCompareTitle(products);
   return {
-    title: buildCompareTitle(products),
+    title,
+    description: COMPARE_DESCRIPTION,
     robots: { index: false, follow: true },
+    openGraph: {
+      title,
+      description: COMPARE_DESCRIPTION,
+      type: "website",
+      images: [DEFAULT_OG_IMAGE],
+    },
   };
 }
 

@@ -5,12 +5,22 @@ import { ReviewsJsonLd } from "@/components/seo/ReviewsJsonLd";
 import { loadReviews } from "@/lib/discovery/google-reviews";
 import { ReviewFilter } from "./ReviewFilter";
 import { FallsScene } from "@/components/mascot/FallsScene";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
+
+const REVIEWS_DESCRIPTION =
+  "Real reviews from Carolina Futons customers on our hardwood frames, hand-built mattresses, and Murphy beds.";
 
 export const metadata: Metadata = {
   title: "Customer Reviews — Carolina Futons",
-  description:
-    "Real reviews from Carolina Futons customers on our hardwood frames, hand-built mattresses, and Murphy beds.",
+  description: REVIEWS_DESCRIPTION,
   alternates: { canonical: "/reviews" },
+  openGraph: {
+    title: "Customer Reviews — Carolina Futons",
+    description: REVIEWS_DESCRIPTION,
+    url: "/reviews",
+    type: "website",
+    images: [DEFAULT_OG_IMAGE],
+  },
 };
 
 export default async function ReviewsPage() {

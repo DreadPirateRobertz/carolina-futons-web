@@ -2,12 +2,22 @@ import type { Metadata } from "next";
 
 import { AddressCheckForm } from "./AddressCheckForm";
 import { LOCAL_ZONES } from "@/lib/delivery/local-zones";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
+
+const GETTING_IT_HOME_DESCRIPTION =
+  "Check whether Carolina Futons delivers to your area. ZIP-based zone lookup with curbside and white-glove pricing for our four delivery tiers.";
 
 export const metadata: Metadata = {
   title: "Getting It Home — Carolina Futons",
-  description:
-    "Check whether Carolina Futons delivers to your area. ZIP-based zone lookup with curbside and white-glove pricing for our four delivery tiers.",
+  description: GETTING_IT_HOME_DESCRIPTION,
   alternates: { canonical: "/getting-it-home" },
+  openGraph: {
+    title: "Getting It Home — Carolina Futons",
+    description: GETTING_IT_HOME_DESCRIPTION,
+    url: "/getting-it-home",
+    type: "website",
+    images: [DEFAULT_OG_IMAGE],
+  },
 };
 
 // cf-3qt.4.4: Getting It Home page. Customer-facing distance/zone resolver
