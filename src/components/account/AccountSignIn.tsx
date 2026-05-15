@@ -159,15 +159,22 @@ export function AccountSignIn({ next }: { next?: string }) {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-cf-charcoal/60 dark:text-cf-cream/60">
+        {/* cf-2oku (cf-d41j.fu1): WCAG AA contrast + non-color link
+            affordance. /80 (not /60) clears the 4.5:1 ratio on 12px
+            text — the Lighthouse audit measured the prior /60 at
+            4.4:1, just short of AA. Persistent `underline` on the
+            sibling Links closes the "links rely on color alone"
+            WCAG 1.4.1 finding so users with color-vision differences
+            still see the link affordance. */}
+        <p className="mt-6 text-center text-xs text-cf-charcoal/80 dark:text-cf-cream/80">
           Already signed in?{" "}
-          <Link href="/dashboard" className="text-cf-cta hover:underline">
+          <Link href="/dashboard" className="text-cf-cta underline underline-offset-2">
             Go to your dashboard
           </Link>
         </p>
-        <p className="mt-2 text-center text-xs text-cf-charcoal/60 dark:text-cf-cream/60">
+        <p className="mt-2 text-center text-xs text-cf-charcoal/80 dark:text-cf-cream/80">
           Don&apos;t have an account?{" "}
-          <Link href="/signup" className="text-cf-cta hover:underline">
+          <Link href="/signup" className="text-cf-cta underline underline-offset-2">
             Create one
           </Link>
         </p>
