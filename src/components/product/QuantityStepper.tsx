@@ -11,7 +11,7 @@
  */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Minus, Plus } from "lucide-react";
 
 export const DEFAULT_QTY_MIN = 1;
@@ -46,11 +46,14 @@ export function QuantityStepper({
   // Mirror the prop into a string so the user can type intermediate
   // states (e.g., empty while erasing-then-retyping) without the input
   // snapping back to the last valid number mid-edit.
+  // React "update during render" pattern — avoids a double-render from useEffect.
   const [draft, setDraft] = useState<string>(String(value));
+  const [syncedValue, setSyncedValue] = useState(value);
 
-  useEffect(() => {
+  if (syncedValue !== value) {
+    setSyncedValue(value);
     setDraft(String(value));
-  }, [value]);
+  }
 
   const atMin = value <= min;
   const atMax = value >= max;
