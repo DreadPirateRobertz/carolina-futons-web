@@ -12,6 +12,7 @@ import {
   type WixCart,
 } from "@/lib/wix/cart";
 import { syncCartSession } from "@/lib/wix/cart-session-dual-write";
+import { logWixFailure } from "@/lib/wix/errors";
 
 export type CartActionResult =
   | { ok: true; cart: WixCart | null }
@@ -43,6 +44,10 @@ export async function addItemAction(
     revalidatePath("/cart");
     return { ok: true, cart };
   } catch (err) {
+    // cf-f9o1: Sentry-tag add-to-cart failures so silent Wix outages on
+    // the personalized gift-card flow stop disappearing into a generic
+    // `{ ok: false }`. Matches the reader-layer logWixFailure pattern.
+    await logWixFailure("cart", "addItemAction", err);
     return { ok: false, error: toMessage(err) };
   }
 }

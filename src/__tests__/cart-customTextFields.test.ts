@@ -90,3 +90,101 @@ describe("toLineItemPayload (cf-gift-g1)", () => {
     ]);
   });
 });
+
+/**
+ * cf-f9o1 (cf-gift-g1.fu1): defensive filter on the lib boundary.
+ *
+ * Empty/whitespace title or value would render in the Wix order admin as
+ * a blank row and ship to Wix as semantically meaningless metadata. The
+ * UI layer already trims+drops, but a callsite that bypasses the form
+ * (server action invoked from a script, future API client) could still
+ * smuggle blanks in. Pin defense at the lib layer so it's enforced
+ * regardless of caller.
+ *
+ * The byte-identical invariant (no `customTextFields` key when every
+ * entry filters out) preserves the non-personalized payload shape — the
+ * same guarantee {@link cart-customTextFields.test.ts}'s
+ * "omits customTextFields when input passes an empty array" pins.
+ */
+describe("toLineItemPayload — defensive filter (cf-f9o1)", () => {
+  it("drops entries with empty title", () => {
+    const out = toLineItemPayload({
+      productId: "gc-50",
+      quantity: 1,
+      customTextFields: [
+        { title: "", value: "alice@example.com" },
+        { title: "Recipient email", value: "alice@example.com" },
+      ],
+    });
+    expect(out.customTextFields).toEqual([
+      { title: "Recipient email", value: "alice@example.com" },
+    ]);
+  });
+
+  it("drops entries with empty value", () => {
+    const out = toLineItemPayload({
+      productId: "gc-50",
+      quantity: 1,
+      customTextFields: [
+        { title: "Recipient email", value: "" },
+        { title: "Sender name", value: "Bob" },
+      ],
+    });
+    expect(out.customTextFields).toEqual([
+      { title: "Sender name", value: "Bob" },
+    ]);
+  });
+
+  it("drops entries with whitespace-only title or value", () => {
+    const out = toLineItemPayload({
+      productId: "gc-50",
+      quantity: 1,
+      customTextFields: [
+        { title: "   ", value: "alice@example.com" },
+        { title: "Recipient email", value: "  \t\n " },
+        { title: "Sender name", value: "Bob" },
+      ],
+    });
+    expect(out.customTextFields).toEqual([
+      { title: "Sender name", value: "Bob" },
+    ]);
+  });
+
+  it("omits customTextFields entirely when every entry filters out (byte-identical invariant)", () => {
+    const out = toLineItemPayload({
+      productId: "gc-50",
+      quantity: 1,
+      customTextFields: [
+        { title: "", value: "alice@example.com" },
+        { title: "Sender", value: "   " },
+      ],
+    });
+    expect(out).not.toHaveProperty("customTextFields");
+    expect(out).toEqual({
+      catalogReference: {
+        appId: WIX_STORES_APP_ID,
+        catalogItemId: "gc-50",
+      },
+      quantity: 1,
+    });
+  });
+
+  it("preserves order of surviving entries", () => {
+    const out = toLineItemPayload({
+      productId: "gc-50",
+      quantity: 1,
+      customTextFields: [
+        { title: "Recipient email", value: "alice@example.com" },
+        { title: "", value: "drop me" },
+        { title: "Sender name", value: "Bob" },
+        { title: "drop me too", value: "   " },
+        { title: "Personal message", value: "Happy birthday!" },
+      ],
+    });
+    expect(out.customTextFields).toEqual([
+      { title: "Recipient email", value: "alice@example.com" },
+      { title: "Sender name", value: "Bob" },
+      { title: "Personal message", value: "Happy birthday!" },
+    ]);
+  });
+});
