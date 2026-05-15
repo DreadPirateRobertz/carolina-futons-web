@@ -32,6 +32,22 @@ jobs:
 
       - run: npm ci
 
+      # cf-wanu: catch npm install corruption that previously dropped
+      # isomorphic-dompurify (caused 47 vitest failures locally). Symptom
+      # is a nested node_modules/node_modules/ directory left by a partial
+      # install; assert the corruption pattern is absent and the canary
+      # dep that was missing actually resolved.
+      - name: Install integrity guard
+        run: |
+          if [ -d node_modules/node_modules ]; then
+            echo "::error::node_modules/node_modules/ corruption present after npm ci — rerun a clean install"
+            exit 1
+          fi
+          if [ ! -f node_modules/isomorphic-dompurify/package.json ]; then
+            echo "::error::isomorphic-dompurify missing from node_modules after npm ci"
+            exit 1
+          fi
+
       - name: Lint
         run: npm run lint
 
@@ -105,6 +121,19 @@ jobs:
       - name: Install dependencies
         if: github.event_name != 'pull_request' || steps.paths.outputs.run == 'true'
         run: npm ci
+
+      # cf-wanu: same integrity guard as the lint job above.
+      - name: Install integrity guard
+        if: github.event_name != 'pull_request' || steps.paths.outputs.run == 'true'
+        run: |
+          if [ -d node_modules/node_modules ]; then
+            echo "::error::node_modules/node_modules/ corruption present after npm ci — rerun a clean install"
+            exit 1
+          fi
+          if [ ! -f node_modules/isomorphic-dompurify/package.json ]; then
+            echo "::error::isomorphic-dompurify missing from node_modules after npm ci"
+            exit 1
+          fi
 
       - name: Install Playwright browsers
         if: github.event_name != 'pull_request' || steps.paths.outputs.run == 'true'
