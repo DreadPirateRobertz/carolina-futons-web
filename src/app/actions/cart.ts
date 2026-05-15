@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { type CartLineItem } from "@/lib/cart/cart-state";
 import {
   addToCart,
+  applyCoupon,
   getCurrentCart,
+  removeCoupon,
   removeFromCart,
   updateLineItemQuantity,
   wixCartToLines,
@@ -72,6 +74,32 @@ export async function updateQuantityAction(
   try {
     const cart = await updateLineItemQuantity(lineItemId, quantity);
     syncCartSession(cart);
+    revalidatePath("/cart");
+    return { ok: true, cart };
+  } catch (err) {
+    return { ok: false, error: toMessage(err) };
+  }
+}
+
+// cf-snil (cf-wsrr.F2): in-cart coupon entry. Wraps wix-cart.applyCoupon /
+// removeCoupon for CartDrawer + /cart UI. Trims whitespace from user input
+// before forwarding so a "  SUMMER15  " pasted from email-campaign copy
+// doesn't get rejected by the SDK's strict-match comparator.
+export async function applyCouponAction(code: string): Promise<CartActionResult> {
+  const trimmed = code?.trim() ?? "";
+  if (!trimmed) return { ok: false, error: "Enter a promo code" };
+  try {
+    const cart = await applyCoupon(trimmed);
+    revalidatePath("/cart");
+    return { ok: true, cart };
+  } catch (err) {
+    return { ok: false, error: toMessage(err) };
+  }
+}
+
+export async function removeCouponAction(): Promise<CartActionResult> {
+  try {
+    const cart = await removeCoupon();
     revalidatePath("/cart");
     return { ok: true, cart };
   } catch (err) {
