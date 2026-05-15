@@ -340,13 +340,19 @@ describe("CartTrigger (cf-3qt.2.3)", () => {
 
 describe("CartTrigger — aria-live announcer (cf-zmsq)", () => {
   function renderWithCartControl() {
-    let addFn: ((line: CartLineItem) => void) | null = null;
-    let removeFn: ((id: string) => void) | null = null;
+    // Use a mutable object so Controls can capture the cart functions without
+    // assigning to outer-scope let bindings (react-hooks/globals violation).
+    const fns: {
+      add: ((line: CartLineItem) => void) | null;
+      remove: ((id: string) => void) | null;
+    } = { add: null, remove: null };
 
     function Controls() {
       const { addLine, removeLine } = useCart();
-      addFn = addLine;
-      removeFn = removeLine;
+      // eslint-disable-next-line react-hooks/immutability
+      fns.add = addLine;
+      // eslint-disable-next-line react-hooks/immutability
+      fns.remove = removeLine;
       return null;
     }
 
@@ -358,8 +364,8 @@ describe("CartTrigger — aria-live announcer (cf-zmsq)", () => {
     );
 
     return {
-      add: (line: CartLineItem) => act(() => { addFn!(line); }),
-      remove: (id: string) => act(() => { removeFn!(id); }),
+      add: (line: CartLineItem) => act(() => { fns.add!(line); }),
+      remove: (id: string) => act(() => { fns.remove!(id); }),
     };
   }
 
