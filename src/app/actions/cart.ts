@@ -12,6 +12,7 @@ import {
   type WixCart,
 } from "@/lib/wix/cart";
 import { syncCartSession } from "@/lib/wix/cart-session-dual-write";
+import { logWixFailure } from "@/lib/wix/errors";
 
 export type CartActionResult =
   | { ok: true; cart: WixCart | null }
@@ -57,6 +58,9 @@ export async function removeItemAction(
     revalidatePath("/cart");
     return { ok: true, cart };
   } catch (err) {
+    // cf-8ys6: fire-and-forget Sentry tag so the failure shape is
+    // visible in observability without delaying the user-visible error.
+    void logWixFailure("cart", "remove-item", err);
     return { ok: false, error: toMessage(err) };
   }
 }
@@ -75,6 +79,8 @@ export async function updateQuantityAction(
     revalidatePath("/cart");
     return { ok: true, cart };
   } catch (err) {
+    // cf-8ys6: fire-and-forget Sentry tag.
+    void logWixFailure("cart", "update-quantity", err);
     return { ok: false, error: toMessage(err) };
   }
 }
@@ -84,6 +90,8 @@ export async function getCartAction(): Promise<CartActionResult> {
     const cart = await getCurrentCart();
     return { ok: true, cart };
   } catch (err) {
+    // cf-8ys6: fire-and-forget Sentry tag.
+    void logWixFailure("cart", "get", err);
     return { ok: false, error: toMessage(err) };
   }
 }
@@ -96,6 +104,10 @@ export async function hydrateCartAction(): Promise<HydrateCartResult> {
     const cart = await getCurrentCart();
     return { ok: true, lines: cart ? wixCartToLines(cart) : [] };
   } catch (err) {
+    // cf-8ys6: fire-and-forget Sentry tag. hydrateCartAction was the
+    // worst offender per the silent-failure-hunter review — empty /cart
+    // shipped with no error signal anywhere.
+    void logWixFailure("cart", "hydrate", err);
     return { ok: false, error: toMessage(err) };
   }
 }

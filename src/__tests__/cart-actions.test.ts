@@ -19,6 +19,13 @@ vi.mock("@/lib/wix/cart", () => ({
   wixCartToLines: (...args: unknown[]) => wixCartToLines(...args),
 }));
 
+// cf-8ys6 (cf-f9o1.fu1): each sibling cart action must Sentry-tag its catch
+// via logWixFailure("cart", "<op>", err). Spy mock lets us pin per-action.
+const logWixFailure = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/wix/errors", () => ({
+  logWixFailure: (...args: unknown[]) => logWixFailure(...args),
+}));
+
 describe("cart server actions", () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -92,6 +99,15 @@ describe("cart server actions", () => {
       expect(result.ok).toBe(true);
       expect(removeFromCart).toHaveBeenCalledWith(["li1"]);
     });
+
+    it("Sentry-tags the catch via logWixFailure (cf-8ys6)", async () => {
+      const boom = new Error("Wix removeFromCart failed");
+      removeFromCart.mockRejectedValueOnce(boom);
+      const { removeItemAction } = await import("@/app/actions/cart");
+      const result = await removeItemAction("li1");
+      expect(result.ok).toBe(false);
+      expect(logWixFailure).toHaveBeenCalledWith("cart", "remove-item", boom);
+    });
   });
 
   describe("updateQuantityAction", () => {
@@ -112,6 +128,19 @@ describe("cart server actions", () => {
       expect(result.ok).toBe(true);
       expect(updateLineItemQuantity).toHaveBeenCalledWith("li1", 3);
     });
+
+    it("Sentry-tags the catch via logWixFailure (cf-8ys6)", async () => {
+      const boom = new Error("Wix update failed");
+      updateLineItemQuantity.mockRejectedValueOnce(boom);
+      const { updateQuantityAction } = await import("@/app/actions/cart");
+      const result = await updateQuantityAction("li1", 3);
+      expect(result.ok).toBe(false);
+      expect(logWixFailure).toHaveBeenCalledWith(
+        "cart",
+        "update-quantity",
+        boom,
+      );
+    });
   });
 
   describe("getCartAction", () => {
@@ -127,6 +156,14 @@ describe("cart server actions", () => {
       const { getCartAction } = await import("@/app/actions/cart");
       const result = await getCartAction();
       expect(result).toEqual({ ok: false, error: "boom" });
+    });
+
+    it("Sentry-tags the catch via logWixFailure (cf-8ys6)", async () => {
+      const boom = new Error("Wix getCurrentCart failed");
+      getCurrentCart.mockRejectedValueOnce(boom);
+      const { getCartAction } = await import("@/app/actions/cart");
+      await getCartAction();
+      expect(logWixFailure).toHaveBeenCalledWith("cart", "get", boom);
     });
   });
 
@@ -163,6 +200,17 @@ describe("cart server actions", () => {
       const { hydrateCartAction } = await import("@/app/actions/cart");
       const result = await hydrateCartAction();
       expect(result).toEqual({ ok: false, error: "Wix down" });
+    });
+
+    it("Sentry-tags the catch via logWixFailure (cf-8ys6)", async () => {
+      // hydrateCartAction was the worst offender per the bead — empty /cart
+      // shipped with no error signal. Pin per-action so a regression to the
+      // silent-swallow shape trips this test.
+      const boom = new Error("Wix hydrate failed");
+      getCurrentCart.mockRejectedValueOnce(boom);
+      const { hydrateCartAction } = await import("@/app/actions/cart");
+      await hydrateCartAction();
+      expect(logWixFailure).toHaveBeenCalledWith("cart", "hydrate", boom);
     });
   });
 });
