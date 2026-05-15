@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { EmptySearchIllustration } from "@/components/illustrations/EmptySearchIllustration";
+import { PLPPagination } from "@/components/plp/PLPPagination";
 import { SearchTabs, parseSearchType, type SearchType } from "@/components/search/SearchTabs";
 import { searchPages, type SearchPage as SearchPageEntry } from "@/lib/search/pages";
 import { searchProducts } from "@/lib/wix/products";
@@ -17,27 +18,43 @@ export const metadata: Metadata = {
   robots: { index: false, follow: true },
 };
 
-const PRODUCT_LIMIT = 12;
-const POST_LIMIT = 8;
-const PAGE_LIMIT = 12;
+const DEFAULT_PAGE_SIZE = 12;
+const ALL_TAB_PER_TYPE_CAP = 12;
 
-// cf-76a (cf-ruhm.1): server-rendered /search?q=…&type=… results page.
-// Wix-prod parity: 4-tab filter (All / Products / Pages / Blog) over the
-// same three data sources (Wix Stores by name, in-repo Pages manifest,
-// Wix Blog by title substring per cf-1lf). Empty/missing q renders the
-// guided-empty state instead of executing the queries. SDK failures
-// degrade to "no matches" — searchProducts/searchPosts catch + log;
-// searchPages is in-memory and cannot throw.
+function parsePageParam(raw: string | string[] | undefined): number {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (!value) return 1;
+  const n = Number.parseInt(value, 10);
+  return Number.isFinite(n) && n >= 1 ? n : 1;
+}
+
+// cf-76a (cf-ruhm.1) + cf-94l (cf-ruhm.2): server-rendered /search results.
+// Wix-prod parity: 4-tab filter (All / Products / Pages / Blog) + per-tab
+// pagination + total-count header ("Showing 1–12 of 41 for 'futon'").
 //
-// Originally cf-3qt.5.4 (Products + Articles only). cf-76a adds tabs +
-// Pages reader; cf-1lf upstream fixes article substring search.
+// Each tab paginates independently. `?page=N` applies to the active
+// non-All tab; switching tabs resets to page 1 (SearchTabs hrefs omit
+// the page param). The All tab shows a capped sample (no pagination) so
+// each section stays scannable without dominating the view.
+//
+// SDK failures degrade to empty results — searchProducts/searchPosts
+// catch + log; searchPages is in-memory and cannot throw.
+//
+// Originally cf-3qt.5.4 (Products + Articles only). cf-76a added tabs +
+// Pages reader; cf-94l adds pagination + total counts.
 export default async function SearchPage(props: {
-  searchParams: Promise<{ q?: string | string[]; type?: string | string[] }>;
+  searchParams: Promise<{
+    q?: string | string[];
+    type?: string | string[];
+    page?: string | string[];
+  }>;
 }) {
   const params = await props.searchParams;
   const raw = Array.isArray(params.q) ? params.q[0] : params.q;
   const q = (raw ?? "").trim();
   const type = parseSearchType(params.type);
+  const page = parsePageParam(params.page);
+  const pageSize = DEFAULT_PAGE_SIZE;
 
   if (!q) {
     return (
@@ -55,27 +72,61 @@ export default async function SearchPage(props: {
     );
   }
 
-  // Fetch every type in parallel — tab counts need totals for the strip
-  // even when only one type is rendered below it (Wix prod does the same:
-  // "All (41) · Products (12) · Pages (26) · Blog (3)").
-  const [products, pages, posts] = await Promise.all([
-    searchProducts(q, PRODUCT_LIMIT),
-    Promise.resolve(searchPages(q, PAGE_LIMIT)),
-    searchPosts(q, POST_LIMIT),
+  // Tab totals always reflect the FULL match set so the strip can show
+  // "All (41) · Products (12) · Pages (26) · Articles (3)" even on
+  // page 5. The active tab gets a paginated slice; the inactive-but-
+  // surfaced All view gets a capped sample slice from page 1.
+  //
+  // For pagination, fetch enough items so totals + the current page
+  // slice are both correct. For All view, we only need first-page
+  // samples of each type (counts come from separate page=1 calls
+  // since the libs return totals regardless of the requested page).
+  const activePage = type === "all" ? 1 : page;
+  const activePageSize = type === "all" ? ALL_TAB_PER_TYPE_CAP : pageSize;
+
+  const [productsResult, pagesResult, postsResult] = await Promise.all([
+    searchProducts(q, { page: activePage, pageSize: activePageSize }),
+    Promise.resolve(
+      searchPages(q, { page: activePage, pageSize: activePageSize }),
+    ),
+    searchPosts(q, { page: activePage, pageSize: activePageSize }),
   ]);
 
   const counts = {
-    all: products.length + pages.length + posts.length,
-    products: products.length,
-    pages: pages.length,
-    articles: posts.length,
+    all: productsResult.total + pagesResult.total + postsResult.total,
+    products: productsResult.total,
+    pages: pagesResult.total,
+    articles: postsResult.total,
   };
 
   const hasResults = counts.all > 0;
-  const showProducts = (type === "all" || type === "products") && products.length > 0;
-  const showPages = (type === "all" || type === "pages") && pages.length > 0;
-  const showArticles = (type === "all" || type === "articles") && posts.length > 0;
+  const showProducts =
+    (type === "all" || type === "products") && productsResult.items.length > 0;
+  const showPages =
+    (type === "all" || type === "pages") && pagesResult.items.length > 0;
+  const showArticles =
+    (type === "all" || type === "articles") && postsResult.items.length > 0;
   const showAnyForActiveType = showProducts || showPages || showArticles;
+
+  // For non-All tabs, derive pagination state from the active tab's total.
+  const activeTotal =
+    type === "products"
+      ? counts.products
+      : type === "pages"
+        ? counts.pages
+        : type === "articles"
+          ? counts.articles
+          : 0;
+  const totalPages =
+    type === "all" ? 1 : Math.max(1, Math.ceil(activeTotal / pageSize));
+  const hasPrev = type !== "all" && page > 1;
+  const hasNext = type !== "all" && page < totalPages;
+  const showingFrom =
+    type === "all" || activeTotal === 0 ? 1 : (page - 1) * pageSize + 1;
+  const showingTo =
+    type === "all"
+      ? counts.all
+      : Math.min(page * pageSize, activeTotal);
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
@@ -92,7 +143,11 @@ export default async function SearchPage(props: {
           aria-atomic="true"
         >
           {hasResults
-            ? `${counts.all} ${counts.all === 1 ? "result" : "results"} for "${q}".`
+            ? type === "all"
+              ? `${counts.all} ${counts.all === 1 ? "result" : "results"} for "${q}".`
+              : `Showing ${showingFrom}–${showingTo} of ${activeTotal} ${
+                  activeTotal === 1 ? "result" : "results"
+                } for "${q}".`
             : `No results for "${q}".`}
         </p>
         <SearchForm q={q} />
@@ -103,9 +158,18 @@ export default async function SearchPage(props: {
           <SearchTabs q={q} type={type} counts={counts} />
           {showAnyForActiveType ? (
             <div className="mt-10 space-y-12">
-              {showProducts ? <ProductSection products={products} /> : null}
-              {showPages ? <PagesSection pages={pages} /> : null}
-              {showArticles ? <ArticleSection posts={posts} /> : null}
+              {showProducts ? <ProductSection products={productsResult.items} /> : null}
+              {showPages ? <PagesSection pages={pagesResult.items} /> : null}
+              {showArticles ? <ArticleSection posts={postsResult.items} /> : null}
+              {type !== "all" && (hasPrev || hasNext) ? (
+                <PLPPagination
+                  page={page}
+                  hasPrev={hasPrev}
+                  hasNext={hasNext}
+                  basePath="/search"
+                  searchParams={{ q, type }}
+                />
+              ) : null}
             </div>
           ) : (
             <NoResultsForType q={q} type={type} />
@@ -148,7 +212,7 @@ function SearchForm({ q }: { q: string }) {
   );
 }
 
-type SearchProduct = Awaited<ReturnType<typeof searchProducts>>[number];
+type SearchProduct = Awaited<ReturnType<typeof searchProducts>>["items"][number];
 
 function ProductSection({ products }: { products: ReadonlyArray<SearchProduct> }) {
   if (products.length === 0) return null;

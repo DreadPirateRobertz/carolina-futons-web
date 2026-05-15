@@ -118,30 +118,65 @@ export async function listAllPostSlugs(limit = 100): Promise<string[]> {
   }
 }
 
-// cf-3qt.5.4: case-insensitive title prefix match for /search. Empty/whitespace
-// q returns []; page renders the guided empty state. Wix Blog queryPosts()
-// builder supports startsWith on `title` only — substring `contains` is not
-// in the SDK, so search is prefix-only for now.
+// cf-3qt.5.4 + cf-94l (cf-ruhm.2): paginated title prefix search for /search.
+// Empty/whitespace q returns { items: [], total: 0 }; page renders the
+// guided empty state. Wix Blog queryPosts() supports startsWith on title;
+// the substring upgrade is tracked separately as cf-1lf (cf-ruhm.3) and
+// will layer on top of this shape when it lands.
+//
+// cf-94l moves the return type to { items, total } so /search can display
+// "Showing 1–N of TOTAL" + paginate per cf-ruhm audit §P1.2.
+
+/**
+ * Paginated blog title-prefix search.
+ *
+ * @param q - User-typed query.
+ * @param opts - Pagination options (`page` 1-indexed, `pageSize` default 12).
+ * @returns `{ items, total }`. `total` is the full prefix-match count for
+ *   the requested limit window; `items` is the page slice. Over-pagination
+ *   returns empty items but the real total. SDK failure → `{ items: [], total: 0 }`.
+ *
+ * The Wix SDK supports startsWith on title only; cf-1lf upgrades this to
+ * substring. Both can ship independently — cf-94l preserves the existing
+ * filter semantics while changing only the return shape.
+ */
+export type SearchPostsResult = {
+  items: BlogPostSummary[];
+  total: number;
+};
+
 export async function searchPosts(
   q: string,
-  limit = 12,
-): Promise<BlogPostSummary[]> {
+  opts: { page?: number; pageSize?: number } = {},
+): Promise<SearchPostsResult> {
   const trimmed = q.trim();
-  if (!trimmed) return [];
+  if (!trimmed) return { items: [], total: 0 };
+  const page = Math.max(1, opts.page ?? 1);
+  const pageSize = Math.max(1, opts.pageSize ?? 12);
+  // Fetch a workable window of prefix matches. The SDK builder's .limit()
+  // bounds the window; total is the count within that window (full-Wix-
+  // total would require a second query, deferred until shopper analytics
+  // justify it).
+  const fetchLimit = Math.max(pageSize * page, 50);
   try {
     const client = getWixClient();
     const result = await client.posts
       .queryPosts()
       .startsWith("title", trimmed)
-      .limit(limit)
+      .limit(fetchLimit)
       .find();
     const items = (result.items ?? []) as RawPost[];
-    return items
+    const matched = items
       .map(toSummary)
       .filter((p): p is BlogPostSummary => p !== null);
+    const start = (page - 1) * pageSize;
+    return {
+      items: matched.slice(start, start + pageSize),
+      total: matched.length,
+    };
   } catch (err) {
     await logWixFailure("wix", `searchPosts(${trimmed})`, err);
-    return [];
+    return { items: [], total: 0 };
   }
 }
 

@@ -36,7 +36,15 @@ describe("GET /api/search", () => {
     const res = await GET(makeReq(""));
     expect(res.status).toBe(200);
     const json = await res.json();
-    expect(json).toEqual({ ok: true, q: "", products: [], posts: [], total: 0 });
+    expect(json).toEqual({
+      ok: true,
+      q: "",
+      products: [],
+      posts: [],
+      total: 0,
+      productsTotal: 0,
+      postsTotal: 0,
+    });
     expect(mockSearchProducts).not.toHaveBeenCalled();
     expect(mockSearchPosts).not.toHaveBeenCalled();
   });
@@ -51,26 +59,32 @@ describe("GET /api/search", () => {
   });
 
   it("queries products and posts in parallel for a real q and returns shaped JSON", async () => {
-    mockSearchProducts.mockResolvedValue([
-      {
-        _id: "p1",
-        slug: "monterey-futon",
-        name: "Monterey Futon",
-        priceData: { formatted: { price: "$899.00" } },
-        media: { mainMedia: { image: { url: "https://cdn/x.jpg" } } },
-      },
-    ] as never);
-    mockSearchPosts.mockResolvedValue([
-      {
-        _id: "post1",
-        slug: "futon-care",
-        title: "Caring for your futon",
-        excerpt: "How to keep cotton batting fresh.",
-        heroImageUrl: null,
-        firstPublishedDate: null,
-        minutesToRead: 4,
-      },
-    ]);
+    mockSearchProducts.mockResolvedValue({
+      items: [
+        {
+          _id: "p1",
+          slug: "monterey-futon",
+          name: "Monterey Futon",
+          priceData: { formatted: { price: "$899.00" } },
+          media: { mainMedia: { image: { url: "https://cdn/x.jpg" } } },
+        },
+      ] as never,
+      total: 1,
+    });
+    mockSearchPosts.mockResolvedValue({
+      items: [
+        {
+          _id: "post1",
+          slug: "futon-care",
+          title: "Caring for your futon",
+          excerpt: "How to keep cotton batting fresh.",
+          heroImageUrl: null,
+          firstPublishedDate: null,
+          minutesToRead: 4,
+        },
+      ],
+      total: 1,
+    });
 
     const res = await GET(makeReq("q=futon"));
     expect(res.status).toBe(200);
@@ -98,28 +112,49 @@ describe("GET /api/search", () => {
   });
 
   it("trims whitespace before passing the query to lib helpers", async () => {
-    mockSearchProducts.mockResolvedValue([] as never);
-    mockSearchPosts.mockResolvedValue([]);
+    mockSearchProducts.mockResolvedValue({ items: [], total: 0 });
+    mockSearchPosts.mockResolvedValue({ items: [], total: 0 });
     await GET(makeReq("q=%20%20mattress%20care%20%20"));
-    expect(mockSearchProducts).toHaveBeenCalledWith("mattress care", 12);
-    expect(mockSearchPosts).toHaveBeenCalledWith("mattress care", 8);
+    expect(mockSearchProducts).toHaveBeenCalledWith("mattress care", {
+      pageSize: 12,
+    });
+    expect(mockSearchPosts).toHaveBeenCalledWith("mattress care", {
+      pageSize: 8,
+    });
   });
 
   it("returns total=0 when both sources return empty", async () => {
-    mockSearchProducts.mockResolvedValue([] as never);
-    mockSearchPosts.mockResolvedValue([]);
+    mockSearchProducts.mockResolvedValue({ items: [], total: 0 });
+    mockSearchPosts.mockResolvedValue({ items: [], total: 0 });
     const res = await GET(makeReq("q=zzznomatch"));
     const json = await res.json();
     expect(json.total).toBe(0);
+    expect(json.productsTotal).toBe(0);
+    expect(json.postsTotal).toBe(0);
     expect(json.products).toEqual([]);
     expect(json.posts).toEqual([]);
   });
 
+  it("surfaces per-type totals (cf-94l productsTotal + postsTotal)", async () => {
+    mockSearchProducts.mockResolvedValue({
+      items: [{ _id: "p1", slug: "x", name: "X" } as never],
+      total: 41,
+    });
+    mockSearchPosts.mockResolvedValue({ items: [], total: 3 });
+    const res = await GET(makeReq("q=futon"));
+    const json = await res.json();
+    expect(json.productsTotal).toBe(41);
+    expect(json.postsTotal).toBe(3);
+    // Surface total is the sum.
+    expect(json.total).toBe(44);
+  });
+
   it("normalizes missing product price/image fields to null", async () => {
-    mockSearchProducts.mockResolvedValue([
-      { _id: "p1", slug: "x", name: "X" } as never,
-    ]);
-    mockSearchPosts.mockResolvedValue([]);
+    mockSearchProducts.mockResolvedValue({
+      items: [{ _id: "p1", slug: "x", name: "X" } as never],
+      total: 1,
+    });
+    mockSearchPosts.mockResolvedValue({ items: [], total: 0 });
     const res = await GET(makeReq("q=x"));
     const json = await res.json();
     expect(json.products[0]).toEqual({
