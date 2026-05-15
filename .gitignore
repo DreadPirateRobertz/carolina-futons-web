@@ -48,3 +48,12 @@ next-env.d.ts
 # cfw-3ty: Brenda admin guide capture artefacts (PII — never commit)
 /e2e/brenda-admin-guide-out
 /e2e/.wix-auth.json
+
+# Gas Town (added by gt)
+.runtime/
+.claude/
+.logs/
+__pycache__/
+state.json
+CLAUDE.md
+CLAUDE.local.md
