@@ -3,19 +3,24 @@ import { Gift } from "lucide-react";
 import { listGiftCards } from "@/lib/wix/products";
 import { GiftCardPicker } from "@/components/gift-cards/GiftCardPicker";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
 const DESCRIPTION =
   "Give the gift of a great night's sleep. Carolina Futons gift cards are redeemable on any purchase in-store or online.";
+
+const OG = {
+  title: "Gift Cards — Carolina Futons",
+  description: DESCRIPTION,
+  images: [DEFAULT_OG_IMAGE],
+};
 
 export const metadata: Metadata = {
   title: "Gift Cards — Carolina Futons",
   description: DESCRIPTION,
   alternates: { canonical: "/gift-cards" },
-  openGraph: {
-    title: "Gift Cards — Carolina Futons",
-    description: DESCRIPTION,
-    images: [DEFAULT_OG_IMAGE],
-  },
+  openGraph: OG,
+  // cf-e55k: mirror OG into twitter so Twitter unfurls match other crawlers.
+  twitter: twitterFromOpenGraph(OG),
 };
 
 export default async function GiftCardsPage() {

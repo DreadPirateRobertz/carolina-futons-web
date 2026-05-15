@@ -11,14 +11,25 @@ import {
 import { BUSINESS } from "@/lib/business/contact-info";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { buildAboutPageSchema, resolveSiteUrl } from "@/lib/seo/json-ld";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
 const ABOUT_DESCRIPTION =
   "Family-owned since 1991, Carolina Futons has helped Hendersonville, NC customers find American-made frames and mattresses that last.";
+
+const OG = {
+  title: "About — Carolina Futons",
+  description: ABOUT_DESCRIPTION,
+  images: [DEFAULT_OG_IMAGE],
+};
 
 export const metadata: Metadata = {
   title: "About — Carolina Futons",
   description: ABOUT_DESCRIPTION,
   alternates: { canonical: "/about" },
+  openGraph: OG,
+  // cf-e55k: per-page twitter card.
+  twitter: twitterFromOpenGraph(OG),
 };
 
 export default async function AboutPage() {

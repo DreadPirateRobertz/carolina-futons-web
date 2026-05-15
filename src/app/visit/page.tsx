@@ -9,12 +9,25 @@ import {
   buildLocalBusinessSchema,
   resolveSiteUrl,
 } from "@/lib/seo/json-ld";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
+
+const VISIT_DESCRIPTION =
+  "Visit the Carolina Futons showroom in Hendersonville, NC. Try every futon, mattress, and Murphy bed before you buy.";
+
+const OG = {
+  title: "Visit Us — Carolina Futons",
+  description: VISIT_DESCRIPTION,
+  images: [DEFAULT_OG_IMAGE],
+};
 
 export const metadata: Metadata = {
   title: "Visit Us — Carolina Futons",
-  description:
-    "Visit the Carolina Futons showroom in Hendersonville, NC. Try every futon, mattress, and Murphy bed before you buy.",
+  description: VISIT_DESCRIPTION,
   alternates: { canonical: "/visit" },
+  openGraph: OG,
+  // cf-e55k: per-page twitter card.
+  twitter: twitterFromOpenGraph(OG),
 };
 
 // Days are layout (the label column); only the hours string is owner-editable
@@ -49,7 +62,7 @@ const VISIT_COPY_FALLBACKS = {
   ctaHeading: "Ready to shop?",
   ctaBody: "Browse online first, then come in and try everything.",
   ctaButtonLabel: "Browse all products",
-} as const;
+};
 
 export default async function VisitPage() {
   const [

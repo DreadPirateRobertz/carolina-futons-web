@@ -38,12 +38,28 @@ import { enrichProductsWithColorChoices } from "@/lib/product/enrich-colors";
 import { GiftCardPromo } from "@/components/home/GiftCardPromo";
 import { BlogTeasers } from "@/components/home/BlogTeasers";
 import { HomeNewsletterSection } from "@/components/home/HomeNewsletterSection";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
+
+const HOME_TITLE =
+  "Carolina Futons — Hardwood Frames & Mattresses | Hendersonville, NC";
+const HOME_DESCRIPTION =
+  "Family-owned since 1991. Solid hardwood futon frames, natural mattresses, Murphy beds, and platform beds. Visit our Hendersonville, NC showroom or shop online.";
+
+const OG = {
+  title: HOME_TITLE,
+  description: HOME_DESCRIPTION,
+  images: [DEFAULT_OG_IMAGE],
+};
 
 export const metadata: Metadata = {
-  title: "Carolina Futons — Hardwood Frames & Mattresses | Hendersonville, NC",
-  description:
-    "Family-owned since 1991. Solid hardwood futon frames, natural mattresses, Murphy beds, and platform beds. Visit our Hendersonville, NC showroom or shop online.",
+  title: HOME_TITLE,
+  description: HOME_DESCRIPTION,
   alternates: { canonical: "/" },
+  openGraph: OG,
+  // cf-e55k: per-page twitter card so X/Twitter unfurls don't fall back
+  // to layout-level defaults (no title/description, just card type).
+  twitter: twitterFromOpenGraph(OG),
 };
 
 export const dynamic = "force-dynamic";
