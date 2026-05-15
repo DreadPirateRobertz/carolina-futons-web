@@ -6,10 +6,11 @@
 //   (cfw-3t9: trimmed announcement 60→44 per cfw-y2i §7 to reclaim home fold)
 // CMS wiring + mega-nav content land in Phase 3 (rennala).
 //
-// Scroll-shrink (cf-nav-scroll-shrink): once the page scrolls past 80px the
-// header gains a shadow (both modes) and the main row compresses py-4 → py-2
-// (non-reduced-motion only). Under prefers-reduced-motion the height stays
-// static — only the shadow fades in, which is not a vestibular trigger.
+// Scroll-shrink (cf-nav-scroll-shrink): two-band hysteresis — enters shrunk
+// state at SCROLL_ENTER_PX (80), exits only after SCROLL_EXIT_PX (60). The
+// 20px gap prevents threshold thrashing on Lenis fractional scroll ticks.
+// Under prefers-reduced-motion the height stays static; only the shadow
+// fades in (box-shadow is not a vestibular trigger).
 import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -39,7 +40,20 @@ const SUB_NAV = [
   { label: "Visit Us", href: "/visit" },
 ] as const;
 
-const SCROLL_THRESHOLD_PX = 80;
+// cf-r9r3: hysteresis to prevent threshold thrashing. A single
+// `scrollY >= 80` check flutters across the boundary on trackpad smooth-
+// scroll + Lenis fractional ticks — each flip triggers setScrolled and
+// re-renders the whole header tree. Two-band hysteresis: enter shrunk
+// at >=80, exit shrunk only after scrolling back above 60. 20px gap is
+// enough to dampen the flutter without making the exit feel sticky.
+const SCROLL_ENTER_PX = 80;
+const SCROLL_EXIT_PX = 60;
+// cf-r9r3: forest-dark hex used as the header's pre-decode background
+// color so the FIRST paint is bear-tone, not white. Matches the dominant
+// tone of bears.jpg + the top-strip gradient overlay (also #2A1810).
+// When Next/Image finishes decoding the bears photo on top, the
+// transition is dark → bears (smooth) instead of white → bears (jarring).
+const HEADER_BG_FALLBACK = "#2A1810";
 
 // cfw-61b: optional announcementBar slot. layout.tsx (server) fetches the
 // owner-editable rotation copy via getSiteContent and passes a configured
@@ -61,12 +75,36 @@ export function Header({ announcementBar }: HeaderProps = {}) {
   const isHome = pathname === "/";
 
   useEffect(() => {
+    // cf-r9r3: rAF-throttle the scroll handler. Lenis smooth-scroll
+    // emits many scroll events per frame (one per rAF tick on a wheel
+    // tween); without throttling, setScrolled gets called on each one,
+    // and React's bailout doesn't prevent the function-call cost. One
+    // rAF coalesces all events between paints into a single state read.
+    let ticking = false;
+    let frame: ReturnType<typeof requestAnimationFrame> | null = null;
     const onScroll = () => {
-      setScrolled(window.scrollY >= SCROLL_THRESHOLD_PX);
+      if (ticking) return;
+      ticking = true;
+      frame = requestAnimationFrame(() => {
+        ticking = false;
+        const y = window.scrollY;
+        // Hysteresis: enter at >=ENTER, exit only after <=EXIT.
+        setScrolled((prev) => {
+          if (!prev && y >= SCROLL_ENTER_PX) return true;
+          if (prev && y <= SCROLL_EXIT_PX) return false;
+          return prev;
+        });
+      });
     };
+    // Run once on mount to handle the case where the user lands mid-page
+    // (browser-restored scroll position). Use the same handler so the
+    // hysteresis logic is consistent with subsequent scroll events.
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
   }, []);
 
   const shadowClass = scrolled ? "shadow-md" : "";
@@ -80,32 +118,50 @@ export function Header({ announcementBar }: HeaderProps = {}) {
   // `transition-*` classes so the change is instant — the collapse still
   // happens, it just doesn't animate (vestibular-friendly).
   const compressMainRow = scrolled && !prefersReducedMotion;
+  // cf-r9r3: padding toggles py-4 → py-2 for slim-chrome feel. The
+  // consolidated motionTransition above animates it at 300ms so it
+  // lands in sync with the wordmark scale + shadow.
   const mainRowPaddingClass = compressMainRow ? "py-2" : "py-4";
-  const mainRowTransitionClass = prefersReducedMotion
-    ? ""
-    : "transition-[padding] duration-200 ease-out";
-  // cf-h85f: bear-backdrop fade + hero-band collapse + wordmark recolor
-  // happen on `scrolled` regardless of reduced-motion (vestibular concern
-  // is animated movement; instant state change is fine). Drop the
-  // `transition-*` class under reduced-motion so users see an instant
-  // snap rather than a 300ms ease.
+  // cf-r9r3: consolidate transitions. Every transition class on the
+  // header tree now uses 300ms ease-out so the visual effects land in
+  // sync. `transition-all` replaced with an explicit property list —
+  // animating ONLY the props that change avoids the cost of considering
+  // every animatable property on every frame, which the browser can't
+  // optimize for offscreen / unaffected ones.
   const motionTransition = prefersReducedMotion
     ? ""
-    : "transition-all duration-300 ease-out";
+    : "transition-[transform,opacity,color,background-color,box-shadow,font-size,padding,max-height] duration-300 ease-out";
+  const mainRowTransitionClass = motionTransition;
 
   return (
     <header
       data-slot="site-header"
       data-scrolled={scrolled ? "true" : "false"}
+      // cf-r9r3: forest-dark inline background paints on FIRST frame so
+      // the unscrolled-state header shows a bear-tone surface even before
+      // Next/Image finishes decoding bears.jpg. Without this, the first
+      // ~50-200ms of page load showed a white flash through the
+      // transparent header — Stilgar's "shrunken header shows white not
+      // bears" complaint. When scrolled=true we set backgroundColor to
+      // undefined, which removes the inline style attribute entirely so
+      // the bear backdrop shows through. (Inline styles beat Tailwind
+      // classes; clearing it is the only correct mechanism here.)
+      style={{
+        backgroundColor: scrolled ? undefined : HEADER_BG_FALLBACK,
+      }}
       className={[
-        // cf-1eb5 + cf-h85f + cf-jo07 r2: full-header bear treatment that
-        // STAYS through scroll. Stilgar reversed the cf-h85f bear-fade —
-        // shrunken state should still read as the bear chrome, not a plain
-        // white bar. We keep the dark border + white text always; the top
-        // gradient (from-[#2A1810]/85) on the backdrop continues providing
-        // contrast for the chrome row.
+        // cf-1eb5 + cf-h85f + cf-jo07 r2 + cf-r9r3: full-header bear
+        // treatment that STAYS through scroll. cf-jo07 r2 (PR #540)
+        // reversed the cf-h85f bear-fade — shrunken state still reads as
+        // the bear chrome, not a plain white bar. So no scrolled-state
+        // surface swap to white. cf-r9r3 layers in the consolidated
+        // motionTransition (300ms ease-out, explicit property list) so
+        // shadow + the remaining scroll-driven transitions (wordmark
+        // size, hero-band collapse, padding) land in sync. The forest-
+        // dark inline backgroundColor (above style=) handles the pre-
+        // bears-decode first-paint flash for both states.
         "sticky top-0 z-40 w-full border-b border-white/10 text-white",
-        prefersReducedMotion ? "" : "transition-shadow duration-200",
+        motionTransition,
         shadowClass,
       ]
         .filter(Boolean)
@@ -123,6 +179,9 @@ export function Header({ announcementBar }: HeaderProps = {}) {
         data-slot="header-bear-backdrop"
         className="pointer-events-none absolute inset-0 overflow-hidden opacity-100"
       >
+        {/* object-[center_40%] — 40% vertical keeps all three bear faces
+            in frame across the full range of header heights (hero-expanded
+            through slim-chrome). center-top would crop the bottom bears. */}
         <Image
           src="/design/animals/bears.jpg"
           alt=""
