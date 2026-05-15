@@ -1,3 +1,7 @@
+// Singleton mounted in RootLayout. Listens to "cf-compare-change" window events
+// dispatched by AddToCompareButton; localStorage is the source of truth. Renders
+// only after hydration to avoid SSR/client mismatch (localStorage is client-only).
+// z-50 matches CartDrawer overlay stack — stays above page content, below modals.
 "use client";
 
 import Link from "next/link";
@@ -10,18 +14,22 @@ import {
 } from "@/lib/product/compare-state";
 
 export function CompareBar() {
-  const [slugs, setSlugs] = useState<string[]>(() => getCompareSlugs());
+  const [mounted, setMounted] = useState(false);
+  const [slugs, setSlugs] = useState<string[]>([]);
 
   useEffect(() => {
+    setSlugs(getCompareSlugs());
+    setMounted(true);
     const onchange = () => setSlugs(getCompareSlugs());
     window.addEventListener("cf-compare-change", onchange);
     return () => window.removeEventListener("cf-compare-change", onchange);
   }, []);
 
-  if (slugs.length === 0) return null;
+  if (!mounted || slugs.length === 0) return null;
 
   const atMax = slugs.length >= COMPARE_MAX;
-  const countLabel = `${slugs.length} item${slugs.length === 1 ? "" : "s"}${atMax ? " (max)" : ""}`;
+  const count = slugs.length;
+  const countLabel = `${count} item${count === 1 ? "" : "s"}${atMax ? " (max)" : ""}`;
 
   return (
     <div
@@ -37,13 +45,18 @@ export function CompareBar() {
           <button
             type="button"
             data-testid="compare-bar-clear"
-            onClick={() => setCompareSlugs([])}
+            aria-label={`Clear ${count} item${count === 1 ? "" : "s"} from comparison`}
+            onClick={() => {
+              setSlugs([]); // optimistic — UI clears immediately even if localStorage fails
+              setCompareSlugs([]);
+            }}
             className="text-xs text-cf-muted underline-offset-2 hover:text-cf-ink hover:underline dark:hover:text-cf-cream"
           >
             Clear
           </button>
           <Link
             href={buildCompareUrl(slugs)}
+            aria-label={`Compare ${count} selected item${count === 1 ? "" : "s"}`}
             className="rounded-md bg-cf-cta px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
           >
             Compare
