@@ -135,11 +135,16 @@ export default async function SearchPage(props: {
         <h1 className="font-playfair text-3xl font-semibold tracking-tight text-cf-espresso sm:text-4xl">
           Search results
         </h1>
-        {/* aria-live so screen readers re-announce the count on each
-            submission (cf-ruhm.5 P2 in audit — partial fix here, full
-            role="status" wrapper deferred to its own bead). */}
+        {/* cf-uoe (cf-ruhm.5): role="status" + aria-live="polite" +
+            aria-atomic="true" — Wix-prod parity. Screen readers announce
+            the new count as a status change on every search submission.
+            role="status" implies aria-live="polite" + aria-atomic="true",
+            but specifying all three is explicit and survives any future
+            assistive-tech behavioural drift (per WAI-ARIA Authoring
+            Practices on live regions). */}
         <p
           className="text-sm text-cf-muted"
+          role="status"
           aria-live="polite"
           aria-atomic="true"
         >

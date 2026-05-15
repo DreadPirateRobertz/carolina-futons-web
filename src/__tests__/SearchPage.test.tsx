@@ -366,6 +366,22 @@ describe("/search page — type tabs (cf-76a)", () => {
     expect(live).not.toBeNull();
     expect(live!.textContent).toMatch(/results? for "futon"/);
   });
+
+  it("total-result heading carries role=\"status\" for Wix-prod a11y parity (cf-uoe)", async () => {
+    mockSearchProducts.mockResolvedValue(
+      productResults([{ _id: "p1", slug: "monterey-futon", name: "Monterey Futon" }]),
+    );
+    mockSearchPosts.mockResolvedValue(postResults([]));
+    await renderSearch({ q: "futon" });
+    // getByRole picks up role="status"; expect the search-results heading.
+    const status = screen.getByRole("status");
+    expect(status).toBeInTheDocument();
+    expect(status.textContent).toMatch(/results? for "futon"/);
+    // role="status" must NOT clobber the explicit aria-live + aria-atomic
+    // (specifying both is intentional — see cf-uoe WHY comment).
+    expect(status.getAttribute("aria-live")).toBe("polite");
+    expect(status.getAttribute("aria-atomic")).toBe("true");
+  });
 });
 
 // cf-94l (cf-ruhm.2): pagination + total count display. Wix prod shows
