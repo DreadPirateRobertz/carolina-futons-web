@@ -145,7 +145,20 @@ export function PdpGallery({ images, productName, activeUrl, spinImages }: PdpGa
   }
 
   const index = Math.min(selectedIndex, images.length - 1);
-  const active = images[index];
+  // cf-pdp-g2: if the variant-resolved activeUrl exists but isn't in the
+  // gallery (e.g. Wix catalogs that attach swatch media at the variant
+  // level, not the choice level, and buildGallery didn't fold it in),
+  // render activeUrl directly as the main image. Without this, variant
+  // selection appears to do nothing — the main image silently sticks on
+  // images[0]. The thumb strip still reflects `images[]` as-is; only the
+  // hero image and zoom target follow activeUrl.
+  const activeUrlInImages =
+    activeUrl !== undefined &&
+    images.some((img) => img.url === activeUrl);
+  const active =
+    activeUrl && !activeUrlInImages
+      ? { url: activeUrl, alt: undefined }
+      : images[index];
 
   const swap = (next: number) => {
     if (next === index) return;

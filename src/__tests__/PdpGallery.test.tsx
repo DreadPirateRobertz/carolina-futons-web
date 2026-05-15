@@ -502,13 +502,46 @@ describe("PdpGallery — activeUrl variant-picker integration (cf-q9zi)", () => 
     expect(main.src).toBe("https://img/c.jpg");
   });
 
-  it("falls back to selectedIndex when activeUrl does not match any image", () => {
+  // cf-pdp-g2: when the variant-resolved URL isn't in `images` (e.g. Wix
+  // catalogs that attach swatch media at the variant level, not the choice
+  // level, and the gallery build didn't fold variant media in), the main
+  // image MUST still swap to that URL — falling back to `images[0]` made
+  // the variant selection appear to do nothing, which is the parity bug
+  // rennala caught in cf-lc1c PDP audit.
+  it("renders activeUrl as the main image even when it is NOT in images (cf-pdp-g2)", () => {
     render(
       <PdpGallery
         images={multiImages}
         productName="Kingston Futon"
-        activeUrl="https://img/no-match.jpg"
+        activeUrl="https://img/variant-only.jpg"
       />,
+    );
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    expect(main.src).toBe("https://img/variant-only.jpg");
+  });
+
+  it("updates main image when activeUrl changes to a non-gallery URL (cf-pdp-g2)", () => {
+    const { rerender } = render(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        activeUrl="https://img/a.jpg"
+      />,
+    );
+    rerender(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        activeUrl="https://img/variant-only-2.jpg"
+      />,
+    );
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    expect(main.src).toBe("https://img/variant-only-2.jpg");
+  });
+
+  it("falls back to images[0] when activeUrl is undefined and no thumb has been clicked", () => {
+    render(
+      <PdpGallery images={multiImages} productName="Kingston Futon" />,
     );
     const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
     expect(main.src).toBe("https://img/a.jpg");
