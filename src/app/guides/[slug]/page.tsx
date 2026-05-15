@@ -5,6 +5,8 @@ import { notFound } from "next/navigation";
 import { HeroReveal } from "@/components/motion/HeroReveal";
 import { listGuides } from "@/lib/discovery/guides";
 import { GuideReadingProgress } from "./ReadingProgress";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
 type RouteParams = { slug: string };
 
@@ -23,9 +25,21 @@ export async function generateMetadata({
   if (!guide) {
     return { title: "Guide not found — Carolina Futons" };
   }
-  return {
-    title: `${guide.title} — Carolina Futons`,
+  const title = `${guide.title} — Carolina Futons`;
+  // cf-e55k: per-page openGraph + twitter so guide pages surface the
+  // guide's own title/hook on Facebook/Slack/iMessage/X unfurls instead
+  // of falling back to the layout-level siteName/default OG image.
+  const og = {
+    title,
     description: guide.hook,
+    images: [DEFAULT_OG_IMAGE],
+  };
+  return {
+    title,
+    description: guide.hook,
+    alternates: { canonical: `/guides/${slug}` },
+    openGraph: og,
+    twitter: twitterFromOpenGraph(og),
   };
 }
 
