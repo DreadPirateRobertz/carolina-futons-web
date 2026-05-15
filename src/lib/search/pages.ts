@@ -239,28 +239,44 @@ export const PAGES: ReadonlyArray<SearchPage> = [
 ];
 
 /**
- * Case-insensitive substring search across page title + description + keywords.
- *
- * Returns pages whose joined haystack (title + description + keywords) contains
- * `q`. Empty/whitespace `q` returns `[]` (the caller renders the guided empty
- * state, same contract as `searchProducts` / `searchPosts`).
+ * Paginated case-insensitive substring search across page title +
+ * description + keywords.
  *
  * @param q - User-typed search query.
- * @param limit - Maximum number of matches to return (default 12).
- * @returns Matching pages, ordered by their position in `PAGES` (the
- *   manifest's curatorial ordering); empty array for empty / whitespace
- *   `q` or zero matches.
+ * @param opts - Pagination options (`page` 1-indexed, `pageSize` default 12).
+ * @returns `{ items, total }`. `total` is the full match count; `items`
+ *   is the page slice in manifest declaration order. Empty/whitespace
+ *   `q` returns `{ items: [], total: 0 }` (caller renders the guided
+ *   empty state, same contract as `searchProducts` / `searchPosts`).
  *
  * WHY: Pages search is curated content, not a generated index. The
  * caller can rank later if shopper-vocabulary mismatches surface in
  * analytics; for v1 we trust the manifest order.
+ *
+ * Updated cf-94l (cf-ruhm.2) to `{ items, total }` for parity with
+ * Wix prod pagination display.
  */
-export function searchPages(q: string, limit = 12): SearchPage[] {
+export type SearchPagesResult = {
+  items: SearchPage[];
+  total: number;
+};
+
+export function searchPages(
+  q: string,
+  opts: { page?: number; pageSize?: number } = {},
+): SearchPagesResult {
   const trimmed = q.trim();
-  if (!trimmed) return [];
+  if (!trimmed) return { items: [], total: 0 };
   const lower = trimmed.toLowerCase();
-  return PAGES.filter((p) => {
+  const page = Math.max(1, opts.page ?? 1);
+  const pageSize = Math.max(1, opts.pageSize ?? 12);
+  const matched = PAGES.filter((p) => {
     const haystack = `${p.title} ${p.description} ${(p.keywords ?? []).join(" ")}`.toLowerCase();
     return haystack.includes(lower);
-  }).slice(0, limit);
+  });
+  const start = (page - 1) * pageSize;
+  return {
+    items: matched.slice(start, start + pageSize),
+    total: matched.length,
+  };
 }
