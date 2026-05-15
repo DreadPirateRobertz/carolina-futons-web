@@ -96,3 +96,125 @@ describe("buildCompareUrl", () => {
     );
   });
 });
+
+// cf-eqaj: when localStorage rejects a write (private-browsing quota,
+// disabled storage, throwing setItem) or the stored value is corrupted
+// (parse error), the previously-silent catch swallowed the signal. The
+// fix dispatches a `cf-compare-change-error` event on the window so the
+// CompareBar (or any future toast / inline-banner consumer) can surface
+// feedback to the user instead of pretending the click succeeded.
+describe("cf-eqaj — error-event feedback when localStorage is unavailable", () => {
+  it("setCompareSlugs dispatches cf-compare-change-error on QuotaExceededError", () => {
+    const dispatched: Event[] = [];
+    (window.dispatchEvent as ReturnType<typeof vi.fn>).mockImplementation((e: Event) => {
+      dispatched.push(e);
+      return true;
+    });
+    const originalSetItem = (window.localStorage as Storage).setItem;
+    (window.localStorage as Storage).setItem = vi.fn(() => {
+      const err = new Error("Quota exceeded");
+      err.name = "QuotaExceededError";
+      throw err;
+    });
+
+    setCompareSlugs(["kingston"]);
+
+    const errorEvents = dispatched.filter((e) => e.type === "cf-compare-change-error");
+    expect(errorEvents).toHaveLength(1);
+    const detail = (errorEvents[0] as CustomEvent<{ reason: string }>).detail;
+    expect(detail?.reason).toBe("quota-exceeded");
+
+    // Restore so other tests don't see a poisoned mock.
+    (window.localStorage as Storage).setItem = originalSetItem;
+  });
+
+  it("setCompareSlugs dispatches reason=unavailable when setItem throws non-quota error", () => {
+    const dispatched: Event[] = [];
+    (window.dispatchEvent as ReturnType<typeof vi.fn>).mockImplementation((e: Event) => {
+      dispatched.push(e);
+      return true;
+    });
+    const originalSetItem = (window.localStorage as Storage).setItem;
+    (window.localStorage as Storage).setItem = vi.fn(() => {
+      throw new Error("localStorage is disabled in this browser context");
+    });
+
+    setCompareSlugs(["kingston"]);
+
+    const errorEvents = dispatched.filter((e) => e.type === "cf-compare-change-error");
+    expect(errorEvents).toHaveLength(1);
+    const detail = (errorEvents[0] as CustomEvent<{ reason: string }>).detail;
+    expect(detail?.reason).toBe("unavailable");
+
+    (window.localStorage as Storage).setItem = originalSetItem;
+  });
+
+  it("setCompareSlugs does NOT dispatch cf-compare-change on a failed write", () => {
+    const dispatched: Event[] = [];
+    (window.dispatchEvent as ReturnType<typeof vi.fn>).mockImplementation((e: Event) => {
+      dispatched.push(e);
+      return true;
+    });
+    const originalSetItem = (window.localStorage as Storage).setItem;
+    (window.localStorage as Storage).setItem = vi.fn(() => {
+      throw new Error("Quota exceeded");
+    });
+
+    setCompareSlugs(["kingston"]);
+
+    // The success event must NOT fire when persistence failed, otherwise
+    // subscribers will read stale state via getCompareSlugs() and report a
+    // success state to the user.
+    const successEvents = dispatched.filter((e) => e.type === "cf-compare-change");
+    expect(successEvents).toHaveLength(0);
+
+    (window.localStorage as Storage).setItem = originalSetItem;
+  });
+
+  it("getCompareSlugs dispatches cf-compare-change-error when stored JSON is malformed", () => {
+    storage["cf-compare-slugs"] = "{{invalid}}";
+    const dispatched: Event[] = [];
+    (window.dispatchEvent as ReturnType<typeof vi.fn>).mockImplementation((e: Event) => {
+      dispatched.push(e);
+      return true;
+    });
+
+    const result = getCompareSlugs();
+
+    // Return value still degrades to [] (existing contract).
+    expect(result).toEqual([]);
+    // But now also signals the parse failure so a watcher can clear the
+    // poisoned key + show feedback instead of silently treating it as empty.
+    const errorEvents = dispatched.filter((e) => e.type === "cf-compare-change-error");
+    expect(errorEvents).toHaveLength(1);
+    const detail = (errorEvents[0] as CustomEvent<{ reason: string }>).detail;
+    expect(detail?.reason).toBe("parse-error");
+  });
+
+  it("happy-path read does not dispatch an error event", () => {
+    storage["cf-compare-slugs"] = JSON.stringify(["kingston"]);
+    const dispatched: Event[] = [];
+    (window.dispatchEvent as ReturnType<typeof vi.fn>).mockImplementation((e: Event) => {
+      dispatched.push(e);
+      return true;
+    });
+
+    getCompareSlugs();
+
+    const errorEvents = dispatched.filter((e) => e.type === "cf-compare-change-error");
+    expect(errorEvents).toHaveLength(0);
+  });
+
+  it("happy-path write dispatches cf-compare-change but NOT cf-compare-change-error", () => {
+    const dispatched: Event[] = [];
+    (window.dispatchEvent as ReturnType<typeof vi.fn>).mockImplementation((e: Event) => {
+      dispatched.push(e);
+      return true;
+    });
+
+    setCompareSlugs(["kingston"]);
+
+    expect(dispatched.some((e) => e.type === "cf-compare-change")).toBe(true);
+    expect(dispatched.some((e) => e.type === "cf-compare-change-error")).toBe(false);
+  });
+});
