@@ -180,7 +180,6 @@ describe("PdpInteractive (cf-3qt.2.1 + 2.2 integration)", () => {
     }
 
     it("hides the sticky bar on initial paint (primary CTA visible)", () => {
-      stubIntersectionObserver();
       render(
         <PdpInteractive
           {...baseProps}
@@ -296,6 +295,52 @@ describe("PdpInteractive (cf-3qt.2.1 + 2.2 integration)", () => {
       fireEvent.click(stickyButton);
       // The click fires the same server action the primary CTA uses.
       expect(addItemAction).toHaveBeenCalled();
+    });
+  });
+
+  describe("cf-pdp-g1 — quantity stepper", () => {
+    it("renders the quantity stepper alongside the primary CTA with default value 1", () => {
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Kingston"
+          productOptions={[]}
+          variants={[]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$899"
+        />,
+      );
+      expect(screen.getByTestId("qty-stepper")).toBeInTheDocument();
+      expect(screen.getByTestId("qty-stepper-input")).toHaveValue(1);
+    });
+
+    it("threads stepped-up quantity to the cart action", async () => {
+      const { addItemAction } = await import("@/app/actions/cart");
+      (addItemAction as unknown as ReturnType<typeof vi.fn>).mockClear();
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Kingston"
+          productOptions={[]}
+          variants={[]}
+          fallbackImageUrl={undefined}
+          fallbackPrice="$899"
+        />,
+      );
+      // Increment twice → qty=3.
+      fireEvent.click(screen.getByTestId("qty-stepper-plus"));
+      fireEvent.click(screen.getByTestId("qty-stepper-plus"));
+      expect(screen.getByTestId("qty-stepper-input")).toHaveValue(3);
+
+      // Primary CTA click should forward quantity=3 to the server action.
+      const buttons = screen.getAllByRole("button", { name: /add to cart/i });
+      fireEvent.click(buttons[0]);
+      // Wait a tick for the addLine optimistic path to fire the action.
+      await Promise.resolve();
+      expect(addItemAction).toHaveBeenCalled();
+      const call = (addItemAction as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+      // addItemAction is invoked with the cart-line object — line.quantity is what we threaded.
+      expect(call[0].quantity).toBe(3);
     });
   });
 
