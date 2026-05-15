@@ -23,11 +23,30 @@ import {
 // Stores-sourced line item. This is the same across all Wix sites.
 export const WIX_STORES_APP_ID = "215238eb-22a5-4c36-9e7b-e7c08025e04e";
 
+/**
+ * Personalization field on a single cart line. Wix surfaces these as
+ * `customTextFields` in the order admin + the customer-facing
+ * confirmation email — pure pass-through `{ title, value }` pairs.
+ *
+ * Used by the gift-card "send as a gift" flow (cf-gift-g1) to capture
+ * recipient email / sender name / personal message / scheduled-delivery
+ * date alongside the gift-card line item.
+ */
+export type CartLineCustomField = { title: string; value: string };
+
+/**
+ * Input shape for {@link addToCart}. `customTextFields` is the cf-gift-g1
+ * extension — when present and non-empty, every entry rides along to
+ * Wix's `addToCurrentCart` and shows up on the resulting order line.
+ * Omitted (or empty array) by default so non-personalized add-to-cart
+ * flows keep their pre-cf-gift-g1 byte-identical payload shape.
+ */
 export type LineItemInput = {
   productId: string;
   quantity: number;
   variantId?: string;
   options?: Record<string, string>; // choice name -> value, for catalog options
+  customTextFields?: ReadonlyArray<CartLineCustomField>;
 };
 
 function toCatalogReference(item: LineItemInput) {
@@ -39,6 +58,30 @@ function toCatalogReference(item: LineItemInput) {
     catalogItemId: item.productId,
     ...(Object.keys(options).length ? { options } : {}),
   };
+}
+
+/**
+ * Map a {@link LineItemInput} into the SDK's `addToCurrentCart` line-item
+ * shape. Returns `customTextFields` only when the caller supplied a
+ * non-empty array; omitting the field entirely matches the pre-cf-gift-g1
+ * byte-for-byte payload so non-gift add-to-cart flows are unaffected.
+ *
+ * Exported for test verification of the personalization pass-through.
+ * Production callers should still go through {@link addToCart}.
+ */
+export function toLineItemPayload(item: LineItemInput) {
+  const payload: {
+    catalogReference: ReturnType<typeof toCatalogReference>;
+    quantity: number;
+    customTextFields?: ReadonlyArray<CartLineCustomField>;
+  } = {
+    catalogReference: toCatalogReference(item),
+    quantity: item.quantity,
+  };
+  if (item.customTextFields && item.customTextFields.length > 0) {
+    payload.customTextFields = item.customTextFields;
+  }
+  return payload;
 }
 
 export async function getCurrentCart() {
@@ -70,10 +113,7 @@ export async function addToCart(items: LineItemInput[]) {
   if (items.every((i) => i.productId.startsWith("fixture-"))) return null;
   const client = await getVisitorCartClient();
   const result = await client.currentCart.addToCurrentCart({
-    lineItems: items.map((item) => ({
-      catalogReference: toCatalogReference(item),
-      quantity: item.quantity,
-    })),
+    lineItems: items.map(toLineItemPayload),
   });
   return result.cart ?? null;
 }
