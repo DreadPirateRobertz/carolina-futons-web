@@ -44,13 +44,21 @@ function nextWeekday(targetDow: number): string {
   d.setDate(d.getDate() + daysAhead);
   return d.toISOString().slice(0, 10);
 }
-function nextWednesday(): string { return nextWeekday(3); }
 function nextSunday(): string { return nextWeekday(0); }
+function nextMonday(): string { return nextWeekday(1); }
+function nextTuesday(): string { return nextWeekday(2); }
+function nextWednesday(): string { return nextWeekday(3); }
+function nextThursday(): string { return nextWeekday(4); }
+function nextFriday(): string { return nextWeekday(5); }
+function nextSaturday(): string { return nextWeekday(6); }
 
+// cfw-lou: store is open Sun–Tue per Brenda's #475 schedule update. Use
+// Monday as the canonical "open day" for the VALID fixture so the test
+// suite reflects the live policy.
 const VALID = {
   appointmentName: "Alice Buyer",
   appointmentEmail: "alice@example.com",
-  appointmentDate: nextWednesday(),
+  appointmentDate: nextMonday(),
   appointmentTime: "10:00",
 };
 
@@ -88,29 +96,51 @@ describe("bookAppointment — validation", () => {
     expect(result.errors.appointmentDate).toBeTruthy();
   });
 
-  it("returns future-date error for a past weekday", async () => {
+  it("returns future-date error for a past open day", async () => {
     const { bookAppointment } = await import("@/app/contact/actions");
-    const result = await bookAppointment(null, fd({ ...VALID, appointmentDate: "2020-01-08" })); // past Wednesday
+    // 2020-01-06 was a Monday — open day, but in the past.
+    const result = await bookAppointment(null, fd({ ...VALID, appointmentDate: "2020-01-06" }));
     expect(result.status).toBe("error");
     if (result.status !== "error") return;
     expect(result.errors.appointmentDate).toMatch(/future/i);
   });
 
-  it("returns future-date error (not Wed-Sat error) for a past Sunday", async () => {
+  it("returns future-date error (not open-days error) for a past closed day", async () => {
     const { bookAppointment } = await import("@/app/contact/actions");
-    const result = await bookAppointment(null, fd({ ...VALID, appointmentDate: "2020-01-05" })); // past Sunday
+    // 2020-01-08 was a Wednesday — closed day, also in the past. The
+    // future-date check must precede the open-days check so the user gets
+    // the more actionable error first.
+    const result = await bookAppointment(null, fd({ ...VALID, appointmentDate: "2020-01-08" }));
     expect(result.status).toBe("error");
     if (result.status !== "error") return;
     expect(result.errors.appointmentDate).toMatch(/future/i);
-    expect(result.errors.appointmentDate).not.toMatch(/wednesday/i);
+    expect(result.errors.appointmentDate).not.toMatch(/sunday through tuesday/i);
   });
 
-  it("returns Wed-Sat error for a future Sunday", async () => {
+  // cfw-lou regression: validator must accept Sun/Mon/Tue and reject
+  // Wed/Thu/Fri/Sat per Brenda's #475 schedule update. Prior validator was
+  // inverted (accepted Wed–Sat, rejected Sun–Tue) — see audit cf-7pk0 F1.
+  it.each([
+    ["Sunday", nextSunday],
+    ["Monday", nextMonday],
+    ["Tuesday", nextTuesday],
+  ])("accepts a future %s (open day)", async (_label, dateFn) => {
     const { bookAppointment } = await import("@/app/contact/actions");
-    const result = await bookAppointment(null, fd({ ...VALID, appointmentDate: nextSunday() }));
+    const result = await bookAppointment(null, fd({ ...VALID, appointmentDate: dateFn() }));
+    expect(result.status).toBe("success");
+  });
+
+  it.each([
+    ["Wednesday", nextWednesday],
+    ["Thursday", nextThursday],
+    ["Friday", nextFriday],
+    ["Saturday", nextSaturday],
+  ])("rejects a future %s (closed day) with the Sun–Tue error", async (_label, dateFn) => {
+    const { bookAppointment } = await import("@/app/contact/actions");
+    const result = await bookAppointment(null, fd({ ...VALID, appointmentDate: dateFn() }));
     expect(result.status).toBe("error");
     if (result.status !== "error") return;
-    expect(result.errors.appointmentDate).toMatch(/wednesday/i);
+    expect(result.errors.appointmentDate).toMatch(/sunday through tuesday/i);
   });
 
   it("returns time error when time is not in the allowed set", async () => {

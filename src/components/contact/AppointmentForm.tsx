@@ -146,7 +146,7 @@ export function AppointmentForm() {
       <div>
         <label htmlFor={dateId} className={labelClass}>
           Preferred date{" "}
-          <span className="text-cf-muted">(Wed – Sat)</span>
+          <span className="text-cf-muted">(Sun – Tue)</span>
         </label>
         <input
           id={dateId}

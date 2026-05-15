@@ -94,7 +94,7 @@ export default function ContactPage() {
             Schedule a showroom visit
           </h2>
           <p className="text-sm leading-relaxed text-cf-muted">
-            Open Wednesday through Saturday, 10&nbsp;am–5&nbsp;pm. Request a
+            Open Sunday through Tuesday, 10&nbsp;am–5&nbsp;pm. Request a
             slot and we&apos;ll confirm by email within one business day.
           </p>
           <AppointmentForm />
