@@ -253,4 +253,40 @@ describe("GiftCardPicker — send as gift (cf-gift-g1)", () => {
       quantity: 1,
     });
   });
+
+  // pr-test-analyzer (cf-gift-g1 5-agent pass): pin field-preservation
+  // on server-error path. After addItemAction fails, the form fields
+  // MUST survive so the user doesn't have to re-type recipient email +
+  // sender name + message + date after every transient server hiccup.
+  // The error message renders + the rollback fires + the fields stay.
+  it("preserves form fields when addItemAction returns ok:false (gift-flow error recovery)", async () => {
+    addItemAction.mockResolvedValueOnce({ ok: false, error: "Out of stock" });
+    render(<GiftCardPicker cards={cards} />);
+    await userEvent.click(screen.getByLabelText(/send as a gift/i));
+    await userEvent.type(
+      screen.getByLabelText(/recipient email/i),
+      "alice@example.com",
+    );
+    await userEvent.type(screen.getByLabelText(/your name/i), "Bob");
+    await userEvent.type(
+      screen.getByLabelText(/personal message/i),
+      "Happy birthday!",
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: /add .25.00 gift card/i }),
+    );
+    // Error rendered + optimistic line rolled back.
+    expect(screen.getByRole("alert")).toHaveTextContent("Out of stock");
+    expect(removeLine).toHaveBeenCalledOnce();
+    // Fields PRESERVED — user doesn't have to re-type after a server hiccup.
+    expect(screen.getByLabelText(/recipient email/i)).toHaveValue(
+      "alice@example.com",
+    );
+    expect(screen.getByLabelText(/your name/i)).toHaveValue("Bob");
+    expect(screen.getByLabelText(/personal message/i)).toHaveValue(
+      "Happy birthday!",
+    );
+    // Toggle still ON — user didn't lose context.
+    expect(screen.getByLabelText(/send as a gift/i)).toBeChecked();
+  });
 });

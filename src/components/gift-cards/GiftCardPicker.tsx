@@ -11,6 +11,21 @@ import type { WixProduct } from "@/lib/wix/products";
 type Props = { cards: WixProduct[] };
 
 /**
+ * Stable order matters: Wix surfaces these titles verbatim in the order
+ * admin + customer confirmation email, and downstream automation may
+ * position-index them. Shared constants prevent the buildCustomTextFields
+ * helper and the test assertions from drifting independently — change
+ * here propagates to both.
+ */
+const FIELD_TITLES = {
+  recipientEmail: "Recipient email",
+  recipientName: "Recipient name",
+  senderName: "Sender name",
+  personalMessage: "Personal message",
+  scheduledDelivery: "Scheduled delivery",
+} as const;
+
+/**
  * GiftCardPicker — denomination grid + optional "send as a gift"
  * recipient-meta form, then one-click add-to-cart.
  *
@@ -77,11 +92,11 @@ export function GiftCardPicker({ cards }: Props) {
     const sn = senderName.trim();
     const msg = personalMessage.trim();
     const date = scheduledDelivery.trim();
-    if (e) fields.push({ title: "Recipient email", value: e });
-    if (rn) fields.push({ title: "Recipient name", value: rn });
-    if (sn) fields.push({ title: "Sender name", value: sn });
-    if (msg) fields.push({ title: "Personal message", value: msg });
-    if (date) fields.push({ title: "Scheduled delivery", value: date });
+    if (e) fields.push({ title: FIELD_TITLES.recipientEmail, value: e });
+    if (rn) fields.push({ title: FIELD_TITLES.recipientName, value: rn });
+    if (sn) fields.push({ title: FIELD_TITLES.senderName, value: sn });
+    if (msg) fields.push({ title: FIELD_TITLES.personalMessage, value: msg });
+    if (date) fields.push({ title: FIELD_TITLES.scheduledDelivery, value: date });
     return fields.length > 0 ? fields : undefined;
   }
 
@@ -227,7 +242,7 @@ export function GiftCardPicker({ cards }: Props) {
               <input
                 id="gc-recipient-email"
                 type="email"
-                required
+                aria-required="true"
                 value={recipientEmail}
                 onChange={(e) => setRecipientEmail(e.target.value)}
                 placeholder="recipient@example.com"
@@ -292,6 +307,7 @@ export function GiftCardPicker({ cards }: Props) {
               <input
                 id="gc-scheduled-delivery"
                 type="date"
+                min={new Date().toISOString().slice(0, 10)}
                 value={scheduledDelivery}
                 onChange={(e) => setScheduledDelivery(e.target.value)}
                 className="mt-1 w-full rounded-md border border-cf-smoke px-3 py-2 text-sm focus:border-cf-cta focus:outline-none focus:ring-1 focus:ring-cf-cta"
