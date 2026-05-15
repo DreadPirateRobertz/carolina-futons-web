@@ -76,6 +76,11 @@ export async function generateMetadata(props: {
       mainImageUrl && isUsableUrl(mainImageUrl)
         ? { url: mainImageUrl, alt: product.name ?? undefined }
         : DEFAULT_OG_IMAGE;
+    // cf-bbo8: explicit canonical so utm/ref query params don't split link
+    // equity. The Product JSON-LD already carries canonicalUrl but search
+    // engines treat the metadata-level <link rel="canonical"> as the
+    // authoritative HTML signal — without it Google canonicalizes
+    // ?utm_source=email variants to themselves.
     const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
     const openGraph = {
       title: `${product.name} — Carolina Futons`,
