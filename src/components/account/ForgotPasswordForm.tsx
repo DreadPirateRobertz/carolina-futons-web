@@ -47,7 +47,7 @@ export function ForgotPasswordForm() {
           </p>
           <Link
             href="/account"
-            className="mt-6 inline-block text-sm text-cf-cta hover:underline"
+            className="mt-6 inline-block text-sm text-cf-cta underline underline-offset-2"
           >
             Back to sign in
           </Link>
@@ -102,9 +102,12 @@ export function ForgotPasswordForm() {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-cf-charcoal/60">
+        {/* Same WCAG AA contrast + non-color link affordance fix as
+            AccountSignIn — /60 measures ~4.4:1 (under AA's 4.5:1
+            floor); persistent underline satisfies WCAG 1.4.1. */}
+        <p className="mt-6 text-center text-xs text-cf-charcoal/80 dark:text-cf-charcoal">
           Remembered it?{" "}
-          <Link href="/account" className="text-cf-cta hover:underline">
+          <Link href="/account" className="text-cf-cta underline underline-offset-2">
             Back to sign in
           </Link>
         </p>
