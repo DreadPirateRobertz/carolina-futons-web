@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { MetaPurchaseTracker } from "@/components/analytics/MetaPurchaseTracker";
 import { Ga4PurchaseTracker } from "@/components/analytics/Ga4PurchaseTracker";
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
+import { OrderWarrantyCta } from "@/components/order/OrderWarrantyCta";
 import type { Ga4Item } from "@/lib/analytics/ga4-events";
 import { getOrder } from "@/lib/wix/orders";
 import { BUSINESS, SOCIALS } from "@/lib/business/contact-info";
@@ -236,6 +237,21 @@ export default async function OrderConfirmationPage(props: {
           </div>
         </section>
       ) : null}
+
+      {/* cfw-lgc: Warranty registration CTA — pre-fills the
+          /warranty/register form with the order context. Renders null
+          when orderNumber is empty (defensive). */}
+      <div className="mt-8">
+        <OrderWarrantyCta
+          orderId={orderNumber}
+          productId={lineItems[0]?.catalogReference?.catalogItemId ?? undefined}
+          productName={
+            typeof lineItems[0]?.productName === "string"
+              ? lineItems[0]?.productName
+              : lineItems[0]?.productName?.original ?? undefined
+          }
+        />
+      </div>
 
       {/* Newsletter */}
       <section
