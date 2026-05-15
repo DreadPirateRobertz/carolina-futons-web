@@ -9,6 +9,7 @@ import {
   ABOUT_HOTSPOT_CONFIGS,
 } from "@/components/site/ShopTheRoom";
 import { BUSINESS } from "@/lib/business/contact-info";
+import { getSiteContent } from "@/lib/cms/site-content";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { buildAboutPageSchema, resolveSiteUrl } from "@/lib/seo/json-ld";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
@@ -22,6 +23,31 @@ const OG = {
   description: ABOUT_DESCRIPTION,
   images: [DEFAULT_OG_IMAGE],
 };
+
+// cf-7pk0 F1: owner-editable About copy via SiteContent. Mirrors the
+// cfw-22e pattern on /visit (per-section keys with documented fallbacks).
+// 11 keys total — location.body-2 stays inline-JSX because it embeds
+// <a> links around BUSINESS.phone/email; SiteContent values are plain
+// strings and can’t wrap JSX. Brenda edits any of these via Wix Editor
+// without a deploy.
+const ABOUT_COPY_FALLBACKS = {
+  introEyebrow: "Our story",
+  introHeading: "About Carolina Futons",
+  introSubheading:
+    "Family-owned and independently operated in Hendersonville, North Carolina since 1991.",
+  introLede:
+    "Carolina Futons opened its doors in 1991 with a simple idea: sell furniture that is built to last, made by people who take the work seriously, and stand behind it personally. Three decades later, that is still the job.",
+  beliefsHeading: "What we believe",
+  beliefsBody1:
+    "Furniture should be durable, repairable, and honest about what it is. We favor solid hardwood frames and mattresses made in the United States, we tell you where each piece comes from, and we price our catalog so you can compare without decoding a sale.",
+  beliefsBody2:
+    "A futon is a bed that also earns its keep as a sofa, so the decision should feel as considered as any other major purchase. We’d rather help one customer choose the right frame than ship two of the wrong one.",
+  locationHeading: "Where to find us",
+  locationBody1: `Our showroom is at ${BUSINESS.street}, ${BUSINESS.city}, ${BUSINESS.state} ${BUSINESS.zip}. Stop in to sit on the frames, feel the mattresses, and meet the people who will answer the phone if anything ever goes sideways.`,
+  teamHeading: "The team",
+  teamBody:
+    "A short roster of the people who build, deliver, and stand behind every order is coming soon. In the meantime, the fastest way to reach any of us is the contact details above — we answer our own email.",
+} as const;
 
 export const metadata: Metadata = {
   title: "About — Carolina Futons",
@@ -40,6 +66,32 @@ export default async function AboutPage() {
     canonicalUrl: `${siteUrl}/about`,
     siteUrl,
   });
+
+  const [
+    introEyebrow,
+    introHeading,
+    introSubheading,
+    introLede,
+    beliefsHeading,
+    beliefsBody1,
+    beliefsBody2,
+    locationHeading,
+    locationBody1,
+    teamHeading,
+    teamBody,
+  ] = await Promise.all([
+    getSiteContent("about.intro.eyebrow", ABOUT_COPY_FALLBACKS.introEyebrow),
+    getSiteContent("about.intro.heading", ABOUT_COPY_FALLBACKS.introHeading),
+    getSiteContent("about.intro.subheading", ABOUT_COPY_FALLBACKS.introSubheading),
+    getSiteContent("about.intro.lede", ABOUT_COPY_FALLBACKS.introLede),
+    getSiteContent("about.beliefs.heading", ABOUT_COPY_FALLBACKS.beliefsHeading),
+    getSiteContent("about.beliefs.body-1", ABOUT_COPY_FALLBACKS.beliefsBody1),
+    getSiteContent("about.beliefs.body-2", ABOUT_COPY_FALLBACKS.beliefsBody2),
+    getSiteContent("about.location.heading", ABOUT_COPY_FALLBACKS.locationHeading),
+    getSiteContent("about.location.body-1", ABOUT_COPY_FALLBACKS.locationBody1),
+    getSiteContent("about.team.heading", ABOUT_COPY_FALLBACKS.teamHeading),
+    getSiteContent("about.team.body", ABOUT_COPY_FALLBACKS.teamBody),
+  ]);
   return (
     <main className="w-full">
       <JsonLd id="jsonld-about" schema={aboutSchema} />
@@ -51,53 +103,37 @@ export default async function AboutPage() {
         <article className="mx-auto max-w-[65ch] space-y-8 font-source-sans text-cf-ink">
           <header className="space-y-3">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
-              Our story
+              {introEyebrow}
             </p>
             <h1 className="font-playfair text-4xl font-semibold tracking-tight sm:text-5xl">
-              About Carolina Futons
+              {introHeading}
             </h1>
             <p className="text-lg leading-relaxed text-cf-muted">
-              Family-owned and independently operated in Hendersonville,
-              North Carolina since {BUSINESS.foundedYear}.
+              {introSubheading}
             </p>
           </header>
 
-          <p className="text-lg leading-relaxed">
-            Carolina Futons opened its doors in {BUSINESS.foundedYear} with
-            a simple idea: sell furniture that is built to last, made by
-            people who take the work seriously, and stand behind it
-            personally. Three decades later, that is still the job.
-          </p>
+          <p className="text-lg leading-relaxed">{introLede}</p>
 
           <section className="space-y-4">
             <h2 className="font-playfair text-2xl font-semibold tracking-tight">
-              What we believe
+              {beliefsHeading}
             </h2>
-            <p className="leading-relaxed">
-              Furniture should be durable, repairable, and honest about what
-              it is. We favor solid hardwood frames and mattresses made in
-              the United States, we tell you where each piece comes from,
-              and we price our catalog so you can compare without
-              decoding a sale.
-            </p>
-            <p className="leading-relaxed">
-              A futon is a bed that also earns its keep as a sofa, so the
-              decision should feel as considered as any other major
-              purchase. We&apos;d rather help one customer choose the right
-              frame than ship two of the wrong one.
-            </p>
+            <p className="leading-relaxed">{beliefsBody1}</p>
+            <p className="leading-relaxed">{beliefsBody2}</p>
           </section>
 
           <section className="space-y-4">
             <h2 className="font-playfair text-2xl font-semibold tracking-tight">
-              Where to find us
+              {locationHeading}
             </h2>
-            <p className="leading-relaxed">
-              Our showroom is at {BUSINESS.street}, {BUSINESS.city},{" "}
-              {BUSINESS.state} {BUSINESS.zip}. Stop in to sit on the
-              frames, feel the mattresses, and meet the people who will
-              answer the phone if anything ever goes sideways.
-            </p>
+            <p className="leading-relaxed">{locationBody1}</p>
+            {/* cf-7pk0 F1: location.body-2 stays inline-JSX because it embeds
+                <a> links around BUSINESS.phone/email — SiteContent values are
+                plain strings and can't wrap React children. If marketing wants
+                to A/B test this copy, the bead spec is to split into prefix /
+                middle / suffix SiteContent keys; flag a follow-on bead when
+                that need lands. */}
             <p className="leading-relaxed">
               Prefer to talk first? Call{" "}
               <a
@@ -119,14 +155,9 @@ export default async function AboutPage() {
 
           <section className="space-y-4">
             <h2 className="font-playfair text-2xl font-semibold tracking-tight">
-              The team
+              {teamHeading}
             </h2>
-            <p className="leading-relaxed">
-              A short roster of the people who build, deliver, and stand
-              behind every order is coming soon. In the meantime, the
-              fastest way to reach any of us is the contact details above
-              — we answer our own email.
-            </p>
+            <p className="leading-relaxed">{teamBody}</p>
             {/* v3: character ensemble — bear, owl, fox, deer replacing TeamPortrait */}
             <div
               data-slot="character-ensemble"

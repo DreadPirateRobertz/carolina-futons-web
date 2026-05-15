@@ -1,4 +1,4 @@
-import { afterEach, describe, it, expect, vi } from "vitest";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 
 // Stub ShopTheRoom so the AboutPage smoke test doesn't need the Wix
@@ -34,8 +34,21 @@ vi.mock("@/components/site/ShopTheRoom", () => ({
   ABOUT_HOTSPOT_CONFIGS: stubs.ABOUT_HOTSPOT_CONFIGS,
 }));
 
+// cf-7pk0 F1: stub SiteContent so the helper falls back to baked-in
+// copy under jsdom + tests can assert per-key fallback behavior.
+const mockGetSiteContent = vi.fn();
+vi.mock("@/lib/cms/site-content", () => ({
+  getSiteContent: (...args: unknown[]) => mockGetSiteContent(...args),
+}));
+
 import AboutPage, { metadata } from "./page";
 import { BUSINESS } from "@/lib/business/contact-info";
+
+beforeEach(() => {
+  mockGetSiteContent.mockReset();
+  // Default: SiteContent empty → return the fallback the caller supplied.
+  mockGetSiteContent.mockImplementation(async (_key, fallback) => fallback);
+});
 
 // AboutPage became async when the ShopTheRoom section landed (cf-delight
 // Phase 3); resolve the JSX once per test so render() gets the actual
@@ -120,5 +133,103 @@ describe("AboutPage — smoke", () => {
       article!.compareDocumentPosition(shopTheRoom!) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+});
+
+// cf-7pk0 F1 — owner-editable About copy via SiteContent. Mirrors the
+// cfw-22e pattern shipped on /visit (10 site-content keys with documented
+// fallbacks). 11 keys for /about: intro {eyebrow, heading, subheading,
+// lede}, beliefs {heading, body-1, body-2}, location {heading, body-1},
+// team {heading, body}. location.body-2 stays inline-JSX because it
+// embeds <a> links around phone/email — SiteContent values are plain
+// strings, can't wrap JSX.
+describe("AboutPage — owner-editable copy (cf-7pk0 F1)", () => {
+  it("falls back to baked-in About copy when SiteContent is empty", async () => {
+    await renderAbout();
+    expect(screen.getByText("Our story")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 1, name: /About Carolina Futons/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Family-owned and independently operated/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: /What we believe/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: /Where to find us/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: /The team/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("uses SiteContent values for the intro section when present", async () => {
+    mockGetSiteContent.mockImplementation(async (key, fallback) => {
+      if (key === "about.intro.eyebrow") return "Our journey";
+      if (key === "about.intro.heading") return "About Us at Carolina Futons";
+      if (key === "about.intro.subheading") return "Independent and proud, Hendersonville NC.";
+      if (key === "about.intro.lede") return "We open with a single idea: build to last.";
+      return fallback;
+    });
+    await renderAbout();
+    expect(screen.getByText("Our journey")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "About Us at Carolina Futons" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Independent and proud, Hendersonville NC.")).toBeInTheDocument();
+    expect(screen.getByText("We open with a single idea: build to last.")).toBeInTheDocument();
+  });
+
+  it("uses SiteContent values for the beliefs section when present", async () => {
+    mockGetSiteContent.mockImplementation(async (key, fallback) => {
+      if (key === "about.beliefs.heading") return "Our promise";
+      if (key === "about.beliefs.body-1") return "Repairable furniture by craftsmen.";
+      if (key === "about.beliefs.body-2") return "Honest pricing, no decoded sales.";
+      return fallback;
+    });
+    await renderAbout();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Our promise" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Repairable furniture by craftsmen.")).toBeInTheDocument();
+    expect(screen.getByText("Honest pricing, no decoded sales.")).toBeInTheDocument();
+  });
+
+  it("uses SiteContent values for the location + team sections when present", async () => {
+    mockGetSiteContent.mockImplementation(async (key, fallback) => {
+      if (key === "about.location.heading") return "Find the showroom";
+      if (key === "about.location.body-1") return "Drop by anytime during hours.";
+      if (key === "about.team.heading") return "Who we are";
+      if (key === "about.team.body") return "Bios coming soon — email us in the meantime.";
+      return fallback;
+    });
+    await renderAbout();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Find the showroom" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Drop by anytime during hours.")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Who we are" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Bios coming soon — email us in the meantime.")).toBeInTheDocument();
+  });
+
+  it("queries the 11 expected SiteContent keys", async () => {
+    await renderAbout();
+    const keys = mockGetSiteContent.mock.calls.map(([key]) => key);
+    expect(keys).toEqual(
+      expect.arrayContaining([
+        "about.intro.eyebrow",
+        "about.intro.heading",
+        "about.intro.subheading",
+        "about.intro.lede",
+        "about.beliefs.heading",
+        "about.beliefs.body-1",
+        "about.beliefs.body-2",
+        "about.location.heading",
+        "about.location.body-1",
+        "about.team.heading",
+        "about.team.body",
+      ]),
+    );
   });
 });
