@@ -144,6 +144,29 @@ export async function estimateCartTotals() {
   return client.currentCart.estimateCurrentCartTotals();
 }
 
+// cf-snil (cf-wsrr.F2): in-cart coupon entry. The Wix SDK exposes a dedicated
+// `couponCode` field on `UpdateCurrentCartOptions` for application and a
+// matching `removeCouponFromCurrentCart` method for removal. Surfacing them as
+// thin wrappers so the server action layer can validate input + map errors
+// without re-implementing the SDK contract.
+//
+// Errors propagate to the caller — callers (server actions) translate them
+// into user-readable text via `toMessage`. Invalid-code rejections from Wix
+// arrive as a plain Error whose .message reads roughly "Coupon code not
+// valid"; we forward that string verbatim so the user sees the same text the
+// Wix-hosted checkout page would show.
+export async function applyCoupon(code: string) {
+  const client = await getVisitorCartClient();
+  const cart = await client.currentCart.updateCurrentCart({ couponCode: code });
+  return cart ?? null;
+}
+
+export async function removeCoupon() {
+  const client = await getVisitorCartClient();
+  const result = await client.currentCart.removeCouponFromCurrentCart();
+  return result.cart ?? null;
+}
+
 export type WixCart = NonNullable<Awaited<ReturnType<typeof getCurrentCart>>>;
 
 // Maps a Wix server cart to the CartProvider line format. Used by the cart

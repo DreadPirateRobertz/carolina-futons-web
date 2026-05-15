@@ -5,6 +5,7 @@ import { Dialog } from "@base-ui/react/dialog";
 import Link from "next/link";
 import { Minus, Plus, ShoppingBag, X } from "lucide-react";
 
+import { CartCouponEntry } from "@/components/cart/CartCouponEntry";
 import { useCart } from "@/components/cart/CartProvider";
 import { CartIllustration } from "@/components/illustrations/CartIllustration";
 import { EmptyCartIllustration } from "@/components/illustrations/EmptyCartIllustration";
@@ -155,7 +156,11 @@ export function CartDrawer() {
               </ul>
 
               <footer className="border-t border-cf-divider px-5 py-4">
-                <div className="flex items-center justify-between text-base">
+                {/* cf-snil (cf-wsrr.F2): in-cart promo code entry. Renders
+                    above the subtotal so users discover it BEFORE they
+                    commit to the checkout redirect. */}
+                <CartCouponEntry />
+                <div className="mt-3 flex items-center justify-between text-base">
                   <span className="font-medium text-cf-espresso">Subtotal</span>
                   <span
                     className="font-semibold text-cf-espresso"

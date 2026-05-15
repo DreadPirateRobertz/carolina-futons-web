@@ -9,6 +9,8 @@ const removeFromCart = vi.fn();
 const updateLineItemQuantity = vi.fn();
 const getCurrentCart = vi.fn();
 const wixCartToLines = vi.fn();
+const applyCoupon = vi.fn();
+const removeCoupon = vi.fn();
 
 vi.mock("@/lib/wix/cart", () => ({
   addToCart: (...args: unknown[]) => addToCart(...args),
@@ -17,6 +19,8 @@ vi.mock("@/lib/wix/cart", () => ({
     updateLineItemQuantity(...args),
   getCurrentCart: (...args: unknown[]) => getCurrentCart(...args),
   wixCartToLines: (...args: unknown[]) => wixCartToLines(...args),
+  applyCoupon: (...args: unknown[]) => applyCoupon(...args),
+  removeCoupon: (...args: unknown[]) => removeCoupon(...args),
 }));
 
 describe("cart server actions", () => {
@@ -127,6 +131,66 @@ describe("cart server actions", () => {
       const { getCartAction } = await import("@/app/actions/cart");
       const result = await getCartAction();
       expect(result).toEqual({ ok: false, error: "boom" });
+    });
+  });
+
+  // cf-snil (cf-wsrr.F2): in-cart coupon entry. Wix SDK exposes
+  // currentCart.updateCurrentCart with appliedDiscounts[].coupon.code.
+  // Server-action wrapper surfaces it to CartDrawer + /cart.
+  describe("applyCouponAction", () => {
+    it("rejects empty / whitespace code without calling Wix", async () => {
+      const { applyCouponAction } = await import("@/app/actions/cart");
+      expect((await applyCouponAction("")).ok).toBe(false);
+      expect((await applyCouponAction("   ")).ok).toBe(false);
+      expect(applyCoupon).not.toHaveBeenCalled();
+    });
+
+    it("trims the code before forwarding to the Wix client", async () => {
+      applyCoupon.mockResolvedValueOnce({ _id: "cart1", lineItems: [] });
+      const { applyCouponAction } = await import("@/app/actions/cart");
+      const result = await applyCouponAction("  SUMMER15  ");
+      expect(result.ok).toBe(true);
+      expect(applyCoupon).toHaveBeenCalledWith("SUMMER15");
+    });
+
+    it("returns the updated cart on success", async () => {
+      const fakeCart = { _id: "cart1", lineItems: [], appliedDiscounts: [] };
+      applyCoupon.mockResolvedValueOnce(fakeCart);
+      const { applyCouponAction } = await import("@/app/actions/cart");
+      const result = await applyCouponAction("SUMMER15");
+      expect(result).toEqual({ ok: true, cart: fakeCart });
+    });
+
+    it("surfaces invalid-code error message verbatim", async () => {
+      applyCoupon.mockRejectedValueOnce(new Error("Coupon code not valid"));
+      const { applyCouponAction } = await import("@/app/actions/cart");
+      const result = await applyCouponAction("BOGUS");
+      expect(result).toEqual({ ok: false, error: "Coupon code not valid" });
+    });
+
+    it("returns generic error for non-Error rejection (defense in depth)", async () => {
+      applyCoupon.mockRejectedValueOnce("string rejection");
+      const { applyCouponAction } = await import("@/app/actions/cart");
+      const result = await applyCouponAction("ANY");
+      expect(result).toEqual({ ok: false, error: "Unknown cart error" });
+    });
+  });
+
+  describe("removeCouponAction", () => {
+    it("forwards to removeCoupon and returns the updated cart", async () => {
+      const fakeCart = { _id: "cart1", lineItems: [], appliedDiscounts: [] };
+      removeCoupon.mockResolvedValueOnce(fakeCart);
+      const { removeCouponAction } = await import("@/app/actions/cart");
+      const result = await removeCouponAction();
+      expect(result).toEqual({ ok: true, cart: fakeCart });
+      expect(removeCoupon).toHaveBeenCalledTimes(1);
+    });
+
+    it("returns error result on Wix throw", async () => {
+      removeCoupon.mockRejectedValueOnce(new Error("network down"));
+      const { removeCouponAction } = await import("@/app/actions/cart");
+      const result = await removeCouponAction();
+      expect(result).toEqual({ ok: false, error: "network down" });
     });
   });
 
