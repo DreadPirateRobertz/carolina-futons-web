@@ -14,18 +14,17 @@ import {
 } from "@/lib/product/compare-state";
 
 export function CompareBar() {
-  const [mounted, setMounted] = useState(false);
-  const [slugs, setSlugs] = useState<string[]>([]);
+  // null = not yet hydrated (SSR renders nothing; avoids localStorage/server mismatch)
+  const [slugs, setSlugs] = useState<string[] | null>(null);
 
   useEffect(() => {
-    setSlugs(getCompareSlugs());
-    setMounted(true);
-    const onchange = () => setSlugs(getCompareSlugs());
-    window.addEventListener("cf-compare-change", onchange);
-    return () => window.removeEventListener("cf-compare-change", onchange);
+    const sync = () => setSlugs(getCompareSlugs());
+    sync(); // single setState: reads localStorage on first client paint
+    window.addEventListener("cf-compare-change", sync);
+    return () => window.removeEventListener("cf-compare-change", sync);
   }, []);
 
-  if (!mounted || slugs.length === 0) return null;
+  if (slugs === null || slugs.length === 0) return null;
 
   const atMax = slugs.length >= COMPARE_MAX;
   const count = slugs.length;
