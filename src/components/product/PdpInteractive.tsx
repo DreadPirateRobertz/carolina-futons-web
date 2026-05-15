@@ -13,6 +13,7 @@ import { PdpShippingEstimate } from "@/components/product/PdpShippingEstimate";
 import { PdpStickyCta } from "@/components/product/PdpStickyCta";
 import { PdpStockBadge } from "@/components/product/PdpStockBadge";
 import { ProductInventoryBadge } from "@/components/product/ProductInventoryBadge";
+import { QuantityStepper } from "@/components/product/QuantityStepper";
 import { PdpProductBadges } from "@/components/product/PdpProductBadges";
 import type { ProductBadgeType } from "@/lib/wix/product-badges";
 import { PdpFabricSwatches } from "@/components/product/PdpFabricSwatches";
@@ -130,6 +131,10 @@ export function PdpInteractive({
   const [selection, setSelection] = useState<ChoiceSelection>(() =>
     initialSelection(productOptions, variants),
   );
+  // cf-pdp-g1 (cf-lc1c G-1): per-PDP quantity. Wix Velo PDP had +/− buttons
+  // with clampQuantity(MIN_QUANTITY=1, MAX_QUANTITY=99); cfw was passing
+  // qty=1 unconditionally so multi-unit orders required N round-trips.
+  const [quantity, setQuantity] = useState<number>(1);
   const primaryCtaRef = useRef<HTMLDivElement>(null);
   // Seed `true` (primary visible) for two reasons: (1) avoids a first-paint
   // flash of the sticky bar before the observer's first callback fires on the
@@ -194,6 +199,8 @@ export function PdpInteractive({
     productUrl: `/products/${productSlug}`,
     unitPriceCents: selectedPriceCents,
     formattedUnitPrice: selectedPrice,
+    // cf-pdp-g1: thread the per-PDP qty through to the cart action.
+    quantity,
     disabled: !selectionComplete || !inStock,
     disabledReason,
   };
@@ -254,6 +261,17 @@ export function PdpInteractive({
           <PdpNotifyMe productId={productId} />
         )}
         <div ref={primaryCtaRef} data-slot="pdp-primary-cta" className="flex flex-wrap items-center gap-3">
+          {/* cf-pdp-g1: qty stepper renders alongside the primary CTA so
+              the customer can pick quantity without opening the cart. The
+              stepper is disabled when the add-to-cart button is disabled
+              (out-of-stock or incomplete variant selection) so it can't
+              suggest a state the cart action would reject. */}
+          <QuantityStepper
+            value={quantity}
+            onChange={setQuantity}
+            productName={productName}
+            disabled={!selectionComplete || !inStock}
+          />
           <AddToCartButton {...addToCartProps} className="flex-1 min-w-0" />
           <PdpWishlistButton
             productId={productId}
