@@ -44,10 +44,14 @@ export async function addItemAction(
     revalidatePath("/cart");
     return { ok: true, cart };
   } catch (err) {
-    // cf-f9o1: Sentry-tag add-to-cart failures so silent Wix outages on
-    // the personalized gift-card flow stop disappearing into a generic
-    // `{ ok: false }`. Matches the reader-layer logWixFailure pattern.
-    await logWixFailure("cart", "addItemAction", err);
+    // Sentry-tag add-to-cart failures so a Wix outage stops disappearing
+    // into a generic `{ ok: false }` toast. Fire-and-forget — awaiting
+    // `logWixFailure` would block the user-visible error by the full
+    // `Sentry.flush(2000)` window, holding the optimistic cart line and
+    // spinner for ~2s on every failed add. Sentry's in-memory queue
+    // flushes on the next request. Matches the reader-layer pattern
+    // (plp.ts / products.ts / cross-sell.ts).
+    void logWixFailure("cart", "addItemAction", err);
     return { ok: false, error: toMessage(err) };
   }
 }

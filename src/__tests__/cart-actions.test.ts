@@ -9,6 +9,7 @@ const removeFromCart = vi.fn();
 const updateLineItemQuantity = vi.fn();
 const getCurrentCart = vi.fn();
 const wixCartToLines = vi.fn();
+const logWixFailure = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("@/lib/wix/cart", () => ({
   addToCart: (...args: unknown[]) => addToCart(...args),
@@ -17,6 +18,13 @@ vi.mock("@/lib/wix/cart", () => ({
     updateLineItemQuantity(...args),
   getCurrentCart: (...args: unknown[]) => getCurrentCart(...args),
   wixCartToLines: (...args: unknown[]) => wixCartToLines(...args),
+}));
+
+// Mock the error helper so the real `@sentry/nextjs` import + Sentry.flush
+// don't fire during unit tests (would otherwise execute on every error-path
+// case below since cart.ts now calls logWixFailure in addItemAction's catch).
+vi.mock("@/lib/wix/errors", () => ({
+  logWixFailure: (...args: unknown[]) => logWixFailure(...args),
 }));
 
 describe("cart server actions", () => {
@@ -63,10 +71,13 @@ describe("cart server actions", () => {
     });
 
     it("returns error message on thrown Error", async () => {
-      addToCart.mockRejectedValueOnce(new Error("network down"));
+      const err = new Error("network down");
+      addToCart.mockRejectedValueOnce(err);
       const { addItemAction } = await import("@/app/actions/cart");
       const result = await addItemAction({ productId: "p1", quantity: 1 });
       expect(result).toEqual({ ok: false, error: "network down" });
+      // Sentry tag fires on the failure path with the same error object.
+      expect(logWixFailure).toHaveBeenCalledWith("cart", "addItemAction", err);
     });
 
     it("returns generic error for non-Error throw", async () => {
@@ -74,6 +85,12 @@ describe("cart server actions", () => {
       const { addItemAction } = await import("@/app/actions/cart");
       const result = await addItemAction({ productId: "p1", quantity: 1 });
       expect(result).toEqual({ ok: false, error: "Unknown cart error" });
+      // Non-Error throws still tag Sentry (the helper classifies kind).
+      expect(logWixFailure).toHaveBeenCalledWith(
+        "cart",
+        "addItemAction",
+        "string rejection",
+      );
     });
   });
 

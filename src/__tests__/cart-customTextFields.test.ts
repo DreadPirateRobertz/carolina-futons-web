@@ -92,7 +92,7 @@ describe("toLineItemPayload (cf-gift-g1)", () => {
 });
 
 /**
- * cf-f9o1 (cf-gift-g1.fu1): defensive filter on the lib boundary.
+ * Defensive filter on the lib boundary.
  *
  * Empty/whitespace title or value would render in the Wix order admin as
  * a blank row and ship to Wix as semantically meaningless metadata. The
@@ -102,11 +102,10 @@ describe("toLineItemPayload (cf-gift-g1)", () => {
  * regardless of caller.
  *
  * The byte-identical invariant (no `customTextFields` key when every
- * entry filters out) preserves the non-personalized payload shape — the
- * same guarantee {@link cart-customTextFields.test.ts}'s
- * "omits customTextFields when input passes an empty array" pins.
+ * entry filters out) preserves the non-personalized payload shape — same
+ * guarantee the empty-array case above pins.
  */
-describe("toLineItemPayload — defensive filter (cf-f9o1)", () => {
+describe("toLineItemPayload — defensive filter", () => {
   it("drops entries with empty title", () => {
     const out = toLineItemPayload({
       productId: "gc-50",
