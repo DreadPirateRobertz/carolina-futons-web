@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 
-// cf-1imv: same localStorage stub pattern as AddToCompareButton.test.tsx
-// so the bar reads/writes the cf-compare-slugs key the production
-// helpers expect. The window event listeners are stubbed so the
-// useEffect subscription registers cleanly under jsdom.
+// cf-1imv: localStorage stub mirrors the pattern AddToCompareButton uses,
+// but window.{add,remove}EventListener are NOT stubbed — the bar's
+// live-update path runs through the real subscription so we can test
+// it end-to-end (mutate storage → dispatch event → bar re-renders).
 const storage: Record<string, string> = {};
 vi.stubGlobal("localStorage", {
   getItem: (k: string) => storage[k] ?? null,
@@ -15,39 +15,24 @@ vi.stubGlobal("localStorage", {
     delete storage[k];
   },
 });
-vi.stubGlobal("dispatchEvent", vi.fn());
-vi.stubGlobal("addEventListener", vi.fn());
-vi.stubGlobal("removeEventListener", vi.fn());
 
 // framer-motion's AnimatePresence/m wrappers are noisy under jsdom; swap
-// for plain elements so the test asserts on rendered DOM, not animation
-// internals. (Pattern matches what BackToTop.test.tsx does.)
+// for plain elements so DOM assertions don't depend on animation timing.
+// We knowingly trade exit-animation coverage for assertion stability —
+// the production code path is exercised by the e2e suite, not here.
 vi.mock("framer-motion", () => ({
   AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  m: new Proxy(
-    {},
-    {
-      get:
-        () =>
-        ({
-          children,
-          ...props
-        }: {
-          children?: React.ReactNode;
-          [key: string]: unknown;
-        }) => {
-          // Strip framer-only props before forwarding to the DOM.
-          const {
-            initial: _i,
-            animate: _a,
-            exit: _e,
-            transition: _t,
-            ...rest
-          } = props as Record<string, unknown>;
-          return <div {...rest}>{children}</div>;
-        },
-    },
-  ),
+  m: {
+    // CompareBar only uses m.div; expand if/when it grows other motion
+    // primitives. Keeping the surface tight beats a generic Proxy.
+    div: ({
+      children,
+      ...props
+    }: {
+      children?: React.ReactNode;
+      [key: string]: unknown;
+    }) => <div {...props}>{children}</div>,
+  },
 }));
 
 import { CompareBar } from "@/components/compare/CompareBar";
@@ -108,14 +93,34 @@ describe("CompareBar", () => {
     expect(JSON.parse(storage["cf-compare-slugs"])).toEqual([]);
   });
 
-  it("Clear button hides the bar after clicking (state flushes to empty)", () => {
+  it("Clear button hides the bar (via cf-compare-change live-update path)", () => {
     storage["cf-compare-slugs"] = JSON.stringify(["kingston"]);
     render(<CompareBar />);
     expect(
       screen.getByRole("region", { name: /compare queue/i }),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("compare-bar-clear"));
+    act(() => {
+      fireEvent.click(screen.getByTestId("compare-bar-clear"));
+    });
     expect(screen.queryByRole("region", { name: /compare queue/i })).toBeNull();
+  });
+
+  it("re-renders when another component dispatches cf-compare-change (live-sync)", () => {
+    // Start hidden (no items). Simulate AddToCompareButton click on
+    // another part of the page: write to storage + dispatch event.
+    // Bar must appear without remount.
+    render(<CompareBar />);
+    expect(screen.queryByRole("region", { name: /compare queue/i })).toBeNull();
+
+    act(() => {
+      storage["cf-compare-slugs"] = JSON.stringify(["kingston"]);
+      window.dispatchEvent(new Event("cf-compare-change"));
+    });
+
+    expect(
+      screen.getByRole("region", { name: /compare queue/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("1 item selected")).toBeInTheDocument();
   });
 
   it("Clear button exposes an accessible label for keyboard / screen-reader users", () => {
@@ -129,8 +134,8 @@ describe("CompareBar", () => {
     storage["cf-compare-slugs"] = JSON.stringify(["kingston"]);
     render(<CompareBar />);
     const bar = screen.getByRole("region", { name: /compare queue/i });
-    // Pin the positioning contract — the bar must be fixed + anchored to
-    // the bottom edge so scroll behavior doesn't lose the queue.
+    // Pin the positioning contract — fixed + bottom-0 so the queue
+    // stays visible during scroll.
     expect(bar.className).toMatch(/\bfixed\b/);
     expect(bar.className).toMatch(/\bbottom-0\b/);
   });

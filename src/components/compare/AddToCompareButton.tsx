@@ -1,12 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { COMPARE_MAX } from "@/lib/product/compare";
-import {
-  getCompareSlugs,
-  toggleCompareSlug,
-} from "@/lib/product/compare-state";
+import { toggleCompareSlug } from "@/lib/product/compare-state";
+import { useCompareSlugs } from "@/lib/product/use-compare-slugs";
 
 export function AddToCompareButton({
   slug,
@@ -15,17 +13,9 @@ export function AddToCompareButton({
   slug: string;
   className?: string;
 }) {
-  // Lazy initializer hydrates from localStorage without an extra render.
-  // getCompareSlugs() guards window access so SSR gets [].
-  const [slugs, setSlugs] = useState<string[]>(() => getCompareSlugs());
-
-  // Subscribe to cross-component changes via the custom "cf-compare-change"
-  // event so PDP and PLP buttons stay in sync (e.g. mobile sticky CTA).
-  useEffect(() => {
-    const onchange = () => setSlugs(getCompareSlugs());
-    window.addEventListener("cf-compare-change", onchange);
-    return () => window.removeEventListener("cf-compare-change", onchange);
-  }, []);
+  // cf-1imv: shared hook keeps this button + CompareBar + CompareTable on
+  // the same cf-compare-change subscription path (was duplicated inline).
+  const slugs = useCompareSlugs();
 
   const isComparing = slugs.includes(slug);
   const atMax = !isComparing && slugs.length >= COMPARE_MAX;
@@ -35,7 +25,9 @@ export function AddToCompareButton({
       // Prevent the parent <Link> (ProductCard) from navigating on click.
       e.preventDefault();
       e.stopPropagation();
-      setSlugs(toggleCompareSlug(slug));
+      // toggleCompareSlug() dispatches cf-compare-change; the hook
+      // re-renders us with the updated list — no local setSlugs needed.
+      toggleCompareSlug(slug);
     },
     [slug],
   );
