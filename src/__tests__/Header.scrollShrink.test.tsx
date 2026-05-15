@@ -107,15 +107,14 @@ describe("Header — scroll shrink (cf-nav-scroll-shrink)", () => {
     expect(header!.className).toMatch(/transition-shadow/);
   });
 
-  // cf-h85f: bear backdrop fades to opacity-0 + hero band collapses to
-  // max-h-0 once scrolled past the threshold. Pinned so a future drive-by
-  // that re-removes the collapse logic fails CI loudly. Wrap the scroll
-  // trigger in act() so the React state update flushes before the
-  // assertion — the existing tests above don't need this because they
-  // assert on data-scrolled which the act-wrapped event handler already
-  // commits, but the className-derived classes (opacity-0, bg-white,
-  // max-h-0) need an explicit act flush to be observed in CI.
-  it("fades the bear backdrop to opacity-0 once scrolled (cf-h85f)", () => {
+  // cf-jo07 r2: Stilgar reversed cf-h85f's bear-fade + bg-white swap.
+  // The bear backdrop now stays opacity-100 in BOTH states (Stilgar wants
+  // shrunken state to read as bear chrome, not a plain white bar) and
+  // the header surface stays transparent (the top gradient on the
+  // backdrop already provides legibility). The home hero band still
+  // collapses to max-h-0 — that's the actual scroll-shrink — so its
+  // pin survives.
+  it("keeps the bear backdrop visible (opacity-100) in both states (cf-jo07 r2)", () => {
     const { container } = renderHeader();
     expect(
       container
@@ -129,7 +128,7 @@ describe("Header — scroll shrink (cf-nav-scroll-shrink)", () => {
       container
         .querySelector('[data-slot="header-bear-backdrop"]')!
         .className,
-    ).toMatch(/\bopacity-0\b/);
+    ).toMatch(/\bopacity-100\b/);
   });
 
   it("collapses the home hero band to max-h-0 + opacity-0 once scrolled (cf-h85f)", () => {
@@ -151,7 +150,7 @@ describe("Header — scroll shrink (cf-nav-scroll-shrink)", () => {
     expect(heroAfter!.getAttribute("aria-hidden")).toBe("true");
   });
 
-  it("swaps the header surface to bg-white once scrolled so the slim chrome reads (cf-h85f)", () => {
+  it("never swaps the header surface to bg-white on scroll (cf-jo07 r2)", () => {
     const { container } = renderHeader();
     expect(
       container.querySelector("[data-slot='site-header']")!.className,
@@ -161,6 +160,6 @@ describe("Header — scroll shrink (cf-nav-scroll-shrink)", () => {
     });
     expect(
       container.querySelector("[data-slot='site-header']")!.className,
-    ).toMatch(/\bbg-white\b/);
+    ).not.toMatch(/\bbg-white\b/);
   });
 });

@@ -31,20 +31,35 @@ function renderHeaderWithSlot(announcementBar: ReactNode) {
 
 describe("Header (cf-3qt.1 Phase 1)", () => {
   it("renders the brand wordmark linked to /", () => {
+    // cf-jo07: both the site header and the mobile-drawer header carry the
+    // "Carolina Futons — home" brand link now, so getByRole would throw on
+    // multiple matches. Assert at least one match and that the first (the
+    // site-header link) targets root.
     renderHeader();
-    const home = screen.getByRole("link", { name: /carolina futons.*home/i });
-    expect(home).toHaveAttribute("href", "/");
+    const homes = screen.getAllByRole("link", {
+      name: /carolina futons.*home/i,
+    });
+    expect(homes.length).toBeGreaterThan(0);
+    expect(homes[0]).toHaveAttribute("href", "/");
   });
 
-  it("renders the wordmark inside the brand link (cf-1eb5: no logo medallion)", () => {
-    // cf-1eb5 / cfw-v9: Stilgar rejected the medallion logo in favor of a
-    // full-header bear illustration treatment. The brand link is now text
-    // only — illustration lives in a separate `header-bear-backdrop` slot
-    // behind the chrome. A future drive-by to "add the logo back inline"
-    // would re-introduce the rejected lockup, so this guards against it.
+  it("renders the CF logo + wordmark lockup in the brand link (cf-jo07)", () => {
+    // cf-jo07: Stilgar restored the inline brand mark alongside the wordmark
+    // (visible in both full and shrunken header states). The bear treatment
+    // continues to live in the separate `header-bear-backdrop` slot. A
+    // future drive-by that drops the inline logo would break unscrolled
+    // brand recognition; assertion guards against it. alt="" is intentional
+    // — the link's aria-label already names the destination.
     renderHeader();
-    const home = screen.getByRole("link", { name: /carolina futons.*home/i });
-    expect(home.querySelector("img")).toBeNull();
+    // cf-jo07: site-header + mobile drawer both render the brand link.
+    // Pin the first match (site header) for the lockup assertion.
+    const [home] = screen.getAllByRole("link", {
+      name: /carolina futons.*home/i,
+    });
+    const img = home.querySelector("img");
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute("src") ?? "").toMatch(/cf-logo/);
+    expect(img?.getAttribute("alt")).toBe("");
     expect(home.textContent).toContain("Carolina Futons");
   });
 

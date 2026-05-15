@@ -98,15 +98,13 @@ export function Header({ announcementBar }: HeaderProps = {}) {
       data-slot="site-header"
       data-scrolled={scrolled ? "true" : "false"}
       className={[
-        // cf-1eb5 + cf-h85f: full-header bear treatment at top → slim chrome
-        // post-scroll. The transparent surface lets the bear backdrop show
-        // through unscrolled; once `scrolled`, we swap to bg-white so the
-        // collapsed chrome reads on a clean surface even after the bears
-        // fade out.
-        "sticky top-0 z-40 w-full border-b transition-colors duration-300",
-        scrolled
-          ? "border-cf-divider bg-white text-cf-espresso"
-          : "border-white/10 text-white",
+        // cf-1eb5 + cf-h85f + cf-jo07 r2: full-header bear treatment that
+        // STAYS through scroll. Stilgar reversed the cf-h85f bear-fade —
+        // shrunken state should still read as the bear chrome, not a plain
+        // white bar. We keep the dark border + white text always; the top
+        // gradient (from-[#2A1810]/85) on the backdrop continues providing
+        // contrast for the chrome row.
+        "sticky top-0 z-40 w-full border-b border-white/10 text-white",
         prefersReducedMotion ? "" : "transition-shadow duration-200",
         shadowClass,
       ]
@@ -116,21 +114,14 @@ export function Header({ announcementBar }: HeaderProps = {}) {
       {/* Hero bear backdrop — fills the entire header behind every chrome
           element. Object-position center-top keeps the bear faces in frame
           across announce + nav + (home-only) hero band + sub-nav stack.
-          Marked priority so the LCP candidate ships with first paint. */}
+          Marked priority so the LCP candidate ships with first paint.
+          cf-jo07 r2: backdrop no longer fades on scroll (Stilgar wants
+          bears in shrunken state). Removed the conditional opacity + the
+          motion transition that was driving the cross-fade flicker. */}
       <div
         aria-hidden="true"
         data-slot="header-bear-backdrop"
-        className={[
-          // cf-h85f: fade the bear backdrop out when the user scrolls past
-          // the threshold. opacity-0 keeps the DOM stable (regression-pin
-          // tests still find the slot), but hides the photo so the slim
-          // chrome reads on the white surface above.
-          "pointer-events-none absolute inset-0 overflow-hidden",
-          motionTransition,
-          scrolled ? "opacity-0" : "opacity-100",
-        ]
-          .filter(Boolean)
-          .join(" ")}
+        className="pointer-events-none absolute inset-0 overflow-hidden opacity-100"
       >
         <Image
           src="/design/animals/bears.jpg"
@@ -167,24 +158,31 @@ export function Header({ announcementBar }: HeaderProps = {}) {
           <div className="mx-auto flex w-full max-w-7xl items-center gap-8 px-4 sm:px-6 lg:px-8">
             <Link
               href="/"
-              className={[
-                "rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
-                scrolled ? "focus-visible:ring-cf-cta" : "focus-visible:ring-white",
-              ].join(" ")}
+              className="flex items-center gap-2.5 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
               aria-label="Carolina Futons — home"
             >
-              {/* cf-h85f: wordmark shrinks + recolors when chrome collapses.
-                  text-2xl → text-lg on scroll so the slim chrome stays
-                  visually balanced with the smaller utility row icons.
-                  Drop-shadow is for legibility on the bear photo only —
-                  removed once the bg goes white. */}
+              {/* cf-jo07 r2: CF logo + wordmark stay white-on-bear in BOTH
+                  states (Stilgar wants the bear chrome to read continuously).
+                  Size compresses on scroll for visual balance with the
+                  smaller utility row; drop-shadow stays on the photo for
+                  legibility regardless of scroll state. */}
+              <Image
+                src="/brand/cf-logo-square.png"
+                alt=""
+                width={40}
+                height={40}
+                priority
+                className={[
+                  "rounded-sm drop-shadow-[0_2px_6px_rgba(0,0,0,0.55)]",
+                  motionTransition,
+                  scrolled ? "size-7" : "size-10",
+                ].join(" ")}
+              />
               <span
                 className={[
-                  "font-heading font-semibold tracking-tight",
+                  "font-heading font-semibold tracking-tight text-cf-blue drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)]",
                   motionTransition,
-                  scrolled
-                    ? "text-lg text-cf-espresso"
-                    : "text-2xl text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)]",
+                  scrolled ? "text-lg" : "text-2xl",
                 ].join(" ")}
               >
                 Carolina Futons
