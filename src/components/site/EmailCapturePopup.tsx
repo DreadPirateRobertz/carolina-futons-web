@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
+import { useFormStatus } from "react-dom";
+
+import { subscribeToNewsletter } from "@/app/newsletter/actions";
+import {
+  initialNewsletterActionState,
+  type NewsletterActionState,
+} from "@/app/newsletter/newsletter-state";
 
 const STORAGE_KEY = "cf-email-popup-dismissed";
 
@@ -12,9 +19,27 @@ const STORAGE_KEY = "cf-email-popup-dismissed";
 // surfaced as the cfw-y2i.1 audit finding.
 const ENGAGEMENT_SCROLL_PX_FACTOR = 1;
 
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="w-full rounded-md bg-cf-cta px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-cf-cta/90 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {pending ? "Subscribing…" : "Sign me up"}
+    </button>
+  );
+}
+
 export function EmailCapturePopup() {
   const [visible, setVisible] = useState(false);
   const triggered = useRef(false);
+  const [state, formAction] = useActionState<NewsletterActionState, FormData>(
+    subscribeToNewsletter,
+    initialNewsletterActionState,
+  );
+  const emailId = useId();
 
   useEffect(() => {
     if (localStorage.getItem(STORAGE_KEY)) return;
@@ -36,19 +61,25 @@ export function EmailCapturePopup() {
     };
   }, []);
 
+  // cfw-xnd: persist the dismiss flag on a successful subscribe so the popup
+  // doesn't re-show on the next page load. The dialog stays visible with the
+  // success message until the user dismisses it via X / outside click.
+  useEffect(() => {
+    if (state.status === "success") {
+      localStorage.setItem(STORAGE_KEY, "1");
+    }
+  }, [state.status]);
+
   function dismiss() {
     setVisible(false);
     localStorage.setItem(STORAGE_KEY, "1");
   }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const email = (new FormData(e.currentTarget)).get("email") as string;
-    console.log("[EmailCapture] email captured:", email);
-    dismiss();
-  }
-
   if (!visible) return null;
+
+  const fieldError = state.status === "error" ? state.errors.email : undefined;
+  const storeError =
+    state.status === "error" ? state.storeError : undefined;
 
   return (
     <div
@@ -77,29 +108,51 @@ export function EmailCapturePopup() {
         >
           Stay in the loop
         </h2>
-        <p className="mt-2 text-sm text-cf-cream/80">
-          New arrivals, sale alerts, and care tips — straight to your inbox.
-        </p>
-        <form
-          onSubmit={handleSubmit}
-          aria-label="Email signup form"
-          className="mt-6 flex flex-col gap-3"
-        >
-          <input
-            type="email"
-            name="email"
-            required
-            placeholder="your@email.com"
-            aria-label="Email address"
-            className="w-full rounded-md border border-cf-cream/30 bg-white/10 px-4 py-2 text-cf-cream placeholder:text-cf-cream/60 focus:outline-none focus:ring-2 focus:ring-cf-cream/50"
-          />
-          <button
-            type="submit"
-            className="w-full rounded-md bg-cf-cta px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        {state.status === "success" ? (
+          <p
+            role="status"
+            data-testid="email-capture-success"
+            className="mt-4 text-sm text-cf-cream/90"
           >
-            Sign me up
-          </button>
-        </form>
+            {state.alreadySubscribed
+              ? "You're already on the list — thanks for being a part of it."
+              : "Thanks — you're on the list. Look for our next note soon."}
+          </p>
+        ) : (
+          <>
+            <p className="mt-2 text-sm text-cf-cream/80">
+              New arrivals, sale alerts, and care tips — straight to your inbox.
+            </p>
+            <form
+              action={formAction}
+              noValidate
+              aria-label="Email signup form"
+              className="mt-6 flex flex-col gap-3"
+            >
+              <input
+                id={emailId}
+                type="email"
+                name="email"
+                required
+                placeholder="your@email.com"
+                aria-label="Email address"
+                aria-invalid={fieldError ? true : undefined}
+                className="w-full rounded-md border border-cf-cream/30 bg-white/10 px-4 py-2 text-cf-cream placeholder:text-cf-cream/60 focus:outline-none focus:ring-2 focus:ring-cf-cream/50"
+              />
+              <SubmitButton />
+              {fieldError ? (
+                <p role="alert" className="text-xs text-red-300">
+                  {fieldError}
+                </p>
+              ) : null}
+              {storeError ? (
+                <p role="alert" className="text-xs text-red-300">
+                  {storeError}
+                </p>
+              ) : null}
+            </form>
+          </>
+        )}
       </div>
     </div>
   );
