@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, act } from "@testing-library/react";
 import { useEffect } from "react";
 
 const trackBeginCheckout = vi.fn();
@@ -335,5 +335,70 @@ describe("CartTrigger (cf-3qt.2.3)", () => {
     expect(
       screen.getByRole("button", { name: /cart \(1 item\)/i }),
     ).toBeInTheDocument();
+  });
+});
+
+describe("CartTrigger — aria-live announcer (cf-zmsq)", () => {
+  function renderWithCartControl() {
+    // Use a mutable object so Controls can capture the cart functions without
+    // assigning to outer-scope let bindings (react-hooks/globals violation).
+    const fns: {
+      add: ((line: CartLineItem) => void) | null;
+      remove: ((id: string) => void) | null;
+    } = { add: null, remove: null };
+
+    function Controls() {
+      const { addLine, removeLine } = useCart();
+      // eslint-disable-next-line react-hooks/immutability
+      fns.add = addLine;
+      // eslint-disable-next-line react-hooks/immutability
+      fns.remove = removeLine;
+      return null;
+    }
+
+    render(
+      <CartProvider>
+        <Controls />
+        <CartTrigger />
+      </CartProvider>,
+    );
+
+    return {
+      add: (line: CartLineItem) => act(() => { fns.add!(line); }),
+      remove: (id: string) => act(() => { fns.remove!(id); }),
+    };
+  }
+
+  it("announcer is empty on initial mount with empty cart", () => {
+    // The live region starts empty — no announcement until a cart mutation fires.
+    // Prevents ATs from greeting users with stale count on every page load.
+    renderWith([]);
+    expect(screen.getByTestId("cart-trigger-announcer")).toHaveTextContent("");
+  });
+
+  it("announces plural count when item is added", () => {
+    const { add } = renderWithCartControl();
+    add(lineA);
+    add(lineB);
+    expect(screen.getByTestId("cart-trigger-announcer")).toHaveTextContent(
+      "Cart updated: 3 items",
+    );
+  });
+
+  it("announces singular when exactly 1 item", () => {
+    const { add } = renderWithCartControl();
+    add(lineA);
+    expect(screen.getByTestId("cart-trigger-announcer")).toHaveTextContent(
+      "Cart updated: 1 item",
+    );
+  });
+
+  it("announces 'Cart is empty' when last item is removed", () => {
+    const { add, remove } = renderWithCartControl();
+    add(lineA);
+    remove(lineA.id);
+    expect(screen.getByTestId("cart-trigger-announcer")).toHaveTextContent(
+      "Cart is empty",
+    );
   });
 });

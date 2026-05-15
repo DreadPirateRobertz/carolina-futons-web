@@ -270,7 +270,7 @@ export function PdpGallery({ images, productName, activeUrl, spinImages }: PdpGa
                 onClick={() => swap(i)}
                 style={isVTSource ? { viewTransitionName: VT_NAME } : undefined}
                 className={
-                  "h-16 w-16 shrink-0 overflow-hidden rounded border transition " +
+                  "h-16 w-16 shrink-0 overflow-hidden rounded border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-espresso focus-visible:ring-offset-2 " +
                   (selected
                     ? "border-cf-espresso ring-1 ring-cf-espresso"
                     : "border-cf-sand hover:border-cf-espresso/40")
@@ -295,7 +295,7 @@ export function PdpGallery({ images, productName, activeUrl, spinImages }: PdpGa
               data-testid="pdp-compare-toggle"
               onClick={() => setCompareOpen((v) => !v)}
               className={
-                "ml-auto shrink-0 rounded border px-2 py-1 text-xs transition " +
+                "ml-auto shrink-0 rounded border px-2 py-1 text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-espresso focus-visible:ring-offset-2 " +
                 (compareOpen
                   ? "border-cf-espresso bg-cf-espresso text-white"
                   : "border-cf-sand text-cf-muted hover:border-cf-espresso/40")
@@ -316,7 +316,7 @@ export function PdpGallery({ images, productName, activeUrl, spinImages }: PdpGa
                 if (!spinOpen) setCompareOpen(false);
               }}
               className={
-                "shrink-0 rounded border px-2 py-1 text-xs transition " +
+                "shrink-0 rounded border px-2 py-1 text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-espresso focus-visible:ring-offset-2 " +
                 (spinOpen
                   ? "border-cf-espresso bg-cf-espresso text-white"
                   : "border-cf-sand text-cf-muted hover:border-cf-espresso/40")
@@ -336,7 +336,7 @@ export function PdpGallery({ images, productName, activeUrl, spinImages }: PdpGa
             data-testid="pdp-spin-toggle"
             onClick={() => setSpinOpen((v) => !v)}
             className={
-              "ml-auto shrink-0 rounded border px-2 py-1 text-xs transition " +
+              "ml-auto shrink-0 rounded border px-2 py-1 text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-espresso focus-visible:ring-offset-2 " +
               (spinOpen
                 ? "border-cf-espresso bg-cf-espresso text-white"
                 : "border-cf-sand text-cf-muted hover:border-cf-espresso/40")
