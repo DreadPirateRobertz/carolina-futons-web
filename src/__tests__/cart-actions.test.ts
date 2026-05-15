@@ -11,6 +11,10 @@ const getCurrentCart = vi.fn();
 const wixCartToLines = vi.fn();
 const applyCoupon = vi.fn();
 const removeCoupon = vi.fn();
+// cf-8ys6: spy that the sibling catches each call logWixFailure with the
+// correct ("cart", actionName, err) tuple. Mocked to no-op so the real
+// `@sentry/nextjs` import + `Sentry.flush(2000)` don't fire under jsdom.
+const logWixFailure = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("@/lib/wix/cart", () => ({
   addToCart: (...args: unknown[]) => addToCart(...args),
@@ -21,6 +25,10 @@ vi.mock("@/lib/wix/cart", () => ({
   wixCartToLines: (...args: unknown[]) => wixCartToLines(...args),
   applyCoupon: (...args: unknown[]) => applyCoupon(...args),
   removeCoupon: (...args: unknown[]) => removeCoupon(...args),
+}));
+
+vi.mock("@/lib/wix/errors", () => ({
+  logWixFailure: (...args: unknown[]) => logWixFailure(...args),
 }));
 
 describe("cart server actions", () => {
@@ -87,6 +95,8 @@ describe("cart server actions", () => {
       const result = await removeItemAction("");
       expect(result.ok).toBe(false);
       expect(removeFromCart).not.toHaveBeenCalled();
+      // Input-validation rejection isn't a Wix failure — no Sentry tag.
+      expect(logWixFailure).not.toHaveBeenCalled();
     });
 
     it("forwards to removeFromCart", async () => {
@@ -95,6 +105,18 @@ describe("cart server actions", () => {
       const result = await removeItemAction("li1");
       expect(result.ok).toBe(true);
       expect(removeFromCart).toHaveBeenCalledWith(["li1"]);
+    });
+
+    // cf-8ys6: Sentry-tag sibling catch — the missing log on this surface
+    // is what made a Wix outage during cart-row removal appear as a
+    // generic "couldn't remove" toast with no breadcrumb.
+    it("Sentry-tags removeFromCart failure via logWixFailure", async () => {
+      const err = new Error("Wix down");
+      removeFromCart.mockRejectedValueOnce(err);
+      const { removeItemAction } = await import("@/app/actions/cart");
+      const result = await removeItemAction("li1");
+      expect(result).toEqual({ ok: false, error: "Wix down" });
+      expect(logWixFailure).toHaveBeenCalledWith("cart", "removeItemAction", err);
     });
   });
 
@@ -116,6 +138,16 @@ describe("cart server actions", () => {
       expect(result.ok).toBe(true);
       expect(updateLineItemQuantity).toHaveBeenCalledWith("li1", 3);
     });
+
+    // cf-8ys6: Sentry-tag sibling catch.
+    it("Sentry-tags updateLineItemQuantity failure via logWixFailure", async () => {
+      const err = new Error("Stock conflict");
+      updateLineItemQuantity.mockRejectedValueOnce(err);
+      const { updateQuantityAction } = await import("@/app/actions/cart");
+      const result = await updateQuantityAction("li1", 3);
+      expect(result).toEqual({ ok: false, error: "Stock conflict" });
+      expect(logWixFailure).toHaveBeenCalledWith("cart", "updateQuantityAction", err);
+    });
   });
 
   describe("getCartAction", () => {
@@ -127,10 +159,13 @@ describe("cart server actions", () => {
     });
 
     it("returns error on throw", async () => {
-      getCurrentCart.mockRejectedValueOnce(new Error("boom"));
+      const err = new Error("boom");
+      getCurrentCart.mockRejectedValueOnce(err);
       const { getCartAction } = await import("@/app/actions/cart");
       const result = await getCartAction();
       expect(result).toEqual({ ok: false, error: "boom" });
+      // cf-8ys6: Sentry-tag sibling catch.
+      expect(logWixFailure).toHaveBeenCalledWith("cart", "getCartAction", err);
     });
   });
 
@@ -223,10 +258,15 @@ describe("cart server actions", () => {
     });
 
     it("returns error result when getCurrentCart throws", async () => {
-      getCurrentCart.mockRejectedValueOnce(new Error("Wix down"));
+      const err = new Error("Wix down");
+      getCurrentCart.mockRejectedValueOnce(err);
       const { hydrateCartAction } = await import("@/app/actions/cart");
       const result = await hydrateCartAction();
       expect(result).toEqual({ ok: false, error: "Wix down" });
+      // cf-8ys6: Sentry-tag sibling catch — the bead spec's "worst
+      // offender" — an empty /cart page on hydrate failure previously
+      // landed with no error breadcrumb at all.
+      expect(logWixFailure).toHaveBeenCalledWith("cart", "hydrateCartAction", err);
     });
   });
 });

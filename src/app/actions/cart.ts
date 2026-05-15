@@ -14,6 +14,7 @@ import {
   type WixCart,
 } from "@/lib/wix/cart";
 import { syncCartSession } from "@/lib/wix/cart-session-dual-write";
+import { logWixFailure } from "@/lib/wix/errors";
 
 export type CartActionResult =
   | { ok: true; cart: WixCart | null }
@@ -59,6 +60,12 @@ export async function removeItemAction(
     revalidatePath("/cart");
     return { ok: true, cart };
   } catch (err) {
+    // cf-8ys6: fire-and-forget Sentry tag so a Wix outage during cart-
+    // row removal carries a breadcrumb to triage from. `void` matches
+    // the cf-f9o1 reference impl on addItemAction — awaiting
+    // logWixFailure would block the user-visible toast on the full
+    // Sentry.flush window.
+    void logWixFailure("cart", "removeItemAction", err);
     return { ok: false, error: toMessage(err) };
   }
 }
@@ -77,6 +84,8 @@ export async function updateQuantityAction(
     revalidatePath("/cart");
     return { ok: true, cart };
   } catch (err) {
+    // cf-8ys6: see removeItemAction for rationale.
+    void logWixFailure("cart", "updateQuantityAction", err);
     return { ok: false, error: toMessage(err) };
   }
 }
@@ -112,6 +121,8 @@ export async function getCartAction(): Promise<CartActionResult> {
     const cart = await getCurrentCart();
     return { ok: true, cart };
   } catch (err) {
+    // cf-8ys6: see removeItemAction for rationale.
+    void logWixFailure("cart", "getCartAction", err);
     return { ok: false, error: toMessage(err) };
   }
 }
@@ -124,6 +135,10 @@ export async function hydrateCartAction(): Promise<HydrateCartResult> {
     const cart = await getCurrentCart();
     return { ok: true, lines: cart ? wixCartToLines(cart) : [] };
   } catch (err) {
+    // cf-8ys6: bead spec's "worst offender" — without this, an empty
+    // /cart page on hydrate failure (Wix outage, expired session)
+    // lands with no error breadcrumb at all.
+    void logWixFailure("cart", "hydrateCartAction", err);
     return { ok: false, error: toMessage(err) };
   }
 }
