@@ -3,21 +3,26 @@ import type { Metadata } from "next";
 import { AddressCheckForm } from "./AddressCheckForm";
 import { LOCAL_ZONES } from "@/lib/delivery/local-zones";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
+const GETTING_IT_HOME_TITLE = "Getting It Home — Carolina Futons";
 const GETTING_IT_HOME_DESCRIPTION =
   "Check whether Carolina Futons delivers to your area. ZIP-based zone lookup with curbside and white-glove pricing for our four delivery tiers.";
 
+const GETTING_IT_HOME_OPEN_GRAPH = {
+  title: GETTING_IT_HOME_TITLE,
+  description: GETTING_IT_HOME_DESCRIPTION,
+  url: "/getting-it-home",
+  type: "website" as const,
+  images: [DEFAULT_OG_IMAGE],
+};
+
 export const metadata: Metadata = {
-  title: "Getting It Home — Carolina Futons",
+  title: GETTING_IT_HOME_TITLE,
   description: GETTING_IT_HOME_DESCRIPTION,
   alternates: { canonical: "/getting-it-home" },
-  openGraph: {
-    title: "Getting It Home — Carolina Futons",
-    description: GETTING_IT_HOME_DESCRIPTION,
-    url: "/getting-it-home",
-    type: "website",
-    images: [DEFAULT_OG_IMAGE],
-  },
+  openGraph: GETTING_IT_HOME_OPEN_GRAPH,
+  twitter: twitterFromOpenGraph(GETTING_IT_HOME_OPEN_GRAPH),
 };
 
 // cf-3qt.4.4: Getting It Home page. Customer-facing distance/zone resolver

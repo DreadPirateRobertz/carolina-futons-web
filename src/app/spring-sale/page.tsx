@@ -6,6 +6,8 @@ import { VintageSunRays } from "@/components/mascot/VintageSunRays";
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 import { findCategory } from "@/lib/shop/categories";
 import { resolveDerivedProducts } from "@/lib/shop/derived-products";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
 // cf-3qt.5.2: /spring-sale marketing landing.
 //
@@ -19,15 +21,24 @@ import { resolveDerivedProducts } from "@/lib/shop/derived-products";
 // the page with no strip rather than a misleading "no items on sale" copy
 // (the {items, error?} contract documented in derived-products.ts).
 
+const SPRING_SALE_TITLE = "Spring Sale — Carolina Futons";
+const SPRING_SALE_DESCRIPTION =
+  "Mattress promotions running this season at Carolina Futons in Hendersonville, North Carolina. American-made comfort, 15-year frame warranty.";
+
+const SPRING_SALE_OPEN_GRAPH = {
+  title: SPRING_SALE_TITLE,
+  description: SPRING_SALE_DESCRIPTION,
+  url: "/spring-sale",
+  type: "website" as const,
+  images: [DEFAULT_OG_IMAGE],
+};
+
 export const metadata: Metadata = {
-  title: "Spring Sale — Carolina Futons",
-  description:
-    "Mattress promotions running this season at Carolina Futons in Hendersonville, North Carolina. American-made comfort, 15-year frame warranty.",
-  openGraph: {
-    title: "Spring Sale — Carolina Futons",
-    description:
-      "Mattress promotions running this season — American-made comfort from Hendersonville, NC.",
-  },
+  title: SPRING_SALE_TITLE,
+  description: SPRING_SALE_DESCRIPTION,
+  alternates: { canonical: "/spring-sale" },
+  openGraph: SPRING_SALE_OPEN_GRAPH,
+  twitter: twitterFromOpenGraph(SPRING_SALE_OPEN_GRAPH),
 };
 
 export default async function SpringSalePage() {

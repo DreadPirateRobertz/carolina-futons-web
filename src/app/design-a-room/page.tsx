@@ -8,21 +8,26 @@ import { StargazingHero } from "@/components/mascot/StargazingHero";
 import { BUSINESS } from "@/lib/business/contact-info";
 import { DESIGN_STEPS } from "@/lib/design-a-room/steps";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
+const DESIGN_A_ROOM_TITLE = "Design a Room — Carolina Futons";
 const DESIGN_A_ROOM_DESCRIPTION =
   "Work with the Carolina Futons team in Hendersonville, NC to plan a room around a futon, daybed, or Murphy bed. Free consultation, fabric samples, and 35 years of local experience.";
 
+const DESIGN_A_ROOM_OPEN_GRAPH = {
+  title: DESIGN_A_ROOM_TITLE,
+  description: DESIGN_A_ROOM_DESCRIPTION,
+  url: "/design-a-room",
+  type: "website" as const,
+  images: [DEFAULT_OG_IMAGE],
+};
+
 export const metadata: Metadata = {
-  title: "Design a Room — Carolina Futons",
+  title: DESIGN_A_ROOM_TITLE,
   description: DESIGN_A_ROOM_DESCRIPTION,
   alternates: { canonical: "/design-a-room" },
-  openGraph: {
-    title: "Design a Room — Carolina Futons",
-    description: DESIGN_A_ROOM_DESCRIPTION,
-    url: "/design-a-room",
-    type: "website",
-    images: [DEFAULT_OG_IMAGE],
-  },
+  openGraph: DESIGN_A_ROOM_OPEN_GRAPH,
+  twitter: twitterFromOpenGraph(DESIGN_A_ROOM_OPEN_GRAPH),
 };
 
 const SHOWROOM_HOURS = "Wed–Sat, 10am–5pm";

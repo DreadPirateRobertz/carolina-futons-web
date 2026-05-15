@@ -6,23 +6,28 @@ import { HeroReveal } from "@/components/motion/HeroReveal";
 import { listGuides } from "@/lib/discovery/guides";
 import { ReadingScene } from "@/components/mascot/ReadingScene";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
 const CARD_STAGGER_SECONDS = 0.08;
 
+const GUIDES_TITLE = "Buying Guides — Carolina Futons";
 const GUIDES_DESCRIPTION =
   "Plain-English guides to picking a futon mattress, comparing platform beds, sizing a Murphy bed, and getting the most out of a small room.";
 
+const GUIDES_OPEN_GRAPH = {
+  title: GUIDES_TITLE,
+  description: GUIDES_DESCRIPTION,
+  url: "/guides",
+  type: "website" as const,
+  images: [DEFAULT_OG_IMAGE],
+};
+
 export const metadata: Metadata = {
-  title: "Buying Guides — Carolina Futons",
+  title: GUIDES_TITLE,
   description: GUIDES_DESCRIPTION,
   alternates: { canonical: "/guides" },
-  openGraph: {
-    title: "Buying Guides — Carolina Futons",
-    description: GUIDES_DESCRIPTION,
-    url: "/guides",
-    type: "website",
-    images: [DEFAULT_OG_IMAGE],
-  },
+  openGraph: GUIDES_OPEN_GRAPH,
+  twitter: twitterFromOpenGraph(GUIDES_OPEN_GRAPH),
 };
 
 export default async function GuidesIndexPage() {

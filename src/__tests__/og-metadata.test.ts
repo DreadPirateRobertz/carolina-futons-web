@@ -295,25 +295,102 @@ describe("cf-ceex per-page OG sweep", () => {
 
   it("/guides/[slug] generateMetadata emits og:type article with canonical", async () => {
     const { generateMetadata } = await import("@/app/guides/[slug]/page");
-    // Use a real guide slug — listGuides() is a static module-internal source
-    // of truth and doesn't need mocking for this assertion.
+    // `listGuides()` tries Wix CMS first and falls back to the static
+    // `GUIDES` array on failure (see src/lib/discovery/guides.ts). In jsdom
+    // the Wix client throws so the fallback wins — that's good enough for
+    // this assertion because the slug we pass is also in the static array.
     const meta = await generateMetadata({
       params: Promise.resolve({ slug: "how-to-pick-a-futon-mattress" }),
     });
     expect((meta.openGraph as { type?: string })?.type).toBe("article");
     expect(meta.alternates?.canonical).toBe("/guides/how-to-pick-a-futon-mattress");
+    expect((meta.twitter as { card?: string })?.card).toBe("summary_large_image");
   });
 
-  it("/compare empty-state generateMetadata has openGraph + description", async () => {
+  it("/guides/[slug] notFound branch returns minimal metadata", async () => {
+    const { generateMetadata } = await import("@/app/guides/[slug]/page");
+    const meta = await generateMetadata({
+      params: Promise.resolve({ slug: "not-a-real-guide-slug" }),
+    });
+    expect(meta.title).toBe("Guide not found — Carolina Futons");
+    expect(meta.openGraph).toBeUndefined();
+    expect(meta.alternates).toBeUndefined();
+  });
+
+  it("/compare empty-state generateMetadata has openGraph + description + twitter", async () => {
     const { generateMetadata } = await import("@/app/compare/page");
     const meta = await generateMetadata({
       searchParams: Promise.resolve({}),
     });
     expect(meta.openGraph?.description).toContain("side-by-side");
     expect(ogImageUrls(meta.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+    expect((meta.twitter as { card?: string })?.card).toBe("summary_large_image");
   });
 
-  it("all sweep pages have distinct openGraph.description (no duplicates)", async () => {
+  it("/compare populated branch keeps robots:noindex and adds openGraph + twitter", async () => {
+    const product = {
+      _id: "p1",
+      name: "Monterey",
+      slug: "monterey-futon",
+      description: "<p>Monterey hardwood futon.</p>",
+      media: { mainMedia: { image: { url: "https://static.wixstatic.com/media/p1.jpg" } } },
+    };
+    mockGetProductBySlug.mockResolvedValue(product as never);
+    const { generateMetadata } = await import("@/app/compare/page");
+    const meta = await generateMetadata({
+      searchParams: Promise.resolve({ slugs: "monterey-futon,charleston-platform-bed" }),
+    });
+    expect((meta.robots as { index?: boolean })?.index).toBe(false);
+    expect((meta.robots as { follow?: boolean })?.follow).toBe(true);
+    expect(meta.openGraph?.description).toContain("side-by-side");
+    expect(ogImageUrls(meta.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+    expect((meta.twitter as { card?: string })?.card).toBe("summary_large_image");
+  });
+
+  it("all sweep pages (incl. dynamic) have distinct openGraph.description", async () => {
+    const staticModules = await Promise.all([
+      import("@/app/about/page"),
+      import("@/app/visit/page"),
+      import("@/app/getting-it-home/page"),
+      import("@/app/design-a-room/page"),
+      import("@/app/reviews/page"),
+      import("@/app/guides/page"),
+      import("@/app/spring-sale/page"),
+    ]);
+    const { generateMetadata: compareGen } = await import("@/app/compare/page");
+    const { generateMetadata: guideSlugGen } = await import("@/app/guides/[slug]/page");
+    const compareMeta = await compareGen({ searchParams: Promise.resolve({}) });
+    const guideMeta = await guideSlugGen({
+      params: Promise.resolve({ slug: "how-to-pick-a-futon-mattress" }),
+    });
+    const descriptions = [
+      ...staticModules.map((m) => m.metadata.openGraph?.description),
+      compareMeta.openGraph?.description,
+      guideMeta.openGraph?.description,
+    ];
+    expect(new Set(descriptions).size).toBe(descriptions.length);
+  });
+
+  it("all sweep page openGraph images are HTTPS Wix CDN URLs", async () => {
+    const staticModules = await Promise.all([
+      import("@/app/about/page"),
+      import("@/app/visit/page"),
+      import("@/app/getting-it-home/page"),
+      import("@/app/design-a-room/page"),
+      import("@/app/reviews/page"),
+      import("@/app/guides/page"),
+      import("@/app/spring-sale/page"),
+    ]);
+    const allImageUrls = staticModules.flatMap((m) =>
+      ogImageUrls(m.metadata.openGraph?.images),
+    );
+    expect(allImageUrls.length).toBeGreaterThan(0);
+    for (const url of allImageUrls) {
+      expect(url).toMatch(/^https:\/\/static\.wixstatic\.com\//);
+    }
+  });
+
+  it("all sweep pages mirror openGraph → twitter via twitterFromOpenGraph", async () => {
     const modules = await Promise.all([
       import("@/app/about/page"),
       import("@/app/visit/page"),
@@ -321,8 +398,13 @@ describe("cf-ceex per-page OG sweep", () => {
       import("@/app/design-a-room/page"),
       import("@/app/reviews/page"),
       import("@/app/guides/page"),
+      import("@/app/spring-sale/page"),
     ]);
-    const descriptions = modules.map((m) => m.metadata.openGraph?.description);
-    expect(new Set(descriptions).size).toBe(descriptions.length);
+    for (const m of modules) {
+      expect((m.metadata.twitter as { card?: string })?.card).toBe("summary_large_image");
+      expect((m.metadata.twitter as { title?: string })?.title).toBe(
+        m.metadata.openGraph?.title,
+      );
+    }
   });
 });

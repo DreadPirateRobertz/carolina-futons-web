@@ -6,21 +6,26 @@ import { loadReviews } from "@/lib/discovery/google-reviews";
 import { ReviewFilter } from "./ReviewFilter";
 import { FallsScene } from "@/components/mascot/FallsScene";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
+const REVIEWS_TITLE = "Customer Reviews — Carolina Futons";
 const REVIEWS_DESCRIPTION =
   "Real reviews from Carolina Futons customers on our hardwood frames, hand-built mattresses, and Murphy beds.";
 
+const REVIEWS_OPEN_GRAPH = {
+  title: REVIEWS_TITLE,
+  description: REVIEWS_DESCRIPTION,
+  url: "/reviews",
+  type: "website" as const,
+  images: [DEFAULT_OG_IMAGE],
+};
+
 export const metadata: Metadata = {
-  title: "Customer Reviews — Carolina Futons",
+  title: REVIEWS_TITLE,
   description: REVIEWS_DESCRIPTION,
   alternates: { canonical: "/reviews" },
-  openGraph: {
-    title: "Customer Reviews — Carolina Futons",
-    description: REVIEWS_DESCRIPTION,
-    url: "/reviews",
-    type: "website",
-    images: [DEFAULT_OG_IMAGE],
-  },
+  openGraph: REVIEWS_OPEN_GRAPH,
+  twitter: twitterFromOpenGraph(REVIEWS_OPEN_GRAPH),
 };
 
 export default async function ReviewsPage() {
