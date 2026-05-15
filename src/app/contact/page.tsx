@@ -5,6 +5,7 @@ import { AppointmentForm } from "@/components/contact/AppointmentForm";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { FogScene } from "@/components/mascot/FogScene";
 import { BUSINESS } from "@/lib/business/contact-info";
+import { getShowroomScheduleLine } from "@/lib/business/showroom-hours";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
 
 const TITLE = "Contact — Carolina Futons";
@@ -22,7 +23,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  // cf-7pk0 F2: read the canonical showroom hours from SiteContent so
+  // this page can't drift from /visit. Pre-fix, line 97 hardcoded
+  // "Wednesday through Saturday, 10 am–5 pm" while /visit's published
+  // schedule said wed-sat is Closed — sending customers to a closed
+  // showroom. Single source of truth now.
+  const showroomScheduleLine = await getShowroomScheduleLine();
+
   return (
     <main className="w-full">
       <FogScene />
@@ -95,8 +103,8 @@ export default function ContactPage() {
               Schedule a showroom visit
             </h2>
             <p className="text-sm leading-relaxed text-cf-muted">
-              Open Sunday through Tuesday, 10&nbsp;am–5&nbsp;pm. Request a slot
-              and we&apos;ll confirm by email within one business day.
+              {showroomScheduleLine} Request a slot and we&apos;ll confirm by
+              email within one business day.
             </p>
             <AppointmentForm />
           </section>
