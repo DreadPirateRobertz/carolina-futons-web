@@ -40,6 +40,7 @@ export async function generateMetadata(props: {
     return {
       title: COMPARE_FALLBACK_TITLE,
       description: COMPARE_DESCRIPTION,
+      alternates: { canonical: "/compare" },
       openGraph,
       twitter: twitterFromOpenGraph(openGraph),
     };

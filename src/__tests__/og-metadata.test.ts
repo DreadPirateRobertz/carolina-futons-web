@@ -278,7 +278,10 @@ describe("cf-ceex per-page OG sweep", () => {
 
   it("/design-a-room has openGraph + canonical", async () => {
     const { metadata } = await import("@/app/design-a-room/page");
-    expect(metadata.openGraph?.description).toContain("plan a room");
+    const desc = metadata.openGraph?.description ?? "";
+    expect(desc).toContain("futon");
+    expect(desc).toContain("consultation");
+    expect(desc.length).toBeLessThanOrEqual(160);
     expect(metadata.alternates?.canonical).toBe("/design-a-room");
   });
 

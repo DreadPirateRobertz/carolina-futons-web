@@ -32,7 +32,9 @@ export async function generateMetadata({
   const og = {
     title,
     description: guide.hook,
-    images: [DEFAULT_OG_IMAGE],
+    url: `/guides/${guide.slug}`,
+    type: "article" as const,
+    images: [guide.coverImageUrl ? { url: guide.coverImageUrl } : DEFAULT_OG_IMAGE],
   };
   return {
     title,

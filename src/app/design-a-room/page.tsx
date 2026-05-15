@@ -12,7 +12,7 @@ import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
 const DESIGN_A_ROOM_TITLE = "Design a Room — Carolina Futons";
 const DESIGN_A_ROOM_DESCRIPTION =
-  "Work with the Carolina Futons team in Hendersonville, NC to plan a room around a futon, daybed, or Murphy bed. Free consultation, fabric samples, and 35 years of local experience.";
+  "Plan a room around a futon, Murphy bed, or daybed with Carolina Futons. Free consultation, fabric samples, and 35 years of local experience.";
 
 const DESIGN_A_ROOM_OPEN_GRAPH = {
   title: DESIGN_A_ROOM_TITLE,
