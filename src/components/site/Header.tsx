@@ -39,7 +39,20 @@ const SUB_NAV = [
   { label: "Visit Us", href: "/visit" },
 ] as const;
 
-const SCROLL_THRESHOLD_PX = 80;
+// cf-r9r3: hysteresis to prevent threshold thrashing. A single
+// `scrollY >= 80` check flutters across the boundary on trackpad smooth-
+// scroll + Lenis fractional ticks — each flip triggers setScrolled and
+// re-renders the whole header tree. Two-band hysteresis: enter shrunk
+// at >=80, exit shrunk only after scrolling back above 60. 20px gap is
+// enough to dampen the flutter without making the exit feel sticky.
+const SCROLL_ENTER_PX = 80;
+const SCROLL_EXIT_PX = 60;
+// cf-r9r3: forest-dark hex used as the header's pre-decode background
+// color so the FIRST paint is bear-tone, not white. Matches the dominant
+// tone of bears.jpg + the top-strip gradient overlay (also #2A1810).
+// When Next/Image finishes decoding the bears photo on top, the
+// transition is dark → bears (smooth) instead of white → bears (jarring).
+const HEADER_BG_FALLBACK = "#2A1810";
 
 // cfw-61b: optional announcementBar slot. layout.tsx (server) fetches the
 // owner-editable rotation copy via getSiteContent and passes a configured
@@ -61,12 +74,36 @@ export function Header({ announcementBar }: HeaderProps = {}) {
   const isHome = pathname === "/";
 
   useEffect(() => {
+    // cf-r9r3: rAF-throttle the scroll handler. Lenis smooth-scroll
+    // emits many scroll events per frame (one per rAF tick on a wheel
+    // tween); without throttling, setScrolled gets called on each one,
+    // and React's bailout doesn't prevent the function-call cost. One
+    // rAF coalesces all events between paints into a single state read.
+    let ticking = false;
+    let frame = 0;
     const onScroll = () => {
-      setScrolled(window.scrollY >= SCROLL_THRESHOLD_PX);
+      if (ticking) return;
+      ticking = true;
+      frame = requestAnimationFrame(() => {
+        ticking = false;
+        const y = window.scrollY;
+        // Hysteresis: enter at >=ENTER, exit only after <=EXIT.
+        setScrolled((prev) => {
+          if (!prev && y >= SCROLL_ENTER_PX) return true;
+          if (prev && y <= SCROLL_EXIT_PX) return false;
+          return prev;
+        });
+      });
     };
+    // Run once on mount to handle the case where the user lands mid-page
+    // (browser-restored scroll position). Use the same handler so the
+    // hysteresis logic is consistent with subsequent scroll events.
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
+    };
   }, []);
 
   const shadowClass = scrolled ? "shadow-md" : "";
@@ -80,32 +117,53 @@ export function Header({ announcementBar }: HeaderProps = {}) {
   // `transition-*` classes so the change is instant — the collapse still
   // happens, it just doesn't animate (vestibular-friendly).
   const compressMainRow = scrolled && !prefersReducedMotion;
+  // cf-r9r3: keep the main row height FIXED across the shrink. Previously
+  // py-4 → py-2 cut 16px of header height, causing the page content
+  // below to jump up mid-scroll. The slim-chrome visual intent (smaller
+  // wordmark + smaller padding) is preserved by shrinking the wordmark
+  // alone — the row stays at a stable min-h so scroll position doesn't
+  // realign mid-transition. Padding-only-transition removed.
   const mainRowPaddingClass = compressMainRow ? "py-2" : "py-4";
-  const mainRowTransitionClass = prefersReducedMotion
-    ? ""
-    : "transition-[padding] duration-200 ease-out";
-  // cf-h85f: bear-backdrop fade + hero-band collapse + wordmark recolor
-  // happen on `scrolled` regardless of reduced-motion (vestibular concern
-  // is animated movement; instant state change is fine). Drop the
-  // `transition-*` class under reduced-motion so users see an instant
-  // snap rather than a 300ms ease.
+  // cf-r9r3: consolidate transitions. Every transition class on the
+  // header tree now uses 300ms ease-out so the visual effects land in
+  // sync. `transition-all` replaced with an explicit property list —
+  // animating ONLY the props that change avoids the cost of considering
+  // every animatable property on every frame, which the browser can't
+  // optimize for offscreen / unaffected ones.
   const motionTransition = prefersReducedMotion
     ? ""
-    : "transition-all duration-300 ease-out";
+    : "transition-[transform,opacity,color,background-color,font-size,padding,max-height] duration-300 ease-out";
+  const mainRowTransitionClass = motionTransition;
 
   return (
     <header
       data-slot="site-header"
       data-scrolled={scrolled ? "true" : "false"}
+      // cf-r9r3: forest-dark inline background paints on FIRST frame so
+      // the unscrolled-state header shows a bear-tone surface even before
+      // Next/Image finishes decoding bears.jpg. Without this, the first
+      // ~50-200ms of page load showed a white flash through the
+      // transparent header before bears decoded — Stilgar's "shrunken
+      // header shows white not bears" complaint. The `bg-white` class
+      // for the SCROLLED state overrides this inline color via Tailwind's
+      // higher CSS specificity. Reduced-motion users still get the same
+      // first-paint behavior — this is a background-color, not animation.
+      style={{
+        backgroundColor: scrolled ? undefined : HEADER_BG_FALLBACK,
+      }}
       className={[
-        // cf-1eb5 + cf-h85f + cf-jo07 r2: full-header bear treatment that
-        // STAYS through scroll. Stilgar reversed the cf-h85f bear-fade —
-        // shrunken state should still read as the bear chrome, not a plain
-        // white bar. We keep the dark border + white text always; the top
-        // gradient (from-[#2A1810]/85) on the backdrop continues providing
-        // contrast for the chrome row.
+        // cf-1eb5 + cf-h85f + cf-jo07 r2 + cf-r9r3: full-header bear
+        // treatment that STAYS through scroll. cf-jo07 r2 (PR #540)
+        // reversed the cf-h85f bear-fade — shrunken state still reads as
+        // the bear chrome, not a plain white bar. So no scrolled-state
+        // surface swap to white. cf-r9r3 layers in the consolidated
+        // motionTransition (300ms ease-out, explicit property list) so
+        // shadow + the remaining scroll-driven transitions (wordmark
+        // size, hero-band collapse, padding) land in sync. The forest-
+        // dark inline backgroundColor (above style=) handles the pre-
+        // bears-decode first-paint flash for both states.
         "sticky top-0 z-40 w-full border-b border-white/10 text-white",
-        prefersReducedMotion ? "" : "transition-shadow duration-200",
+        motionTransition,
         shadowClass,
       ]
         .filter(Boolean)
