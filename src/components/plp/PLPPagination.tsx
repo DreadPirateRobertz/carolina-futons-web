@@ -44,7 +44,7 @@ export function PLPPagination({
       {hasPrev ? (
         <Link
           href={buildPageUrl(basePath, searchParams, page - 1)}
-          className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-700"
+          className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-700"
         >
           ← Previous
         </Link>
@@ -59,7 +59,7 @@ export function PLPPagination({
       {hasNext ? (
         <Link
           href={buildPageUrl(basePath, searchParams, page + 1)}
-          className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-700"
+          className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-700"
         >
           Next →
         </Link>

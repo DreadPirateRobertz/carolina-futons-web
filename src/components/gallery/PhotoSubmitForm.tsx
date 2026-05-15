@@ -113,7 +113,7 @@ export function PhotoSubmitForm({ defaultProductSlug }: { defaultProductSlug?: s
       <button
         type="submit"
         disabled={isPending}
-        className="w-full rounded-lg bg-cf-espresso px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-cf-espresso/90 disabled:opacity-50"
+        className="w-full rounded-lg bg-cf-espresso px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-cf-espresso/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2 disabled:opacity-50"
       >
         {isPending ? "Submitting…" : "Submit photo"}
       </button>

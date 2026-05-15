@@ -79,7 +79,7 @@ export function GiftCardPicker({ cards }: Props) {
                   setError(null);
                 }}
                 className={[
-                  "rounded-md border px-5 py-2.5 text-sm font-semibold transition",
+                  "rounded-md border px-5 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2",
                   card._id === selectedId
                     ? "border-cf-espresso bg-cf-espresso text-white"
                     : "border-cf-smoke bg-white text-cf-charcoal hover:border-cf-espresso",
@@ -133,7 +133,7 @@ export function GiftCardPicker({ cards }: Props) {
         type="button"
         onClick={handleAddToCart}
         disabled={pending || !selected._id}
-        className="w-full rounded-md bg-cf-cta px-6 py-3 font-semibold text-white transition hover:bg-cf-cta/90 disabled:opacity-60 sm:w-auto sm:min-w-48"
+        className="w-full rounded-md bg-cf-cta px-6 py-3 font-semibold text-white transition hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2 disabled:opacity-60 sm:w-auto sm:min-w-48"
       >
         {pending ? "Adding…" : `Add ${formattedPrice} gift card to cart`}
       </button>
