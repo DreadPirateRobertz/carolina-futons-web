@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, act } from "@testing-library/react";
 import { useEffect } from "react";
 
 const trackBeginCheckout = vi.fn();
@@ -335,5 +335,64 @@ describe("CartTrigger (cf-3qt.2.3)", () => {
     expect(
       screen.getByRole("button", { name: /cart \(1 item\)/i }),
     ).toBeInTheDocument();
+  });
+});
+
+describe("CartTrigger — aria-live announcer (cf-zmsq)", () => {
+  function renderWithCartControl() {
+    let addFn: ((line: CartLineItem) => void) | null = null;
+    let removeFn: ((id: string) => void) | null = null;
+
+    function Controls() {
+      const { addLine, removeLine } = useCart();
+      addFn = addLine;
+      removeFn = removeLine;
+      return null;
+    }
+
+    render(
+      <CartProvider>
+        <Controls />
+        <CartTrigger />
+      </CartProvider>,
+    );
+
+    return {
+      add: (line: CartLineItem) => act(() => { addFn!(line); }),
+      remove: (id: string) => act(() => { removeFn!(id); }),
+    };
+  }
+
+  it("announcer is empty on initial mount with empty cart", () => {
+    // The live region starts empty — no announcement until a cart mutation fires.
+    // Prevents ATs from greeting users with stale count on every page load.
+    renderWith([]);
+    expect(screen.getByTestId("cart-trigger-announcer")).toHaveTextContent("");
+  });
+
+  it("announces plural count when item is added", () => {
+    const { add } = renderWithCartControl();
+    add(lineA);
+    add(lineB);
+    expect(screen.getByTestId("cart-trigger-announcer")).toHaveTextContent(
+      "Cart updated: 3 items",
+    );
+  });
+
+  it("announces singular when exactly 1 item", () => {
+    const { add } = renderWithCartControl();
+    add(lineA);
+    expect(screen.getByTestId("cart-trigger-announcer")).toHaveTextContent(
+      "Cart updated: 1 item",
+    );
+  });
+
+  it("announces 'Cart is empty' when last item is removed", () => {
+    const { add, remove } = renderWithCartControl();
+    add(lineA);
+    remove(lineA.id);
+    expect(screen.getByTestId("cart-trigger-announcer")).toHaveTextContent(
+      "Cart is empty",
+    );
   });
 });

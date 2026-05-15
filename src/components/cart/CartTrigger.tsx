@@ -1,25 +1,44 @@
 "use client";
 
 import { ShoppingBag } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import { useCart } from "@/components/cart/CartProvider";
 
 // Header cart icon. Clicking opens the drawer instead of navigating; the
 // count badge is decorative (aria-hidden) and the accessible name carries the
 // count so screen readers don't double-announce it. A sibling aria-live
-// region announces count changes (cf-zmsq) so screen-reader users notice
-// when an add-to-cart succeeds without having to refocus the trigger.
+// region announces count changes so screen-reader users notice when an
+// add-to-cart succeeds without refocusing the trigger.
+// The ref guard prevents the live region from firing on initial mount —
+// ATs treat non-empty live regions at paint time as stale content and ignore
+// them unpredictably, but firing on mount trains users to ignore the region.
 
 export function CartTrigger() {
   const { itemCount, openCart } = useCart();
+  const prevCountRef = useRef<number | null>(null);
+  const [liveText, setLiveText] = useState("");
+
+  useEffect(() => {
+    if (prevCountRef.current === null) {
+      // Suppress initial-mount announcement — only announce on actual changes.
+      prevCountRef.current = itemCount;
+      return;
+    }
+    if (itemCount !== prevCountRef.current) {
+      setLiveText(
+        itemCount === 0
+          ? "Cart is empty"
+          : `Cart updated: ${itemCount} ${itemCount === 1 ? "item" : "items"}`,
+      );
+      prevCountRef.current = itemCount;
+    }
+  }, [itemCount]);
+
   const label =
     itemCount === 0
       ? "Cart (empty)"
       : `Cart (${itemCount} ${itemCount === 1 ? "item" : "items"})`;
-  const announcement =
-    itemCount === 0
-      ? "Cart is empty"
-      : `Cart updated: ${itemCount} ${itemCount === 1 ? "item" : "items"}`;
 
   return (
     <>
@@ -47,7 +66,7 @@ export function CartTrigger() {
         data-testid="cart-trigger-announcer"
         className="sr-only"
       >
-        {announcement}
+        {liveText}
       </span>
     </>
   );
