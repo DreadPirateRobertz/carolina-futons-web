@@ -124,10 +124,10 @@ describe("Header — scroll shrink (cf-nav-scroll-shrink)", () => {
     // shape instead so a future revert to scattered transitions trips.
     const { container } = renderHeader();
     const header = container.querySelector("[data-slot='site-header']");
-    // Either the new consolidated transition-[…] OR the legacy
-    // transition-shadow class is acceptable while the cf-r9r3 fix is in
-    // flight — but the consolidated form is the expected post-fix shape.
-    expect(header!.className).toMatch(/transition-\[[^\]]+\]|transition-shadow/);
+    // Consolidated form must include box-shadow so the shadow-md fade
+    // is animated (not a snap). The pre-fix transition-shadow standalone
+    // class is gone — this regex pins the post-fix requirement directly.
+    expect(header!.className).toMatch(/transition-\[[^\]]*box-shadow[^\]]*\]/);
   });
 
   // cf-jo07 r2 + cf-r9r3: Stilgar reversed cf-h85f's bear-fade. The
@@ -240,7 +240,7 @@ describe("Header — scroll shrink (cf-nav-scroll-shrink)", () => {
     );
   });
 
-  it("scrolled header drops the dark fallback so bg-white wins", async () => {
+  it("scrolled header clears inline backgroundColor so bear backdrop shows through", async () => {
     const { container } = renderHeader();
     await act(async () => {
       setScroll(120);
@@ -249,9 +249,9 @@ describe("Header — scroll shrink (cf-nav-scroll-shrink)", () => {
     const header = container.querySelector(
       "[data-slot='site-header']",
     ) as HTMLElement;
-    // Inline backgroundColor cleared so the bg-white Tailwind class
-    // controls the surface — without this, the inline forest-dark would
-    // override the white surface intent.
+    // Inline backgroundColor cleared (set to undefined → React removes the
+    // style attr entirely) so the bear backdrop shows through. Inline styles
+    // beat Tailwind classes, so removing it is the only correct mechanism.
     expect(header.style.backgroundColor).toBe("");
   });
 });

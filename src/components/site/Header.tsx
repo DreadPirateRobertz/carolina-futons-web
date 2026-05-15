@@ -6,10 +6,11 @@
 //   (cfw-3t9: trimmed announcement 60→44 per cfw-y2i §7 to reclaim home fold)
 // CMS wiring + mega-nav content land in Phase 3 (rennala).
 //
-// Scroll-shrink (cf-nav-scroll-shrink): once the page scrolls past 80px the
-// header gains a shadow (both modes) and the main row compresses py-4 → py-2
-// (non-reduced-motion only). Under prefers-reduced-motion the height stays
-// static — only the shadow fades in, which is not a vestibular trigger.
+// Scroll-shrink (cf-nav-scroll-shrink): two-band hysteresis — enters shrunk
+// state at SCROLL_ENTER_PX (80), exits only after SCROLL_EXIT_PX (60). The
+// 20px gap prevents threshold thrashing on Lenis fractional scroll ticks.
+// Under prefers-reduced-motion the height stays static; only the shadow
+// fades in (box-shadow is not a vestibular trigger).
 import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -80,7 +81,7 @@ export function Header({ announcementBar }: HeaderProps = {}) {
     // and React's bailout doesn't prevent the function-call cost. One
     // rAF coalesces all events between paints into a single state read.
     let ticking = false;
-    let frame = 0;
+    let frame: ReturnType<typeof requestAnimationFrame> | null = null;
     const onScroll = () => {
       if (ticking) return;
       ticking = true;
@@ -102,7 +103,7 @@ export function Header({ announcementBar }: HeaderProps = {}) {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(frame);
+      if (frame !== null) cancelAnimationFrame(frame);
     };
   }, []);
 
@@ -117,12 +118,9 @@ export function Header({ announcementBar }: HeaderProps = {}) {
   // `transition-*` classes so the change is instant — the collapse still
   // happens, it just doesn't animate (vestibular-friendly).
   const compressMainRow = scrolled && !prefersReducedMotion;
-  // cf-r9r3: keep the main row height FIXED across the shrink. Previously
-  // py-4 → py-2 cut 16px of header height, causing the page content
-  // below to jump up mid-scroll. The slim-chrome visual intent (smaller
-  // wordmark + smaller padding) is preserved by shrinking the wordmark
-  // alone — the row stays at a stable min-h so scroll position doesn't
-  // realign mid-transition. Padding-only-transition removed.
+  // cf-r9r3: padding toggles py-4 → py-2 for slim-chrome feel. The
+  // consolidated motionTransition above animates it at 300ms so it
+  // lands in sync with the wordmark scale + shadow.
   const mainRowPaddingClass = compressMainRow ? "py-2" : "py-4";
   // cf-r9r3: consolidate transitions. Every transition class on the
   // header tree now uses 300ms ease-out so the visual effects land in
@@ -132,7 +130,7 @@ export function Header({ announcementBar }: HeaderProps = {}) {
   // optimize for offscreen / unaffected ones.
   const motionTransition = prefersReducedMotion
     ? ""
-    : "transition-[transform,opacity,color,background-color,font-size,padding,max-height] duration-300 ease-out";
+    : "transition-[transform,opacity,color,background-color,box-shadow,font-size,padding,max-height] duration-300 ease-out";
   const mainRowTransitionClass = motionTransition;
 
   return (
@@ -143,11 +141,11 @@ export function Header({ announcementBar }: HeaderProps = {}) {
       // the unscrolled-state header shows a bear-tone surface even before
       // Next/Image finishes decoding bears.jpg. Without this, the first
       // ~50-200ms of page load showed a white flash through the
-      // transparent header before bears decoded — Stilgar's "shrunken
-      // header shows white not bears" complaint. The `bg-white` class
-      // for the SCROLLED state overrides this inline color via Tailwind's
-      // higher CSS specificity. Reduced-motion users still get the same
-      // first-paint behavior — this is a background-color, not animation.
+      // transparent header — Stilgar's "shrunken header shows white not
+      // bears" complaint. When scrolled=true we set backgroundColor to
+      // undefined, which removes the inline style attribute entirely so
+      // the bear backdrop shows through. (Inline styles beat Tailwind
+      // classes; clearing it is the only correct mechanism here.)
       style={{
         backgroundColor: scrolled ? undefined : HEADER_BG_FALLBACK,
       }}
@@ -181,6 +179,9 @@ export function Header({ announcementBar }: HeaderProps = {}) {
         data-slot="header-bear-backdrop"
         className="pointer-events-none absolute inset-0 overflow-hidden opacity-100"
       >
+        {/* object-[center_40%] — 40% vertical keeps all three bear faces
+            in frame across the full range of header heights (hero-expanded
+            through slim-chrome). center-top would crop the bottom bears. */}
         <Image
           src="/design/animals/bears.jpg"
           alt=""
