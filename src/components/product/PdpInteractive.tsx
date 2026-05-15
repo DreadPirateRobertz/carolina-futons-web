@@ -62,6 +62,10 @@ import {
   type ProductOptionInput,
   type VariantInput,
 } from "@/lib/product/variant-selection";
+import {
+  CALL_FOR_PRICE_TEXT,
+  isCallForPriceCents,
+} from "@/lib/product/call-for-price";
 import { wixImageUrl } from "@/lib/wix/wix-image";
 
 function resolveInStock(
@@ -167,6 +171,11 @@ export function PdpInteractive({
   const selectedPrice = getSelectedPrice(variants, selection, fallbackPrice);
   const selectedPriceCents = getSelectedPriceCents(variants, selection, fallbackPriceCents);
   const selectedVariant = findMatchingVariant(variants, selection);
+  // cf-pdp-g4 (cf-lc1c G-4): mirrors Wix Velo isCallForPrice — products
+  // with priceData.price <= $1 (catalogPriceFix placeholder per cf-3pwy F1)
+  // are call-for-price. We swap the displayed price + suppress the cart
+  // action so the customer can't add a $0 line item.
+  const callForPrice = isCallForPriceCents(selectedPriceCents);
   const selectionComplete =
     productOptions.length === 0 || isSelectionComplete(productOptions, selection);
   const inStock = resolveInStock(selectedVariant, productOptions, stock);
@@ -180,11 +189,13 @@ export function PdpInteractive({
     .map(([k, v]) => `${k}: ${v}`)
     .join(", ");
 
-  const disabledReason = !selectionComplete
-    ? "Select options to continue"
-    : !inStock
-      ? "Out of stock"
-      : undefined;
+  const disabledReason = callForPrice
+    ? CALL_FOR_PRICE_TEXT
+    : !selectionComplete
+      ? "Select options to continue"
+      : !inStock
+        ? "Out of stock"
+        : undefined;
 
   // Shared by the primary CTA and the sticky bar so both invoke the same
   // cart action with identical props. Typed against AddToCartButton's own
@@ -198,10 +209,12 @@ export function PdpInteractive({
     imageUrl,
     productUrl: `/products/${productSlug}`,
     unitPriceCents: selectedPriceCents,
-    formattedUnitPrice: selectedPrice,
+    // cf-pdp-g4: swap the display label so the sticky-CTA + cart line
+    // both surface "Call for current pricing" instead of "$0.00".
+    formattedUnitPrice: callForPrice ? CALL_FOR_PRICE_TEXT : selectedPrice,
     // cf-pdp-g1: thread the per-PDP qty through to the cart action.
     quantity,
-    disabled: !selectionComplete || !inStock,
+    disabled: callForPrice || !selectionComplete || !inStock,
     disabledReason,
   };
 
