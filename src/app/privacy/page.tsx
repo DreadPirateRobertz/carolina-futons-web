@@ -6,11 +6,20 @@ import {
   CONSENT_COOKIE_NAME,
   parseConsentCookieAsMap,
 } from "@/lib/consent/consent-state";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
+
+const TITLE = "Privacy Policy — Carolina Futons";
+const DESCRIPTION =
+  "How Carolina Futons collects, uses, and protects the information you share with us online and in-store.";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Carolina Futons",
-  description:
-    "How Carolina Futons collects, uses, and protects the information you share with us online and in-store.",
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [DEFAULT_OG_IMAGE],
+  },
 };
 
 const LAST_UPDATED = "April 18, 2026";

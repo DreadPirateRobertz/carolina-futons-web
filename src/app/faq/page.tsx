@@ -4,6 +4,7 @@ import { CfLink } from "@/components/ui/cf-link";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { groupFaqsByCategory, listFaqs } from "@/lib/cms/faq";
 import { buildFaqPageSchema } from "@/lib/seo/json-ld";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
 
 // cf-3qt.4.1: /faq page.
 //
@@ -20,10 +21,18 @@ import { buildFaqPageSchema } from "@/lib/seo/json-ld";
 // rich-result eligibility lines up regardless of which sections the user
 // happens to expand.
 
+const TITLE = "FAQ — Carolina Futons";
+const DESCRIPTION =
+  "Common questions about Carolina Futons — shipping, warranty, returns, showroom hours. Family-owned in Hendersonville, NC since 1991.";
+
 export const metadata: Metadata = {
-  title: "FAQ — Carolina Futons",
-  description:
-    "Common questions about Carolina Futons — shipping, warranty, returns, showroom hours. Family-owned in Hendersonville, NC since 1991.",
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [DEFAULT_OG_IMAGE],
+  },
 };
 
 export default async function FaqPage() {

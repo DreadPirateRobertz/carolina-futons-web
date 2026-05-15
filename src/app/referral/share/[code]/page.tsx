@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getReferralByCodeAction } from "@/app/actions/referral";
 import { ReferralShareBanner } from "@/components/referral/ReferralShareBanner";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
 
 type Props = { params: Promise<{ code: string }> };
 
@@ -12,10 +13,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = name
     ? `${name} invited you — 5% off at Carolina Futons`
     : "You're invited — 5% off at Carolina Futons";
+  const description =
+    "Get 5% off your first order of American-made futons, frames, and mattresses from Carolina Futons.";
   return {
     title,
-    description:
-      "Get 5% off your first order of American-made futons, frames, and mattresses from Carolina Futons.",
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [DEFAULT_OG_IMAGE],
+    },
   };
 }
 

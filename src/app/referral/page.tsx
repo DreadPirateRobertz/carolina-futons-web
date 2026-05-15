@@ -3,13 +3,22 @@ import type { Metadata } from "next";
 import { getMemberSession } from "@/lib/auth/member";
 import { getMyReferralCodeAction, getMyReferralStatsAction } from "@/app/actions/referral";
 import { ReferralDashboard } from "@/components/referral/ReferralDashboard";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
 
 export const dynamic = "force-dynamic";
 
+const TITLE = "Referral Program — Carolina Futons";
+const DESCRIPTION =
+  "Share your referral link and earn store credit when friends place their first order.";
+
 export const metadata: Metadata = {
-  title: "Referral Program — Carolina Futons",
-  description:
-    "Share your referral link and earn store credit when friends place their first order.",
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [DEFAULT_OG_IMAGE],
+  },
 };
 
 export default async function ReferralPage() {
