@@ -2,6 +2,13 @@ import { act } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
+// VariantPicker now calls useRouter/useSearchParams/usePathname for URL hydration.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn(), refresh: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/products/test-frame",
+}));
+
 vi.mock("@/components/cart/CartProvider", () => ({
   useCart: () => ({
     addLine: vi.fn(),
