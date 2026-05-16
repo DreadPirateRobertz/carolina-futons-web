@@ -167,6 +167,43 @@ export async function removeCoupon() {
   return result.cart ?? null;
 }
 
+// cf-5qv7 (cf-snil.fu1) — restored in cf-f3zo: pull { code, discountCents }
+// off the Wix cart's `appliedDiscounts[0]` so the client CartProvider state
+// can render the in-cart discount line. Wix's coupon.amount is a decimal
+// string ("15.00"); we multiply by 100 and round to lock to integer cents.
+//
+// Returns undefined when the cart carries no applied coupon (most carts).
+// If a future cart ever surfaces multiple appliedDiscounts entries we use
+// only the first — historically Wix limits the cart to one active coupon.
+//
+// Note: this helper was supposed to ship in PR #626 but the lib + actions
+// edits were dropped from the merge commit, leaving CartCouponEntry +
+// CartHydrator referencing a return field that didn't exist. cf-f3zo
+// restores the production code AND backfills the test coverage that was
+// the original cf-5qv7.fu1 intent.
+// Shape we read off `cart.appliedDiscounts[0].coupon`. Wix's SDK Coupon
+// type marks `amount` as @internal, which Vercel's tsc-strict mapped-type
+// pipeline narrows away — but at runtime the field is reliably present
+// when a coupon is applied (it's what the Wix-hosted checkout page reads
+// to show the discount). Local typing routes around the narrowing.
+type CouponWithAmount = {
+  code?: string;
+  amount?: { amount?: string };
+};
+
+export function extractAppliedCoupon(
+  cart: Pick<WixCart, "appliedDiscounts"> | null | undefined,
+): { code: string; discountCents: number } | undefined {
+  const first = cart?.appliedDiscounts?.[0];
+  const coupon = first?.coupon as CouponWithAmount | undefined;
+  const code = coupon?.code;
+  const amountStr = coupon?.amount?.amount;
+  if (!code || !amountStr) return undefined;
+  const cents = Math.round(Number.parseFloat(amountStr) * 100);
+  if (!Number.isFinite(cents) || cents < 0) return undefined;
+  return { code, discountCents: cents };
+}
+
 export type WixCart = NonNullable<Awaited<ReturnType<typeof getCurrentCart>>>;
 
 // Maps a Wix server cart to the CartProvider line format. Used by the cart

@@ -1,10 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { type CartLineItem } from "@/lib/cart/cart-state";
+import {
+  type AppliedCoupon,
+  type CartLineItem,
+} from "@/lib/cart/cart-state";
 import {
   addToCart,
   applyCoupon,
+  extractAppliedCoupon,
   getCurrentCart,
   removeCoupon,
   removeFromCart,
@@ -20,8 +24,16 @@ export type CartActionResult =
   | { ok: true; cart: WixCart | null }
   | { ok: false; error: string };
 
+// cf-f3zo: coupon-action success carries the parsed AppliedCoupon shape so
+// CartCouponEntry can update CartProvider state without parsing Wix
+// internals in client code. removeCouponAction success deliberately omits
+// the field — the client dispatches clearAppliedCoupon on that path.
+export type CouponActionResult =
+  | { ok: true; cart: WixCart | null; appliedCoupon?: AppliedCoupon }
+  | { ok: false; error: string };
+
 export type HydrateCartResult =
-  | { ok: true; lines: CartLineItem[] }
+  | { ok: true; lines: CartLineItem[]; appliedCoupon?: AppliedCoupon }
   | { ok: false; error: string };
 
 export async function addItemAction(
@@ -100,13 +112,15 @@ export async function updateQuantityAction(
 // removeCoupon for CartDrawer + /cart UI. Trims whitespace from user input
 // before forwarding so a "  SUMMER15  " pasted from email-campaign copy
 // doesn't get rejected by the SDK's strict-match comparator.
-export async function applyCouponAction(code: string): Promise<CartActionResult> {
+export async function applyCouponAction(
+  code: string,
+): Promise<CouponActionResult> {
   const trimmed = code?.trim() ?? "";
   if (!trimmed) return { ok: false, error: "Enter a promo code" };
   try {
     const cart = await applyCoupon(trimmed);
     revalidatePath("/cart");
-    return { ok: true, cart };
+    return { ok: true, cart, appliedCoupon: extractAppliedCoupon(cart) };
   } catch (err) {
     // cf-h78k: invalid-code rejections from Wix carry an "INVALID_ARGUMENT"
     // shape; outages carry generic 5xx. Both are real backend failures
@@ -117,10 +131,12 @@ export async function applyCouponAction(code: string): Promise<CartActionResult>
   }
 }
 
-export async function removeCouponAction(): Promise<CartActionResult> {
+export async function removeCouponAction(): Promise<CouponActionResult> {
   try {
     const cart = await removeCoupon();
     revalidatePath("/cart");
+    // Success path explicitly omits appliedCoupon — the client clears its
+    // local copy via clearAppliedCoupon.
     return { ok: true, cart };
   } catch (err) {
     // cf-h78k: paired tag to applyCoupon.
@@ -146,7 +162,11 @@ export async function getCartAction(): Promise<CartActionResult> {
 export async function hydrateCartAction(): Promise<HydrateCartResult> {
   try {
     const cart = await getCurrentCart();
-    return { ok: true, lines: cart ? wixCartToLines(cart) : [] };
+    if (!cart) return { ok: true, lines: [] };
+    const appliedCoupon = extractAppliedCoupon(cart);
+    return appliedCoupon
+      ? { ok: true, lines: wixCartToLines(cart), appliedCoupon }
+      : { ok: true, lines: wixCartToLines(cart) };
   } catch (err) {
     // cf-8ys6: bead spec's "worst offender" — without this, an empty
     // /cart page on hydrate failure (Wix outage, expired session)
