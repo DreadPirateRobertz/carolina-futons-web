@@ -3,6 +3,7 @@ import "server-only";
 import type { Tokens } from "@wix/sdk";
 
 import { getWixClient, getWixClientWithTokens } from "@/lib/wix-client";
+import { logError } from "@/lib/logging/log-error";
 
 // cfw-6qd.11: lightweight audit trail for owner-mode edits.
 //
@@ -75,9 +76,13 @@ export async function recordOwnerEdit(
     return { ok: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error(
-      `[audit-log] failed to record ${entry.action} on ${entry.target}: ${message}`,
-    );
+    // cfw-1ol0: routed through the shared logError helper so the audit
+    // failure ships to Sentry (level=error, tags { source: "audit-log",
+    // op: "record" }) with awaited flush — drop-event-safe on Vercel.
+    await logError("audit-log", "record", err, {
+      action: entry.action,
+      target: entry.target,
+    });
     return { ok: false, reason: "wix_outage", error: message };
   }
 }

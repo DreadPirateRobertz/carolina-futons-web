@@ -19,6 +19,14 @@ vi.mock("@/lib/wix-client", () => ({
   getWixClient: () => ({ items: { query: itemsQuery } }),
 }));
 
+// cfw-1ol0: recordOwnerEdit now routes its failure path through the shared
+// logError helper instead of bare console.error. Mock it here so tests
+// assert against the call shape rather than parsing console output.
+const mockLogError = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 import { recordOwnerEdit, readOwnerAuditLog } from "@/lib/admin/audit-log";
 
 const tokens: Tokens = {
@@ -120,7 +128,6 @@ describe("recordOwnerEdit — happy path", () => {
 describe("recordOwnerEdit — best-effort contract", () => {
   it("returns ok=false on Wix error and does NOT throw", async () => {
     itemsSave.mockRejectedValueOnce(new Error("Wix down"));
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const result = await recordOwnerEdit(
       { actorEmail: "x@x.com", action: "edit", target: "k", before: "", after: "v" },
@@ -132,15 +139,17 @@ describe("recordOwnerEdit — best-effort contract", () => {
       reason: "wix_outage",
       error: "Wix down",
     });
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining("[audit-log] failed to record edit on k"),
+    // cfw-1ol0: failure routes through logError("audit-log", "record", …)
+    expect(mockLogError).toHaveBeenCalledWith(
+      "audit-log",
+      "record",
+      expect.any(Error),
+      expect.objectContaining({ action: "edit", target: "k" }),
     );
-    consoleSpy.mockRestore();
   });
 
   it("handles non-Error throws (Wix SDK occasionally rejects with strings)", async () => {
     itemsSave.mockRejectedValueOnce("not even an Error");
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const result = await recordOwnerEdit(
       { actorEmail: "x@x.com", action: "edit", target: "k", before: "", after: "v" },
@@ -151,7 +160,14 @@ describe("recordOwnerEdit — best-effort contract", () => {
     if (result.ok === false) {
       expect(result.error).toBe("not even an Error");
     }
-    consoleSpy.mockRestore();
+    // logError still gets called — the helper itself handles non-Error
+    // throws (covered by log-error.test.ts).
+    expect(mockLogError).toHaveBeenCalledWith(
+      "audit-log",
+      "record",
+      "not even an Error",
+      expect.objectContaining({ action: "edit", target: "k" }),
+    );
   });
 });
 
