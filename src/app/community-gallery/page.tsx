@@ -9,19 +9,24 @@ import {
   type GalleryResult,
 } from "@/lib/wix/community-gallery";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
 const TITLE = "Community Gallery — Carolina Futons";
 const DESCRIPTION =
   "Real Carolina Futons in real homes. Photos submitted by customers across the Carolinas and beyond.";
 
+const OG = {
+  title: TITLE,
+  description: DESCRIPTION,
+  images: [DEFAULT_OG_IMAGE],
+};
+
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
-  openGraph: {
-    title: TITLE,
-    description: DESCRIPTION,
-    images: [DEFAULT_OG_IMAGE],
-  },
+  openGraph: OG,
+  // cf-2qxr: per-page twitter card mirror.
+  twitter: twitterFromOpenGraph(OG),
 };
 
 // Gallery photos are curated in Wix Data (low write frequency); 1-hour

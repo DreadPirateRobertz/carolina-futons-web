@@ -2,19 +2,24 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PhotoSubmitForm } from "@/components/gallery/PhotoSubmitForm";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
 const TITLE = "Share Your Photo — Community Gallery | Carolina Futons";
 const DESCRIPTION =
   "Show us your Carolina Futons setup. Submit a photo and we may feature it in our community gallery.";
 
+const OG = {
+  title: TITLE,
+  description: DESCRIPTION,
+  images: [DEFAULT_OG_IMAGE],
+};
+
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
-  openGraph: {
-    title: TITLE,
-    description: DESCRIPTION,
-    images: [DEFAULT_OG_IMAGE],
-  },
+  openGraph: OG,
+  // cf-2qxr: per-page twitter card mirror.
+  twitter: twitterFromOpenGraph(OG),
 };
 
 export default async function GallerySubmitPage({

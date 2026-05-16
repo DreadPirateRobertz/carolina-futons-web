@@ -1,19 +1,24 @@
 import type { Metadata } from "next";
 
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
 const TITLE = "Terms of Service — Carolina Futons";
 const DESCRIPTION =
   "The terms that govern your use of the Carolina Futons website, including ordering, delivery, returns, and warranty.";
 
+const OG = {
+  title: TITLE,
+  description: DESCRIPTION,
+  images: [DEFAULT_OG_IMAGE],
+};
+
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
-  openGraph: {
-    title: TITLE,
-    description: DESCRIPTION,
-    images: [DEFAULT_OG_IMAGE],
-  },
+  openGraph: OG,
+  // cf-2qxr: per-page twitter card mirror.
+  twitter: twitterFromOpenGraph(OG),
 };
 
 const LAST_UPDATED = "April 18, 2026";

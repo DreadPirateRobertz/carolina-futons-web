@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getReferralByCodeAction } from "@/app/actions/referral";
 import { ReferralShareBanner } from "@/components/referral/ReferralShareBanner";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
 type Props = { params: Promise<{ code: string }> };
 
@@ -15,14 +16,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : "You're invited — 5% off at Carolina Futons";
   const description =
     "Get 5% off your first order of American-made futons, frames, and mattresses from Carolina Futons.";
+  const og = {
+    title,
+    description,
+    images: [DEFAULT_OG_IMAGE],
+  };
   return {
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      images: [DEFAULT_OG_IMAGE],
-    },
+    openGraph: og,
+    // cf-2qxr: per-page twitter card mirror.
+    twitter: twitterFromOpenGraph(og),
   };
 }
 

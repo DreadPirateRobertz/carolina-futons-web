@@ -7,19 +7,24 @@ import {
   parseConsentCookieAsMap,
 } from "@/lib/consent/consent-state";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
 const TITLE = "Privacy Policy — Carolina Futons";
 const DESCRIPTION =
   "How Carolina Futons collects, uses, and protects the information you share with us online and in-store.";
 
+const OG = {
+  title: TITLE,
+  description: DESCRIPTION,
+  images: [DEFAULT_OG_IMAGE],
+};
+
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
-  openGraph: {
-    title: TITLE,
-    description: DESCRIPTION,
-    images: [DEFAULT_OG_IMAGE],
-  },
+  openGraph: OG,
+  // cf-2qxr: per-page twitter card mirror.
+  twitter: twitterFromOpenGraph(OG),
 };
 
 const LAST_UPDATED = "April 18, 2026";
