@@ -7,6 +7,8 @@ import { listGuides } from "@/lib/discovery/guides";
 import { ReadingScene } from "@/components/mascot/ReadingScene";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
 import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
+import { buildBreadcrumbSchema, resolveSiteUrl } from "@/lib/seo/json-ld";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 const CARD_STAGGER_SECONDS = 0.08;
 
@@ -33,8 +35,18 @@ export const metadata: Metadata = {
 export default async function GuidesIndexPage() {
   const guides = await listGuides();
 
+  // cf-nm6p: BreadcrumbList JSON-LD so Google can render the "Home >
+  // Guides" trail in SERP results. Absolute URLs are required by the
+  // rich-result spec — relative paths silently fail eligibility.
+  const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+  const breadcrumbSchema = buildBreadcrumbSchema([
+    { name: "Home", url: `${siteUrl}/` },
+    { name: "Guides", url: `${siteUrl}/guides` },
+  ]);
+
   return (
     <main className="w-full">
+      <JsonLd id="jsonld-breadcrumb" schema={breadcrumbSchema} />
       <ReadingScene className="max-h-64" />
       <div className="mx-auto max-w-6xl space-y-12 px-4 py-12 font-source-sans text-cf-ink sm:px-6 sm:py-16">
         <HeroReveal>

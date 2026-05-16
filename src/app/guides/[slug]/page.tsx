@@ -7,6 +7,8 @@ import { listGuides } from "@/lib/discovery/guides";
 import { GuideReadingProgress } from "./ReadingProgress";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
 import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
+import { buildBreadcrumbSchema, resolveSiteUrl } from "@/lib/seo/json-ld";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 type RouteParams = { slug: string };
 
@@ -58,8 +60,19 @@ export default async function GuideDetailPage({
   }
   const related = allGuides.filter((g) => g.slug !== slug).slice(0, 3);
 
+  // cf-nm6p: BreadcrumbList JSON-LD so Google can render the
+  // "Home > Guides > {article title}" trail in SERP results. Absolute
+  // URLs are required by the rich-result spec.
+  const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+  const breadcrumbSchema = buildBreadcrumbSchema([
+    { name: "Home", url: `${siteUrl}/` },
+    { name: "Guides", url: `${siteUrl}/guides` },
+    { name: guide.title, url: `${siteUrl}/guides/${guide.slug}` },
+  ]);
+
   return (
     <>
+      <JsonLd id="jsonld-breadcrumb" schema={breadcrumbSchema} />
       <GuideReadingProgress />
       <main className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
         <article className="mx-auto max-w-[65ch] space-y-10 font-source-sans text-cf-ink">
