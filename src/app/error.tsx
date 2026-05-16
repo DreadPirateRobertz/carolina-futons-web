@@ -3,6 +3,23 @@
 import { useEffect } from "react";
 import Link from "next/link";
 
+import { logError } from "@/lib/log";
+
+/**
+ * Root error boundary for the Next.js App Router.
+ *
+ * Next mounts this component when any client-side render below the root
+ * layout throws. We forward the error to `logError` so it lands in Sentry
+ * (with `source="root-error-boundary"`) alongside the user-facing recovery
+ * UI. The `void` discards the returned promise — useEffect callbacks must
+ * be synchronous or return a cleanup, not a promise.
+ *
+ * @param error - The error that propagated to the boundary. `digest` is the
+ *   Next-assigned stable id surfaced in the user-visible Ref line so a user
+ *   can paste it into support tickets.
+ * @param reset - Next-provided callback that re-renders the segment that
+ *   threw; wired to the "Try again" button.
+ */
 export default function RootError({
   error,
   reset,
@@ -11,7 +28,7 @@ export default function RootError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[root error boundary]", error);
+    void logError("root-error-boundary", "client-render", error);
   }, [error]);
 
   return (
