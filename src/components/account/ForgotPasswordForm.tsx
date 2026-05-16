@@ -3,6 +3,18 @@
 import { useState } from "react";
 import Link from "next/link";
 
+import { logError } from "@/lib/log";
+
+/**
+ * Client form for the password-reset flow.
+ *
+ * POSTs the email to `/api/auth/forgot-password` and renders a generic
+ * "check your email" confirmation regardless of whether the email matches
+ * a real account — the API returns 200+ok=true for both cases to avoid
+ * account-enumeration. Network/runtime throws are forwarded to Sentry
+ * via `logError("forgot-password-form", "submit", err)` so transient
+ * failures are observable separate from explicit `data.error` responses.
+ */
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,7 +40,7 @@ export function ForgotPasswordForm() {
       setSent(true);
       setLoading(false);
     } catch (err) {
-      console.error("[ForgotPasswordForm] submit failed", err);
+      await logError("forgot-password-form", "submit", err);
       setError("Something went wrong. Please try again.");
       setLoading(false);
     }
