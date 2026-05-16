@@ -24,6 +24,12 @@ vi.mock("@/lib/wix-client", () => ({
   getWixClientWithTokens: () => ({ auth: { logout: logoutSdk } }),
 }));
 
+// cfw-kvgw: upstream-logout failure now routes through logError.
+const mockLogError = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 const memberTokens: Tokens = {
   accessToken: { value: "access-m", expiresAt: 1_780_000_000 },
   refreshToken: { value: "refresh-m", role: "member" as Tokens["refreshToken"]["role"] },
@@ -69,17 +75,20 @@ describe("POST /api/admin/sign-out", () => {
     expect(logoutSdk).not.toHaveBeenCalled();
   });
 
-  it("still clears the cookie and redirects when upstream logout throws", async () => {
+  it("still clears the cookie and redirects when upstream logout throws (cfw-kvgw)", async () => {
     cookieStore.set("wix-session", { value: JSON.stringify(memberTokens) });
     logoutSdk.mockRejectedValueOnce(new Error("Wix down"));
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { POST } = await import("@/app/api/admin/sign-out/route");
     const res = await POST(
       makeReq("https://test.local/api/admin/sign-out") as never,
     );
     expect(res.status).toBe(303);
     expect(cookieStore.has("wix-session")).toBe(false);
-    expect(consoleSpy).toHaveBeenCalled();
-    consoleSpy.mockRestore();
+    // cfw-kvgw: upstream failure routes through logError
+    expect(mockLogError).toHaveBeenCalledWith(
+      "admin/sign-out",
+      "wix.auth.logout",
+      expect.any(Error),
+    );
   });
 });
