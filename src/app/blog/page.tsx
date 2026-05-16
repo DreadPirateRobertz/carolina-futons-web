@@ -2,11 +2,24 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { listPosts, type BlogPostSummary } from "@/lib/wix/blog";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
+
+const TITLE = "Journal — Carolina Futons";
+const DESCRIPTION =
+  "Notes from a family-owned futon shop in Hendersonville, North Carolina — buying guides, room ideas, and stories from the showroom floor.";
+
+const OPEN_GRAPH = {
+  title: TITLE,
+  description: DESCRIPTION,
+  images: [DEFAULT_OG_IMAGE],
+};
 
 export const metadata: Metadata = {
-  title: "Journal — Carolina Futons",
-  description:
-    "Notes from a family-owned futon shop in Hendersonville, North Carolina — buying guides, room ideas, and stories from the showroom floor.",
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: OPEN_GRAPH,
+  twitter: twitterFromOpenGraph(OPEN_GRAPH),
 };
 
 // cf-l11g: render the latest 12 posts from Wix Blog. When the SDK fails or no

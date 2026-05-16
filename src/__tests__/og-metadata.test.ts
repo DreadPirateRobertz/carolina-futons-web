@@ -68,6 +68,8 @@ import { metadata as referralMetadata } from "@/app/referral/page";
 import { generateMetadata as referralShareGenerateMeta } from "@/app/referral/share/[code]/page";
 import { metadata as signupMetadata } from "@/app/signup/page";
 import { metadata as termsMetadata } from "@/app/terms/page";
+import { metadata as returnsMetadata } from "@/app/returns/page";
+import { metadata as blogIndexMetadata } from "@/app/blog/page";
 import { findCategory } from "@/lib/shop/categories";
 import { getProductBySlug } from "@/lib/wix/products";
 import { getReferralByCodeAction } from "@/app/actions/referral";
@@ -806,5 +808,57 @@ describe("cf-o5j5.1 wave32 cfw-x84 OG backfill", () => {
       (m) => m.metadata.openGraph?.description,
     );
     expect(new Set(descriptions).size).toBe(descriptions.length);
+  });
+});
+
+// cf-e9o (cfw-x84 follow-up): /returns + /blog were missing openGraph
+// when cfw-x84's sweep ran (they landed after / weren't picked up at the
+// time). Wiring both up + asserting twitter mirrors openGraph via the
+// helper. /track-order is intentionally omitted — noindex+nofollow private
+// tracking URLs shouldn't unfurl attractively when shared.
+describe("/returns metadata (cf-e9o)", () => {
+  it("has openGraph title matching page title", () => {
+    expect(returnsMetadata.openGraph?.title).toBe("Returns — Carolina Futons");
+  });
+  it("openGraph description matches page description", () => {
+    expect(returnsMetadata.openGraph?.description).toBe(
+      returnsMetadata.description,
+    );
+  });
+  it("uses DEFAULT_OG_IMAGE", () => {
+    expect(ogImageUrls(returnsMetadata.openGraph?.images)).toContain(
+      DEFAULT_OG_IMAGE.url,
+    );
+  });
+  it("twitter card is summary_large_image", () => {
+    expect(
+      (returnsMetadata.twitter as { card?: string } | undefined)?.card,
+    ).toBe("summary_large_image");
+  });
+  it("twitter title mirrors openGraph title", () => {
+    expect(
+      (returnsMetadata.twitter as { title?: string } | undefined)?.title,
+    ).toBe(returnsMetadata.openGraph?.title);
+  });
+});
+
+describe("/blog metadata (cf-e9o)", () => {
+  it("has openGraph title matching page title", () => {
+    expect(blogIndexMetadata.openGraph?.title).toBe("Journal — Carolina Futons");
+  });
+  it("openGraph description matches page description", () => {
+    expect(blogIndexMetadata.openGraph?.description).toBe(
+      blogIndexMetadata.description,
+    );
+  });
+  it("uses DEFAULT_OG_IMAGE", () => {
+    expect(ogImageUrls(blogIndexMetadata.openGraph?.images)).toContain(
+      DEFAULT_OG_IMAGE.url,
+    );
+  });
+  it("twitter card is summary_large_image", () => {
+    expect(
+      (blogIndexMetadata.twitter as { card?: string } | undefined)?.card,
+    ).toBe("summary_large_image");
   });
 });
