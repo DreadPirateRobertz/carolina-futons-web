@@ -21,7 +21,10 @@ export const DASHBOARD_TABS: readonly DashboardTab[] = [
   // cf-dmos (cf-zn5b.2 G-9): saved-address management.
   { key: "addresses", href: "/dashboard/addresses", label: "Addresses" },
   { key: "profile", href: "/dashboard/profile", label: "Profile" },
-  { key: "preferences", href: "/dashboard/preferences", label: "Preferences" },
+  // cf-03e (cf-ruhm-w3.4): "Notifications" matches Wix prod's tab label;
+  // the page-level H2 stays "Notification preferences" for the descriptive
+  // sub-heading. Aligning the tab to shopper-familiar vocabulary.
+  { key: "preferences", href: "/dashboard/preferences", label: "Notifications" },
 ] as const;
 
 export type DashboardShellProps = {

@@ -105,13 +105,15 @@ describe("DashboardShell", () => {
     const nav = screen.getByRole("navigation", { name: "Account sections" });
     const links = Array.from(nav.querySelectorAll("a"));
     // cf-dmos (PR #619): Addresses tab added between Wishlist and Profile.
+    // cf-03e (cf-ruhm-w3.4): "Preferences" tab label aligned to "Notifications"
+    // for Wix-prod parity. The /dashboard/preferences route is unchanged.
     expect(links.map((a) => a.textContent)).toEqual([
       "Overview",
       "Orders",
       "Wishlist",
       "Addresses",
       "Profile",
-      "Preferences",
+      "Notifications",
     ]);
   });
 
