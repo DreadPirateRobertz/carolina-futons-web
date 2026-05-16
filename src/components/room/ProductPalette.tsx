@@ -71,7 +71,7 @@ function PaletteGroup({
           role="button"
           aria-label={`Add ${item.label} to room`}
           tabIndex={0}
-          className="cursor-grab select-none rounded border border-cf-sand bg-cf-sand/20 px-2 py-1.5 leading-snug text-cf-espresso transition hover:bg-cf-sand/50 active:cursor-grabbing"
+          className="cursor-grab select-none rounded border border-cf-sand bg-cf-sand/20 px-2 py-1.5 leading-snug text-cf-espresso transition hover:bg-cf-sand/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2 active:cursor-grabbing"
         >
           <span className="block font-medium">{item.label}</span>
           <span className="text-[10px] text-cf-muted">
