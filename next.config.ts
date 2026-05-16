@@ -114,6 +114,16 @@ const nextConfig: NextConfig = {
       { source: "/paywall", destination: "/account", permanent: true },
       { source: "/plans-pricing", destination: "/account", permanent: true },
 
+      // cf-09r (cf-ruhm-w2.1): Wix Studio wishlist nested under /account;
+      // cfw promotes it to a top-level /wishlist route. Old marketing
+      // emails + bookmarks pointing at /account/my-wishlist would 404 on
+      // cfw without this redirect. 308 preserves method + path tail.
+      {
+        source: "/account/my-wishlist",
+        destination: "/wishlist",
+        permanent: true,
+      },
+
       // Order confirmation aliases.
       {
         source: "/thank-you",

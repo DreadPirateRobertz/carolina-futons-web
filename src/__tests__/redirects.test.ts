@@ -74,6 +74,16 @@ describe("next.config redirects (cf-3qt.7.1) — Wix Studio → cfw", () => {
   });
 });
 
+describe("next.config redirects (cf-09r / cf-ruhm-w2.1) — wishlist URL space", () => {
+  it("redirects /account/my-wishlist → /wishlist permanently (closes Wix-email ingress gap)", async () => {
+    const redirects = await nextConfig.redirects!();
+    const r = redirects.find((x) => x.source === "/account/my-wishlist");
+    expect(r, "redirect for /account/my-wishlist").toBeDefined();
+    expect(r!.destination).toBe("/wishlist");
+    expect(r!.permanent).toBe(true);
+  });
+});
+
 describe("next.config redirects (cf-992s) — product slug corrections", () => {
   it("redirects wilderness-log-futon-frame to the correct slug", async () => {
     const redirects = await nextConfig.redirects!();
