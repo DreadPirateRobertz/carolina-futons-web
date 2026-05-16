@@ -652,14 +652,9 @@ describe("cf-2qxr — twitter:card mirror for /referral/share/[code]", () => {
     mockGetReferralByCode.mockResolvedValueOnce({
       success: true,
       referral: {
-        code: "AB12CD",
-        memberEmail: "member@example.com",
-        memberName: "Jane Doe",
-        joinedAt: new Date().toISOString(),
-        clicks: 0,
-        signups: 0,
-        rewardsEarnedCents: 0,
-        rewardsPaidCents: 0,
+        valid: true,
+        referrerName: "Jane Doe",
+        discountPct: 5,
       },
     });
     const { generateMetadata } = await import(
