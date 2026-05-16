@@ -30,7 +30,7 @@
 - `isDiff(values)` flags rows where products differ — highlighted in the table.
 - `buildRemoveSlugUrl()` per product column (one-click remove).
 - `buildCompareTitle(products)` produces the dynamic `<title>` (e.g. "Monterey vs Charleston — Carolina Futons").
-- Robots: `index: false, follow: true` on the populated branch (no infinite ad-hoc comparison-permutation indexing).
+- Robots: `index: false, follow: true` on the **populated branch only** — the empty `/compare` lander is implicitly indexable, which is fine (it's a normal product-picker entry point that doesn't multiply across permutations). The noindex closes the ad-hoc-permutation problem where every comma-separated slug combo would otherwise be a unique-URL crawl target.
 - openGraph + Twitter card on both empty and populated branches (cf-ceex fold).
 
 ### Wix prod surface
@@ -48,16 +48,17 @@ Confirm with Brenda that the compare flow is something marketing wants surfaced 
 
 ### cfw surface
 - Server component (`dynamic = "force-dynamic"`).
-- Single query param: `?q=<term>`.
+- Query params: `?q=<term>&type=<all|products|pages|blog>&page=N`.
 - Empty / missing `q`: guided-empty state (heading + `<SearchSuggestions>` panel + form).
-- Non-empty `q`: parallel `searchProducts(q, 12)` + `searchPosts(q, 8)` calls.
-  - `searchProducts` searches Wix Stores by product name.
-  - `searchPosts` searches Wix Blog by post title.
-  - Both helpers catch + log on SDK failure and degrade to "no matches" rather than 500.
-- Result page: two-column grid on lg+ (`[2fr,1fr]`) — products left, articles right.
+- Non-empty `q`: **4-tab surface** — All / Products / Pages / Blog (`<SearchTabs>`).
+  - `searchProducts` (Wix Stores by product name), `searchPages` (static page registry), `searchPosts` (Wix Blog by post title).
+  - All helpers catch + log on SDK failure and degrade transitively to "no matches" rather than 500 (verified through `listAllProducts`'s catch+log+`return []` fallback).
+- Per-tab pagination via `<PLPPagination>`; switching tabs resets `?page` (the All tab shows a capped sample and skips pagination).
+- Cross-tab counts in the heading + `aria-live` re-announce on tab switch.
 - `<NoResults q={q}>` empty-search state with suggestions to refine.
-- Robots: `index: false, follow: true` (already in main; cfw doesn't want SERPs serving ad-hoc search URLs).
+- Robots: `index: false, follow: true` (cfw doesn't want SERPs serving ad-hoc search URLs).
 - openGraph: layout-level fallback; per-`q` OG would over-customize and burn CMS lookups on every share, intentionally omitted.
+- Originally cf-3qt.5.4 (Products + Articles only); **cf-76a (cf-ruhm.1)** added tabs + Pages reader; **cf-94l (cf-ruhm.2)** added per-tab pagination + total counts.
 
 ### Wix prod surface
 - **No canonical `/search` URL.** Wix Studio surfaces a universal search through a top-bar magnifying-glass icon → opens an overlay → filters the products grid in place.
@@ -99,3 +100,8 @@ A Playwright screenshot diff of `/compare` populated (2-product, 4-product) + `/
 **No critical gaps.** cf-ruhm passes the cf-3qt.6 audit gate on the structural side. Both tool pages are cutover-additive, not regressions. Move to sibling parity beads (cf-lc1c PDP, cf-7pk0 static, cf-vmll content, cf-yu2l promo, cf-4i44 policy, cf-d41j member, cf-wsrr cart).
 
 Refs cf-ruhm (this bead), cf-3qt.6 (parent), cf-3qt.5.4 (search page baseline), cf-ceex (OG sweep fold for /compare empty + populated).
+
+
+---
+
+*Verified against `carolina-futons-web@main` at ebd841288fa9 (2026-05-15).*

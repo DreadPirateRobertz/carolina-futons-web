@@ -6,7 +6,7 @@
 **Surface:** `/shop/[category]` on cfw vs the corresponding Wix Studio category pages on `www.carolinafutons.com`
 **Reference:** [cfw-y2i visual parity audit (2026-05-09)](visual-parity-audit-2026-05-09.md) — covers PLP at the screenshot level; this doc adds the feature/structural matrix.
 
-> **TL;DR.** cfw PLP is the **functional superset** of Wix prod on every axis I can verify from the code side — same 5 categories, more sort options (5 vs typical Wix 3), explicit `inStock` toggle that Wix Studio's catalog block doesn't expose, derived `mattresses-sale` virtual category that Wix doesn't host, and `compare-at` price + custom badges that Wix only has via the Stores app default markup. The one **structural delta** is the URL prefix: cfw uses `/shop/<category>`, Wix uses `/<category>`. That's covered by the pre-cutover redirect map (PR #412).
+> **TL;DR.** cfw PLP is the **functional superset** of Wix prod on every axis I can verify from the code side — same 5 categories, more sort options (6 vs typical Wix 3-5), explicit `inStock` toggle that Wix Studio's catalog block doesn't expose, derived `mattresses-sale` virtual category that Wix doesn't host, and `compare-at` price + custom badges that Wix only has via the Stores app default markup. The one **structural delta** is the URL prefix: cfw uses `/shop/<category>`, Wix uses `/<category>`. That's covered by the pre-cutover redirect map (PR #412).
 
 ## Pages audited
 
@@ -27,7 +27,7 @@
 | Category page URL | `/shop/<slug>` | `/<slug>` | ⚠ delta — handled by pre-cutover redirect map (PR #412) |
 | Hero / category illustration | `ShopTheRoom` interactive scene with hotspots + `HeroReveal` motion | Single static collection banner | ✅ cfw richer |
 | Breadcrumbs | `Breadcrumbs` component + `JsonLd` `BreadcrumbList` schema | Wix Studio default breadcrumb (no JSON-LD by default in Studio) | ✅ cfw richer (SEO surface) |
-| Sort options | `featured`, `price-asc`, `price-desc`, `name-asc`, `name-desc` (5 sorts; exhaustive `PlpSort` type with `never` guard) | Typical Wix Stores: featured, price-low-high, price-high-low, newest, A-Z (3-5 sorts depending on Studio config) | ✅ cfw parity or richer |
+| Sort options | `featured`, `price-asc`, `price-desc`, `name-asc`, `name-desc`, `newest` (6 sorts; exhaustive `PlpSort` type with `never` guard) | Typical Wix Stores: featured, price-low-high, price-high-low, newest, A-Z (3-5 sorts depending on Studio config) | ✅ cfw richer (6 vs typical 3-5) |
 | In-stock filter | Explicit `inStock` checkbox (URL: `?inStock=1`); applied in-memory after the Wix query | Wix Studio default Stores block does not expose an in-stock toggle as a user-facing filter | ✅ cfw exposes filter Wix doesn't |
 | Price-range filter | `priceMin` + `priceMax` numeric inputs (URL: `?priceMin=…&priceMax=…`) | Wix Stores collection filter widget (optional, must be wired by Studio author) | ⚠ likely equivalent on prod (Brenda's Studio likely wires this); confirm visually post-freeze |
 | Pagination | `PLPPagination` (server-rendered with `?page=N` query string + over-paginate observability log) | Wix Stores default pagination (default page size 24) | ⚠ likely equivalent; confirm page-size identical |
@@ -71,3 +71,8 @@ The one carry-forward to track in cf-3qt.8 cutover-night checklist:
 - [ ] Visual screenshot diff — deferred per Vercel freeze, scheduled for cf-3qt.8.dress
 
 Refs cf-yeg2 (this bead), cf-3qt.6 (parent epic), cf-3qt.6.B (filter+sort+pagination), cf-3qt.6.F.7 (hover motion), cf-og-meta (OG baseline), cfw-y2i (visual parity 2026-05-09).
+
+
+---
+
+*Verified against `carolina-futons-web@main` at ebd841288fa9 (2026-05-15).*
