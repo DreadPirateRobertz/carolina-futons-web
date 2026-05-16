@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/log", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 import { SignUpForm } from "@/components/account/SignUpForm";
 
 const mockFetch = vi.fn();
@@ -139,6 +145,52 @@ describe("SignUpForm", () => {
     await waitFor(() => {
       expect(screen.getByRole("alert").textContent).toMatch(/please try again/i);
     });
+  });
+
+  // Logger migration (cfw-logger batch 9): the submit catch now forwards
+  // throws to logError so transient network failures land in Sentry
+  // independent of explicit API-returned errors.
+  it("calls logError with source='signup-form' op='submit' on fetch throw", async () => {
+    mockLogError.mockClear();
+    mockFetch.mockRejectedValueOnce(new Error("network"));
+    render(<SignUpForm />);
+    fillForm();
+    fireEvent.click(screen.getByRole("button", { name: /create account/i }));
+    await waitFor(() => {
+      expect(mockLogError).toHaveBeenCalledTimes(1);
+    });
+    const [source, op] = mockLogError.mock.calls[0];
+    expect(source).toBe("signup-form");
+    expect(op).toBe("submit");
+  });
+
+  it("passes the thrown error object to logError as the err arg", async () => {
+    mockLogError.mockClear();
+    const err = new Error("network");
+    mockFetch.mockRejectedValueOnce(err);
+    render(<SignUpForm />);
+    fillForm();
+    fireEvent.click(screen.getByRole("button", { name: /create account/i }));
+    await waitFor(() => {
+      expect(mockLogError).toHaveBeenCalled();
+    });
+    expect(mockLogError.mock.calls[0][2]).toBe(err);
+  });
+
+  it("does NOT call logError on the handled API-error path (UX message, not Sentry-worthy)", async () => {
+    mockLogError.mockClear();
+    mockFetch.mockResolvedValueOnce({
+      json: async () => ({
+        error: "An account with that email already exists.",
+      }),
+    });
+    render(<SignUpForm />);
+    fillForm();
+    fireEvent.click(screen.getByRole("button", { name: /create account/i }));
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+    });
+    expect(mockLogError).not.toHaveBeenCalled();
   });
 
   it("shows generic error when API returns empty body (unexpected_response path)", async () => {
