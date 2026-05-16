@@ -18,6 +18,7 @@ import { BUSINESS } from "@/lib/business/contact-info";
 
 const REGISTER_PATH = "/warranty/register";
 const POLICY_PATH = "/warranty";
+const CLAIM_PATH = "/warranty/claim";
 
 export type PdpWarrantyInfoProps = {
   /** Wix Stores product id — drives the ?productId pre-fill. */
@@ -67,6 +68,27 @@ function buildRegisterHref(productId: string, productName: string): string {
 }
 
 /**
+ * Build the /warranty/claim pre-fill URL.
+ *
+ * @param productName Display name for the user-facing "Claim for:"
+ *   label rendered above the form.
+ * @returns `/warranty/claim?productName=…`.
+ *
+ * WHY only productName (not productId): the claim form keys claims to
+ * `warrantyId` (a WarrantyRegistrations row id), not productId. At PDP
+ * time we don't know which of the user's registrations this claim
+ * would attach to — they might have registered the product against a
+ * different order, or not registered at all. The form lets the user
+ * pick / type the warranty reference; we just hand off the product
+ * name for visual context.
+ */
+function buildClaimHref(productName: string): string {
+  const params = new URLSearchParams();
+  params.set("productName", productName.trim());
+  return `${CLAIM_PATH}?${params.toString()}`;
+}
+
+/**
  * PDP warranty info section.
  *
  * @param props {@link PdpWarrantyInfoProps}.
@@ -85,6 +107,7 @@ export function PdpWarrantyInfo(props: PdpWarrantyInfoProps) {
   if (props.isMattress) return null;
 
   const registerHref = buildRegisterHref(productId, productName);
+  const claimHref = buildClaimHref(productName);
 
   return (
     <section
@@ -117,6 +140,12 @@ export function PdpWarrantyInfo(props: PdpWarrantyInfoProps) {
           className="text-sm font-medium text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
         >
           Full warranty details
+        </Link>
+        <Link
+          href={claimHref}
+          className="text-sm font-medium text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
+        >
+          File a warranty claim
         </Link>
       </div>
     </section>

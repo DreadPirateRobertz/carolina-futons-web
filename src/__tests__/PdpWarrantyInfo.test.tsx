@@ -72,6 +72,37 @@ describe("PdpWarrantyInfo — render", () => {
     const policy = screen.getByRole("link", { name: /full warranty details/i });
     expect(policy).toHaveAttribute("href", "/warranty");
   });
+
+  // cfw-rlur: sister CTA to "Register warranty". Once a buyer has registered
+  // (or just owns the product) they need a discoverable path to file a
+  // claim from the PDP. /warranty/claim accepts ?productName for prefill —
+  // we don't pass productId because the claim form uses warrantyId (not
+  // productId) and at PDP time we don't know which registration this
+  // claim would attach to (the form lets the user pick / type the ref).
+  it("links to /warranty/claim with productName pre-fill", () => {
+    render(
+      <PdpWarrantyInfo productId="p-1" productName="Carolina Classic Futon" />,
+    );
+    const claim = screen.getByRole("link", { name: /file a warranty claim/i });
+    const href = claim.getAttribute("href") ?? "";
+    expect(href.startsWith("/warranty/claim?")).toBe(true);
+    expect(href).toContain("productName=Carolina+Classic+Futon");
+    // No productId on the claim flow — see comment on the assertion above.
+    expect(href).not.toContain("productId=");
+  });
+
+  it("URL-encodes special characters in the claim link's productName", () => {
+    render(
+      <PdpWarrantyInfo
+        productId="p-1"
+        productName="Test — Frame & Mattress Combo"
+      />,
+    );
+    const claim = screen.getByRole("link", { name: /file a warranty claim/i });
+    const href = claim.getAttribute("href") ?? "";
+    expect(href).not.toContain("Test — Frame & Mattress Combo");
+    expect(href).toMatch(/productName=Test.*Frame.*Mattress/);
+  });
 });
 
 // cf-g640 hot-patch: mattress PDPs (standalone-mattress SKUs in the
