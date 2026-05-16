@@ -60,7 +60,17 @@ import type {
 import { extractSpinFrames } from "@/lib/product/spin-frames";
 import { wixImageUrl } from "@/lib/wix/wix-image";
 
-export const dynamic = "force-dynamic"; // Phase 2: per-request until facets + caching tags wired
+// cf-0oj5: ISR with 1-hour revalidation. Kingston PDP Lighthouse showed
+// perf 68 / LCP 7.3s (cf-sd80 baseline 2026-05-16). Root cause: `dynamic
+// = "force-dynamic"` forced a full SSR + Wix SDK round-trip on every
+// request — TTFB dominated LCP. Catalog data changes rarely (price/stock
+// updates are hours-cadence, not seconds), so serving cached HTML with a
+// 1-hour revalidation window eliminates the per-request SSR cost while
+// keeping freshness within tolerable bounds. Per cf-3qt.7 facet/cache
+// plan: this is the unblock for Phase 7's caching-tags work — once
+// tag-based invalidation lands, revalidate can drop to longer windows
+// with explicit invalidation on stock/price webhooks.
+export const revalidate = 3600;
 
 export async function generateMetadata(props: {
   params: Promise<{ slug: string }>;
