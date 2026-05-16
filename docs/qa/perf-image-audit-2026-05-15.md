@@ -115,7 +115,7 @@ threads to `<Image priority={priority}>` + sensible `DEFAULT_PLP_SIZES`
 | `src/components/theme-d/FilterFirst.tsx:191` | `i < 4` | Home's filter-first product browser — first 4 are above-the-fold. |
 | `src/components/theme-ad/AdGrid.tsx:157` | `i < 4` | Theme-AD experimental grid. |
 | `src/components/theme-b/MarugameGrid.tsx:84` | `index < 2` | Theme-B compact 2-col grid. |
-| `src/components/home/HomeSaleStrip.tsx:47` | `i < 4` | Home below-fold sale strip — slight over-eager but harmless. |
+| `src/components/home/HomeSaleStrip.tsx:47` | `i < 4` | Home below-fold sale strip — **see F3 below**. |
 | `src/components/site/FeaturedProducts.tsx:45` | `i < 3` | Home featured strip, narrower cards (3 vs 4). Has WHY comment. |
 | `src/components/bundle/BundleConfigurator.tsx` (lines 139, 163) | unset (default `false`) | Modal flow — below-fold, correct. |
 
@@ -143,13 +143,31 @@ SVG-based, not `<Image>`-based. cf-byms (per the inline comment at
 phases via `requestIdleCallback`, leaving only the active phase in the
 LCP window. No further action.
 
+### F3 (P3) — `HomeSaleStrip` `priority={i < 4}` contradicts F1's single-priority guidance
+
+Self-CR reviewer-driven (PR #660 code-reviewer F2). The F1 finding above
+explicitly invokes web.dev's "one priority Image per page" rule, but
+`src/components/home/HomeSaleStrip.tsx:50` broadcasts priority across
+the first 4 sale strip cards. The strip is below-the-fold so the
+priority hints don't compete with the F1 LCP card for the *first* fetch
+slot, BUT they still skip lazy-loading on 4 below-fold images — costs
+pre-LCP bandwidth + bypasses Next.js's built-in lazy default that
+`VideoShowcaseStrip`, `BlogTeasers`, etc. correctly rely on.
+
+The "harmless" framing in the priority callers table was incorrect.
+Fix is one-liner: `priority={i < 4}` → `priority={false}` (or remove
+the prop entirely — defaults to false). Filed as a follow-on so the
+fix gets its own PR + its own Lighthouse before/after measurement.
+
+**Bead**: cf-mu05.F3 (filed separately).
+
 ## Acceptance status
 
 | Acceptance item | Status |
 |---|---|
-| LCP image has `priority=true` | ⚠️ PARTIAL — F1 fix lands `priority={index===0}` on the home category grid |
-| PLP grid uses eager for first N then lazy | ✅ PASS (all 6 callers correctly wired) |
-| Single PR per cf-ukc6 | ⏳ HOLD — pending Vercel credit window (per melania 2026-05-15 nudge) |
+| LCP image has `priority=true` | ✅ PASS — F1 ships `priority={index===0}` on the home category grid in this PR |
+| PLP grid uses eager for first N then lazy | ✅ PASS (5 of 6 callers correctly wired; F3 flags HomeSaleStrip over-eager) |
+| Single PR per cf-ukc6 | ✅ SHIPPED — Vercel credit window opened per melania 2026-05-15 override |
 
 ## Recommended fix scope
 

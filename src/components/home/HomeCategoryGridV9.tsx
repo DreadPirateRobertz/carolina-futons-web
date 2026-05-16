@@ -98,7 +98,7 @@ export function HomeCategoryGridV9() {
 
         {/* 4-column card grid */}
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {CARDS.map((card) => (
+          {CARDS.map((card, index) => (
             <li key={card.num}>
               <Link
                 href={card.href}
@@ -106,12 +106,17 @@ export function HomeCategoryGridV9() {
                 aria-label={card.title}
                 className="group relative block aspect-[3/4] overflow-hidden rounded-2xl bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
               >
-                {/* Background product photo */}
+                {/* Background product photo. cf-mu05 F1: priority hint on
+                    the LCP card only (index 0 — leftmost above-fold tile).
+                    web.dev guidance: one priority Image per page;
+                    broadcasting priority across all 4 cards splits fetch
+                    budget across non-LCP images and hurts LCP. */}
                 <Image
                   src={card.photo}
                   alt={card.photoAlt}
                   fill
                   sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                  priority={index === 0}
                   className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                 />
 
