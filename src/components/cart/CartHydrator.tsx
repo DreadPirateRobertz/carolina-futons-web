@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { hydrateCartAction } from "@/app/actions/cart";
 import { useCart } from "@/components/cart/CartProvider";
+import { logError } from "@/lib/logging/log-error";
 
 // Runs once on mount to pull the Wix server cart into the in-memory
 // CartProvider. Without this, a page refresh shows an empty cart even when
@@ -42,12 +43,25 @@ export function CartHydrator() {
               : { type: "hydrate", lines: result.lines },
           );
         } else {
-          console.error("[CartHydrator] hydrateCartAction failed:", result.error);
+          // cfw-0uv0: distinct ops so Sentry can group "action returned
+          // ok:false" (Wix outage) separately from "fetch transport
+          // failed" (network / RSC fault). void — setLoadFailed has
+          // already surfaced the screen-reader alert; Sentry ships in
+          // the background.
+          void logError(
+            "CartHydrator",
+            "hydrateCartAction",
+            new Error(
+              typeof result.error === "string"
+                ? result.error
+                : "hydrateCartAction returned ok:false",
+            ),
+          );
           setLoadFailed(true);
         }
       })
       .catch((err) => {
-        console.error("[CartHydrator] hydrateCartAction transport error:", err);
+        void logError("CartHydrator", "transport", err);
         setLoadFailed(true);
       });
   }, [dispatch]);
