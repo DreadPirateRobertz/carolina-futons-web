@@ -178,7 +178,7 @@ describe("listSwatchesAction", () => {
     expect(mockListCollectionItems).toHaveBeenCalledWith("FabricSwatches", 100);
   });
 
-  it("calls Sentry.captureException on CMS failure", async () => {
+  it("calls Sentry.captureException on CMS failure with logError (scope, op) tags", async () => {
     const { captureException } = await import("@sentry/nextjs");
     const captureSpy = vi.mocked(captureException);
     mockListCollectionItems.mockRejectedValueOnce(new Error("wix down"));
@@ -186,9 +186,14 @@ describe("listSwatchesAction", () => {
     await listSwatchesAction();
     expect(captureSpy).toHaveBeenCalledOnce();
     const [, opts] = captureSpy.mock.calls[0];
-    expect((opts as { extra: { errorId: string } }).extra.errorId).toMatch(
-      /^[0-9a-f-]{36}$/,
-    );
+    // cfw-1yms: migrated from captureWithId (extra.errorId UUID) to
+    // logError (tags.scope + tags.op + level=error). The new shape
+    // is the chain-wide canonical Sentry contract.
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "swatch-request",
+      op: "listSwatchesAction failed",
+    });
+    expect((opts as { level: string }).level).toBe("error");
   });
 
   it("returns error:true on CMS failure", async () => {

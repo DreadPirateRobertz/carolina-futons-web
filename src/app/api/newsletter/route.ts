@@ -23,7 +23,7 @@
 import { NextResponse } from "next/server";
 
 import { hashEmail } from "@/lib/log/hash-pii";
-import { logError } from "@/lib/observability/log";
+import { logError, logWarn } from "@/lib/observability/log";
 import {
   coerceNewsletterRequest,
   hasNewsletterErrors,
@@ -65,7 +65,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, alreadySubscribed: !created });
   } catch (err) {
     if (err instanceof NewsletterRateLimitError) {
-      console.warn("[api/newsletter] rate-limited:", hashEmail(req.email));
+      await logWarn("api/newsletter", "rate-limited", err, {
+        emailHash: hashEmail(req.email),
+      });
       return NextResponse.json(
         { ok: false, error: "rate-limited" },
         { status: 429 },

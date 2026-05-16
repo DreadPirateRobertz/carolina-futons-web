@@ -10,7 +10,7 @@ import {
   NewsletterRateLimitError,
 } from "@/lib/newsletter/newsletter-store";
 import { hashEmail } from "@/lib/log/hash-pii";
-import { logError } from "@/lib/observability/log";
+import { logError, logWarn } from "@/lib/observability/log";
 import type { NewsletterActionState } from "@/app/newsletter/newsletter-state";
 
 // Endpoint-only — no /newsletter page route exists or is planned (cf-7ue0).
@@ -42,7 +42,9 @@ export async function subscribeToNewsletter(
     return { status: "success", alreadySubscribed: !created };
   } catch (err) {
     if (err instanceof NewsletterRateLimitError) {
-      console.warn("[newsletter] rate-limited:", hashEmail(req.email));
+      await logWarn("newsletter", "rate-limited", err, {
+        emailHash: hashEmail(req.email),
+      });
       return {
         status: "error",
         errors: {},
