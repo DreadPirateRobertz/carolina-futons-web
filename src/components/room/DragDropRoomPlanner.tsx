@@ -228,7 +228,7 @@ export function DragDropRoomPlanner() {
         <button
           type="button"
           onClick={handleClear}
-          className="rounded-md border border-cf-divider px-3 py-2 text-sm text-cf-muted hover:border-red-300 hover:text-red-600"
+          className="rounded-md border border-cf-divider px-3 py-2 text-sm text-cf-muted hover:border-red-300 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
         >
           Clear
         </button>
@@ -314,7 +314,7 @@ export function DragDropRoomPlanner() {
                     type="button"
                     aria-label={`Rotate ${opt.shortLabel}`}
                     onClick={() => rotateItem(item.id)}
-                    className="rounded bg-white/80 px-1 text-xs hover:bg-white"
+                    className="rounded bg-white/80 px-1 text-xs hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
                   >
                     ↻
                   </button>
@@ -322,7 +322,7 @@ export function DragDropRoomPlanner() {
                     type="button"
                     aria-label={`Remove ${opt.shortLabel}`}
                     onClick={() => removeItem(item.id)}
-                    className="rounded bg-white/80 px-1 text-xs text-red-500 hover:bg-white"
+                    className="rounded bg-white/80 px-1 text-xs text-red-500 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
                   >
                     ×
                   </button>

@@ -34,7 +34,7 @@ export function QuizResult({ results, copy, shareHref, headingRef }: Props) {
       {results.length === 0 ? (
         <div className="space-y-3 text-cf-muted">
           <p>We could not find an exact match right now.</p>
-          <Link href="/shop" className="text-cf-cta underline underline-offset-2">
+          <Link href="/shop" className="rounded-sm text-cf-cta underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2">
             Browse our full collection
           </Link>
         </div>
@@ -55,7 +55,7 @@ export function QuizResult({ results, copy, shareHref, headingRef }: Props) {
                 </p>
                 <Link
                   href={`/products/${product.slug}`}
-                  className="mt-3 inline-block text-sm font-medium text-cf-cta underline underline-offset-2 hover:text-cf-cta/80"
+                  className="mt-3 inline-block rounded-sm text-sm font-medium text-cf-cta underline underline-offset-2 hover:text-cf-cta/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
                 >
                   View product &rarr;
                 </Link>
@@ -73,7 +73,7 @@ export function QuizResult({ results, copy, shareHref, headingRef }: Props) {
             </p>
             <Link
               href={shareHref}
-              className="break-all text-xs text-cf-cta underline underline-offset-2"
+              className="break-all rounded-sm text-xs text-cf-cta underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
             >
               {typeof window !== "undefined"
                 ? `${window.location.origin}${shareHref}`
@@ -83,7 +83,7 @@ export function QuizResult({ results, copy, shareHref, headingRef }: Props) {
         )}
         <p className="text-center text-sm text-cf-muted">
           Want to explore more?{" "}
-          <Link href="/shop" className="text-cf-cta underline underline-offset-2">
+          <Link href="/shop" className="rounded-sm text-cf-cta underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2">
             Browse the full collection
           </Link>
         </p>
