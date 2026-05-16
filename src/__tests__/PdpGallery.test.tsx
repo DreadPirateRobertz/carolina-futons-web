@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/log", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 import { PdpGallery } from "@/components/product/PdpGallery";
 
 type FakeViewTransition = {
@@ -386,19 +391,34 @@ describe("PdpGallery — onError / broken image fallback", () => {
     warnSpy.mockRestore();
   });
 
-  it("second error on same image logs console.error (fallback also failed)", () => {
+  it("second error on same image calls logError (fallback also failed → Sentry)", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockLogError.mockClear();
     render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
     const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
     fireEvent.error(main);
     fireEvent.error(main); // fallback also errored
-    expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("[PdpGallery] fallback"),
-      "https://img/a.jpg",
-    );
+    expect(mockLogError).toHaveBeenCalledTimes(1);
+    const [source, op, err] = mockLogError.mock.calls[0];
+    expect(source).toBe("pdp-gallery");
+    expect(op).toMatch(/^image-fallback-failed\./);
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toContain("https://img/a.jpg");
     warnSpy.mockRestore();
-    errorSpy.mockRestore();
+  });
+
+  // Logger migration (cfw-logger batch 21): cover the first-error path
+  // doesn't escalate to Sentry (it's the "broken image, swap to fallback"
+  // soft-warn path — console.warn only, no Sentry capture).
+  it("first error on an image does NOT call logError (uses console.warn for soft swap)", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    mockLogError.mockClear();
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    fireEvent.error(main); // first error only
+    expect(mockLogError).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 
   it("thumbnail image falls back on load error", () => {
