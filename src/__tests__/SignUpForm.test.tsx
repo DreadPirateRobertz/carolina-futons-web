@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+
+// cfw-logger migration: form's catch routes through logError.
+const logErrorMock = vi.fn();
+vi.mock("@/lib/logger", () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
+}));
+
 import { SignUpForm } from "@/components/account/SignUpForm";
 
 const mockFetch = vi.fn();
@@ -24,6 +31,7 @@ function fillForm(
 describe("SignUpForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    logErrorMock.mockReset();
   });
 
   it("renders heading and three fields", () => {
@@ -189,5 +197,46 @@ describe("SignUpForm", () => {
     expect(
       container.querySelector("form"),
     ).not.toBeNull();
+  });
+});
+
+// cfw-logger migration: form's catch routes through
+// logError("SignUpForm", "register failed", err).
+describe("SignUpForm — logError observability", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    logErrorMock.mockReset();
+  });
+
+  it("calls logError when fetch throws", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("network down"));
+    render(<SignUpForm />);
+    fillForm();
+    fireEvent.click(screen.getByRole("button", { name: /create.*account/i }));
+    await waitFor(() => expect(logErrorMock).toHaveBeenCalledTimes(1));
+  });
+
+  it("tags logError with scope='SignUpForm' and message='register failed'", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("network down"));
+    render(<SignUpForm />);
+    fillForm();
+    fireEvent.click(screen.getByRole("button", { name: /create.*account/i }));
+    await waitFor(() => expect(logErrorMock).toHaveBeenCalled());
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "SignUpForm",
+      "register failed",
+      expect.anything(),
+    );
+  });
+
+  it("passes the caught Error instance directly to logError", async () => {
+    const err = new Error("network down");
+    mockFetch.mockRejectedValueOnce(err);
+    render(<SignUpForm />);
+    fillForm();
+    fireEvent.click(screen.getByRole("button", { name: /create.*account/i }));
+    await waitFor(() => expect(logErrorMock).toHaveBeenCalled());
+    const [, , payload] = logErrorMock.mock.calls[0]!;
+    expect(payload).toBe(err);
   });
 });
