@@ -16,9 +16,15 @@ vi.mock("@/lib/newsletter/newsletter-store", async (importOriginal) => {
   return { ...actual, upsertSubscriber: storeMocks.upsertSubscriber };
 });
 
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/log", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 beforeEach(() => {
   storeMocks.upsertSubscriber.mockReset();
   storeMocks.upsertSubscriber.mockResolvedValue({ created: true });
+  mockLogError.mockClear();
 });
 
 function fd(fields: Record<string, string>): FormData {
@@ -94,6 +100,41 @@ describe("subscribeToNewsletter — persistence", () => {
     expect(result.status).toBe("error");
     if (result.status !== "error") return;
     expect(result.storeError).toBeTruthy();
+  });
+
+  // Logger migration (cfw-logger batch 15): upsertSubscriber catch
+  // forwards to logError with source="newsletter".
+  it("calls logError with source='newsletter' op='upsertSubscriber' when the store throws", async () => {
+    const storeErr = new Error("EACCES");
+    storeMocks.upsertSubscriber.mockRejectedValueOnce(storeErr);
+    const { subscribeToNewsletter } = await import("@/app/newsletter/actions");
+    await subscribeToNewsletter(null, fd({ email: "ok@example.com" }));
+    expect(mockLogError).toHaveBeenCalledTimes(1);
+    const [source, op, err] = mockLogError.mock.calls[0];
+    expect(source).toBe("newsletter");
+    expect(op).toBe("upsertSubscriber");
+    expect(err).toBe(storeErr);
+  });
+
+  it("does NOT call logError on success (happy path)", async () => {
+    storeMocks.upsertSubscriber.mockResolvedValueOnce({ created: true });
+    const { subscribeToNewsletter } = await import("@/app/newsletter/actions");
+    await subscribeToNewsletter(null, fd({ email: "ok@example.com" }));
+    expect(mockLogError).not.toHaveBeenCalled();
+  });
+
+  it("does NOT call logError on the rate-limit branch (uses console.warn, distinct from Sentry-worthy)", async () => {
+    const { NewsletterRateLimitError } = await import(
+      "@/lib/newsletter/newsletter-store"
+    );
+    storeMocks.upsertSubscriber.mockRejectedValueOnce(
+      new NewsletterRateLimitError(),
+    );
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { subscribeToNewsletter } = await import("@/app/newsletter/actions");
+    await subscribeToNewsletter(null, fd({ email: "ok@example.com" }));
+    expect(mockLogError).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 });
 
