@@ -55,7 +55,7 @@ describe("WishlistShareButton focus-visible (cf-if28)", () => {
 describe("DashboardShell focus-visible (cf-if28)", () => {
   it("every tab Link carries focus-visible:ring-cf-cta", () => {
     const { container } = render(
-      <DashboardShell activeTab="overview" memberId="m-1" memberEmail="x@y.com">
+      <DashboardShell activeTab="overview" memberId="m-1" memberEmail="x@y.com" memberName={null}>
         <div />
       </DashboardShell>,
     );
