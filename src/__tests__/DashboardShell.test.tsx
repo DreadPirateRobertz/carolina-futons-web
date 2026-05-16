@@ -91,7 +91,7 @@ describe("DashboardShell", () => {
     expect(inactive).toHaveAttribute("data-active", "false");
   });
 
-  it("renders all 5 tab links in the documented order", () => {
+  it("renders all 6 tab links in the documented order", () => {
     render(
       <DashboardShell
         memberId="m1"
@@ -104,10 +104,12 @@ describe("DashboardShell", () => {
     );
     const nav = screen.getByRole("navigation", { name: "Account sections" });
     const links = Array.from(nav.querySelectorAll("a"));
+    // cf-dmos (PR #619): Addresses tab added between Wishlist and Profile.
     expect(links.map((a) => a.textContent)).toEqual([
       "Overview",
       "Orders",
       "Wishlist",
+      "Addresses",
       "Profile",
       "Preferences",
     ]);
@@ -142,11 +144,13 @@ describe("DashboardShell", () => {
     expect(screen.getByTestId("custom-child")).toHaveTextContent("custom body");
   });
 
-  it("DASHBOARD_TABS covers the 5 documented sub-bead destinations", () => {
+  it("DASHBOARD_TABS covers the 6 documented sub-bead destinations", () => {
+    // cf-dmos (PR #619): /dashboard/addresses added between wishlist and profile.
     expect(DASHBOARD_TABS.map((t) => t.href)).toEqual([
       "/dashboard",
       "/dashboard/orders",
       "/dashboard/wishlist",
+      "/dashboard/addresses",
       "/dashboard/profile",
       "/dashboard/preferences",
     ]);
