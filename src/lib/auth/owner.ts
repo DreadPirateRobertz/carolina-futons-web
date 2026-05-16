@@ -3,6 +3,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 
 import { getMemberSession, type MemberSession } from "@/lib/auth/member";
+import { logError } from "@/lib/logger";
 import { getWixClientWithTokens } from "@/lib/wix-client";
 
 // cfw-wef (cfw-6qd.1): owner-mode auth gate for Brenda's inline-edit Path B.
@@ -76,7 +77,11 @@ export async function getOwnerSession(): Promise<OwnerSession | null> {
     });
     email = result.member?.loginEmail ?? null;
   } catch (err) {
-    console.error("[auth/owner] getCurrentMember failed:", err);
+    logError(
+      "auth/owner",
+      "getCurrentMember failed",
+      err instanceof Error ? err : { err },
+    );
     return null;
   }
 

@@ -25,6 +25,12 @@ vi.mock("@/lib/wix-client", () => ({
   getWixClientWithTokens: () => ({ members: { getCurrentMember } }),
 }));
 
+// cfw-logger migration: getOwnerSession's catch routes through logError.
+const logErrorMock = vi.fn();
+vi.mock("@/lib/logger", () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
+}));
+
 const memberTokens: Tokens = {
   accessToken: { value: "access-m", expiresAt: 1_780_000_000 },
   refreshToken: { value: "refresh-m", role: "member" as Tokens["refreshToken"]["role"] },
@@ -153,11 +159,10 @@ describe("getOwnerSession", () => {
     getCurrentMember
       .mockResolvedValueOnce({ member: { _id: "member-owner" } })
       .mockRejectedValueOnce(new Error("Wix down"));
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { getOwnerSession } = await import("@/lib/auth/owner");
     expect(await getOwnerSession()).toBeNull();
-    expect(consoleSpy).toHaveBeenCalled();
-    consoleSpy.mockRestore();
+    // Observability routes through logError (cfw-logger migration).
+    expect(logErrorMock).toHaveBeenCalled();
   });
 
   it("returns OwnerSession when allowlisted owner is signed in", async () => {
@@ -215,5 +220,48 @@ describe("requireOwnerSession", () => {
     const owner = await requireOwnerSession();
     expect(owner.email).toBe("brenda@carolinafutons.com");
     expect(redirectMock).not.toHaveBeenCalled();
+  });
+});
+
+// cfw-logger migration: getOwnerSession's catch branch routes through
+// logError("auth/owner", "getCurrentMember failed", err). Pin the contract.
+describe("getOwnerSession — logError observability", () => {
+  it("calls logError when the email-lookup Wix call throws", async () => {
+    process.env.OWNER_EMAILS = "brenda@carolinafutons.com";
+    cookieStore.set("wix-session", { value: JSON.stringify(memberTokens) });
+    getCurrentMember
+      .mockResolvedValueOnce({ member: { _id: "member-owner" } })
+      .mockRejectedValueOnce(new Error("Wix down"));
+    const { getOwnerSession } = await import("@/lib/auth/owner");
+    await getOwnerSession();
+    expect(logErrorMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("tags logError with scope='auth/owner' and message='getCurrentMember failed'", async () => {
+    process.env.OWNER_EMAILS = "brenda@carolinafutons.com";
+    cookieStore.set("wix-session", { value: JSON.stringify(memberTokens) });
+    getCurrentMember
+      .mockResolvedValueOnce({ member: { _id: "member-owner" } })
+      .mockRejectedValueOnce(new Error("Wix down"));
+    const { getOwnerSession } = await import("@/lib/auth/owner");
+    await getOwnerSession();
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "auth/owner",
+      "getCurrentMember failed",
+      expect.anything(),
+    );
+  });
+
+  it("passes the caught Error instance directly to logError (preserves stack)", async () => {
+    const err = new Error("Wix down");
+    process.env.OWNER_EMAILS = "brenda@carolinafutons.com";
+    cookieStore.set("wix-session", { value: JSON.stringify(memberTokens) });
+    getCurrentMember
+      .mockResolvedValueOnce({ member: { _id: "member-owner" } })
+      .mockRejectedValueOnce(err);
+    const { getOwnerSession } = await import("@/lib/auth/owner");
+    await getOwnerSession();
+    const [, , payload] = logErrorMock.mock.calls[0]!;
+    expect(payload).toBe(err);
   });
 });
