@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 
 import { isValidZip } from "@/lib/product/shipping-estimate";
+import { logError } from "@/lib/observability/log";
 import type {
   DeliveryZoneOk,
   DeliveryZoneResponse,
@@ -34,8 +35,9 @@ import type {
 // Reliability: 8s AbortSignal.timeout caps every fetch; an AbortController
 // per submit drops stale responses if the user resubmits before the prior
 // fetch resolves; the same controller aborts on unmount. Uncaught fetch
-// rejections are logged via console.error so Sentry's global handler
-// captures them (matches src/components/account/AccountSignIn.tsx).
+// rejections are forwarded via logError (src/lib/observability/log.ts) so
+// Sentry receives a structured event in prod and the dev console still
+// shows the bracketed prefix.
 
 const WHITE_GLOVE_THRESHOLD_CENTS = 150_000; // $1,500
 const FETCH_TIMEOUT_MS = 8_000;
@@ -117,7 +119,7 @@ export function PdpWhiteGlove({
       // AbortError fires when the user resubmits or the component
       // unmounts mid-flight; that's not a failure to surface.
       if ((err as Error)?.name === "AbortError") return;
-      console.error("[PdpWhiteGlove] /api/delivery-zone failed:", err);
+      logError("PdpWhiteGlove", "/api/delivery-zone failed", err);
       setState({
         kind: "error",
         message: "We couldn't check that ZIP — please try again.",
