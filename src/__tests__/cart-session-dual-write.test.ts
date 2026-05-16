@@ -150,14 +150,14 @@ describe("syncCartSession (cf-cart-session-dual-write)", () => {
     errSpy.mockRestore();
   });
 
-  // cf-puqx (cf-f9o1.fu2): silent-failure-hunter on PR #611 caught that
-  // `.catch()` only fires on NETWORK failures — a 5xx from the Velo bridge
-  // resolves the fetch promise with `ok: false` and was silently dropped.
-  // Mobile-app cart drift is the consequence. These tests pin the contract:
-  // every non-2xx response must surface a Sentry breadcrumb so on-call sees
-  // the divergence, but must still not throw (fire-and-forget contract).
+  // cf-puqx: `.catch()` only fires on NETWORK failures — a 5xx from the
+  // Velo bridge resolves the fetch promise with `ok: false`, which the
+  // previous code dropped silently. Mobile-app cart drift would be the
+  // consequence in production. These tests pin the contract: every
+  // non-2xx response must surface a Sentry event so on-call sees the
+  // divergence, but must still not throw (fire-and-forget contract).
   describe("HTTP status handling (cf-puqx)", () => {
-    it("tags Sentry on a 500 response", async () => {
+    it("tags Sentry on a 500 response with cartId in the message", async () => {
       fetchSpy.mockResolvedValueOnce({ ok: false, status: 500 });
       syncCartSession(fakeCart());
       // microtask + tick — fetch resolves, then ok-check + log run on next.
@@ -166,16 +166,28 @@ describe("syncCartSession (cf-cart-session-dual-write)", () => {
       const [source, op, err] = logWixFailure.mock.calls[0]!;
       expect(source).toBe("cart");
       expect(op).toBe("syncCartSession");
+      // cartId is the join key on-call uses to correlate the Sentry event
+      // back to the Wix Stores cart of record — must be in the message
+      // because the synthetic Error isn't Wix-SDK-shaped, so the helper's
+      // `extra.httpStatus` field stays undefined.
+      //
+      // Pin the exact format so Sentry-side fingerprint searches stay
+      // stable; rotating the prefix would silently break saved queries.
+      expect((err as Error).message).toMatch(
+        /^velo POST returned HTTP \d+ \(cartId=[^)]+\)$/,
+      );
       expect((err as Error).message).toContain("500");
+      expect((err as Error).message).toContain("cartId=cart-1");
     });
 
-    it("tags Sentry on a 4xx response (e.g. 404)", async () => {
+    it("tags Sentry on a 4xx response (e.g. 404) with cartId", async () => {
       fetchSpy.mockResolvedValueOnce({ ok: false, status: 404 });
       syncCartSession(fakeCart());
       await new Promise((r) => setTimeout(r, 0));
       expect(logWixFailure).toHaveBeenCalledOnce();
       const [, , err] = logWixFailure.mock.calls[0]!;
       expect((err as Error).message).toContain("404");
+      expect((err as Error).message).toContain("cartId=cart-1");
     });
 
     it("does NOT tag Sentry on a 200 OK", async () => {
@@ -184,7 +196,7 @@ describe("syncCartSession (cf-cart-session-dual-write)", () => {
       expect(logWixFailure).not.toHaveBeenCalled();
     });
 
-    it("still tags Sentry on a network rejection (parity with HTTP path)", async () => {
+    it("tags Sentry on a network rejection with the original Error identity", async () => {
       const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
       const networkErr = new Error("velo-down");
       fetchSpy.mockRejectedValueOnce(networkErr);
@@ -195,6 +207,23 @@ describe("syncCartSession (cf-cart-session-dual-write)", () => {
         "cart",
         "syncCartSession",
         networkErr,
+      );
+      errSpy.mockRestore();
+    });
+
+    it("tags Sentry on a non-Error rejection (e.g. string throw)", async () => {
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      // fetch's promise contract permits any thrown value; addItemAction's
+      // catch path covers this case in cart-actions.test.ts. Pin parity
+      // here so a future refactor that narrows to `(err: Error)` is
+      // caught.
+      fetchSpy.mockRejectedValueOnce("string-not-an-error");
+      syncCartSession(fakeCart());
+      await new Promise((r) => setTimeout(r, 0));
+      expect(logWixFailure).toHaveBeenCalledWith(
+        "cart",
+        "syncCartSession",
+        "string-not-an-error",
       );
       errSpy.mockRestore();
     });
