@@ -750,3 +750,65 @@ describe("PdpGallery — 360 spin toggle (cfw-x3w)", () => {
     expect(screen.getByTestId("pdp-spin-toggle")).toBeInTheDocument();
   });
 });
+
+// Pins the logError migration so an accidental revert to a bare
+// console.error("[PdpGallery] …") (or to a non-bracketed prefix that
+// bypasses the helper) fails loudly. Asserts on the console.error sink
+// because logError forwards there in every env; the Sentry forwarder is
+// prod-only and unit-tested in log.test.ts.
+describe("PdpGallery — logError migration", () => {
+  it("emits a bracketed '[PdpGallery] fallback also failed for broken src (main)' prefix when the main image's fallback also fails", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    fireEvent.error(main);
+    fireEvent.error(main);
+    // Exact first arg: scope + message joined by the helper, including the
+    // interpolated context tag so onError diagnostics still localize.
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    expect(errorSpy.mock.calls[0]![0]).toBe(
+      "[PdpGallery] fallback also failed for broken src (main)",
+    );
+    expect(errorSpy.mock.calls[0]![1]).toBe("https://img/a.jpg");
+    warnSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
+  it("emits the same prefix shape with an indexed 'thumb' context when a thumbnail's fallback also fails", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { container } = render(
+      <PdpGallery images={multiImages} productName="Kingston Futon" />,
+    );
+    const thumbImgs = container.querySelectorAll(
+      "[role='tab'] img",
+    ) as NodeListOf<HTMLImageElement>;
+    fireEvent.error(thumbImgs[1]);
+    fireEvent.error(thumbImgs[1]); // fallback also errored
+    expect(errorSpy).toHaveBeenCalledWith(
+      "[PdpGallery] fallback also failed for broken src (thumb 1)",
+      "https://img/b.jpg",
+    );
+    warnSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
+  it("passes the URL through unchanged as the second arg (no JSON.stringify, no Error-wrap)", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    fireEvent.error(main);
+    fireEvent.error(main);
+    // Second arg must be the raw URL string — the helper accepts `unknown`
+    // for `err`, but here we want a plain string so log scrapers can pull
+    // the URL out without unwrapping an Error object.
+    const secondArg = errorSpy.mock.calls.at(-1)![1];
+    expect(typeof secondArg).toBe("string");
+    expect(secondArg).toBe("https://img/a.jpg");
+    expect(secondArg).not.toBeInstanceOf(Error);
+    warnSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+});
