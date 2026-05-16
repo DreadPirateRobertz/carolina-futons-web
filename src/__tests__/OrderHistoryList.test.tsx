@@ -73,4 +73,61 @@ describe("<OrderHistoryList />", () => {
     const card = screen.getByRole("listitem");
     expect(within(card).queryByText(/^placed/i)).toBeNull();
   });
+
+  // cf-fd94 (cf-zn5b.1 G-7): Wix Velo's initOrderHistory rendered a
+  // "Track shipment" link per shipped row. cfw was missing the link;
+  // customers had to hunt the shipping-confirmation email to track.
+  describe("track-shipment link (cf-fd94)", () => {
+    const shipped: MemberOrderSummary = {
+      ...baseOrder,
+      id: "O-9",
+      number: "1099",
+      fulfillmentStatus: "FULFILLED",
+    };
+
+    it("renders a Track shipment link for FULFILLED orders when memberEmail is provided", () => {
+      render(
+        <OrderHistoryList
+          orders={[shipped]}
+          memberEmail="jane@example.com"
+        />,
+      );
+      const link = screen.getByRole("link", { name: /track shipment/i });
+      expect(link).toHaveAttribute(
+        "href",
+        "/track-order?n=1099&e=jane%40example.com",
+      );
+    });
+
+    it("does NOT render the link for NOT_FULFILLED orders", () => {
+      render(
+        <OrderHistoryList
+          orders={[baseOrder]}
+          memberEmail="jane@example.com"
+        />,
+      );
+      expect(
+        screen.queryByRole("link", { name: /track shipment/i }),
+      ).toBeNull();
+    });
+
+    it("does NOT render the link when memberEmail is missing (can't construct the lookup URL)", () => {
+      render(<OrderHistoryList orders={[shipped]} memberEmail={null} />);
+      expect(
+        screen.queryByRole("link", { name: /track shipment/i }),
+      ).toBeNull();
+    });
+
+    it("does NOT render the link when the order has no number to look up", () => {
+      render(
+        <OrderHistoryList
+          orders={[{ ...shipped, number: null }]}
+          memberEmail="jane@example.com"
+        />,
+      );
+      expect(
+        screen.queryByRole("link", { name: /track shipment/i }),
+      ).toBeNull();
+    });
+  });
 });
