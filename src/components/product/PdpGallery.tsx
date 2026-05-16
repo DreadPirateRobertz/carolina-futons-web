@@ -2,6 +2,8 @@
 
 import { useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
+
+import { logError } from "@/lib/logger";
 import {
   m,
   useReducedMotion,
@@ -134,7 +136,10 @@ export function PdpGallery({ images, productName, activeUrl, activeAlt, spinImag
     if (brokenSrcs.has(url)) {
       // Already marked — means the fallback data URI itself also errored
       // (e.g. CSP policy blocking data: scheme). Surface it at error level.
-      console.error(`[PdpGallery] fallback also failed for broken src (${context}):`, url);
+      logError("PdpGallery", "fallback also failed for broken src", {
+        context,
+        url,
+      });
       return;
     }
     console.warn(`[PdpGallery] broken image src (${context}):`, url);

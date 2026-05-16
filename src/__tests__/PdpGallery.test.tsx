@@ -1,7 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
+// cfw-logger migration: PdpGallery's fallback-also-failed error routes
+// through logError. Mock it so the test asserts the logger contract.
+const logErrorMock = vi.fn();
+vi.mock("@/lib/logger", () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
+}));
+
 import { PdpGallery } from "@/components/product/PdpGallery";
+
+beforeEach(() => {
+  logErrorMock.mockReset();
+});
 
 type FakeViewTransition = {
   finished: Promise<undefined>;
@@ -386,19 +397,18 @@ describe("PdpGallery — onError / broken image fallback", () => {
     warnSpy.mockRestore();
   });
 
-  it("second error on same image logs console.error (fallback also failed)", () => {
+  it("second error on same image routes through logError (fallback also failed) — cfw-logger", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
     const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
     fireEvent.error(main);
     fireEvent.error(main); // fallback also errored
-    expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("[PdpGallery] fallback"),
-      "https://img/a.jpg",
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "PdpGallery",
+      "fallback also failed for broken src",
+      expect.objectContaining({ url: "https://img/a.jpg" }),
     );
     warnSpy.mockRestore();
-    errorSpy.mockRestore();
   });
 
   it("thumbnail image falls back on load error", () => {
@@ -748,5 +758,39 @@ describe("PdpGallery — 360 spin toggle (cfw-x3w)", () => {
       />,
     );
     expect(screen.getByTestId("pdp-spin-toggle")).toBeInTheDocument();
+  });
+});
+
+// cfw-logger migration: PdpGallery's "fallback also failed" branch routes
+// through logError with a structured payload (context + url). Pin the
+// remaining contract details so a future refactor can't silently flatten
+// the payload back to a string.
+describe("PdpGallery — logError contract (cfw-logger)", () => {
+  const multiImages = [
+    { url: "https://img/a.jpg", alt: "a" },
+    { url: "https://img/b.jpg", alt: "b" },
+  ];
+
+  it("logError payload carries the context string (main-image vs thumb)", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    fireEvent.error(main); // marks broken + warns
+    fireEvent.error(main); // fallback also failed → logError
+    const [, , payload] = logErrorMock.mock.calls[0]!;
+    expect(payload).toMatchObject({
+      context: expect.stringMatching(/main|hero/i),
+      url: "https://img/a.jpg",
+    });
+    warnSpy.mockRestore();
+  });
+
+  it("first error (the broken-src branch) does NOT call logError — warn only", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    fireEvent.error(main); // first error: console.warn, not logError
+    expect(logErrorMock).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
   });
 });
