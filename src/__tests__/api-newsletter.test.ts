@@ -132,3 +132,33 @@ describe("POST /api/newsletter — environment fallback", () => {
     expect(mockUpsert).not.toHaveBeenCalled();
   });
 });
+
+describe("POST /api/newsletter — PII redaction in logs (cfw-t22e)", () => {
+  // cfw-t22e: the rate-limit path was logging `req.email` raw, mirroring the
+  // pre-cfw-coc server-action leak. Same Vercel/Datadog/Sumo retention risk;
+  // pin the redacted form so the regression can't sneak back in.
+  const ORIGINAL_SALT = process.env.LOG_PII_SALT;
+  beforeEach(() => {
+    process.env.LOG_PII_SALT = "test-salt-cfw-t22e";
+  });
+  afterEach(() => {
+    if (ORIGINAL_SALT === undefined) delete process.env.LOG_PII_SALT;
+    else process.env.LOG_PII_SALT = ORIGINAL_SALT;
+  });
+
+  it("logs a short hash, not the raw email, on rate-limit", async () => {
+    mockUpsert.mockRejectedValue(new NewsletterRateLimitError());
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const res = await POST(makePost({ email: "leak-me@example.com" }));
+
+    expect(res.status).toBe(429);
+    const warned = warn.mock.calls
+      .flat()
+      .filter((arg): arg is string => typeof arg === "string")
+      .join(" ");
+    expect(warned).not.toContain("leak-me@example.com");
+    expect(warned).toMatch(/\[api\/newsletter\] rate-limited:.*[0-9a-f]{12}/);
+    warn.mockRestore();
+  });
+});
