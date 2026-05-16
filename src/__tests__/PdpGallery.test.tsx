@@ -520,6 +520,49 @@ describe("PdpGallery — activeUrl variant-picker integration (cf-q9zi)", () => 
     expect(main.src).toBe("https://img/variant-only.jpg");
   });
 
+  // cf-pdp-g2.fu2 (blaidd parity-audit note): screen readers need the
+  // variant-specific alt text, not the product-level default, when
+  // activeUrl drives a synthetic main image outside the gallery.
+  it("uses activeAlt for the synthetic main image when activeUrl is not in images", () => {
+    render(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        activeUrl="https://img/variant-only.jpg"
+        activeAlt="Kingston Futon — Color: Bryan Charcoal"
+      />,
+    );
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    expect(main.alt).toBe("Kingston Futon — Color: Bryan Charcoal");
+  });
+
+  it("falls back to productName for the synthetic main alt when activeAlt is omitted", () => {
+    render(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        activeUrl="https://img/variant-only.jpg"
+      />,
+    );
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    expect(main.alt).toBe("Kingston Futon");
+  });
+
+  it("activeAlt does NOT override the alt of an indexed image (activeUrl in images)", () => {
+    render(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        activeUrl="https://img/b.jpg"
+        activeAlt="Kingston Futon — Color: Bryan Charcoal"
+      />,
+    );
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    // When the gallery has the image, the in-gallery alt wins so the
+    // catalog-authored copy isn't replaced by a synthetic variant label.
+    expect(main.alt).toBe("Side");
+  });
+
   it("updates main image when activeUrl changes to a non-gallery URL (cf-pdp-g2)", () => {
     const { rerender } = render(
       <PdpGallery

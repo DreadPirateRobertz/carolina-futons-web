@@ -58,6 +58,16 @@ export type PdpGalleryProps = {
   images: ReadonlyArray<GalleryImage>;
   productName: string;
   activeUrl?: string;
+  /**
+   * cf-pdp-g2.fu2 (blaidd parity-audit note): the alt text to apply when
+   * `activeUrl` drives a synthetic main image that isn't in `images[]`.
+   * Screen readers need the variant-specific description (e.g. "Kingston
+   * Futon — Color: Bryan Charcoal") instead of the product-level default.
+   * Caller passes the variant label composed from the current selection;
+   * if omitted, the gallery falls back to `productName` so the image is
+   * never alt-less.
+   */
+  activeAlt?: string;
   // cfw-x3w: when 12+ spin frames are detected (extractSpinFrames upstream),
   // render a "View 360°" toggle that swaps the main image for ProductSpinViewer.
   // When undefined or empty, the gallery falls back to its static behavior.
@@ -85,7 +95,7 @@ function useSupportsViewTransition() {
   );
 }
 
-export function PdpGallery({ images, productName, activeUrl, spinImages }: PdpGalleryProps) {
+export function PdpGallery({ images, productName, activeUrl, activeAlt, spinImages }: PdpGalleryProps) {
   // Initialize from activeUrl so the default variant's image is shown first.
   const [selectedIndex, setSelectedIndex] = useState(() => {
     if (!activeUrl) return 0;
@@ -157,7 +167,7 @@ export function PdpGallery({ images, productName, activeUrl, spinImages }: PdpGa
     images.some((img) => img.url === activeUrl);
   const active =
     activeUrl && !activeUrlInImages
-      ? { url: activeUrl, alt: undefined }
+      ? { url: activeUrl, alt: activeAlt ?? productName }
       : images[index];
 
   const swap = (next: number) => {
@@ -262,7 +272,7 @@ export function PdpGallery({ images, productName, activeUrl, spinImages }: PdpGa
         // variant-only product silently zoomed into images[0] (the wrong
         // product photo) while the gallery showed the correct one.
         images={(activeUrl && !activeUrlInImages
-          ? [{ url: activeUrl, alt: undefined }, ...images]
+          ? [{ url: activeUrl, alt: activeAlt ?? productName }, ...images]
           : images
         ).map((img) => ({
           url: resolvedSrc(img.url),
