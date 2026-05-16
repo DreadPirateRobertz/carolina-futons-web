@@ -12,6 +12,8 @@
 // is not set (CI / local dev), accepts and acknowledges without calling Velo.
 
 import { NextResponse } from "next/server";
+
+import { logError } from "@/lib/observability/log";
 import {
   coerceSwatchContactInfo,
   hasSwatchContactErrors,
@@ -84,7 +86,10 @@ export async function POST(request: Request) {
       },
     );
     if (!res.ok) {
-      console.error("[swatch-request] Velo responded", res.status);
+      await logError("swatch-request", "Velo responded", undefined, {
+        status: res.status,
+        route: "/api/swatch-request",
+      });
       return NextResponse.json(
         { ok: false, error: "velo-error" },
         { status: 502 },
@@ -92,7 +97,9 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("[swatch-request] fetch failed:", err);
+    await logError("swatch-request", "fetch failed", err, {
+      route: "/api/swatch-request",
+    });
     return NextResponse.json(
       { ok: false, error: "velo-unreachable" },
       { status: 502 },
