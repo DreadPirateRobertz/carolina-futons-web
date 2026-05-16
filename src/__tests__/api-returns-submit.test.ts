@@ -10,6 +10,12 @@ import { NextRequest } from "next/server";
 
 vi.mock("server-only", () => ({}));
 
+// cfw-kmr4: unexpected-error path routes through logError.
+const mockLogError = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 const mockSubmit = vi.fn();
 vi.mock("@/lib/returns/return-submission", () => ({
   submitGuestReturn: (...args: unknown[]) => mockSubmit(...args),
@@ -192,10 +198,16 @@ describe("POST /api/returns/submit — helper failure mapping", () => {
     expect((await res.json()).error).toMatch(/couldn'?t/i);
   });
 
-  it("returns 500 when the helper throws unexpectedly", async () => {
+  it("returns 500 + ships logError when the helper throws unexpectedly (cfw-kmr4)", async () => {
     mockSubmit.mockRejectedValueOnce(new Error("boom"));
+    mockLogError.mockClear();
     const POST = await route();
     const res = await POST(makeRequest(VALID_BODY));
     expect(res.status).toBe(500);
+    expect(mockLogError).toHaveBeenCalledWith(
+      "returns/submit",
+      "POST",
+      expect.any(Error),
+    );
   });
 });

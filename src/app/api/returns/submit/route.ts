@@ -14,6 +14,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { isValidReason } from "@/lib/returns/return-reasons";
 import { submitGuestReturn } from "@/lib/returns/return-submission";
+import { logError } from "@/lib/logging/log-error";
 
 export const dynamic = "force-dynamic";
 
@@ -114,7 +115,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       502,
     );
   } catch (err) {
-    console.error("[/api/returns/submit] unexpected error:", err);
+    // cfw-kmr4: parallel to cfw-qnuf/cfw-i7gi warranty routes — ship
+    // the genuinely-unexpected catch to Sentry; 400/502 mappings
+    // upstream stay untouched.
+    await logError("returns/submit", "POST", err);
     return bad("Unexpected error. Please try again shortly.", 500);
   }
 }
