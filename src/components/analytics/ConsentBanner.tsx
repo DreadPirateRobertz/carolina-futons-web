@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useSyncExternalStore, useTransition } from "react";
 import Link from "next/link";
 
 import { setConsentChoice } from "@/app/actions/consent";
@@ -19,11 +19,11 @@ import {
 // never overlaps right-column content or stacks under a newsletter modal
 // (cfw-y2i.2 visual-parity finding).
 //
-// cf-0klm: self-contained — no initialChoice prop. Reads document.cookie
-// in the mount-only useEffect so layout.tsx + ConsentMode can stay
-// cookies()-free (ISR-eligible). The first client render sees
-// mounted=false and returns null — by the time mounted flips true,
-// `choice` has been hydrated from the cookie in the same effect.
+// cf-0klm: self-contained — no initialChoice prop. choice is initialized
+// via useState lazy initializer (cookie-read, SSR-safe). mounted uses
+// useSyncExternalStore so layout.tsx + ConsentMode stay cookies()-free
+// (ISR-eligible). Server snapshot=false hides banner during SSR;
+// client snapshot=true allows banner after hydration.
 //
 // Accept / Reject both: (1) call the Server Action to persist the choice
 // in cf_consent (so the next page load's ConsentClientBoot sees the
@@ -60,15 +60,15 @@ export function ConsentBanner() {
   );
   const [pending, startTransition] = useTransition();
 
-  // Defer the banner to post-hydration so a cached HTML shell served to a
-  // known user can't briefly flash the banner before the Server Action's
-  // cookie hits the next request. The lazy useState initializer above
-  // hydrates `choice` client-side on mount (SSR-safe: readChoiceFromCookie
-  // returns "unknown" when document is undefined).
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // useSyncExternalStore gives React a server snapshot (false) vs client
+  // snapshot (true) without useState+useEffect, eliminating the
+  // setState-in-effect anti-pattern. Banner stays hidden during SSR and
+  // the initial hydration paint; appears only after client mount.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   if (choice !== "unknown" || !mounted) return null;
 
