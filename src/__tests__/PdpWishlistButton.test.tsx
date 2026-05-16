@@ -9,6 +9,12 @@ vi.mock("@/app/actions/wishlist", () => ({
   addToWishlistFromPdp: actionMocks.addToWishlistFromPdp,
 }));
 
+// cfw-logger migration: sign-in init catch routes through logError.
+const logErrorMock = vi.fn();
+vi.mock("@/lib/logger", () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
+}));
+
 import { PdpWishlistButton } from "@/components/product/PdpWishlistButton";
 
 const baseProps = {
@@ -24,6 +30,7 @@ const originalFetch = global.fetch;
 
 beforeEach(() => {
   actionMocks.addToWishlistFromPdp.mockReset();
+  logErrorMock.mockReset();
   // jsdom doesn't allow direct assignment to window.location.href; replace
   // the whole object with a stub that captures the assignment.
   Object.defineProperty(window, "location", {
@@ -139,7 +146,6 @@ describe("<PdpWishlistButton />", () => {
     global.fetch = vi.fn(async () =>
       new Response("nope", { status: 500 }),
     ) as typeof fetch;
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     render(<PdpWishlistButton {...baseProps} />);
     fireEvent.click(screen.getByRole("button"));
     await waitFor(() => {
@@ -148,6 +154,63 @@ describe("<PdpWishlistButton />", () => {
     expect(window.location.href).toContain(
       encodeURIComponent("/products/monterey-futon"),
     );
-    errSpy.mockRestore();
+    // Observability now routes through logError (cfw-logger migration).
+    expect(logErrorMock).toHaveBeenCalled();
+  });
+});
+
+// cfw-logger migration: sign-in init catch routes through
+// logError("PdpWishlistButton", "sign-in init failed", err).
+describe("PdpWishlistButton — logError observability", () => {
+  it("calls logError when /api/auth/session returns non-ok", async () => {
+    actionMocks.addToWishlistFromPdp.mockResolvedValueOnce({
+      success: false,
+      requiresAuth: true,
+    });
+    global.fetch = vi.fn(async () =>
+      new Response("nope", { status: 500 }),
+    ) as typeof fetch;
+    render(<PdpWishlistButton {...baseProps} />);
+    fireEvent.click(screen.getByRole("button"));
+    await waitFor(() => expect(logErrorMock).toHaveBeenCalled());
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "PdpWishlistButton",
+      "sign-in init failed",
+      expect.any(Error),
+    );
+  });
+
+  it("calls logError when /api/auth/session returns ok but missing authUrl", async () => {
+    actionMocks.addToWishlistFromPdp.mockResolvedValueOnce({
+      success: false,
+      requiresAuth: true,
+    });
+    global.fetch = vi.fn(async () =>
+      new Response(JSON.stringify({}), { status: 200 }),
+    ) as typeof fetch;
+    render(<PdpWishlistButton {...baseProps} />);
+    fireEvent.click(screen.getByRole("button"));
+    await waitFor(() => expect(logErrorMock).toHaveBeenCalled());
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "PdpWishlistButton",
+      "sign-in init failed",
+      expect.any(Error),
+    );
+  });
+
+  it("falls back to /account?return_to=… even when the logError path fires", async () => {
+    actionMocks.addToWishlistFromPdp.mockResolvedValueOnce({
+      success: false,
+      requiresAuth: true,
+    });
+    global.fetch = vi.fn(async () => {
+      throw new TypeError("network down");
+    }) as typeof fetch;
+    render(<PdpWishlistButton {...baseProps} />);
+    fireEvent.click(screen.getByRole("button"));
+    await waitFor(() =>
+      expect(window.location.href).toContain("/account?return_to="),
+    );
+    expect(logErrorMock).toHaveBeenCalled();
   });
 });
