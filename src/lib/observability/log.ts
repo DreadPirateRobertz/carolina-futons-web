@@ -80,3 +80,64 @@ export async function logError(
 
   await Sentry.flush(2000);
 }
+
+/**
+ * Structured warning logger — same shape as `logError` but emits at
+ * Sentry `level: "warning"` and via `console.warn` instead of
+ * `console.error`. Use this for:
+ *   - Rate-limit hits (user-induced traffic that's worth tracking
+ *     trend-wise but should NOT page on-call).
+ *   - Soft-fail upstream signals where the request still completed
+ *     (e.g. token refresh attempted but server kept the old token).
+ *   - Deprecation warnings, unrecognized input shapes, anything the
+ *     caller wants to surface for trend analysis without escalating
+ *     to error severity.
+ *
+ * Sentry filters on `level` for alert routing, so the warning/error
+ * split is load-bearing: warnings stay in the dashboard at low
+ * priority, errors page on-call.
+ *
+ * @param scope - Module / source identifier. Same shape as logError's
+ *   `scope`; the two helpers compose cleanly so a single Sentry filter
+ *   on `tags.scope` shows both warnings and errors from one module.
+ * @param message - Human-readable summary, e.g. `"rate-limited"`.
+ *   Becomes the Sentry `op` tag.
+ * @param err - Optional thrown value (warnings usually don't have
+ *   one; pass when there's a useful trace).
+ * @param extra - Optional structured context. Merged into the Sentry
+ *   `extra` payload and printed as the trailing arg to `console.warn`.
+ *
+ * @example
+ *   if (err instanceof RateLimitError) {
+ *     await logWarn("newsletter", "rate-limited", err, { emailHash });
+ *     return { status: "error", error: "Please try again shortly." };
+ *   }
+ *
+ * WHY a separate helper instead of a `level` param on logError: alert
+ * routing is the contract we want to make hard to mis-set. A typo in
+ * `"warning" → "error"` would silently page on-call on every rate
+ * limit; making it two distinct exports forces the caller to think
+ * about which signal they're emitting.
+ */
+export async function logWarn(
+  scope: string,
+  message: string,
+  err?: unknown,
+  extra?: Record<string, unknown>,
+): Promise<void> {
+  if (extra !== undefined) {
+    console.warn(`[${scope}] ${message}`, err, extra);
+  } else if (err !== undefined) {
+    console.warn(`[${scope}] ${message}`, err);
+  } else {
+    console.warn(`[${scope}] ${message}`);
+  }
+
+  Sentry.captureException(err ?? new Error(`[${scope}] ${message}`), {
+    level: "warning",
+    tags: { scope, op: message },
+    extra,
+  });
+
+  await Sentry.flush(2000);
+}

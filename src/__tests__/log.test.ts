@@ -16,18 +16,21 @@ vi.mock("@sentry/nextjs", () => ({
   flush: (timeoutMs?: number) => flush(timeoutMs),
 }));
 
-import { logError } from "@/lib/observability/log";
+import { logError, logWarn } from "@/lib/observability/log";
 
 const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
 beforeEach(() => {
   captureException.mockReset();
   flush.mockReset().mockResolvedValue(true);
   consoleError.mockClear();
+  consoleWarn.mockClear();
 });
 
 afterEach(() => {
   consoleError.mockClear();
+  consoleWarn.mockClear();
 });
 
 describe("logError — happy path", () => {
@@ -133,5 +136,105 @@ describe("logError — flush contract", () => {
     await expect(
       logError("scope", "msg", new Error("x")),
     ).rejects.toThrow("sentry down");
+  });
+});
+
+// cfw-5wm9: logWarn is the warning-level sibling. Same surface as
+// logError but emits via console.warn + Sentry level='warning'.
+// Pin the contract so Sentry alert routing (which filters on level)
+// doesn't accidentally page on-call for rate-limit warnings.
+describe("logWarn — happy path", () => {
+  it("calls console.warn with '[scope] message' prefix + err, captures to Sentry with level='warning' + scope/op tags, then awaits flush", async () => {
+    const err = new Error("rate-limited");
+
+    await logWarn("newsletter", "rate-limited", err);
+
+    // 1. console.warn (NOT console.error)
+    expect(consoleWarn).toHaveBeenCalledTimes(1);
+    expect(consoleWarn).toHaveBeenCalledWith(
+      "[newsletter] rate-limited",
+      err,
+    );
+    // console.error MUST NOT fire — Sentry level is the only routing
+    // signal, but a stray console.error muddies the log scraper.
+    expect(consoleError).not.toHaveBeenCalled();
+
+    // 2. Sentry — same err, but level='warning' for alert routing
+    expect(captureException).toHaveBeenCalledTimes(1);
+    const [reportedErr, opts] = captureException.mock.calls[0]!;
+    expect(reportedErr).toBe(err);
+    expect((opts as { level: string }).level).toBe("warning");
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "newsletter",
+      op: "rate-limited",
+    });
+
+    // 3. flush awaited at the same 2000ms ceiling as logError
+    expect(flush).toHaveBeenCalledWith(2000);
+  });
+});
+
+describe("logWarn — optional args + flush contract", () => {
+  it("omitting err: synthesises a captureable Error from the prefix", async () => {
+    await logWarn("scope", "soft-fail signal");
+
+    expect(consoleWarn).toHaveBeenCalledWith("[scope] soft-fail signal");
+    const [reportedErr, opts] = captureException.mock.calls[0]!;
+    expect(reportedErr).toBeInstanceOf(Error);
+    expect((reportedErr as Error).message).toBe("[scope] soft-fail signal");
+    expect((opts as { level: string }).level).toBe("warning");
+  });
+
+  it("passing extra: merges it into Sentry payload AND appends to console.warn", async () => {
+    const err = new Error("x");
+    const extra = { emailHash: "ab12cd34" };
+
+    await logWarn("newsletter", "rate-limited", err, extra);
+
+    expect(consoleWarn).toHaveBeenCalledWith(
+      "[newsletter] rate-limited",
+      err,
+      extra,
+    );
+    const [, opts] = captureException.mock.calls[0]!;
+    expect((opts as { extra: typeof extra }).extra).toEqual(extra);
+  });
+
+  it("omitting extra: console.warn is called with TWO args (no trailing `undefined`)", async () => {
+    await logWarn("scope", "msg", new Error("x"));
+    expect(consoleWarn.mock.calls[0]).toHaveLength(2);
+  });
+
+  it("awaits Sentry.flush BEFORE resolving (same Vercel serverless guarantee as logError)", async () => {
+    const events: string[] = [];
+    captureException.mockImplementation(() => events.push("captured"));
+    flush.mockImplementation(async () => {
+      await new Promise<void>((resolve) => setTimeout(resolve, 10));
+      events.push("flushed");
+      return true;
+    });
+
+    await logWarn("scope", "msg", new Error("x"));
+
+    expect(events).toEqual(["captured", "flushed"]);
+  });
+});
+
+describe("logWarn vs logError — level routing contract (load-bearing for Sentry alerts)", () => {
+  it("logError emits level='error' AND logWarn emits level='warning' for the SAME message — the two helpers must NOT collapse", async () => {
+    await logError("scope", "same message");
+    await logWarn("scope", "same message");
+
+    expect(captureException).toHaveBeenCalledTimes(2);
+    const [, errOpts] = captureException.mock.calls[0]!;
+    const [, warnOpts] = captureException.mock.calls[1]!;
+    expect((errOpts as { level: string }).level).toBe("error");
+    expect((warnOpts as { level: string }).level).toBe("warning");
+    // Both share scope/op so a Sentry filter on tags.scope='scope'
+    // surfaces both, but level filters can split them apart for
+    // alert routing.
+    expect((errOpts as { tags: Record<string, string> }).tags).toEqual(
+      (warnOpts as { tags: Record<string, string> }).tags,
+    );
   });
 });
