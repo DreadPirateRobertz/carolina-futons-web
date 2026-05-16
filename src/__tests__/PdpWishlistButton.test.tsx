@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
+// cfw-7z8a: sign-in init failure routes through logError.
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 const actionMocks = vi.hoisted(() => ({
   addToWishlistFromPdp: vi.fn(),
 }));
@@ -139,7 +145,7 @@ describe("<PdpWishlistButton />", () => {
     global.fetch = vi.fn(async () =>
       new Response("nope", { status: 500 }),
     ) as typeof fetch;
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockLogError.mockClear();
     render(<PdpWishlistButton {...baseProps} />);
     fireEvent.click(screen.getByRole("button"));
     await waitFor(() => {
@@ -148,6 +154,15 @@ describe("<PdpWishlistButton />", () => {
     expect(window.location.href).toContain(
       encodeURIComponent("/products/monterey-futon"),
     );
-    errSpy.mockRestore();
+    // cfw-7z8a: sign-in init failure also ships to logError so on-call
+    // sees sustained auth-endpoint outages — the user is still rescued
+    // by the hard-nav fallback above.
+    await waitFor(() => {
+      expect(mockLogError).toHaveBeenCalledWith(
+        "PdpWishlistButton",
+        "signInInit",
+        expect.any(Error),
+      );
+    });
   });
 });
