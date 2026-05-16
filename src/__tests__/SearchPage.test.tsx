@@ -26,10 +26,7 @@ const mockSearchPosts = vi.mocked(searchPosts);
 // tests that don't care about "more results exist than rendered" don't
 // have to specify it; pass an explicit total to exercise pagination
 // affordances like the "Showing 1–12 of 41" header.
-function productResults(
-  items: unknown[],
-  total: number = items.length,
-): never {
+function productResults(items: unknown[], total: number = items.length): never {
   return { items, total } as never;
 }
 function postResults<T>(items: T[], total: number = items.length) {
@@ -59,8 +56,9 @@ describe("/search page — guided empty", () => {
     expect(screen.getByRole("search")).toBeInTheDocument();
     // suggestion chips link back to /search?q=...
     const suggestions = screen.getAllByRole("link");
-    expect(suggestions.some((a) => a.getAttribute("href") === "/search?q=futon"))
-      .toBe(true);
+    expect(
+      suggestions.some((a) => a.getAttribute("href") === "/search?q=futon"),
+    ).toBe(true);
     expect(mockSearchProducts).not.toHaveBeenCalled();
     expect(mockSearchPosts).not.toHaveBeenCalled();
   });
@@ -77,25 +75,29 @@ describe("/search page — guided empty", () => {
 
 describe("/search page — results", () => {
   it("renders Products and Articles sections when both populate", async () => {
-    mockSearchProducts.mockResolvedValue(productResults([
-      {
-        _id: "p1",
-        slug: "monterey-futon",
-        name: "Monterey Futon",
-        priceData: { formatted: { price: "$899.00" } },
-      },
-    ]));
-    mockSearchPosts.mockResolvedValue(postResults([
-      {
-        _id: "post1",
-        slug: "futon-care",
-        title: "Caring for your futon",
-        excerpt: "Keep cotton batting fresh.",
-        heroImageUrl: null,
-        firstPublishedDate: null,
-        minutesToRead: 4,
-      },
-    ]));
+    mockSearchProducts.mockResolvedValue(
+      productResults([
+        {
+          _id: "p1",
+          slug: "monterey-futon",
+          name: "Monterey Futon",
+          priceData: { formatted: { price: "$899.00" } },
+        },
+      ]),
+    );
+    mockSearchPosts.mockResolvedValue(
+      postResults([
+        {
+          _id: "post1",
+          slug: "futon-care",
+          title: "Caring for your futon",
+          excerpt: "Keep cotton batting fresh.",
+          heroImageUrl: null,
+          firstPublishedDate: null,
+          minutesToRead: 4,
+        },
+      ]),
+    );
 
     await renderSearch({ q: "futon" });
 
@@ -108,15 +110,23 @@ describe("/search page — results", () => {
     expect(productLink.getAttribute("href")).toBe("/products/monterey-futon");
 
     const articles = screen.getByRole("region", { name: /articles/i });
-    expect(within(articles).getByText(/caring for your futon/i)).toBeInTheDocument();
+    expect(
+      within(articles).getByText(/caring for your futon/i),
+    ).toBeInTheDocument();
     const postLink = within(articles).getByRole("link", {
       name: /caring for your futon/i,
     });
     expect(postLink.getAttribute("href")).toBe("/blog/futon-care");
 
     // cf-94l: paginated call signature — page=1, pageSize=12 for All view.
-    expect(mockSearchProducts).toHaveBeenCalledWith("futon", { page: 1, pageSize: 12 });
-    expect(mockSearchPosts).toHaveBeenCalledWith("futon", { page: 1, pageSize: 12 });
+    expect(mockSearchProducts).toHaveBeenCalledWith("futon", {
+      page: 1,
+      pageSize: 12,
+    });
+    expect(mockSearchPosts).toHaveBeenCalledWith("futon", {
+      page: 1,
+      pageSize: 12,
+    });
   });
 
   it("renders the no-results state with the search term echoed back", async () => {
@@ -143,10 +153,16 @@ describe("/search page — results", () => {
   });
 
   it("hides the Articles section entirely when only products match", async () => {
-    mockSearchProducts.mockResolvedValue(productResults([{ _id: "p1", slug: "monterey-futon", name: "Monterey Futon" }]));
+    mockSearchProducts.mockResolvedValue(
+      productResults([
+        { _id: "p1", slug: "monterey-futon", name: "Monterey Futon" },
+      ]),
+    );
     mockSearchPosts.mockResolvedValue(postResults([]));
     await renderSearch({ q: "monterey" });
-    expect(screen.getByRole("region", { name: /products/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: /products/i }),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole("region", { name: /articles/i }),
     ).not.toBeInTheDocument();
@@ -154,19 +170,23 @@ describe("/search page — results", () => {
 
   it("hides the Products section entirely when only articles match", async () => {
     mockSearchProducts.mockResolvedValue(productResults([]));
-    mockSearchPosts.mockResolvedValue(postResults([
-      {
-        _id: "post1",
-        slug: "futon-care",
-        title: "Caring for your futon",
-        excerpt: "",
-        heroImageUrl: null,
-        firstPublishedDate: null,
-        minutesToRead: null,
-      },
-    ]));
+    mockSearchPosts.mockResolvedValue(
+      postResults([
+        {
+          _id: "post1",
+          slug: "futon-care",
+          title: "Caring for your futon",
+          excerpt: "",
+          heroImageUrl: null,
+          firstPublishedDate: null,
+          minutesToRead: null,
+        },
+      ]),
+    );
     await renderSearch({ q: "care" });
-    expect(screen.getByRole("region", { name: /articles/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: /articles/i }),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole("region", { name: /products/i }),
     ).not.toBeInTheDocument();
@@ -175,21 +195,23 @@ describe("/search page — results", () => {
   // cf-33a (cf-ruhm.4): QuickView button on every product result row so
   // shoppers can open the variant picker + add-to-cart without a PDP click.
   it("renders a QuickView button on every product result row (cf-33a)", async () => {
-    mockSearchProducts.mockResolvedValue([
-      {
-        _id: "p1",
-        slug: "monterey-futon",
-        name: "Monterey Futon",
-        priceData: { formatted: { price: "$899.00" } },
-      },
-      {
-        _id: "p2",
-        slug: "asheville-daybed",
-        name: "Asheville Daybed",
-        priceData: { formatted: { price: "$799.00" } },
-      },
-    ] as never);
-    mockSearchPosts.mockResolvedValue([]);
+    mockSearchProducts.mockResolvedValue(
+      productResults([
+        {
+          _id: "p1",
+          slug: "monterey-futon",
+          name: "Monterey Futon",
+          priceData: { formatted: { price: "$899.00" } },
+        },
+        {
+          _id: "p2",
+          slug: "asheville-daybed",
+          name: "Asheville Daybed",
+          priceData: { formatted: { price: "$799.00" } },
+        },
+      ]),
+    );
+    mockSearchPosts.mockResolvedValue({ items: [], total: 0 });
     await renderSearch({ q: "f" });
 
     const monterey = screen.getByRole("button", {
@@ -208,11 +230,17 @@ describe("/search page — results", () => {
   });
 
   it("skips the QuickView button when a result is missing a slug (cf-33a defensive)", async () => {
-    mockSearchProducts.mockResolvedValue([
-      // No slug field — QuickView needs slug to fetch product detail.
-      { _id: "p1", name: "Slugless Frame", priceData: { formatted: { price: "$0.00" } } },
-    ] as never);
-    mockSearchPosts.mockResolvedValue([]);
+    mockSearchProducts.mockResolvedValue(
+      productResults([
+        // No slug field — QuickView needs slug to fetch product detail.
+        {
+          _id: "p1",
+          name: "Slugless Frame",
+          priceData: { formatted: { price: "$0.00" } },
+        },
+      ]),
+    );
+    mockSearchPosts.mockResolvedValue({ items: [], total: 0 });
     await renderSearch({ q: "frame" });
     expect(
       screen.queryByRole("button", { name: /quick view: slugless frame/i }),
@@ -226,21 +254,37 @@ describe("/search page — results", () => {
 // the All/Products/Pages/Blog filter; cfw now wires it server-side.
 describe("/search page — type tabs (cf-76a)", () => {
   it("renders 4 filter tabs above results when results exist", async () => {
-    mockSearchProducts.mockResolvedValue(productResults([{ _id: "p1", slug: "monterey-futon", name: "Monterey Futon" }]));
+    mockSearchProducts.mockResolvedValue(
+      productResults([
+        { _id: "p1", slug: "monterey-futon", name: "Monterey Futon" },
+      ]),
+    );
     mockSearchPosts.mockResolvedValue(postResults([]));
     await renderSearch({ q: "futon" });
     const tabs = screen.getByRole("navigation", {
       name: /filter results by type/i,
     });
     expect(tabs).toBeInTheDocument();
-    expect(within(tabs).getByRole("link", { name: /all/i })).toBeInTheDocument();
-    expect(within(tabs).getByRole("link", { name: /products/i })).toBeInTheDocument();
-    expect(within(tabs).getByRole("link", { name: /pages/i })).toBeInTheDocument();
-    expect(within(tabs).getByRole("link", { name: /articles/i })).toBeInTheDocument();
+    expect(
+      within(tabs).getByRole("link", { name: /all/i }),
+    ).toBeInTheDocument();
+    expect(
+      within(tabs).getByRole("link", { name: /products/i }),
+    ).toBeInTheDocument();
+    expect(
+      within(tabs).getByRole("link", { name: /pages/i }),
+    ).toBeInTheDocument();
+    expect(
+      within(tabs).getByRole("link", { name: /articles/i }),
+    ).toBeInTheDocument();
   });
 
-  it("marks the active tab with aria-current=\"page\"", async () => {
-    mockSearchProducts.mockResolvedValue(productResults([{ _id: "p1", slug: "monterey-futon", name: "Monterey Futon" }]));
+  it('marks the active tab with aria-current="page"', async () => {
+    mockSearchProducts.mockResolvedValue(
+      productResults([
+        { _id: "p1", slug: "monterey-futon", name: "Monterey Futon" },
+      ]),
+    );
     mockSearchPosts.mockResolvedValue(postResults([]));
     await renderSearch({ q: "futon", type: "products" });
     const tabs = screen.getByRole("navigation", {
@@ -254,20 +298,28 @@ describe("/search page — type tabs (cf-76a)", () => {
   });
 
   it("renders only Products section when type=products", async () => {
-    mockSearchProducts.mockResolvedValue(productResults([{ _id: "p1", slug: "monterey-futon", name: "Monterey Futon" }]));
-    mockSearchPosts.mockResolvedValue(postResults([
-      {
-        _id: "post1",
-        slug: "futon-care",
-        title: "Caring for your futon",
-        excerpt: "",
-        heroImageUrl: null,
-        firstPublishedDate: null,
-        minutesToRead: null,
-      },
-    ]));
+    mockSearchProducts.mockResolvedValue(
+      productResults([
+        { _id: "p1", slug: "monterey-futon", name: "Monterey Futon" },
+      ]),
+    );
+    mockSearchPosts.mockResolvedValue(
+      postResults([
+        {
+          _id: "post1",
+          slug: "futon-care",
+          title: "Caring for your futon",
+          excerpt: "",
+          heroImageUrl: null,
+          firstPublishedDate: null,
+          minutesToRead: null,
+        },
+      ]),
+    );
     await renderSearch({ q: "futon", type: "products" });
-    expect(screen.getByRole("region", { name: /products/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: /products/i }),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole("region", { name: /articles/i }),
     ).not.toBeInTheDocument();
@@ -277,7 +329,11 @@ describe("/search page — type tabs (cf-76a)", () => {
   });
 
   it("renders only Pages section when type=pages", async () => {
-    mockSearchProducts.mockResolvedValue(productResults([{ _id: "p1", slug: "monterey-futon", name: "Monterey Futon" }]));
+    mockSearchProducts.mockResolvedValue(
+      productResults([
+        { _id: "p1", slug: "monterey-futon", name: "Monterey Futon" },
+      ]),
+    );
     mockSearchPosts.mockResolvedValue(postResults([]));
     // "warranty" matches /warranty + /returns + /faq in the manifest
     await renderSearch({ q: "warranty", type: "pages" });
@@ -285,66 +341,90 @@ describe("/search page — type tabs (cf-76a)", () => {
     expect(pages).toBeInTheDocument();
     // Multiple manifest entries mention warranty; assert at least the
     // canonical /warranty page is among them.
-    const warrantyLinks = within(pages).getAllByRole("link", { name: /warranty/i });
+    const warrantyLinks = within(pages).getAllByRole("link", {
+      name: /warranty/i,
+    });
     expect(warrantyLinks.length).toBeGreaterThanOrEqual(1);
-    expect(warrantyLinks.some((a) => a.getAttribute("href") === "/warranty")).toBe(true);
+    expect(
+      warrantyLinks.some((a) => a.getAttribute("href") === "/warranty"),
+    ).toBe(true);
     expect(
       screen.queryByRole("region", { name: /products/i }),
     ).not.toBeInTheDocument();
   });
 
   it("renders only Articles section when type=articles", async () => {
-    mockSearchProducts.mockResolvedValue(productResults([{ _id: "p1", slug: "monterey-futon", name: "Monterey Futon" }]));
-    mockSearchPosts.mockResolvedValue(postResults([
-      {
-        _id: "post1",
-        slug: "futon-care",
-        title: "Caring for your futon",
-        excerpt: "",
-        heroImageUrl: null,
-        firstPublishedDate: null,
-        minutesToRead: null,
-      },
-    ]));
+    mockSearchProducts.mockResolvedValue(
+      productResults([
+        { _id: "p1", slug: "monterey-futon", name: "Monterey Futon" },
+      ]),
+    );
+    mockSearchPosts.mockResolvedValue(
+      postResults([
+        {
+          _id: "post1",
+          slug: "futon-care",
+          title: "Caring for your futon",
+          excerpt: "",
+          heroImageUrl: null,
+          firstPublishedDate: null,
+          minutesToRead: null,
+        },
+      ]),
+    );
     await renderSearch({ q: "futon", type: "articles" });
-    expect(screen.getByRole("region", { name: /articles/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: /articles/i }),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole("region", { name: /products/i }),
     ).not.toBeInTheDocument();
   });
 
   it("defaults to type=all on unknown ?type= value (graceful degradation)", async () => {
-    mockSearchProducts.mockResolvedValue(productResults([{ _id: "p1", slug: "monterey-futon", name: "Monterey Futon" }]));
-    mockSearchPosts.mockResolvedValue(postResults([
-      {
-        _id: "post1",
-        slug: "futon-care",
-        title: "Caring for your futon",
-        excerpt: "",
-        heroImageUrl: null,
-        firstPublishedDate: null,
-        minutesToRead: null,
-      },
-    ]));
+    mockSearchProducts.mockResolvedValue(
+      productResults([
+        { _id: "p1", slug: "monterey-futon", name: "Monterey Futon" },
+      ]),
+    );
+    mockSearchPosts.mockResolvedValue(
+      postResults([
+        {
+          _id: "post1",
+          slug: "futon-care",
+          title: "Caring for your futon",
+          excerpt: "",
+          heroImageUrl: null,
+          firstPublishedDate: null,
+          minutesToRead: null,
+        },
+      ]),
+    );
     await renderSearch({ q: "futon", type: "fake-type-value" });
     // Both populated sections show (All view).
-    expect(screen.getByRole("region", { name: /products/i })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: /articles/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: /products/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: /articles/i }),
+    ).toBeInTheDocument();
   });
 
   it("shows 'No <type> results' when the active tab is empty (offers 'Try All' link)", async () => {
     mockSearchProducts.mockResolvedValue(productResults([]));
-    mockSearchPosts.mockResolvedValue(postResults([
-      {
-        _id: "post1",
-        slug: "futon-care",
-        title: "Caring for your futon",
-        excerpt: "",
-        heroImageUrl: null,
-        firstPublishedDate: null,
-        minutesToRead: null,
-      },
-    ]));
+    mockSearchPosts.mockResolvedValue(
+      postResults([
+        {
+          _id: "post1",
+          slug: "futon-care",
+          title: "Caring for your futon",
+          excerpt: "",
+          heroImageUrl: null,
+          firstPublishedDate: null,
+          minutesToRead: null,
+        },
+      ]),
+    );
     await renderSearch({ q: "futon", type: "products" });
     // Tab strip still visible
     expect(
@@ -359,7 +439,11 @@ describe("/search page — type tabs (cf-76a)", () => {
   });
 
   it("total-result heading is aria-live so screen readers re-announce on each query", async () => {
-    mockSearchProducts.mockResolvedValue(productResults([{ _id: "p1", slug: "monterey-futon", name: "Monterey Futon" }]));
+    mockSearchProducts.mockResolvedValue(
+      productResults([
+        { _id: "p1", slug: "monterey-futon", name: "Monterey Futon" },
+      ]),
+    );
     mockSearchPosts.mockResolvedValue(postResults([]));
     const { container } = await renderSearch({ q: "futon" });
     const live = container.querySelector('[aria-live="polite"]');
@@ -410,7 +494,9 @@ describe("/search page — pagination + total count (cf-94l)", () => {
     mockSearchPosts.mockResolvedValue(postResults([], 0));
     await renderSearch({ q: "futon", type: "products" });
     // Header includes "Showing 1–12 of 41 results for 'futon'."
-    expect(screen.getByText(/Showing 1–12 of 41 results for "futon"\./)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Showing 1–12 of 41 results for "futon"\./),
+    ).toBeInTheDocument();
   });
 
   it("renders the prev/next pagination footer on non-All tabs when there is a next page", async () => {
@@ -429,7 +515,9 @@ describe("/search page — pagination + total count (cf-94l)", () => {
     const pager = screen.getByRole("navigation", { name: /pagination/i });
     expect(pager).toBeInTheDocument();
     // "Next →" link present, "Previous" disabled (page 1).
-    expect(within(pager).getByRole("link", { name: /next/i })).toBeInTheDocument();
+    expect(
+      within(pager).getByRole("link", { name: /next/i }),
+    ).toBeInTheDocument();
     expect(within(pager).queryByRole("link", { name: /previous/i })).toBeNull();
   });
 
@@ -446,7 +534,9 @@ describe("/search page — pagination + total count (cf-94l)", () => {
     );
     mockSearchPosts.mockResolvedValue(postResults([], 0));
     await renderSearch({ q: "futon", type: "all" });
-    expect(screen.queryByRole("navigation", { name: /pagination/i })).toBeNull();
+    expect(
+      screen.queryByRole("navigation", { name: /pagination/i }),
+    ).toBeNull();
   });
 
   it("page=2 forwards correctly to the libs and renders the second page header", async () => {
@@ -465,7 +555,10 @@ describe("/search page — pagination + total count (cf-94l)", () => {
     // Header reflects page 2.
     expect(screen.getByText(/Showing 13–24 of 41/)).toBeInTheDocument();
     // Lib called with page=2.
-    expect(mockSearchProducts).toHaveBeenCalledWith("futon", { page: 2, pageSize: 12 });
+    expect(mockSearchProducts).toHaveBeenCalledWith("futon", {
+      page: 2,
+      pageSize: 12,
+    });
   });
 
   it("over-pagination (page=999) on products tab shows NoResultsForType (Try All link)", async () => {
@@ -486,6 +579,9 @@ describe("/search page — pagination + total count (cf-94l)", () => {
     );
     mockSearchPosts.mockResolvedValue(postResults([], 0));
     await renderSearch({ q: "futon", type: "products", page: "abc" });
-    expect(mockSearchProducts).toHaveBeenCalledWith("futon", { page: 1, pageSize: 12 });
+    expect(mockSearchProducts).toHaveBeenCalledWith("futon", {
+      page: 1,
+      pageSize: 12,
+    });
   });
 });

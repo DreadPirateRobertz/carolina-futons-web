@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { type CartLineItem } from "@/lib/cart/cart-state";
+import { type AppliedCoupon, type CartLineItem } from "@/lib/cart/cart-state";
 import {
   addToCart,
   applyCoupon,
@@ -16,12 +16,20 @@ import {
 import { syncCartSession } from "@/lib/wix/cart-session-dual-write";
 import { logWixFailure } from "@/lib/wix/errors";
 
+// cf-5qv7 / cfw-yl88: consumers (CartCouponEntry, CartHydrator) read
+// `result.appliedCoupon` from these action results — the shape was added
+// to the cart-state reducer in cf-5qv7 but the producer-side action
+// result types were left without the field, so every PR's typecheck
+// failed with TS2339. Field is OPTIONAL because the producer-side
+// population from WixCart.appliedDiscounts → AppliedCoupon ships as a
+// follow-up; consumers already handle undefined via optional chaining
+// (`result.appliedCoupon?.code` + `if (result.appliedCoupon)`).
 export type CartActionResult =
-  | { ok: true; cart: WixCart | null }
+  | { ok: true; cart: WixCart | null; appliedCoupon?: AppliedCoupon }
   | { ok: false; error: string };
 
 export type HydrateCartResult =
-  | { ok: true; lines: CartLineItem[] }
+  | { ok: true; lines: CartLineItem[]; appliedCoupon?: AppliedCoupon }
   | { ok: false; error: string };
 
 export async function addItemAction(
@@ -100,7 +108,9 @@ export async function updateQuantityAction(
 // removeCoupon for CartDrawer + /cart UI. Trims whitespace from user input
 // before forwarding so a "  SUMMER15  " pasted from email-campaign copy
 // doesn't get rejected by the SDK's strict-match comparator.
-export async function applyCouponAction(code: string): Promise<CartActionResult> {
+export async function applyCouponAction(
+  code: string,
+): Promise<CartActionResult> {
   const trimmed = code?.trim() ?? "";
   if (!trimmed) return { ok: false, error: "Enter a promo code" };
   try {
