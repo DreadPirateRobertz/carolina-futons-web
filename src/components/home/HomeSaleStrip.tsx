@@ -43,11 +43,14 @@ export async function HomeSaleStrip() {
         </div>
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {products.map((product, i) => (
+          {/* cf-os1r (cf-mu05.F3): the sale strip is below the fold on every
+              viewport, so it never hosts the LCP image. priority broadcasts
+              would skip next/image's lazy default and waste pre-LCP bandwidth.
+              Default (priority omitted) → loading="lazy". */}
+          {products.map((product) => (
             <ProductCard
               key={product._id ?? product.slug}
               product={product}
-              priority={i < 4}
               sizes="(min-width: 1280px) 22vw, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
             />
           ))}
