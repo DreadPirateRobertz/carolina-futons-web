@@ -18,6 +18,14 @@ vi.mock("@/lib/wix-client", () => ({
   getWixClientWithTokens: () => ({ members: { getCurrentMember } }),
 }));
 
+// cfw-cqq0: getMemberSession routes its failure path through the shared
+// logError helper. Mock here so tests assert against the call shape rather
+// than parsing console output.
+const mockLogError = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 const memberTokens: Tokens = {
   accessToken: { value: "access-m", expiresAt: 1_780_000_000 },
   refreshToken: { value: "refresh-m", role: "member" as Tokens["refreshToken"]["role"] },
@@ -56,14 +64,15 @@ describe("getMemberSession", () => {
   it("returns null if getCurrentMember throws (token may be expired)", async () => {
     cookieStore.set("wix-session", { value: JSON.stringify(memberTokens) });
     getCurrentMember.mockRejectedValueOnce(new Error("401"));
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockLogError.mockClear();
     const mod = await import("@/lib/auth/member");
     expect(await mod.getMemberSession()).toBeNull();
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining("[auth] getMemberSession"),
+    // cfw-cqq0: failure routes through logError("auth-member", "resolveMemberId", err)
+    expect(mockLogError).toHaveBeenCalledWith(
+      "auth-member",
+      "resolveMemberId",
       expect.any(Error),
     );
-    consoleSpy.mockRestore();
   });
 });
 
