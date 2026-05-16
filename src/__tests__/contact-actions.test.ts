@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-vi.mock("@sentry/nextjs", () => ({
-  captureException: vi.fn(),
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/log", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
 }));
 
 import { sendContactForm } from "@/app/contact/actions";
@@ -29,7 +30,7 @@ const VALID = {
 beforeEach(() => {
   fetchMock = vi.fn();
   vi.stubGlobal("fetch", fetchMock);
-  vi.spyOn(console, "error").mockImplementation(() => {});
+  mockLogError.mockClear();
 });
 
 afterEach(() => {
@@ -312,5 +313,47 @@ describe("sendContactForm — Turnstile CAPTCHA", () => {
     expect(
       (fetchMock.mock.calls[1]! as [string])[0],
     ).toContain("contactSubmissions");
+  });
+});
+
+// Logger migration (cfw-logger batch 27): 5 catches in sendContactForm
+// (verifyTurnstile, captchaConfig, sendContactForm.fetch,
+// sendContactForm.parseVeloError, sendContactForm.veloRejected) all
+// forward to logError with source="contact-form". Pin the source tag
+// shows up on each catch path that's already covered by other tests.
+describe("sendContactForm — logError migration", () => {
+  function ok(body: object = { success: true }) {
+    return new Response(JSON.stringify(body), { status: 200 });
+  }
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("calls logError with op='verifyTurnstile' when Turnstile fetch throws", async () => {
+    vi.stubEnv("TURNSTILE_SECRET_KEY", "secret-key");
+    fetchMock.mockRejectedValueOnce(new Error("network down"));
+    await sendContactForm(
+      null,
+      fd({ ...VALID, "cf-turnstile-response": "some-token" }),
+    );
+    expect(mockLogError).toHaveBeenCalledTimes(1);
+    const [source, op] = mockLogError.mock.calls[0];
+    expect(source).toBe("contact-form");
+    expect(op).toBe("verifyTurnstile");
+  });
+
+  it("calls logError with op='sendContactForm.fetch' when Velo fetch throws", async () => {
+    fetchMock.mockRejectedValueOnce(new Error("ECONNREFUSED"));
+    await sendContactForm(null, fd(VALID));
+    expect(mockLogError).toHaveBeenCalledTimes(1);
+    expect(mockLogError.mock.calls[0][1]).toBe("sendContactForm.fetch");
+  });
+
+  it("does NOT call logError on the happy path (Velo success)", async () => {
+    fetchMock.mockResolvedValueOnce(ok());
+    const result = await sendContactForm(null, fd(VALID));
+    expect(result.status).toBe("success");
+    expect(mockLogError).not.toHaveBeenCalled();
   });
 });
