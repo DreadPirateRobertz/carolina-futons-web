@@ -24,6 +24,19 @@ export type PdpWarrantyInfoProps = {
   productId: string;
   /** Display product name — drives the ?productName pre-fill. */
   productName: string;
+  /**
+   * Whether this product is a hardwood frame (futon / Murphy / platform /
+   * sofa-bed frame). cf-g640: the 15-year warranty in this component
+   * applies only to frames; mattresses + covers carry separate
+   * manufacturer terms documented on /warranty. Pre-cf-g640 the gate was
+   * missing and mattress PDPs surfaced the frame-warranty copy
+   * verbatim — a real customer-misinformation risk.
+   *
+   * Required (no default) so every caller has to think about category
+   * once. Page resolves it via isFrameProduct(slug) in
+   * @/lib/product/category.
+   */
+  isFrame: boolean;
 };
 
 /**
@@ -55,6 +68,9 @@ function buildRegisterHref(productId: string, productName: string): string {
  *   avoids broken pre-fill URLs).
  */
 export function PdpWarrantyInfo(props: PdpWarrantyInfoProps) {
+  // cf-g640: frame-only gate. Anything else returns null so the wrong
+  // warranty copy doesn't reach mattress/cover customers.
+  if (!props.isFrame) return null;
   const productId = props.productId.trim();
   const productName = props.productName.trim();
   if (!productId || !productName) return null;
