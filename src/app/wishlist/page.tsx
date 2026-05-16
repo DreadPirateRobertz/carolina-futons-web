@@ -19,6 +19,7 @@ import { getWishlist } from "@/app/actions/wishlist";
 import { WishlistView } from "@/components/wishlist/WishlistView";
 import { getMemberSession } from "@/lib/auth/member";
 import type { WishlistResponse } from "@/lib/wishlist/wishlist-types";
+import { logError } from "@/lib/log";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,7 @@ export default async function WishlistPage() {
       initialItems = result?.items ?? [];
     }
   } catch (err) {
-    console.error("[wishlist] page load failed:", err);
+    await logError("wishlist-page", "getWishlist", err);
   }
 
   return <WishlistView initialItems={initialItems} />;
