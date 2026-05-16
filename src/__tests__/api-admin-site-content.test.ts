@@ -41,6 +41,17 @@ vi.mock("@/lib/wix/errors", () => ({
   logWixFailure: (...args: unknown[]) => mockLogWixFailure(...args),
 }));
 
+// cfw-xqtk: history-write failure now routes through logError →
+// Sentry. Mock @sentry/nextjs so the runner doesn't ship events AND
+// the new logError-integration test below can assert (scope, op)
+// tags + extra fields.
+const sentryCaptureException = vi.fn();
+const sentryFlush = vi.fn().mockResolvedValue(true);
+vi.mock("@sentry/nextjs", () => ({
+  captureException: (...args: unknown[]) => sentryCaptureException(...args),
+  flush: (timeoutMs?: number) => sentryFlush(timeoutMs),
+}));
+
 const mockRevalidateTag = vi.fn();
 vi.mock("next/cache", () => ({
   revalidateTag: (...args: unknown[]) => mockRevalidateTag(...args),
@@ -580,12 +591,76 @@ describe("POST /api/admin/site-content — cfw-jgl history wire-up", () => {
     expect(mockRevalidateTag).toHaveBeenCalledWith("site-content", "default");
     // The route logs failed history writes for diagnostics — collection
     // unprovisioned (404) is the most common production case.
+    // cfw-xqtk: logError formats as `[scope] message`, err=undefined, extra.
     expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "[admin/site-content] history write failed for footer.tagline",
-      ),
+      "[admin/site-content] history write failed",
+      undefined,
+      expect.objectContaining({
+        key: "footer.tagline",
+        reason: "wix_error",
+        status: 404,
+      }),
     );
     consoleSpy.mockRestore();
+  });
+
+  // cfw-xqtk: pin logError integration on the history-write failure
+  // path. SiteContent history is the audit trail for owner edits —
+  // when it silently fails (collection unprovisioned, perm
+  // mismatch), there is no rollback record for compliance review.
+  // Sentry must see it.
+  it("logError integration on history write failure → captures scope='admin/site-content' + op='history write failed' + extra { key, reason, status } + flush(2000)", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+    mockLookup.mockResolvedValueOnce(null);
+    mockUpsert.mockResolvedValueOnce({});
+    mockWriteSiteContentHistory.mockResolvedValueOnce({
+      ok: false,
+      reason: "wix_error",
+      status: 404,
+    });
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await callPost({ key: "footer.tagline", value: "new" });
+
+    expect(res.status).toBe(200);
+    expect(sentryCaptureException).toHaveBeenCalledTimes(1);
+    const [reportedErr, opts] = sentryCaptureException.mock.calls[0]!;
+    // No native err → helper synthesizes one.
+    expect(reportedErr).toBeInstanceOf(Error);
+    expect((reportedErr as Error).message).toContain("history write failed");
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "admin/site-content",
+      op: "history write failed",
+    });
+    expect((opts as { level: string }).level).toBe("error");
+    expect((opts as { extra: Record<string, unknown> }).extra).toEqual({
+      key: "footer.tagline",
+      reason: "wix_error",
+      status: 404,
+    });
+    expect(sentryFlush).toHaveBeenCalledWith(2000);
+    consoleSpy.mockRestore();
+  });
+
+  it("logError integration: happy history-write path does NOT call Sentry", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+    mockLookup.mockResolvedValueOnce(null);
+    mockUpsert.mockResolvedValueOnce({});
+    mockWriteSiteContentHistory.mockResolvedValueOnce({
+      ok: true,
+      id: "hist-1",
+    });
+
+    await callPost({ key: "footer.tagline", value: "new" });
+
+    // Defensively: filter for the history-write op so an unrelated
+    // logWixFailure (which is also mocked but bypasses sentry mock)
+    // doesn't accidentally satisfy this assertion.
+    const matching = sentryCaptureException.mock.calls.find(
+      ([, opts]) =>
+        (opts as { tags?: { op?: string } }).tags?.op === "history write failed",
+    );
+    expect(matching).toBeUndefined();
   });
 
   it("history.before='' when no previous row existed (insert path)", async () => {
