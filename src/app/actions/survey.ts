@@ -1,5 +1,6 @@
 "use server";
 
+import { logError } from "@/lib/logging/log-error";
 import type { SurveyActionState } from "@/app/survey/survey-state";
 
 const FETCH_TIMEOUT_MS = 8_000;
@@ -19,7 +20,15 @@ export async function submitSurvey(
 
   const base = process.env.WIX_VELO_SITE_URL;
   if (!base) {
-    console.error("[survey] WIX_VELO_SITE_URL not set");
+    // cfw-1r9n: parallel to cfw-hd8t notify-me — three distinct ops
+    // (config / veloResponse / fetch) so a missing env var, a sustained
+    // Velo HTTP failure, and a network storm get separate Sentry groups
+    // even though they all surface the same user-visible generic error.
+    await logError(
+      "survey",
+      "config",
+      new Error("WIX_VELO_SITE_URL not set"),
+    );
     return { status: "error", error: GENERIC_ERROR };
   }
 
@@ -35,12 +44,17 @@ export async function submitSurvey(
       },
     );
     if (!res.ok) {
-      console.error("[survey] Velo responded", res.status);
+      await logError(
+        "survey",
+        "veloResponse",
+        new Error(`Velo responded HTTP ${res.status}`),
+        { httpStatus: res.status },
+      );
       return { status: "error", error: GENERIC_ERROR };
     }
     return { status: "success" };
   } catch (err) {
-    console.error("[survey] fetch failed:", err);
+    await logError("survey", "fetch", err);
     return { status: "error", error: GENERIC_ERROR };
   }
 }
