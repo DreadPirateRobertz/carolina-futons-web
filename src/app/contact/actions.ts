@@ -1,9 +1,9 @@
 "use server";
 
 import nodemailer from "nodemailer";
-import * as Sentry from "@sentry/nextjs";
 import { optionalEnv } from "@/lib/env";
 import { BUSINESS } from "@/lib/business/contact-info";
+import { logError } from "@/lib/log";
 import {
   coerceContactRequest,
   hasContactErrors,
@@ -30,12 +30,6 @@ const TURNSTILE_VERIFY_URL =
 
 type VeloResponse = { success: boolean; error?: string };
 
-function captureWithId(err: unknown, context: string): string {
-  const errorId = crypto.randomUUID();
-  Sentry.captureException(err, { extra: { context, errorId } });
-  return errorId;
-}
-
 function transportFailure(
   values: ContactRequest,
   transportError: string,
@@ -58,8 +52,7 @@ async function verifyTurnstile(
     const data = (await res.json()) as { success: boolean };
     return { ok: data.success === true };
   } catch (err) {
-    const errorId = captureWithId(err, "verifyTurnstile");
-    console.error("[contact-form] Turnstile verify failed:", errorId, err);
+    await logError("contact-form", "verifyTurnstile", err);
     return { ok: false, networkError: true };
   }
 }
@@ -89,13 +82,10 @@ export async function sendContactForm(
   const turnstileToken = formData.get("cf-turnstile-response");
   const hasSecret = !!process.env.TURNSTILE_SECRET_KEY;
   if (!hasSecret && process.env.NODE_ENV === "production") {
-    const errorId = captureWithId(
+    await logError(
+      "contact-form",
+      "captchaConfig",
       new Error("TURNSTILE_SECRET_KEY not set in production"),
-      "sendContactForm:captchaConfig",
-    );
-    console.error(
-      "[contact-form] TURNSTILE_SECRET_KEY not set in production — blocking submission:",
-      errorId,
     );
     return transportFailure(req, TRANSPORT_ERROR_GENERIC);
   }
@@ -123,7 +113,7 @@ export async function sendContactForm(
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
   } catch (err) {
-    console.error("[contact-form] fetch to Velo failed:", err);
+    await logError("contact-form", "sendContactForm.fetch", err);
     return transportFailure(req, TRANSPORT_ERROR_GENERIC);
   }
 
@@ -142,12 +132,16 @@ export async function sendContactForm(
       veloError = body.error.slice(0, VELO_ERROR_MAX_LEN);
     }
   } catch (parseErr) {
-    console.error("[contact-form] failed to parse Velo error body:", parseErr);
+    await logError(
+      "contact-form",
+      "sendContactForm.parseVeloError",
+      parseErr,
+    );
   }
-  console.error(
-    "[contact-form] Velo endpoint rejected submission:",
-    res.status,
-    veloError,
+  await logError(
+    "contact-form",
+    "sendContactForm.veloRejected",
+    new Error(`Velo ${res.status}: ${veloError ?? "(no body)"}`),
   );
   return transportFailure(req, veloError ?? TRANSPORT_ERROR_GENERIC);
 }
@@ -228,7 +222,11 @@ export async function bookAppointment(
 
   const env = readEnv();
   if (!env) {
-    console.error("[appointment-form] SMTP env vars missing — cannot send");
+    await logError(
+      "appointment-form",
+      "config",
+      new Error("SMTP env vars missing — cannot send"),
+    );
     return {
       status: "error",
       errors: {},
@@ -253,7 +251,7 @@ export async function bookAppointment(
       text: buildAppointmentBody(req),
     });
   } catch (err) {
-    console.error("[appointment-form] sendMail failed:", err);
+    await logError("appointment-form", "sendMail", err);
     return {
       status: "error",
       errors: {},
