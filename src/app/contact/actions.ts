@@ -152,7 +152,9 @@ export async function sendContactForm(
   return transportFailure(req, veloError ?? TRANSPORT_ERROR_GENERIC);
 }
 
-// Showroom hours: Wed–Sat 10am–5pm. Last slot is 4pm (1hr visit).
+// Showroom hours: Sun–Tue 10am–5pm. Last slot is 4pm (1hr visit).
+// (cfw-lou: flipped from Wed–Sat per Brenda's #475 schedule update; canonical
+// hours live in /visit SiteContent fallbacks at src/app/visit/page.tsx.)
 const APPOINTMENT_TIMES: Record<string, string> = {
   "10:00": "10:00 AM",
   "11:00": "11:00 AM",
@@ -175,11 +177,11 @@ function validateAppointment(req: AppointmentRequest): AppointmentErrors {
     errors.appointmentDate = "Please select a date.";
   } else {
     const d = new Date(req.appointmentDate + "T00:00:00");
-    const day = d.getDay(); // 1=Mon…6=Sat, 0=Sun; open days are 3–6
+    const day = d.getDay(); // 0=Sun, 1=Mon, 2=Tue; open days are 0–2
     if (d < new Date(new Date().toDateString())) {
       errors.appointmentDate = "Please choose a future date.";
-    } else if (![3, 4, 5, 6].includes(day)) {
-      errors.appointmentDate = "We're open Wednesday through Saturday.";
+    } else if (![0, 1, 2].includes(day)) {
+      errors.appointmentDate = "We're open Sunday through Tuesday.";
     }
   }
   if (!APPOINTMENT_TIMES[req.appointmentTime]) {
