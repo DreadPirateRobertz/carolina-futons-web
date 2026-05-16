@@ -73,7 +73,7 @@ export function PLPControls({
           id="plp-sort"
           value={sort}
           onChange={onSortChange}
-          className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100 dark:focus:ring-zinc-500"
+          className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cf-cta dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100"
         >
           {SORT_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
@@ -103,7 +103,7 @@ export function PLPControls({
             step={1}
             defaultValue={priceMin ?? ""}
             placeholder="0"
-            className="w-24 rounded-md border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:ring-zinc-500"
+            className="w-24 rounded-md border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cf-cta dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-500"
           />
         </div>
 
@@ -122,7 +122,7 @@ export function PLPControls({
             step={1}
             defaultValue={priceMax ?? ""}
             placeholder="any"
-            className="w-24 rounded-md border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:ring-zinc-500"
+            className="w-24 rounded-md border border-zinc-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cf-cta dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-500"
           />
         </div>
 
@@ -132,7 +132,7 @@ export function PLPControls({
             name="inStock"
             type="checkbox"
             defaultChecked={inStockOnly}
-            className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600 dark:bg-zinc-700 dark:accent-zinc-300"
+            className="h-4 w-4 rounded border-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2 dark:border-zinc-600 dark:bg-zinc-700 dark:accent-zinc-300"
           />
           <label
             htmlFor="plp-inStock"
@@ -144,7 +144,7 @@ export function PLPControls({
 
         <button
           type="submit"
-          className="rounded-md bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+          className="rounded-md bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
         >
           Apply
         </button>
