@@ -18,12 +18,19 @@ vi.mock("@/lib/wix/velo-client", () => ({
   callVelo: veloMocks.callVelo,
 }));
 
+// cfw-logger migration: all four catch branches route through logError.
+const logErrorMock = vi.fn();
+vi.mock("@/lib/logger", () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
+}));
+
 const SESSION = { memberId: "M-1", accessToken: "tok", tokens: {} as never };
 
 beforeEach(() => {
   authMocks.getMemberSession.mockReset();
   authMocks.withMember.mockReset();
   veloMocks.callVelo.mockReset();
+  logErrorMock.mockReset();
 });
 
 describe("getMyReferralCodeAction", () => {
@@ -83,10 +90,52 @@ describe("getReferralByCodeAction", () => {
 
   it("returns error when Velo throws", async () => {
     veloMocks.callVelo.mockRejectedValueOnce(new Error("rpc fail"));
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { getReferralByCodeAction } = await import("@/app/actions/referral");
     const result = await getReferralByCodeAction("CF-BAD");
     expect(result).toEqual({ success: false, error: "Could not validate referral link." });
-    errSpy.mockRestore();
+    // Observability now routes through logError (cfw-logger migration).
+    expect(logErrorMock).toHaveBeenCalled();
+  });
+});
+
+// cfw-logger migration: all four catch branches route through
+// logError("referral", "<fn> failed", err). Pin the contract.
+describe("referral actions — logError observability", () => {
+  it("getMyReferralCodeAction catch routes through logError", async () => {
+    const err = new Error("rpc fail");
+    authMocks.getMemberSession.mockResolvedValueOnce(SESSION);
+    veloMocks.callVelo.mockRejectedValueOnce(err);
+    const { getMyReferralCodeAction } = await import("@/app/actions/referral");
+    await getMyReferralCodeAction();
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "referral",
+      "getMyReferralCodeAction failed",
+      err,
+    );
+  });
+
+  it("getMyReferralStatsAction catch routes through logError", async () => {
+    const err = new Error("rpc fail");
+    authMocks.getMemberSession.mockResolvedValueOnce(SESSION);
+    veloMocks.callVelo.mockRejectedValueOnce(err);
+    const { getMyReferralStatsAction } = await import("@/app/actions/referral");
+    await getMyReferralStatsAction();
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "referral",
+      "getMyReferralStatsAction failed",
+      err,
+    );
+  });
+
+  it("claimReferralAction catch routes through logError", async () => {
+    const err = new Error("rpc fail");
+    authMocks.withMember.mockRejectedValueOnce(err);
+    const { claimReferralAction } = await import("@/app/actions/referral");
+    await claimReferralAction("CF-X");
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "referral",
+      "claimReferralAction failed",
+      err,
+    );
   });
 });
