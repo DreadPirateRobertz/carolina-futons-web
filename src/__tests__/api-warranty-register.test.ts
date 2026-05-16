@@ -20,6 +20,16 @@ vi.mock("@/lib/warranty/warranty-registration", () => ({
   registerWarrantyForMember: (...args: unknown[]) => mockRegister(...args),
 }));
 
+// cfw-q8lm: unexpected-error catch now routes through logError →
+// Sentry. Mock @sentry/nextjs so the runner doesn't ship real events
+// AND the new logError-integration test can assert on tags.
+const sentryCaptureException = vi.fn();
+const sentryFlush = vi.fn().mockResolvedValue(true);
+vi.mock("@sentry/nextjs", () => ({
+  captureException: (...args: unknown[]) => sentryCaptureException(...args),
+  flush: (timeoutMs?: number) => sentryFlush(timeoutMs),
+}));
+
 const VALID_SESSION = {
   tokens: {
     accessToken: { value: "a", expiresAt: 0 },
@@ -200,5 +210,74 @@ describe("POST /api/warranty/register — helper failure mapping", () => {
     const POST = await route();
     const res = await POST(makeRequest(VALID_BODY));
     expect(res.status).toBe(500);
+  });
+});
+
+// cfw-q8lm: pin logError integration on the unexpected-error catch.
+// A throw from registerWarrantyForMember (or anything below it) MUST
+// surface to Sentry; the user-visible 500 with the generic copy is
+// otherwise impossible to triage post-incident.
+describe("POST /api/warranty/register — logError integration on unexpected throw", () => {
+  beforeEach(() => {
+    sentryCaptureException.mockReset();
+    sentryFlush.mockReset().mockResolvedValue(true);
+  });
+
+  it("captures with scope='/api/warranty/register' + op='unexpected error' + flush(2000) awaited", async () => {
+    mockGetMemberSession.mockResolvedValueOnce(VALID_SESSION);
+    const err = new Error("unexpected DB failure");
+    mockRegister.mockRejectedValueOnce(err);
+
+    const POST = await route();
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(500);
+    expect(sentryCaptureException).toHaveBeenCalledTimes(1);
+    const [reportedErr, opts] = sentryCaptureException.mock.calls[0]!;
+    expect(reportedErr).toBe(err);
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "/api/warranty/register",
+      op: "unexpected error",
+    });
+    expect((opts as { level: string }).level).toBe("error");
+    expect(sentryFlush).toHaveBeenCalledWith(2000);
+  });
+
+  it("happy path (200) does NOT call Sentry", async () => {
+    mockGetMemberSession.mockResolvedValueOnce(VALID_SESSION);
+    mockRegister.mockResolvedValueOnce({ ok: true, registrationId: "wr-1" });
+
+    const POST = await route();
+    await POST(makeRequest(VALID_BODY));
+
+    expect(sentryCaptureException).not.toHaveBeenCalled();
+  });
+
+  it("auth failure (401) does NOT call Sentry — that's user state, not an outage", async () => {
+    mockGetMemberSession.mockResolvedValueOnce(null);
+
+    const POST = await route();
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(401);
+    expect(sentryCaptureException).not.toHaveBeenCalled();
+  });
+
+  it("helper returning ok:false (mapped to 4xx/502) does NOT call Sentry — that's the structured-failure path, not a throw", async () => {
+    mockGetMemberSession.mockResolvedValueOnce(VALID_SESSION);
+    mockRegister.mockResolvedValueOnce({
+      ok: false,
+      reason: "wix_error",
+      status: 503,
+    });
+
+    const POST = await route();
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(502);
+    // Helper-level failures route through the if/else mapping, not the
+    // unexpected-throw catch. Sentry should stay silent so the
+    // dashboard isn't drowned by routine wix_error responses.
+    expect(sentryCaptureException).not.toHaveBeenCalled();
   });
 });
