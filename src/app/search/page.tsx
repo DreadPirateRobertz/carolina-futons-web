@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { EmptySearchIllustration } from "@/components/illustrations/EmptySearchIllustration";
+import { SearchTabs, parseSearchType, type SearchType } from "@/components/search/SearchTabs";
+import { searchPages, type SearchPage as SearchPageEntry } from "@/lib/search/pages";
 import { searchProducts } from "@/lib/wix/products";
 import { searchPosts, type BlogPostSummary } from "@/lib/wix/blog";
 
@@ -11,23 +13,31 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Search — Carolina Futons",
   description:
-    "Search Carolina Futons products and journal posts. Solid-wood frames, natural mattresses, Murphy beds, and buying guides.",
+    "Search Carolina Futons products, pages, and journal posts. Solid-wood frames, natural mattresses, Murphy beds, and buying guides.",
   robots: { index: false, follow: true },
 };
 
 const PRODUCT_LIMIT = 12;
 const POST_LIMIT = 8;
+const PAGE_LIMIT = 12;
 
-// cf-3qt.5.4: server-rendered /search?q=… results page. Two sections:
-// products (Wix Stores by name) + articles (Wix Blog by title). Empty/missing
-// q renders the guided-empty state instead of executing the queries. SDK
-// failures degrade to "no matches" — searchProducts/searchPosts catch + log.
+// cf-76a (cf-ruhm.1): server-rendered /search?q=…&type=… results page.
+// Wix-prod parity: 4-tab filter (All / Products / Pages / Blog) over the
+// same three data sources (Wix Stores by name, in-repo Pages manifest,
+// Wix Blog by title substring per cf-1lf). Empty/missing q renders the
+// guided-empty state instead of executing the queries. SDK failures
+// degrade to "no matches" — searchProducts/searchPosts catch + log;
+// searchPages is in-memory and cannot throw.
+//
+// Originally cf-3qt.5.4 (Products + Articles only). cf-76a adds tabs +
+// Pages reader; cf-1lf upstream fixes article substring search.
 export default async function SearchPage(props: {
-  searchParams: Promise<{ q?: string | string[] }>;
+  searchParams: Promise<{ q?: string | string[]; type?: string | string[] }>;
 }) {
   const params = await props.searchParams;
   const raw = Array.isArray(params.q) ? params.q[0] : params.q;
   const q = (raw ?? "").trim();
+  const type = parseSearchType(params.type);
 
   if (!q) {
     return (
@@ -36,7 +46,8 @@ export default async function SearchPage(props: {
           Search
         </h1>
         <p className="mt-3 text-sm text-cf-muted">
-          Type a product name or topic to search the catalog and the journal.
+          Type a product name or topic to search the catalog, the site,
+          and the journal.
         </p>
         <SearchForm q="" />
         <SearchSuggestions />
@@ -44,12 +55,27 @@ export default async function SearchPage(props: {
     );
   }
 
-  const [products, posts] = await Promise.all([
+  // Fetch every type in parallel — tab counts need totals for the strip
+  // even when only one type is rendered below it (Wix prod does the same:
+  // "All (41) · Products (12) · Pages (26) · Blog (3)").
+  const [products, pages, posts] = await Promise.all([
     searchProducts(q, PRODUCT_LIMIT),
+    Promise.resolve(searchPages(q, PAGE_LIMIT)),
     searchPosts(q, POST_LIMIT),
   ]);
 
-  const hasResults = products.length > 0 || posts.length > 0;
+  const counts = {
+    all: products.length + pages.length + posts.length,
+    products: products.length,
+    pages: pages.length,
+    articles: posts.length,
+  };
+
+  const hasResults = counts.all > 0;
+  const showProducts = (type === "all" || type === "products") && products.length > 0;
+  const showPages = (type === "all" || type === "pages") && pages.length > 0;
+  const showArticles = (type === "all" || type === "articles") && posts.length > 0;
+  const showAnyForActiveType = showProducts || showPages || showArticles;
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
@@ -57,19 +83,34 @@ export default async function SearchPage(props: {
         <h1 className="font-playfair text-3xl font-semibold tracking-tight text-cf-espresso sm:text-4xl">
           Search results
         </h1>
-        <p className="text-sm text-cf-muted">
+        {/* aria-live so screen readers re-announce the count on each
+            submission (cf-ruhm.5 P2 in audit — partial fix here, full
+            role="status" wrapper deferred to its own bead). */}
+        <p
+          className="text-sm text-cf-muted"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           {hasResults
-            ? `Showing ${products.length} ${products.length === 1 ? "product" : "products"} and ${posts.length} ${posts.length === 1 ? "article" : "articles"} for "${q}".`
+            ? `${counts.all} ${counts.all === 1 ? "result" : "results"} for "${q}".`
             : `No results for "${q}".`}
         </p>
         <SearchForm q={q} />
       </header>
 
       {hasResults ? (
-        <div className="mt-10 grid gap-12 lg:grid-cols-[2fr,1fr]">
-          <ProductSection products={products} />
-          <ArticleSection posts={posts} />
-        </div>
+        <>
+          <SearchTabs q={q} type={type} counts={counts} />
+          {showAnyForActiveType ? (
+            <div className="mt-10 space-y-12">
+              {showProducts ? <ProductSection products={products} /> : null}
+              {showPages ? <PagesSection pages={pages} /> : null}
+              {showArticles ? <ArticleSection posts={posts} /> : null}
+            </div>
+          ) : (
+            <NoResultsForType q={q} type={type} />
+          )}
+        </>
       ) : (
         <NoResults q={q} />
       )}
@@ -94,7 +135,7 @@ function SearchForm({ q }: { q: string }) {
         name="q"
         type="search"
         defaultValue={q}
-        placeholder="Search products and articles"
+        placeholder="Search products, pages, and articles"
         className="h-11 flex-1 rounded-md border border-cf-divider bg-white dark:bg-cf-cream px-3 text-sm text-cf-espresso placeholder:text-cf-muted focus:border-cf-cta focus:outline-none focus:ring-2 focus:ring-cf-cta/30"
       />
       <button
@@ -155,6 +196,39 @@ function ProductSection({ products }: { products: ReadonlyArray<SearchProduct> }
   );
 }
 
+function PagesSection({ pages }: { pages: ReadonlyArray<SearchPageEntry> }) {
+  if (pages.length === 0) return null;
+  return (
+    <section aria-labelledby="search-pages-heading" data-slot="search-pages">
+      <h2
+        id="search-pages-heading"
+        className="font-playfair text-xl font-semibold text-cf-espresso"
+      >
+        Pages
+      </h2>
+      <ul className="mt-4 space-y-3">
+        {pages.map((p) => (
+          <li
+            key={p.slug}
+            data-slot="page-card"
+            className="rounded-md border border-cf-divider bg-white/60 dark:bg-cf-cream dark:border-cf-ink/30 p-4"
+          >
+            <Link
+              href={p.slug}
+              className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta"
+            >
+              <p className="font-medium text-cf-espresso">{p.title}</p>
+              <p className="mt-1 text-sm text-cf-muted line-clamp-2">
+                {p.description}
+              </p>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function ArticleSection({ posts }: { posts: ReadonlyArray<BlogPostSummary> }) {
   if (posts.length === 0) return null;
   return (
@@ -194,10 +268,31 @@ function NoResults({ q }: { q: string }) {
     <section className="mt-10 max-w-2xl space-y-6" data-slot="search-no-results">
       <EmptySearchIllustration className="mx-auto" />
       <p className="text-center text-cf-ink/80">
-        We couldn&rsquo;t find products or articles matching{" "}
+        We couldn&rsquo;t find products, pages, or articles matching{" "}
         <span className="font-medium text-cf-espresso">&ldquo;{q}&rdquo;</span>.
       </p>
       <SearchSuggestions />
+    </section>
+  );
+}
+
+function NoResultsForType({ q, type }: { q: string; type: SearchType }) {
+  return (
+    <section
+      className="mt-10 max-w-2xl space-y-4"
+      data-slot="search-no-results-for-type"
+    >
+      <p className="text-cf-ink/80">
+        No {type === "all" ? "" : `${type} `}results for{" "}
+        <span className="font-medium text-cf-espresso">&ldquo;{q}&rdquo;</span>.{" "}
+        <Link
+          href={`/search?q=${encodeURIComponent(q)}`}
+          className="text-cf-cta hover:underline"
+        >
+          Try All
+        </Link>
+        .
+      </p>
     </section>
   );
 }

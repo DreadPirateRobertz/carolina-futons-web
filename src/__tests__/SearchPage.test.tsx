@@ -21,7 +21,9 @@ import SearchPage from "@/app/search/page";
 const mockSearchProducts = vi.mocked(searchProducts);
 const mockSearchPosts = vi.mocked(searchPosts);
 
-async function renderSearch(params: { q?: string } = {}) {
+async function renderSearch(
+  params: { q?: string; type?: string } = {},
+) {
   const ui = await SearchPage({
     searchParams: Promise.resolve(params),
   });
@@ -154,5 +156,165 @@ describe("/search page — results", () => {
     expect(
       screen.queryByRole("region", { name: /products/i }),
     ).not.toBeInTheDocument();
+  });
+});
+
+// cf-76a (cf-ruhm.1): type tabs + Pages section. Wix-prod parity ships
+// the All/Products/Pages/Blog filter; cfw now wires it server-side.
+describe("/search page — type tabs (cf-76a)", () => {
+  it("renders 4 filter tabs above results when results exist", async () => {
+    mockSearchProducts.mockResolvedValue([
+      { _id: "p1", slug: "monterey-futon", name: "Monterey Futon" } as never,
+    ]);
+    mockSearchPosts.mockResolvedValue([]);
+    await renderSearch({ q: "futon" });
+    const tabs = screen.getByRole("navigation", {
+      name: /filter results by type/i,
+    });
+    expect(tabs).toBeInTheDocument();
+    expect(within(tabs).getByRole("link", { name: /all/i })).toBeInTheDocument();
+    expect(within(tabs).getByRole("link", { name: /products/i })).toBeInTheDocument();
+    expect(within(tabs).getByRole("link", { name: /pages/i })).toBeInTheDocument();
+    expect(within(tabs).getByRole("link", { name: /articles/i })).toBeInTheDocument();
+  });
+
+  it("marks the active tab with aria-current=\"page\"", async () => {
+    mockSearchProducts.mockResolvedValue([
+      { _id: "p1", slug: "monterey-futon", name: "Monterey Futon" } as never,
+    ]);
+    mockSearchPosts.mockResolvedValue([]);
+    await renderSearch({ q: "futon", type: "products" });
+    const tabs = screen.getByRole("navigation", {
+      name: /filter results by type/i,
+    });
+    const active = within(tabs).getByRole("link", { name: /products/i });
+    expect(active.getAttribute("aria-current")).toBe("page");
+    // The other tabs must NOT carry aria-current.
+    const inactive = within(tabs).getByRole("link", { name: /all/i });
+    expect(inactive.getAttribute("aria-current")).toBeNull();
+  });
+
+  it("renders only Products section when type=products", async () => {
+    mockSearchProducts.mockResolvedValue([
+      { _id: "p1", slug: "monterey-futon", name: "Monterey Futon" } as never,
+    ]);
+    mockSearchPosts.mockResolvedValue([
+      {
+        _id: "post1",
+        slug: "futon-care",
+        title: "Caring for your futon",
+        excerpt: "",
+        heroImageUrl: null,
+        firstPublishedDate: null,
+        minutesToRead: null,
+      },
+    ]);
+    await renderSearch({ q: "futon", type: "products" });
+    expect(screen.getByRole("region", { name: /products/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("region", { name: /articles/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("region", { name: /^pages$/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders only Pages section when type=pages", async () => {
+    mockSearchProducts.mockResolvedValue([
+      { _id: "p1", slug: "monterey-futon", name: "Monterey Futon" } as never,
+    ]);
+    mockSearchPosts.mockResolvedValue([]);
+    // "warranty" matches /warranty + /returns + /faq in the manifest
+    await renderSearch({ q: "warranty", type: "pages" });
+    const pages = screen.getByRole("region", { name: /^pages$/i });
+    expect(pages).toBeInTheDocument();
+    // Multiple manifest entries mention warranty; assert at least the
+    // canonical /warranty page is among them.
+    const warrantyLinks = within(pages).getAllByRole("link", { name: /warranty/i });
+    expect(warrantyLinks.length).toBeGreaterThanOrEqual(1);
+    expect(warrantyLinks.some((a) => a.getAttribute("href") === "/warranty")).toBe(true);
+    expect(
+      screen.queryByRole("region", { name: /products/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders only Articles section when type=articles", async () => {
+    mockSearchProducts.mockResolvedValue([
+      { _id: "p1", slug: "monterey-futon", name: "Monterey Futon" } as never,
+    ]);
+    mockSearchPosts.mockResolvedValue([
+      {
+        _id: "post1",
+        slug: "futon-care",
+        title: "Caring for your futon",
+        excerpt: "",
+        heroImageUrl: null,
+        firstPublishedDate: null,
+        minutesToRead: null,
+      },
+    ]);
+    await renderSearch({ q: "futon", type: "articles" });
+    expect(screen.getByRole("region", { name: /articles/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("region", { name: /products/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("defaults to type=all on unknown ?type= value (graceful degradation)", async () => {
+    mockSearchProducts.mockResolvedValue([
+      { _id: "p1", slug: "monterey-futon", name: "Monterey Futon" } as never,
+    ]);
+    mockSearchPosts.mockResolvedValue([
+      {
+        _id: "post1",
+        slug: "futon-care",
+        title: "Caring for your futon",
+        excerpt: "",
+        heroImageUrl: null,
+        firstPublishedDate: null,
+        minutesToRead: null,
+      },
+    ]);
+    await renderSearch({ q: "futon", type: "fake-type-value" });
+    // Both populated sections show (All view).
+    expect(screen.getByRole("region", { name: /products/i })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /articles/i })).toBeInTheDocument();
+  });
+
+  it("shows 'No <type> results' when the active tab is empty (offers 'Try All' link)", async () => {
+    mockSearchProducts.mockResolvedValue([] as never);
+    mockSearchPosts.mockResolvedValue([
+      {
+        _id: "post1",
+        slug: "futon-care",
+        title: "Caring for your futon",
+        excerpt: "",
+        heroImageUrl: null,
+        firstPublishedDate: null,
+        minutesToRead: null,
+      },
+    ]);
+    await renderSearch({ q: "futon", type: "products" });
+    // Tab strip still visible
+    expect(
+      screen.getByRole("navigation", { name: /filter results by type/i }),
+    ).toBeInTheDocument();
+    // No Products region, no Articles region (filtered out by type)
+    expect(
+      screen.queryByRole("region", { name: /products/i }),
+    ).not.toBeInTheDocument();
+    // "Try All" recovery link
+    expect(screen.getByRole("link", { name: /try all/i })).toBeInTheDocument();
+  });
+
+  it("total-result heading is aria-live so screen readers re-announce on each query", async () => {
+    mockSearchProducts.mockResolvedValue([
+      { _id: "p1", slug: "monterey-futon", name: "Monterey Futon" } as never,
+    ]);
+    mockSearchPosts.mockResolvedValue([]);
+    const { container } = await renderSearch({ q: "futon" });
+    const live = container.querySelector('[aria-live="polite"]');
+    expect(live).not.toBeNull();
+    expect(live!.textContent).toMatch(/results? for "futon"/);
   });
 });
