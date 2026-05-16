@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+
+import { logError } from "@/lib/logger";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
 
 import { Breadcrumbs } from "@/components/site/Breadcrumbs";
@@ -112,7 +114,7 @@ export async function generateMetadata(props: {
     // social crawlers silently discard them. Fall back to the default hero image.
     const isUsableUrl = (url: string) => url.startsWith("https://");
     if (mainImageUrl && !isUsableUrl(mainImageUrl)) {
-      console.error(`[PDP] non-HTTPS product image URL for slug "${slug}":`, mainImageUrl);
+      logError("pdp", "non-HTTPS product image URL", { slug, mainImageUrl });
     }
     const ogImage =
       mainImageUrl && isUsableUrl(mainImageUrl)
