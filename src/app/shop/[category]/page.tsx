@@ -3,9 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
 import { Suspense } from "react";
-import { getCollectionBySlug } from "@/lib/wix/products";
+import { getCollectionBySlug, getProductBySlug } from "@/lib/wix/products";
+import type { WixProduct } from "@/lib/wix/products";
 import { getCollectionPlp, type PlpSort } from "@/lib/wix/plp";
 import { SHOP_CATEGORIES, findCategory } from "@/lib/shop/categories";
+import { PLPFeaturedRow } from "@/components/plp/PLPFeaturedRow";
 import {
   resolveDerivedProducts,
   type DerivedProductsResult,
@@ -122,6 +124,21 @@ export default async function PlpPage(props: {
   const category = findCategory(categorySlug);
   if (!category) notFound();
 
+  const { pageNum, sort, priceMin, priceMax, inStockOnly, sub } =
+    parseSearchParams(searchParams);
+
+  // cfw-75v: curated featured row gate. Render only on the default landing —
+  // page 1, default sort, no filters — so the editorial strip stays a stable
+  // anchor instead of jumping around as the user narrows the grid. Categories
+  // without a `featured` config (the default) skip the fetch entirely.
+  const shouldShowFeaturedRow =
+    category.featured !== undefined &&
+    pageNum === 1 &&
+    sort === "featured" &&
+    priceMin === undefined &&
+    priceMax === undefined &&
+    !inStockOnly;
+
   // Derived categories (category.filter set) skip the collection lookup — their
   // products come from resolveDerivedProducts sourcing a different collection
   // and applying the predicate. Regular categories fetch their own collection.
@@ -130,19 +147,25 @@ export default async function PlpPage(props: {
   // page+category context so Sentry triage can pinpoint the failed PLP route.
   let collection: Awaited<ReturnType<typeof getCollectionBySlug>> = null;
   let prefetchedProducts: DerivedProductsResult | undefined;
+  let featuredProducts: readonly WixProduct[] = [];
   let pageReaderError: ReaderError | undefined;
   try {
-    [collection, prefetchedProducts] = await Promise.all([
+    const [c, p, f] = await Promise.all([
       category.filter ? null : getCollectionBySlug(category.collectionSlug),
       resolveDerivedProducts(category),
+      shouldShowFeaturedRow && category.featured
+        ? Promise.all(
+            category.featured.productSlugs.map((s) => getProductBySlug(s)),
+          ).then((results) => results.filter((r): r is WixProduct => r !== null))
+        : Promise.resolve([] as WixProduct[]),
     ]);
+    collection = c;
+    prefetchedProducts = p;
+    featuredProducts = f;
   } catch (err) {
     await logWixFailure("plp-page", `categorySlug=${categorySlug}`, err);
     pageReaderError = toReaderError(err);
   }
-
-  const { pageNum, sort, priceMin, priceMax, inStockOnly, sub } =
-    parseSearchParams(searchParams);
 
   // Use collection ID when available; fall back to "" for derived categories
   // where getCollectionPlp will use prefetchedProducts instead.
@@ -246,6 +269,19 @@ export default async function PlpPage(props: {
         </h1>
         <p className="mt-2 text-zinc-600 dark:text-zinc-400">{category.description}</p>
       </header>
+
+      {/* cfw-75v: curated editorial strip — 3 hand-picked products with
+          marketing copy. Sits between the page header and the sort/filter
+          controls so it anchors the landing without competing with the
+          grid below. Hidden on page>1, with filters, with non-default sort,
+          and when fewer than 3 slugs resolve (component-level fallback). */}
+      {shouldShowFeaturedRow && category.featured ? (
+        <PLPFeaturedRow
+          config={category.featured}
+          products={featuredProducts}
+          badges={badgeMap}
+        />
+      ) : null}
 
       <div className="mt-6">
         <Suspense>

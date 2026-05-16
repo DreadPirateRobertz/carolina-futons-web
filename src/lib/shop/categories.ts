@@ -20,6 +20,32 @@ export type Subcategory = {
   nameContains: string;
 };
 
+/**
+ * Curated "featured" row config for a PLP (cfw-75v / cf-mirror-ee1).
+ *
+ * When a category sets `featured`, the PLP renders an editorial strip ABOVE
+ * the main grid on page 1 with default sort and no active filters. The strip
+ * pulls 3 hand-picked products by slug; the page resolves them in parallel via
+ * `getProductBySlug` and renders the row only when all 3 resolve — graceful
+ * fallback hides the strip if any slug is missing from the live catalog.
+ *
+ * Editorial copy is hardcoded for v1; future iterations may move it to
+ * SiteContent so Brenda can edit without a deploy (mirroring the visit-page
+ * pattern in `src/app/visit/page.tsx`).
+ *
+ * @see docs/visual-parity-audit-2026-05-09.md §3 (the source spec)
+ */
+export type FeaturedRowConfig = {
+  /** Small uppercase label above the heading (e.g. "Editor's picks"). */
+  eyebrow: string;
+  /** Section heading rendered as `<h2>` for SEO + a11y outline. */
+  heading: string;
+  /** ~1–2 sentence editorial blurb under the heading. */
+  body: string;
+  /** Exactly 3 product slugs in display order. */
+  productSlugs: readonly [string, string, string];
+};
+
 export type ShopCategory = {
   slug: string;
   name: string;
@@ -43,6 +69,9 @@ export type ShopCategory = {
   image?: string;
   // cfw-dv5: optional pill-filter sub-categories rendered above the PLP grid.
   subcategories?: readonly Subcategory[];
+  // Optional curated "featured" row config — see FeaturedRowConfig above. When
+  // omitted the PLP renders without the strip (default behavior, unchanged).
+  featured?: FeaturedRowConfig;
 };
 
 export const SHOP_CATEGORIES: readonly ShopCategory[] = [
@@ -59,6 +88,20 @@ export const SHOP_CATEGORIES: readonly ShopCategory[] = [
       { slug: "unfinished-wood", name: "Unfinished Wood", nameContains: "Unfinished" },
       { slug: "rustic-log", name: "Rustic Log", nameContains: "Rustic Log" },
     ],
+    // cfw-75v: 3 hand-picked frames anchoring the editorial row at the top of
+    // the futon-frames PLP. Slugs are verified-real (test fixtures + audit
+    // references); if any goes out-of-catalog the row hides itself rather
+    // than rendering a partial strip.
+    featured: {
+      eyebrow: "Editor's picks",
+      heading: "Where most people start",
+      body: "Three frames that cover the common questions — daily-use durability, conversion mechanism, and finish. Sit on them in the showroom or order with our 100-night guarantee.",
+      productSlugs: [
+        "kingston-futon-frame",
+        "sedona-futon-frame",
+        "asheville-futon-frame",
+      ] as const,
+    },
   },
   {
     slug: "murphy-cabinet-beds",
@@ -80,6 +123,12 @@ export const SHOP_CATEGORIES: readonly ShopCategory[] = [
     description: "Futon mattresses and bed mattresses.",
     collectionSlug: "mattresses",
     image: "https://static.wixstatic.com/media/e04e89_55ecd0dfe1d5498b8a3f8cb583d5089b~mv2.jpg/v1/fill/w_600,h_400,q_90/file.jpg",
+    // cfw-75v: featured-row slot for mattresses is intentionally LEFT EMPTY
+    // pending owner (Stilgar / Brenda) confirmation of the canonical 3-slug
+    // pick. Adding placeholder slugs that don't resolve would just hide the
+    // row at runtime (graceful fallback) — populate this `featured` block
+    // when the 3 mattresses are chosen and the slugs verified live.
+    // featured: { eyebrow, heading, body, productSlugs: [s1, s2, s3] },
   },
   {
     slug: "sofa-beds",
