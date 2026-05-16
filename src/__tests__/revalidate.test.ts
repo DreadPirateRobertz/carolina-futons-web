@@ -192,8 +192,12 @@ describe("POST /api/revalidate — observability (F1)", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const body = JSON.stringify({ collectionId: "products" });
     await post(body, { "x-wix-signature": "sha256=deadbeef" });
+    // cfw-7527: logWarn shape is `[scope] message`, err, extra.
+    // With err=undefined and extra={correlationId}, the call is 3 args:
+    // ("[revalidate] signature rejected", undefined, { correlationId }).
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining("[revalidate]"),
+      undefined,
       expect.objectContaining({ correlationId: expect.any(String) }),
     );
     warnSpy.mockRestore();
@@ -293,12 +297,104 @@ describe("POST /api/revalidate — logError integration on missing WIX_WEBHOOK_S
     expect(sentryFlush).not.toHaveBeenCalled();
   });
 
-  it("invalid-signature 401 does NOT call Sentry — attacker pressure, not an outage", async () => {
+  it("invalid-signature 401 captures Sentry at level='warning' (NOT 'error') — security signal that's trend-worthy but not pageable", async () => {
     vi.stubEnv("WIX_WEBHOOK_SECRET", SECRET);
 
     const res = await post("{}", { "x-wix-signature": "sha256=deadbeef" });
 
     expect(res.status).toBe(401);
+    // cfw-7527: migrated console.warn → logWarn. Signature rejections
+    // are a security trend signal — visible on the Sentry dashboard
+    // for capacity / threat-intel review, but at warning level so
+    // alert routing doesn't page on-call when a misconfigured webhook
+    // re-tries with a bad signature.
+    expect(sentryCaptureException).toHaveBeenCalledTimes(1);
+    const [, opts] = sentryCaptureException.mock.calls[0]!;
+    expect((opts as { level: string }).level).toBe("warning");
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "revalidate",
+      op: "signature rejected",
+    });
+  });
+});
+
+// cfw-7527: pin logWarn integration on all four rejection paths.
+// Webhook security signals — signature mismatch, invalid JSON, stale
+// timestamp — are trend-worthy at warning level (capacity planning,
+// threat-intel) but should NOT page on-call.
+describe("POST /api/revalidate — logWarn integration on rejection paths", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    sentryCaptureException.mockReset();
+    sentryFlush.mockReset().mockResolvedValue(true);
+    vi.stubEnv("WIX_WEBHOOK_SECRET", SECRET);
+  });
+
+  it("invalid JSON body → captures scope='revalidate' + op='invalid JSON body' at level='warning'", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const body = "not-json";
+    await post(body, { "x-wix-signature": sign(body) });
+
+    const matching = sentryCaptureException.mock.calls.find(
+      ([, opts]) =>
+        (opts as { tags?: { op?: string } }).tags?.op === "invalid JSON body",
+    );
+    expect(matching).toBeDefined();
+    const [, opts] = matching!;
+    expect((opts as { level: string }).level).toBe("warning");
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "revalidate",
+      op: "invalid JSON body",
+    });
+    warnSpy.mockRestore();
+  });
+
+  it("non-finite ts → captures op='non-finite ts rejected' at level='warning'", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const body = JSON.stringify({ ts: null, collectionId: "products" });
+    await post(body, { "x-wix-signature": sign(body) });
+
+    const matching = sentryCaptureException.mock.calls.find(
+      ([, opts]) =>
+        (opts as { tags?: { op?: string } }).tags?.op ===
+        "non-finite ts rejected",
+    );
+    expect(matching).toBeDefined();
+    const [, opts] = matching!;
+    expect((opts as { level: string }).level).toBe("warning");
+    warnSpy.mockRestore();
+  });
+
+  it("timestamp outside window → captures op='timestamp outside window' at level='warning' with ageMs in extra", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    // 2 hours in the past — far outside any reasonable replay window.
+    const body = JSON.stringify({
+      ts: Date.now() - 2 * 60 * 60 * 1000,
+      collectionId: "products",
+    });
+    await post(body, { "x-wix-signature": sign(body) });
+
+    const matching = sentryCaptureException.mock.calls.find(
+      ([, opts]) =>
+        (opts as { tags?: { op?: string } }).tags?.op ===
+        "timestamp outside window",
+    );
+    expect(matching).toBeDefined();
+    const [, opts] = matching!;
+    expect((opts as { level: string }).level).toBe("warning");
+    const extra = (opts as { extra: Record<string, unknown> }).extra;
+    expect(typeof extra.ageMs).toBe("number");
+    expect(extra.ageMs).toBeGreaterThan(60 * 60 * 1000);
+    warnSpy.mockRestore();
+  });
+
+  it("happy path (valid signature, valid JSON, no ts) does NOT call Sentry at any level", async () => {
+    const body = JSON.stringify({ collectionId: "products" });
+    await post(body, { "x-wix-signature": sign(body) });
+
     expect(sentryCaptureException).not.toHaveBeenCalled();
   });
 });
