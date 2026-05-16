@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { logError } from "@/lib/log";
 
 import { Breadcrumbs } from "@/components/site/Breadcrumbs";
 import { PdpInteractive } from "@/components/product/PdpInteractive";
@@ -112,7 +113,16 @@ export async function generateMetadata(props: {
     // social crawlers silently discard them. Fall back to the default hero image.
     const isUsableUrl = (url: string) => url.startsWith("https://");
     if (mainImageUrl && !isUsableUrl(mainImageUrl)) {
-      console.error(`[PDP] non-HTTPS product image URL for slug "${slug}":`, mainImageUrl);
+      // Catalog-data hygiene marker — Wix returned a non-HTTPS image URI
+      // (commonly `wix:image://...` for products whose media upload is
+      // still processing). Wrap in an Error so Sentry's stack-trace
+      // heuristics keep working; the slug + URL ride along in the
+      // message for triage.
+      await logError(
+        "PDP",
+        "generateMetadata.non-https-image",
+        new Error(`non-HTTPS product image URL for slug "${slug}": ${mainImageUrl}`),
+      );
     }
     const ogImage =
       mainImageUrl && isUsableUrl(mainImageUrl)
