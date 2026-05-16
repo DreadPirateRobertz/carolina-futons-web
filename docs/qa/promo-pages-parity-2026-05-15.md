@@ -12,7 +12,7 @@
 
 | Page | cfw status | Wix-parity verdict |
 |---|---|---|
-| `/spring-sale` | hardcoded hero copy | ⚠️ **GAP F1**: Wix reads hero from `Landings` Wix-Data collection (editor-managed); cfw hardcodes copy. Awaits blaidd seed (per `docs/cf-3qt/CMS-COLLECTION-AUDIT.md`). |
+| `/spring-sale` | **wired to Landings** (cf-yu2l.F1 PR #662) | ✅ **F1 SHIPPED**: `getLandingBySlug("spring-sale")` reads 6 body fields + 2 SEO fields with per-field fallback. Render byte-identical until blaidd seeds the `Landings` row; post-seed auto-picks up editor data. See **F1 ship reconciliation** addendum below. |
 | `/gift-cards` | amount-only picker | ⚠️ **GAP F2**: Wix `@wix/gift-cards` SDK supports recipient email + personal message + scheduled send; cfw treats gift cards as a plain cart line item. |
 | `/referral` | dashboard + share | ✅ **PARITY OK** (with minor follow-on questions). Code + share URL + stats present. |
 
@@ -125,7 +125,7 @@ If any of 1-3 are present on the Wix version, the cfw page is a feature regressi
 
 Per cf-3qt.6 parallel-run + parity audit acceptance:
 
-- [ ] `/spring-sale` parity — ⚠️ BLOCKED on `Landings` Wix-Data seed (blaidd). Current cfw is a copy-snapshot. Wire after seed lands.
+- [x] `/spring-sale` parity — ✅ **F1 SHIPPED** via cf-yu2l.F1 PR #662 (`getLandingBySlug` wired; per-field fallback). Editor still needs Landings row seeded by blaidd to actually edit copy, but cfw side is parity-ready. See "F1 ship reconciliation" below.
 - [x] `/gift-cards` parity — ✅ CLOSED by **cf-gift-g1 PR #589** (merged 2026-05-15). Adds "Send as a gift" toggle revealing recipient email + recipient name + sender name + personal message + scheduled delivery; fields ride along as Wix line-item `customTextFields`. Default-off path is byte-identical to pre-cf-gift-g1 payload (single-click self-buy preserved). TDD pin: `src/__tests__/cart-customTextFields.test.ts` (5 cases).
 - [x] `/referral` parity — ✅ OK at core flow. 3 minor questions pending Stilgar visual check.
 
@@ -138,6 +138,20 @@ Remaining cf-yu2l surface:
 - **/referral** Stilgar visual-check items 1-3 still pending — file as a P3 follow-on bead if any of redemption-history / referred-friends-list / loyalty-tier-surface are present on the live Wix page.
 
 Recommend transitioning cf-yu2l to **blocked-on-blaidd** until Landings seed lands, then reopening for F1 wiring against `getLandingBySlug("spring-sale")` from `@/lib/wix/cf3qt`.
+
+### Addendum 2026-05-15 (F1 ship reconciliation — supersedes F1-blaidd-blocked status above)
+
+F1 was implemented by **cf-yu2l.F1 PR #662** (2-commit stack: a6fe20a body wiring + 230dda9 generateMetadata + c22b1f0 self-CR fold). 22/22 tests green. The page now reads:
+- `headline`, `subheadline`
+- `ctaPrimaryLabel`, `ctaPrimaryHref`
+- `ctaSecondaryLabel`, `ctaSecondaryHref`
+- `seoDescription`, `ogImageUrl` (metadata)
+
+…from the `Landings` collection via `getLandingBySlug("spring-sale")`, with `coalesce(value, fallback)` helper rejecting empty strings + null/undefined, `React.cache` deduping the dual generateMetadata-vs-page-body fetch, and `LANDING_OG_DIMENSIONS = {width: 1200, height: 630}` for crawler pre-sizing parity.
+
+The 6-field body + 2-field metadata wiring is byte-identical to the original hardcoded literals until blaidd seeds the Landings row, then auto-picks up editor data without a cfw deploy. **Wire is live; seed is still blaidd-blocked.**
+
+`/referral` minor questions (redemption history, referred-friends list, loyalty-tier surface) still pending Stilgar visual check.
 
 ## Out of scope (file separately)
 
