@@ -2,6 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+// cfw-logger migration: form's catch routes through logError.
+const logErrorMock = vi.fn();
+vi.mock("@/lib/logger", () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
+}));
+
 import { ForgotPasswordForm } from "@/components/account/ForgotPasswordForm";
 
 const fetchMock = vi.fn();
@@ -9,6 +15,7 @@ const fetchMock = vi.fn();
 beforeEach(() => {
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
+  logErrorMock.mockReset();
 });
 
 describe("<ForgotPasswordForm />", () => {
@@ -69,7 +76,6 @@ describe("<ForgotPasswordForm />", () => {
 
   it("shows a generic error when fetch throws", async () => {
     fetchMock.mockRejectedValueOnce(new Error("network down"));
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const user = userEvent.setup();
     render(<ForgotPasswordForm />);
@@ -79,6 +85,46 @@ describe("<ForgotPasswordForm />", () => {
     await waitFor(() => {
       expect(screen.getByRole("alert")).toBeInTheDocument();
     });
-    consoleSpy.mockRestore();
+    // Observability now routes through logError (cfw-logger migration).
+    expect(logErrorMock).toHaveBeenCalled();
+  });
+});
+
+// cfw-logger migration: form's catch routes through
+// logError("ForgotPasswordForm", "submit failed", err).
+describe("<ForgotPasswordForm /> — logError observability", () => {
+  it("calls logError when fetch throws", async () => {
+    fetchMock.mockRejectedValueOnce(new Error("network down"));
+    const user = userEvent.setup();
+    render(<ForgotPasswordForm />);
+    await user.type(screen.getByLabelText(/email/i), "user@example.com");
+    await user.click(screen.getByRole("button", { name: /send reset link/i }));
+    await waitFor(() => expect(logErrorMock).toHaveBeenCalledTimes(1));
+  });
+
+  it("tags logError with scope='ForgotPasswordForm' and message='submit failed'", async () => {
+    fetchMock.mockRejectedValueOnce(new Error("network down"));
+    const user = userEvent.setup();
+    render(<ForgotPasswordForm />);
+    await user.type(screen.getByLabelText(/email/i), "user@example.com");
+    await user.click(screen.getByRole("button", { name: /send reset link/i }));
+    await waitFor(() => expect(logErrorMock).toHaveBeenCalled());
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "ForgotPasswordForm",
+      "submit failed",
+      expect.anything(),
+    );
+  });
+
+  it("passes the caught Error instance directly to logError", async () => {
+    const err = new Error("network down");
+    fetchMock.mockRejectedValueOnce(err);
+    const user = userEvent.setup();
+    render(<ForgotPasswordForm />);
+    await user.type(screen.getByLabelText(/email/i), "user@example.com");
+    await user.click(screen.getByRole("button", { name: /send reset link/i }));
+    await waitFor(() => expect(logErrorMock).toHaveBeenCalled());
+    const [, , payload] = logErrorMock.mock.calls[0]!;
+    expect(payload).toBe(err);
   });
 });
