@@ -124,11 +124,75 @@ Per cf-ukc6 batch-window discipline:
 
 TDD scope: unit tests mocking `getSiteContent` to assert (a) each key is read with the documented fallback, (b) Wix-outage path returns the fallback prose, (c) shared-hours component reads the canonical SiteContent key.
 
+## Other static pages — intentional architecture (not GAPs)
+
+Adjacent static pages were inspected after F1+F2 shipped to confirm whether the
+SiteContent treatment should fan out further. **None of them are GAPs requiring
+the same fix** — each has the right architecture for its content category.
+Documented here so future cf-3qt.6 readers don't mistake intentional design
+for incomplete sweep.
+
+### `/faq` — already editor-managed via the `FAQ` Wix collection (✅ different mechanism, same outcome)
+
+`src/app/faq/page.tsx` reads from the Wix `FAQ` collection (fields `question`,
+`answer`, `category`, `sortOrder`) via `listFaqs()` with a `FALLBACK_FAQS` seed
+on outage. This is a **structured collection** rather than per-key SiteContent
+— better fit for variable-length item lists than flat string keys. Brenda
+edits FAQs via Wix Editor as collection rows. No SiteContent retrofit needed.
+
+Page chrome (eyebrow "Help & FAQ", h1 "Frequently asked questions", intro
+paragraph) is currently hardcoded. **Low priority** for SiteContent wiring —
+this is page boilerplate that changes rarely, not marketing copy. File a
+follow-on bead if marketing wants to A/B test the page header copy.
+
+### `/accessibility` — intentionally code-managed (compliance doc) (✅ correct posture)
+
+`src/app/accessibility/page.tsx` is an accessibility-commitment statement
+asserting **engineering truth** ("semantic HTML", "prefers-reduced-motion",
+"keyboard reachable", "visible focus indicators"). These claims must match
+what the codebase actually does — editor-managed copy could silently weaken
+the commitment or claim compliance we don't ship.
+
+The `Last updated` timestamp is the one operational field, and it should
+update via code change (a commit that touches accessibility-relevant code is
+the natural trigger), not via Brenda editing a SiteContent value.
+
+**No GAP. Keep code-managed.** If future need arises, the right split is:
+- Keep the "What we do" claims locked to code (engineering truth)
+- Optionally SiteContent the "Known limitations" + "Feedback" copy
+  (operational, low-stakes)
+
+### `/privacy` and `/terms` — intentionally code-managed (legal docs) (✅ correct posture)
+
+Privacy policy + terms-of-service text typically requires legal review before
+changes. Wix Editor management would route policy edits around the legal
+review channel that protects the business. Industry standard is to keep
+these in code with PR-review-as-policy-change-gate.
+
+**No GAP. Keep code-managed.** Operations team should commit policy revisions
+through normal PR review, which gives them a git-blame trail + diffable
+history for liability purposes.
+
+### `/press` — has its own data layer
+
+Per `docs/cf-3qt/URL-CMS-MAP.md` (cfutons), `/press` reads from the `Landings`
+Wix-Data collection. Covered indirectly by the blaidd-seed gap I flagged in
+**cf-yu2l F1** (companion audit). Same architectural blocker as `/spring-sale`.
+
+### `/about` team-roster — future scope
+
+The placeholder copy "A short roster ... is coming soon" suggests a future
+`TeamMembers` collection. That's a NEW data-layer scope, not a SiteContent
+retrofit — separate bead when the roster goes live.
+
 ## Out of scope (file separately if needed)
 
-- `/faq`, `/privacy`, `/terms`, `/accessibility` — other static pages not covered by this bead. Likely have the same hardcoded-copy pattern. Separate audit.
-- `/press` — has its own data layer (per cf-3qt URL-CMS-MAP `Landings` collection); covered indirectly by the blaidd-seed gap I flagged in cf-yu2l F1.
-- `/about` team-roster CMS source — the placeholder copy "A short roster ... is coming soon" suggests a future TeamMembers collection. Out of cf-7pk0 scope.
+- Visual parity of `/about` / `/contact` / `/visit` against prod — covered by
+  `docs/visual-parity-audit-2026-05-09.md` (Stilgar, "cfw wins decisively"
+  verdicts already on file).
+- Editor-side documentation for the 21 new SiteContent keys this bead adds
+  (11 about.* + showroom-hours canonical) — operations should update Brenda's
+  CMS-row dictionary post-merge. Out of code scope.
 
 ## References
 
