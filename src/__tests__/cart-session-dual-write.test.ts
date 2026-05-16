@@ -232,5 +232,33 @@ describe("syncCartSession (cf-cart-session-dual-write)", () => {
       fetchSpy.mockResolvedValueOnce({ ok: false, status: 503 });
       expect(() => syncCartSession(fakeCart())).not.toThrow();
     });
+
+    it("does not throw when JSON.stringify rejects the payload", async () => {
+      // cf-puqx wave 2: the header comment promises this function must
+      // NEVER throw — but an unguarded JSON.stringify(payload) violates
+      // it on payloads carrying BigInt or circular refs. We can't trust
+      // every callsite that feeds cart shapes through here, so the lib
+      // layer must defend the contract regardless of caller.
+      //
+      // We can't induce stringify failure via input shape because
+      // buildDualWritePayload reconstructs a clean {cartId, items} object.
+      // Spy stringify directly to simulate the BigInt/circular class.
+      const stringifySpy = vi
+        .spyOn(JSON, "stringify")
+        .mockImplementationOnce(() => {
+          throw new TypeError("Do not know how to serialize a BigInt");
+        });
+
+      expect(() => syncCartSession(fakeCart())).not.toThrow();
+      await new Promise((r) => setTimeout(r, 0));
+      // Sentry-tagged so on-call sees the unstringifiable payload class.
+      expect(logWixFailure).toHaveBeenCalledWith(
+        "cart",
+        "syncCartSession",
+        expect.any(TypeError),
+      );
+      expect(fetchSpy).not.toHaveBeenCalled();
+      stringifySpy.mockRestore();
+    });
   });
 });
