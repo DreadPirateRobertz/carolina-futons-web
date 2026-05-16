@@ -42,21 +42,30 @@ const SPRING_SALE_TITLE = "Spring Sale — Carolina Futons";
 const SPRING_SALE_DESCRIPTION =
   "Mattress promotions running this season at Carolina Futons in Hendersonville, North Carolina. American-made comfort, 15-year frame warranty.";
 
-const SPRING_SALE_OPEN_GRAPH = {
-  title: SPRING_SALE_TITLE,
-  description: SPRING_SALE_DESCRIPTION,
-  url: "/spring-sale",
-  type: "website" as const,
-  images: [DEFAULT_OG_IMAGE],
-};
-
-export const metadata: Metadata = {
-  title: SPRING_SALE_TITLE,
-  description: SPRING_SALE_DESCRIPTION,
-  alternates: { canonical: "/spring-sale" },
-  openGraph: SPRING_SALE_OPEN_GRAPH,
-  twitter: twitterFromOpenGraph(SPRING_SALE_OPEN_GRAPH),
-};
+// cf-yu2l.F1.2: generateMetadata also reads Landings so <title>, description,
+// and the og:image follow the editor without a redeploy. Same per-field
+// fallback + .catch resilience contract as the body-copy wiring below.
+export async function generateMetadata(): Promise<Metadata> {
+  const landing = await getLandingBySlug("spring-sale").catch(() => null);
+  const description = landing?.seoDescription ?? SPRING_SALE_DESCRIPTION;
+  const ogImage = landing?.ogImageUrl
+    ? { url: landing.ogImageUrl }
+    : DEFAULT_OG_IMAGE;
+  const openGraph = {
+    title: SPRING_SALE_TITLE,
+    description,
+    url: "/spring-sale",
+    type: "website" as const,
+    images: [ogImage],
+  };
+  return {
+    title: SPRING_SALE_TITLE,
+    description,
+    alternates: { canonical: "/spring-sale" },
+    openGraph,
+    twitter: twitterFromOpenGraph(openGraph),
+  };
+}
 
 export default async function SpringSalePage() {
   const saleCategory = findCategory("mattresses-sale");

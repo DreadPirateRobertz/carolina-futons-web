@@ -22,7 +22,7 @@ vi.mock("@/lib/shop/derived-products", () => ({
   resolveDerivedProducts: vi.fn().mockResolvedValue({ items: [], error: null }),
 }));
 
-import SpringSalePage from "./page";
+import SpringSalePage, { generateMetadata } from "./page";
 
 afterEach(() => {
   cleanup();
@@ -162,5 +162,82 @@ describe("SpringSalePage — field-level fallback", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: /Spring Sale on mattresses/i }),
     ).toBeInTheDocument();
+  });
+});
+
+describe("SpringSalePage — generateMetadata (cf-yu2l.F1.2 SEO field wiring)", () => {
+  // generateMetadata also reads the Landings collection so the page <title>,
+  // description, and social-card og:image follow the editor without redeploy.
+  // Mirrors the body-copy wiring contract: per-field fallback, .catch on
+  // the data-layer call so a Wix outage produces the default metadata
+  // rather than throwing during Next.js's metadata resolution phase.
+
+  it("returns the default description when getLandingBySlug returns null", async () => {
+    getLandingBySlug.mockResolvedValue(null);
+    const meta = await generateMetadata();
+    expect(meta.description).toMatch(/Mattress promotions running this season/i);
+  });
+
+  it("uses Landing.seoDescription when provided", async () => {
+    getLandingBySlug.mockResolvedValue({
+      _id: "x",
+      slug: "spring-sale",
+      title: "x",
+      headline: "x",
+      seoDescription: "Editor-controlled SEO description for the spring promo.",
+    });
+    const meta = await generateMetadata();
+    expect(meta.description).toBe(
+      "Editor-controlled SEO description for the spring promo.",
+    );
+  });
+
+  it("uses Landing.ogImageUrl in openGraph.images when provided", async () => {
+    getLandingBySlug.mockResolvedValue({
+      _id: "x",
+      slug: "spring-sale",
+      title: "x",
+      headline: "x",
+      ogImageUrl: "https://static.wixstatic.com/spring-sale-social-card.jpg",
+    });
+    const meta = await generateMetadata();
+    const og = meta.openGraph as { images: { url: string }[] };
+    expect(og.images?.[0]?.url).toBe(
+      "https://static.wixstatic.com/spring-sale-social-card.jpg",
+    );
+  });
+
+  it("falls back to default openGraph image when Landing.ogImageUrl is missing", async () => {
+    getLandingBySlug.mockResolvedValue({
+      _id: "x",
+      slug: "spring-sale",
+      title: "x",
+      headline: "x",
+      // ogImageUrl omitted
+    });
+    const meta = await generateMetadata();
+    const og = meta.openGraph as { images: { url: string }[] };
+    expect(og.images?.[0]?.url).toBeTruthy();
+  });
+
+  it("returns default metadata when getLandingBySlug throws (Wix outage)", async () => {
+    getLandingBySlug.mockRejectedValue(new Error("Wix unreachable"));
+    const meta = await generateMetadata();
+    expect(meta.description).toMatch(/Mattress promotions running this season/i);
+    expect(meta.title).toMatch(/Spring Sale/);
+  });
+
+  it("preserves the spring-sale canonical regardless of Landing data", async () => {
+    // canonical is a structural URL contract, never editor-managed —
+    // pin it as immune to Landing field drift.
+    getLandingBySlug.mockResolvedValue({
+      _id: "x",
+      slug: "spring-sale",
+      title: "x",
+      headline: "x",
+      seoDescription: "custom",
+    });
+    const meta = await generateMetadata();
+    expect(meta.alternates?.canonical).toBe("/spring-sale");
   });
 });
