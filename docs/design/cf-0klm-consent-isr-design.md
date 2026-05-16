@@ -74,9 +74,18 @@ Default approach in this design: React state + `hydrated` flag. Falls back to CS
 | `src/__tests__/ConsentModeStaticDefault.test.tsx` (new) | Pin static-default snippet, assert NO cookie dependency | 6 |
 | `src/__tests__/ConsentClientBoot.test.tsx` (new) | Pin client-side `gtag('consent', 'update', ...)` from cookie | 5 |
 | `src/__tests__/ConsentBanner.test.tsx` (modify existing) | Banner reads cookie in useEffect, no `initialChoice` prop | 3 modified |
-| `e2e/consent-default-then-update.spec.ts` (new) | Network ordering: default fires before pixels load | 1 |
+| `e2e/consent-default-then-update.spec.ts` (new) | Network ordering: default fires before pixels load **+ first-time visitor sees banner with all-denied default still emitted** (rennala phase-2 note 2) | 2 |
 
 Test stubs ship as part of this PR; bodies fill in once mayor approves.
+
+### First-time visitor regression pin (rennala phase-2 note 2)
+
+The e2e spec includes a second case: clear cookies, load page, assert (a) the banner element is visible, AND (b) the gtag default snippet emits with ALL FOUR signals as `'denied'`. Failing this catches:
+
+- **Silent disappearance** of the banner UI for first-time visitors (GDPR-mandated surface).
+- **Accidental "granted" leak** in the static default snippet — e.g. a refactor that re-introduces per-cookie variation.
+
+Both directions of regression should fail loud at e2e time, before reaching production.
 
 ---
 
@@ -92,6 +101,22 @@ curl -sS -D - -o /dev/null "$PREVIEW_URL/products/kingston-futon-frame" \
 **Acceptance:** `cache-control: s-maxage=3600, stale-while-revalidate=<N>` AND `x-vercel-cache: HIT` (or PRERENDER) on second request.
 
 Then re-run Lighthouse to confirm the cf-0oj5 acceptance criteria (perf ≥ 80, LCP ≤ 3.5s on kingston-futon-frame).
+
+---
+
+## Per-pixel `wait_for_update` verification table (rennala phase-2 note 1)
+
+The "most pixels gate on consent state + re-fire on update" framing in the Risks section needs per-pixel substantiation. The cf-0klm.t1 implementation PR must verify each pixel against the "denied → update" transition pattern before merge.
+
+| Pixel | Consent-mode support | "denied → update" behavior | cf-0klm.t1 acceptance |
+|---|---|---|---|
+| **GA4 (gtag)** | Native | Documented Consent Mode v2; `wait_for_update` parameter on `gtag('consent', 'default', ...)` deferring tag fires until update arrives | Verify `wait_for_update: 500` (ms) is set on the default; tag fires with the updated state |
+| **Meta `fbq`** | Pixel Consent API | `fbq('consent', 'grant')` and `fbq('consent', 'revoke')` toggle the pixel; verify Meta SDK respects denied-default until explicit grant | Confirm no `fbq('init', ...)` runs before consent update if user has stored "denied" |
+| **TikTok `ttq`** | Limited (event-level) | TikTok pixel doesn't have a Consent Mode parallel; uses event-level consent params. Verify the wrapper component reads consent state before calling `ttq.track(...)` | `ttq.track` calls gate on `window.gtag` consent state via custom wrapper |
+| **Pinterest `pintrk`** | Partial | Pinterest doesn't expose a formal consent API; their docs recommend gating `pintrk()` calls on consent. Same wrapper pattern as TikTok | Same as TikTok — wrapper gates `pintrk(...)` on consent state |
+| **Cloudflare Turnstile** | Consent-neutral | Turnstile issues a challenge token, not user-tracking analytics. No consent-mode handling required (per rennala note) | No change; verify the docs/design note reflects "consent-neutral" status |
+
+**Action for cf-0klm.t1:** before implementation merge, run a smoke e2e against each pixel's network request under three scenarios: cookie absent (denied default), cookie="granted" (update fires, tag re-emits), cookie="denied" (no upgrade, no tag emit). The per-pixel verification table above documents the expected behavior; the e2e validates it.
 
 ---
 
