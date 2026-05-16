@@ -502,16 +502,112 @@ describe("PdpGallery — activeUrl variant-picker integration (cf-q9zi)", () => 
     expect(main.src).toBe("https://img/c.jpg");
   });
 
-  it("falls back to selectedIndex when activeUrl does not match any image", () => {
+  // cf-pdp-g2: when the variant-resolved URL isn't in `images` (e.g. Wix
+  // catalogs that attach swatch media at the variant level, not the choice
+  // level, and the gallery build didn't fold variant media in), the main
+  // image MUST still swap to that URL — falling back to `images[0]` made
+  // the variant selection appear to do nothing, which is the parity bug
+  // rennala caught in cf-lc1c PDP audit.
+  it("renders activeUrl as the main image even when it is NOT in images (cf-pdp-g2)", () => {
     render(
       <PdpGallery
         images={multiImages}
         productName="Kingston Futon"
-        activeUrl="https://img/no-match.jpg"
+        activeUrl="https://img/variant-only.jpg"
       />,
     );
     const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    expect(main.src).toBe("https://img/variant-only.jpg");
+  });
+
+  // cf-pdp-g2.fu2 (blaidd parity-audit note): screen readers need the
+  // variant-specific alt text, not the product-level default, when
+  // activeUrl drives a synthetic main image outside the gallery.
+  it("uses activeAlt for the synthetic main image when activeUrl is not in images", () => {
+    render(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        activeUrl="https://img/variant-only.jpg"
+        activeAlt="Kingston Futon — Color: Bryan Charcoal"
+      />,
+    );
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    expect(main.alt).toBe("Kingston Futon — Color: Bryan Charcoal");
+  });
+
+  it("falls back to productName for the synthetic main alt when activeAlt is omitted", () => {
+    render(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        activeUrl="https://img/variant-only.jpg"
+      />,
+    );
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    expect(main.alt).toBe("Kingston Futon");
+  });
+
+  it("activeAlt does NOT override the alt of an indexed image (activeUrl in images)", () => {
+    render(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        activeUrl="https://img/b.jpg"
+        activeAlt="Kingston Futon — Color: Bryan Charcoal"
+      />,
+    );
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    // When the gallery has the image, the in-gallery alt wins so the
+    // catalog-authored copy isn't replaced by a synthetic variant label.
+    expect(main.alt).toBe("Side");
+  });
+
+  it("updates main image when activeUrl changes to a non-gallery URL (cf-pdp-g2)", () => {
+    const { rerender } = render(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        activeUrl="https://img/a.jpg"
+      />,
+    );
+    rerender(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        activeUrl="https://img/variant-only-2.jpg"
+      />,
+    );
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    expect(main.src).toBe("https://img/variant-only-2.jpg");
+  });
+
+  it("falls back to images[0] when activeUrl is undefined and no thumb has been clicked", () => {
+    render(
+      <PdpGallery images={multiImages} productName="Kingston Futon" />,
+    );
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
     expect(main.src).toBe("https://img/a.jpg");
+  });
+
+  // cf-pdp-g3: when the variant-resolved activeUrl is rendered as the main
+  // image but NOT present in the gallery `images` array (cf-pdp-g2 path),
+  // the GalleryZoomLightbox MUST open onto that same variant image — not
+  // on `images[0]`. Pre-fix, the lightbox built its image array from raw
+  // `images.map(...)` so opening zoom on a variant-only URL silently
+  // zoomed into the wrong product photo. Validated visually during
+  // rennala's cf-lc1c follow-up.
+  it("zoom modal opens onto activeUrl when activeUrl is not in images (cf-pdp-g3)", () => {
+    render(
+      <PdpGallery
+        images={multiImages}
+        productName="Kingston Futon"
+        activeUrl="https://img/variant-only.jpg"
+      />,
+    );
+    fireEvent.click(screen.getByTestId("pdp-main-image-zoom-trigger"));
+    const zoomed = screen.getByTestId("gallery-zoom-image") as HTMLImageElement;
+    expect(zoomed.src).toBe("https://img/variant-only.jpg");
   });
 
   it("activeUrl from parent overrides a previous thumb click", () => {

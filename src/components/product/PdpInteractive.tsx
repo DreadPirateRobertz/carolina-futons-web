@@ -226,6 +226,14 @@ export function PdpInteractive({
             images={galleryImages}
             productName={productName}
             activeUrl={imageUrl}
+            // cf-pdp-g2.fu2: pass a variant-specific alt so screen readers
+            // hear "Kingston Futon — Color: Bryan Charcoal" instead of the
+            // generic productName when activeUrl synthesizes a main image
+            // outside the gallery thumb strip. Falls back to productName
+            // inside PdpGallery if undefined.
+            activeAlt={
+              variantLabel ? `${productName} — ${variantLabel}` : undefined
+            }
             spinImages={spinImages}
           />
         ) : imageUrl ? (

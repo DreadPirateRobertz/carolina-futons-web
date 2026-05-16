@@ -58,6 +58,16 @@ export type PdpGalleryProps = {
   images: ReadonlyArray<GalleryImage>;
   productName: string;
   activeUrl?: string;
+  /**
+   * cf-pdp-g2.fu2 (blaidd parity-audit note): the alt text to apply when
+   * `activeUrl` drives a synthetic main image that isn't in `images[]`.
+   * Screen readers need the variant-specific description (e.g. "Kingston
+   * Futon — Color: Bryan Charcoal") instead of the product-level default.
+   * Caller passes the variant label composed from the current selection;
+   * if omitted, the gallery falls back to `productName` so the image is
+   * never alt-less.
+   */
+  activeAlt?: string;
   // cfw-x3w: when 12+ spin frames are detected (extractSpinFrames upstream),
   // render a "View 360°" toggle that swaps the main image for ProductSpinViewer.
   // When undefined or empty, the gallery falls back to its static behavior.
@@ -85,7 +95,7 @@ function useSupportsViewTransition() {
   );
 }
 
-export function PdpGallery({ images, productName, activeUrl, spinImages }: PdpGalleryProps) {
+export function PdpGallery({ images, productName, activeUrl, activeAlt, spinImages }: PdpGalleryProps) {
   // Initialize from activeUrl so the default variant's image is shown first.
   const [selectedIndex, setSelectedIndex] = useState(() => {
     if (!activeUrl) return 0;
@@ -145,7 +155,20 @@ export function PdpGallery({ images, productName, activeUrl, spinImages }: PdpGa
   }
 
   const index = Math.min(selectedIndex, images.length - 1);
-  const active = images[index];
+  // cf-pdp-g2: if the variant-resolved activeUrl exists but isn't in the
+  // gallery (e.g. Wix catalogs that attach swatch media at the variant
+  // level, not the choice level, and buildGallery didn't fold it in),
+  // render activeUrl directly as the main image. Without this, variant
+  // selection appears to do nothing — the main image silently sticks on
+  // images[0]. The thumb strip still reflects `images[]` as-is; only the
+  // hero image and zoom target follow activeUrl.
+  const activeUrlInImages =
+    activeUrl !== undefined &&
+    images.some((img) => img.url === activeUrl);
+  const active =
+    activeUrl && !activeUrlInImages
+      ? { url: activeUrl, alt: activeAlt ?? productName }
+      : images[index];
 
   const swap = (next: number) => {
     if (next === index) return;
@@ -242,11 +265,20 @@ export function PdpGallery({ images, productName, activeUrl, spinImages }: PdpGa
       <GalleryZoomLightbox
         open={zoomOpen}
         onClose={() => setZoomOpen(false)}
-        images={images.map((img) => ({
+        // cf-pdp-g3: when the variant-resolved activeUrl isn't in `images`,
+        // the main image renders that URL directly (cf-pdp-g2). The zoom
+        // lightbox MUST receive the same synthetic image at the front of
+        // its list with initialIndex=0 — otherwise opening zoom on a
+        // variant-only product silently zoomed into images[0] (the wrong
+        // product photo) while the gallery showed the correct one.
+        images={(activeUrl && !activeUrlInImages
+          ? [{ url: activeUrl, alt: activeAlt ?? productName }, ...images]
+          : images
+        ).map((img) => ({
           url: resolvedSrc(img.url),
           alt: img.alt,
         }))}
-        initialIndex={index}
+        initialIndex={activeUrl && !activeUrlInImages ? 0 : index}
         productName={productName}
       />
       {images.length > 1 ? (
