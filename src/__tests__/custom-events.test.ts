@@ -12,8 +12,15 @@ vi.mock("@/lib/wix/velo-client", async () => {
   return { ...actual, callVelo: veloMocks.callVelo };
 });
 
+// cfw-logger migration: trackCustomEvent catch branches route through logError.
+const logErrorMock = vi.fn();
+vi.mock("@/lib/logger", () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
+}));
+
 beforeEach(() => {
   veloMocks.callVelo.mockReset();
+  logErrorMock.mockReset();
 });
 
 describe("trackCustomEvent", () => {
@@ -49,23 +56,59 @@ describe("trackCustomEvent", () => {
     veloMocks.callVelo.mockRejectedValueOnce(
       new VeloRpcError("trackCustomEvent", 500, "boom"),
     );
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { trackCustomEvent } = await import("@/lib/wix/custom-events");
     const result = await trackCustomEvent("winback_landing_view");
     expect(result).toEqual({ success: false });
-    expect(errSpy).toHaveBeenCalledWith(
-      expect.stringContaining("HTTP 500"),
-    );
-    errSpy.mockRestore();
+    // Observability now routes through logError.
+    expect(logErrorMock).toHaveBeenCalled();
   });
 
   it("returns success:false on a network/abort error without rethrowing", async () => {
     veloMocks.callVelo.mockRejectedValueOnce(new Error("ECONNRESET"));
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { trackCustomEvent } = await import("@/lib/wix/custom-events");
     const result = await trackCustomEvent("winback_landing_view");
     expect(result).toEqual({ success: false });
-    expect(errSpy).toHaveBeenCalled();
-    errSpy.mockRestore();
+    expect(logErrorMock).toHaveBeenCalled();
+  });
+});
+
+// cfw-logger migration: trackCustomEvent catch routes through
+// logError("customEvents", '<call>("<event>") <kind> failed', ...).
+describe("trackCustomEvent — logError observability", () => {
+  it("calls logError with a {status, message} payload when VeloRpcError fires", async () => {
+    const { VeloRpcError } = await import("@/lib/wix/velo-client");
+    veloMocks.callVelo.mockRejectedValueOnce(
+      new VeloRpcError("trackCustomEvent", 500, "boom"),
+    );
+    const { trackCustomEvent } = await import("@/lib/wix/custom-events");
+    await trackCustomEvent("winback_landing_view");
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "customEvents",
+      'trackCustomEvent("winback_landing_view") rpc failed',
+      expect.objectContaining({ status: 500 }),
+    );
+  });
+
+  it("calls logError with the Error payload when the catch is a non-VeloRpcError", async () => {
+    const err = new Error("ECONNRESET");
+    veloMocks.callVelo.mockRejectedValueOnce(err);
+    const { trackCustomEvent } = await import("@/lib/wix/custom-events");
+    await trackCustomEvent("winback_landing_view");
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "customEvents",
+      'trackCustomEvent("winback_landing_view") failed',
+      err,
+    );
+  });
+
+  it("interpolates the eventName into the logError message", async () => {
+    veloMocks.callVelo.mockRejectedValueOnce(new Error("boom"));
+    const { trackCustomEvent } = await import("@/lib/wix/custom-events");
+    await trackCustomEvent("quiz_completed");
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "customEvents",
+      'trackCustomEvent("quiz_completed") failed',
+      expect.anything(),
+    );
   });
 });
