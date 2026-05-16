@@ -21,7 +21,8 @@ import { getCustomerVideoReviewsByProductSlug } from "@/lib/discovery/customer-v
 import { PdpShareButtons } from "@/components/product/PdpShareButtons";
 import { PdpViewItemTracker } from "@/components/product/PdpViewItemTracker";
 import { loadReviews } from "@/lib/discovery/google-reviews";
-import { getCollectionBySlug, getProductBySlug } from "@/lib/wix/products";
+import { getProductBySlug } from "@/lib/wix/products";
+import { loadPdpCatalogSafely } from "@/lib/product/pdp-catalog-load";
 import { logWixFailure } from "@/lib/wix/errors";
 import { listFabricSwatches } from "@/lib/wix/fabrics";
 import { getVideoByProductSlug } from "@/lib/videos/catalog";
@@ -33,10 +34,10 @@ import { PdpWarrantyInfo } from "@/components/product/PdpWarrantyInfo";
 import { ProductInfoModal } from "@/components/product/ProductInfoModal";
 import type { SwatchItem } from "@/lib/swatch-request/swatch-request-schema";
 import { formatPlpPrice } from "@/lib/product/plp-price";
-import { getCrossSellProducts } from "@/lib/product/cross-sell";
-import { getAlsoBoughtProducts } from "@/lib/product/also-bought";
+// cf-8xw2: getCrossSellProducts + getAlsoBoughtProducts now flow through
+// loadPdpCatalogSafely (the Promise.allSettled isolation wrapper); they're
+// not invoked directly from this file anymore.
 import { PdpAlsoBought } from "@/components/product/PdpAlsoBought";
-import { getProductBadges } from "@/lib/wix/product-badges";
 import { JsonLd } from "@/components/seo/JsonLd";
 import {
   buildBreadcrumbSchema,
@@ -134,17 +135,17 @@ export default async function PdpPage(props: {
   // the default render path so the LCP candidate doesn't change.
   const spinImages = extractSpinFrames(mediaItems);
   const stock = (product.stock ?? null) as StockBadgeInput | null;
-  const [crossSell, alsoBought, productBadges, mattressesCollection] =
-    await Promise.all([
-      getCrossSellProducts(product),
-      getAlsoBoughtProducts(product),
-      getProductBadges(slug),
-      // cf-g640: resolve the mattresses collection so we can suppress the
-      // 15-year frame warranty section on standalone mattress PDPs (their
-      // manufacturer terms differ — surfacing the frame warranty there
-      // misrepresents coverage to the customer).
-      getCollectionBySlug("mattresses"),
-    ]);
+  // cf-8xw2 (cf-g640.fu2): loadPdpCatalogSafely wraps the four parallel
+  // Wix calls in Promise.allSettled so a rejection in any one (cross-
+  // sell, also-bought, badges, OR the cf-g640 mattresses-collection
+  // lookup) isolates. Today every underlying reader returns-null-on-
+  // throw so failure cascade is theoretical — but the contract is
+  // fragile and the helper gives every future caller-side refactor a
+  // safety net. Each rejection emits a Sentry breadcrumb naming the
+  // specific source. See src/__tests__/pdp-catalog-load.test.ts for the
+  // isolation pin.
+  const { crossSell, alsoBought, productBadges, mattressesCollection } =
+    await loadPdpCatalogSafely(product, slug);
   // cf-g640: PDP frame-warranty gate. isStandaloneMattress fail-closes
   // on indeterminate state (Wix outage, slug rename, orphan product)
   // so a mattress PDP never accidentally claims the 15-year frame
