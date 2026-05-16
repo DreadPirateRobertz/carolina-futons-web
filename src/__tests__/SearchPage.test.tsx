@@ -171,6 +171,55 @@ describe("/search page — results", () => {
       screen.queryByRole("region", { name: /products/i }),
     ).not.toBeInTheDocument();
   });
+
+  // cf-33a (cf-ruhm.4): QuickView button on every product result row so
+  // shoppers can open the variant picker + add-to-cart without a PDP click.
+  it("renders a QuickView button on every product result row (cf-33a)", async () => {
+    mockSearchProducts.mockResolvedValue([
+      {
+        _id: "p1",
+        slug: "monterey-futon",
+        name: "Monterey Futon",
+        priceData: { formatted: { price: "$899.00" } },
+      },
+      {
+        _id: "p2",
+        slug: "asheville-daybed",
+        name: "Asheville Daybed",
+        priceData: { formatted: { price: "$799.00" } },
+      },
+    ] as never);
+    mockSearchPosts.mockResolvedValue([]);
+    await renderSearch({ q: "f" });
+
+    const monterey = screen.getByRole("button", {
+      name: /quick view: monterey futon/i,
+    });
+    const asheville = screen.getByRole("button", {
+      name: /quick view: asheville daybed/i,
+    });
+    expect(monterey).toBeInTheDocument();
+    expect(asheville).toBeInTheDocument();
+    // Buttons must NOT be wrapped in the PDP <Link> (nested-anchor would
+    // be invalid HTML and block QuickView's click before opening the
+    // modal). They live as siblings inside the <li>.
+    expect(monterey.closest("a")).toBeNull();
+    expect(asheville.closest("a")).toBeNull();
+  });
+
+  it("skips the QuickView button when a result is missing a slug (cf-33a defensive)", async () => {
+    mockSearchProducts.mockResolvedValue([
+      // No slug field — QuickView needs slug to fetch product detail.
+      { _id: "p1", name: "Slugless Frame", priceData: { formatted: { price: "$0.00" } } },
+    ] as never);
+    mockSearchPosts.mockResolvedValue([]);
+    await renderSearch({ q: "frame" });
+    expect(
+      screen.queryByRole("button", { name: /quick view: slugless frame/i }),
+    ).toBeNull();
+    // The product still shows by name; just no QuickView affordance.
+    expect(screen.getByText("Slugless Frame")).toBeInTheDocument();
+  });
 });
 
 // cf-76a (cf-ruhm.1): type tabs + Pages section. Wix-prod parity ships

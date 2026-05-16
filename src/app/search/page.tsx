@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { EmptySearchIllustration } from "@/components/illustrations/EmptySearchIllustration";
 import { PLPPagination } from "@/components/plp/PLPPagination";
+import { QuickViewButton } from "@/components/product/QuickViewButton";
 import { SearchTabs, parseSearchType, type SearchType } from "@/components/search/SearchTabs";
 import { searchPages, type SearchPage as SearchPageEntry } from "@/lib/search/pages";
 import { searchProducts } from "@/lib/wix/products";
@@ -229,11 +230,19 @@ function ProductSection({ products }: { products: ReadonlyArray<SearchProduct> }
           <li
             key={p._id ?? p.slug}
             data-slot="product-card"
-            className="rounded-md border border-cf-divider bg-white/60 dark:bg-cf-cream dark:border-cf-ink/30 p-4"
+            className="flex items-center gap-3 rounded-md border border-cf-divider bg-white/60 dark:bg-cf-cream dark:border-cf-ink/30 p-4"
           >
+            {/* cf-33a (cf-ruhm.4): Wix-prod surfaces add-to-cart inline on
+                search result tiles; cfw uses QuickView instead — variant
+                resolution at the result level would be fiddly (no picker
+                shown), but QuickView opens the full picker in a modal so
+                shoppers can add-to-cart without a PDP click-through. The
+                <Link> wrapping the image + title is the sibling navigation
+                target; QuickViewButton lives outside the link to avoid
+                nested-anchor semantics (same pattern as ProductCard). */}
             <Link
               href={`/products/${p.slug}`}
-              className="flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta"
+              className="flex flex-1 items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta"
             >
               {p.media?.mainMedia?.image?.url ? (
                 <Image
@@ -244,7 +253,7 @@ function ProductSection({ products }: { products: ReadonlyArray<SearchProduct> }
                   className="size-16 flex-none rounded object-cover"
                 />
               ) : null}
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="font-medium text-cf-espresso">{p.name}</p>
                 {p.priceData?.formatted?.price ? (
                   <p className="mt-1 text-sm text-cf-muted">
@@ -253,6 +262,9 @@ function ProductSection({ products }: { products: ReadonlyArray<SearchProduct> }
                 ) : null}
               </div>
             </Link>
+            {p.slug ? (
+              <QuickViewButton slug={p.slug} productName={p.name ?? "Product"} />
+            ) : null}
           </li>
         ))}
       </ul>
