@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { BUSINESS } from "@/lib/business/contact-info";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -213,6 +214,42 @@ export default function ShippingPage() {
               {BUSINESS.warrantyYears}-year warranty
             </a>
             .
+          </p>
+        </section>
+
+        {/* cfw-kqry: cross-link to /guides where the care + assembly
+            reference content lives. Mirrors Wix Shipping Policy.js's
+            getAllAssemblyGuides + getProductGuides surfacing without
+            requiring a per-product PDF migration. */}
+        <section
+          aria-labelledby="shipping-once-arrived"
+          className="space-y-4 border-t border-cf-divider pt-8"
+        >
+          <h2
+            id="shipping-once-arrived"
+            className="font-playfair text-2xl font-semibold tracking-tight"
+          >
+            Once it arrives
+          </h2>
+          <p className="leading-relaxed">
+            Setup, care, and long-term keep-it-looking-new advice lives in
+            our{" "}
+            <Link
+              href="/guides"
+              className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
+            >
+              buying &amp; care guides
+            </Link>
+            . The{" "}
+            <Link
+              href="/guides/warranty-and-care"
+              className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
+            >
+              warranty &amp; care guide
+            </Link>{" "}
+            walks through everything from fabric cleaning to oiling the wood
+            and what to do if a hardware screw works itself loose. Worth
+            reading the first weekend you have it.
           </p>
         </section>
       </article>
