@@ -136,6 +136,18 @@ Implementation: Sentry → Alerts → Create Alert Rule. Set the metric to "Numb
 
 ---
 
+## 7.5. When ISR activates: mental-model re-calibration
+
+When cf-0klm lands and ISR turns on for real, this runbook's signal volume changes. **Re-read sections 1, 3, and 4 within 24h of the activation deploy** to re-anchor expectations:
+
+1. **`next.revalidate_reason:none` count will likely DROP** (some baseline errors get re-classified as `:stale` background-regen failures). On-call should NOT interpret the drop as "everything is fixed" — the volume just moved buckets.
+2. **`:stale` will go from 0 to non-zero overnight.** The first 24-48h of `:stale` events are not necessarily a regression; they're a new visible signal that was previously invisible. The thresholds in section 3 are pre-tuned for this new baseline.
+3. **The "alert ≠ outage" framing (section 4) becomes load-bearing.** Until ISR activates, every Sentry error IS a user-facing render error. After ISR activates, the `:stale` subset is by-design degradation. On-call's first question on any new error becomes "is this `:none` or `:stale`?"
+
+**Action on cf-0klm landing:** sweep recent on-call shifts for any ad-hoc playbook assumptions that "all errors are P-something" — those need refresh to incorporate the new `:stale` bucket as a distinct signal. File a `docs/runbooks/sentry-isr-alert-spec-activation-followup.md` if section 3 thresholds need adjusting after 14 days of observed baseline.
+
+---
+
 ## 7. Status (2026-05-16)
 
 | Item | Status |
