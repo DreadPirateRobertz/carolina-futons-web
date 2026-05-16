@@ -18,9 +18,18 @@ vi.mock("@/lib/wix/velo-client", () => ({
   callVelo: veloMocks.callVelo,
 }));
 
+// cfw-387y: three wishlist action catches now route through logError.
+// Mock here so failure tests assert call shape rather than parsing
+// console output.
+const mockLogError = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 beforeEach(() => {
   authMocks.getMemberSession.mockReset();
   veloMocks.callVelo.mockReset();
+  mockLogError.mockReset();
 });
 
 describe("addToWishlistFromPdp", () => {
@@ -83,21 +92,62 @@ describe("addToWishlistFromPdp", () => {
     expect(result).toEqual({ success: false, error: "Wishlist full" });
   });
 
-  it("returns a generic error when Velo throws", async () => {
+  it("returns a generic error and ships logError when Velo throws (cfw-387y)", async () => {
     authMocks.getMemberSession.mockResolvedValueOnce({
       memberId: "M-1",
       accessToken: "tok",
       tokens: {} as never,
     });
     veloMocks.callVelo.mockRejectedValueOnce(new Error("rpc fail"));
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { addToWishlistFromPdp } = await import("@/app/actions/wishlist");
     const result = await addToWishlistFromPdp("P-1", "Monterey", 1299);
     expect(result).toEqual({
       success: false,
       error: "Could not save. Please try again.",
     });
-    expect(errSpy).toHaveBeenCalled();
-    errSpy.mockRestore();
+    expect(mockLogError).toHaveBeenCalledWith(
+      "wishlist",
+      "addToWishlistFromPdp",
+      expect.any(Error),
+    );
+  });
+});
+
+// cfw-387y: getWishlistCount and getSharedWishlist had no test coverage
+// before this commit. Two focused tests pin their logError contracts.
+
+describe("getWishlistCount (cfw-387y)", () => {
+  it("returns 0 + ships logError when fetchWishlist throws (silent badge)", async () => {
+    authMocks.getMemberSession.mockResolvedValueOnce({
+      memberId: "M-1",
+      accessToken: "tok",
+      tokens: {} as never,
+    });
+    veloMocks.callVelo.mockRejectedValueOnce(new Error("wix down"));
+    const { getWishlistCount } = await import("@/app/actions/wishlist");
+    const count = await getWishlistCount();
+    expect(count).toBe(0);
+    expect(mockLogError).toHaveBeenCalledWith(
+      "wishlist",
+      "getWishlistCount",
+      expect.any(Error),
+    );
+  });
+});
+
+describe("getSharedWishlist (cfw-387y)", () => {
+  it("returns {success:false} + ships logError when fetchWishlistByMemberId throws", async () => {
+    process.env.WISHLIST_SHARE_SECRET = "test-secret-cfw-387y";
+    const { signMemberId } = await import("@/lib/wishlist/share-token");
+    const token = signMemberId("M-1", process.env.WISHLIST_SHARE_SECRET!);
+    veloMocks.callVelo.mockRejectedValueOnce(new Error("wix down"));
+    const { getSharedWishlist } = await import("@/app/actions/wishlist");
+    const result = await getSharedWishlist(token);
+    expect(result).toEqual({ success: false });
+    expect(mockLogError).toHaveBeenCalledWith(
+      "wishlist",
+      "getSharedWishlist",
+      expect.any(Error),
+    );
   });
 });
