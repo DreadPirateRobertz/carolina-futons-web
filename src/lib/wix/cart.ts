@@ -79,7 +79,17 @@ export function toLineItemPayload(item: LineItemInput) {
     quantity: item.quantity,
   };
   if (item.customTextFields && item.customTextFields.length > 0) {
-    payload.customTextFields = item.customTextFields;
+    // cf-f9o1: defensive filter at the lib boundary. UI already trims
+    // empty entries, but a non-form caller (server-script, future API
+    // client) could still smuggle blanks through. Drop entries where
+    // either title or value trims to empty so the Wix order admin
+    // never renders a meaningless blank row. When every entry filters
+    // out, omit the field entirely to preserve the byte-identical
+    // non-personalized payload shape.
+    const filtered = item.customTextFields.filter(
+      (f) => f.title.trim().length > 0 && f.value.trim().length > 0,
+    );
+    if (filtered.length > 0) payload.customTextFields = filtered;
   }
   return payload;
 }
