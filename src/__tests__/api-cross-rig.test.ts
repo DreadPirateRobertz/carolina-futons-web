@@ -99,6 +99,59 @@ describe("POST /api/cross-rig — auth", () => {
   });
 });
 
+// Pins the logError migration so an accidental revert to a bare
+// console.error("[cross-rig] …") (or to a non-bracketed prefix that
+// bypasses the helper) fails loudly. Asserts on the console.error sink
+// because logError forwards there in every env; the Sentry forwarder
+// is prod-only and unit-tested in log.test.ts.
+describe("POST /api/cross-rig — logError migration", () => {
+  it("emits the bracketed '[cross-rig] CROSS_RIG_SECRET env var not set' prefix exactly once when the env var is missing", async () => {
+    vi.unstubAllEnvs();
+    vi.stubEnv("CROSS_RIG_SECRET", "");
+    const errSpy = console.error as unknown as ReturnType<typeof vi.fn>;
+    errSpy.mockClear();
+    const POST = await route();
+    await POST(
+      makeRequest({ ...BASE_BODY, event: "badge_earned" }, { secret: null }),
+    );
+    expect(errSpy).toHaveBeenCalledTimes(1);
+    expect(errSpy.mock.calls[0]![0]).toBe(
+      "[cross-rig] CROSS_RIG_SECRET env var not set",
+    );
+    // logError with no err is called with a single arg — no trailing
+    // undefined slot. Guards against an accidental
+    //   logError("cross-rig", "...", undefined)
+    // that would emit a noisy second console.error arg.
+    expect(errSpy.mock.calls[0]!.length).toBe(1);
+  });
+
+  it("does NOT log when the env var IS set but the secret header is missing (401 is a client error, not a server log)", async () => {
+    const errSpy = console.error as unknown as ReturnType<typeof vi.fn>;
+    errSpy.mockClear();
+    const POST = await route();
+    const res = await POST(
+      makeRequest({ ...BASE_BODY, event: "badge_earned" }, { secret: null }),
+    );
+    expect(res.status).toBe(401);
+    expect(errSpy).not.toHaveBeenCalled();
+  });
+
+  it("does NOT log on a successful happy-path request (no console.error noise on 200)", async () => {
+    const errSpy = console.error as unknown as ReturnType<typeof vi.fn>;
+    errSpy.mockClear();
+    const POST = await route();
+    const res = await POST(
+      makeRequest({
+        ...BASE_BODY,
+        event: "badge_earned",
+        payload: { badgeId: "b1" },
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(errSpy).not.toHaveBeenCalled();
+  });
+});
+
 describe("POST /api/cross-rig — schema validation", () => {
   it("returns 400 when memberId is missing", async () => {
     const POST = await route();
