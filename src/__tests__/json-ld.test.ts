@@ -4,6 +4,7 @@ import {
   buildAboutPageSchema,
   buildArticleSchema,
   buildBreadcrumbSchema,
+  buildItemListSchema,
   buildLocalBusinessSchema,
   buildOrganizationSchema,
   buildProductSchema,
@@ -371,5 +372,106 @@ describe("buildAboutPageSchema", () => {
     expect(schema.mainEntity["@id"]).toBe(
       "https://preview.carolinafutons.com#organization",
     );
+  });
+});
+
+// cf-2zi (cf-ruhm-w2.2): ItemList JSON-LD for curated product lists
+// (gift registries, "popular X" landings). Wraps per-item Product
+// schemas in ListItem entries with 1-based position.
+describe("buildItemListSchema", () => {
+  const item1 = {
+    name: "Kingston Futon Frame",
+    description: "Solid hardwood futon frame",
+    imageUrl: "https://cdn/kingston.jpg",
+    canonicalUrl: "https://carolinafutons.com/products/kingston-futon-frame",
+    priceUSD: 899,
+    inStock: true,
+  };
+  const item2 = {
+    name: "Sedona Futon Frame",
+    description: "Southwest-inspired hardwood frame",
+    imageUrl: undefined,
+    canonicalUrl: "https://carolinafutons.com/products/sedona-futon-frame",
+    priceUSD: 799,
+    inStock: false,
+  };
+
+  it("emits @context, @type, name, url, and numberOfItems from input", () => {
+    const schema = buildItemListSchema({
+      name: "Doe Wedding Registry",
+      canonicalUrl: "https://carolinafutons.com/registry/doe-wedding",
+      items: [item1, item2],
+    });
+    expect(schema["@context"]).toBe("https://schema.org");
+    expect(schema["@type"]).toBe("ItemList");
+    expect(schema.name).toBe("Doe Wedding Registry");
+    expect(schema.url).toBe("https://carolinafutons.com/registry/doe-wedding");
+    expect(schema.numberOfItems).toBe(2);
+  });
+
+  it("wraps each input item in a ListItem at 1-based position with a Product schema inside", () => {
+    const schema = buildItemListSchema({
+      name: "Test List",
+      canonicalUrl: "https://carolinafutons.com/registry/x",
+      items: [item1, item2],
+    });
+    expect(schema.itemListElement).toHaveLength(2);
+    expect(schema.itemListElement[0]).toMatchObject({
+      "@type": "ListItem",
+      position: 1,
+    });
+    expect(schema.itemListElement[0].item).toMatchObject({
+      "@type": "Product",
+      name: "Kingston Futon Frame",
+      url: "https://carolinafutons.com/products/kingston-futon-frame",
+    });
+    expect(schema.itemListElement[1]).toMatchObject({
+      "@type": "ListItem",
+      position: 2,
+    });
+    expect(schema.itemListElement[1].item.name).toBe("Sedona Futon Frame");
+  });
+
+  it("includes the optional description field when provided", () => {
+    const schema = buildItemListSchema({
+      name: "List",
+      description: "Curated for Doe wedding 2026",
+      canonicalUrl: "https://carolinafutons.com/registry/x",
+      items: [item1],
+    });
+    expect(schema.description).toBe("Curated for Doe wedding 2026");
+  });
+
+  it("omits description when not provided (schema stays minimal)", () => {
+    const schema = buildItemListSchema({
+      name: "List",
+      canonicalUrl: "https://carolinafutons.com/registry/x",
+      items: [item1],
+    });
+    expect(schema.description).toBeUndefined();
+  });
+
+  it("propagates inStock → InStock/OutOfStock on each per-item Product offer", () => {
+    const schema = buildItemListSchema({
+      name: "List",
+      canonicalUrl: "https://carolinafutons.com/registry/x",
+      items: [item1, item2],
+    });
+    expect(schema.itemListElement[0].item.offers.availability).toBe(
+      "https://schema.org/InStock",
+    );
+    expect(schema.itemListElement[1].item.offers.availability).toBe(
+      "https://schema.org/OutOfStock",
+    );
+  });
+
+  it("numberOfItems = 0 + itemListElement = [] for empty registries (graceful empty state)", () => {
+    const schema = buildItemListSchema({
+      name: "Empty",
+      canonicalUrl: "https://carolinafutons.com/registry/empty",
+      items: [],
+    });
+    expect(schema.numberOfItems).toBe(0);
+    expect(schema.itemListElement).toEqual([]);
   });
 });

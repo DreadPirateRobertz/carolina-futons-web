@@ -373,3 +373,68 @@ export function buildAboutPageSchema(
     },
   };
 }
+
+// cf-2zi (cf-ruhm-w2.2): ItemList JSON-LD builder for curated product
+// list surfaces — gift registries, "popular X" comparison landings,
+// future "you might also like" rails. Each list element wraps a
+// Product schema (built via buildProductSchema) so search engines see
+// the per-item commerce data inline + the parent ItemList context.
+
+export type ItemListSchemaInput = {
+  name: string;
+  description?: string;
+  canonicalUrl: string;
+  items: ReadonlyArray<ProductSchemaInput>;
+};
+
+export type ItemListSchema = {
+  "@context": "https://schema.org";
+  "@type": "ItemList";
+  name: string;
+  description?: string;
+  url: string;
+  numberOfItems: number;
+  itemListElement: ReadonlyArray<{
+    "@type": "ListItem";
+    position: number;
+    item: ProductSchema;
+  }>;
+};
+
+/**
+ * Build an ItemList JSON-LD schema wrapping per-item Product schemas.
+ *
+ * @param input.name - Display name for the curated list (e.g.
+ *   "Doe Wedding Registry").
+ * @param input.description - Optional list description / message.
+ * @param input.canonicalUrl - The list's own URL (e.g.
+ *   `${siteUrl}/registry/doe-wedding`).
+ * @param input.items - Per-item ProductSchemaInput. Each item becomes
+ *   a ListItem wrapping a Product schema. Order is preserved (position
+ *   index 1-based).
+ * @returns ItemList schema ready to mount via <JsonLd schema={...}/>.
+ *
+ * WHY ItemList vs separate Product nodes: curated lists communicate
+ * intent to crawlers ("these belong together as a collection"), which
+ * unlocks ItemList rich results in SERPs. Per-item Product wrapping
+ * inside ListItem keeps the commerce data linked back to the parent
+ * list rather than indexed as floating products.
+ */
+export function buildItemListSchema(
+  input: ItemListSchemaInput,
+): ItemListSchema {
+  const schema: ItemListSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: input.name,
+    url: input.canonicalUrl,
+    numberOfItems: input.items.length,
+    itemListElement: input.items.map((item, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      item: buildProductSchema(item),
+    })),
+  };
+  if (input.description) schema.description = input.description;
+  return schema;
+}

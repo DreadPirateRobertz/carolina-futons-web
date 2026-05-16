@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getPublicRegistryAction } from "@/app/actions/registry";
 import { MarkPurchasedButton } from "@/components/registry/MarkPurchasedButton";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildItemListSchema, resolveSiteUrl } from "@/lib/seo/json-ld";
 import { OCCASION_LABELS } from "@/lib/registry/registry-types";
 
 export const dynamic = "force-dynamic";
@@ -56,11 +58,37 @@ export default async function PublicRegistryPage({
   const { registry } = result;
   const occasion = OCCASION_LABELS[registry.occasion] ?? registry.occasion;
 
+  // cf-2zi (cf-ruhm-w2.2): emit ItemList + per-item Product JSON-LD so
+  // SERP rich-result eligibility is ready when cf-ruhm-w2.3 ships the
+  // owner-opt-in indexability gate. Items without a productSlug can't
+  // resolve to a PDP canonical URL — drop them from the schema rather
+  // than emit a Product node with no `url` (Search Console rejects).
+  const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+  const schemableItems = registry.items
+    .filter((item) => Boolean(item.productSlug))
+    .map((item) => ({
+      name: item.productName,
+      description: item.notes || `${item.productName} — Carolina Futons.`,
+      imageUrl: item.imageUrl,
+      canonicalUrl: `${siteUrl}/products/${item.productSlug}`,
+      priceUSD: item.productPrice,
+      inStock:
+        (item.remaining ??
+          Math.max(0, item.quantity - item.purchasedQuantity)) > 0,
+    }));
+  const itemListSchema = buildItemListSchema({
+    name: `${registry.title} — Carolina Futons Gift Registry`,
+    description: registry.message,
+    canonicalUrl: `${siteUrl}/registry/${slug}`,
+    items: schemableItems,
+  });
+
   return (
     <main
       className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6"
       data-testid="registry-view"
     >
+      <JsonLd id="jsonld-registry" schema={itemListSchema} />
       <header className="mb-8 border-b border-cf-smoke pb-6">
         <h1 className="font-heading text-2xl font-semibold text-cf-espresso sm:text-3xl">
           {registry.title}
