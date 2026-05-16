@@ -9,6 +9,17 @@ vi.mock("next/cache", () => ({
   unstable_cache: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
 }));
 
+// cfw-yqfy: the misconfigured-secret branch now routes through
+// logError → Sentry. Mock @sentry/nextjs so the runner doesn't ship
+// events AND the new logError-integration describe below can assert
+// (scope, op) tags + correlationId extra.
+const sentryCaptureException = vi.fn();
+const sentryFlush = vi.fn().mockResolvedValue(true);
+vi.mock("@sentry/nextjs", () => ({
+  captureException: (...args: unknown[]) => sentryCaptureException(...args),
+  flush: (timeoutMs?: number) => sentryFlush(timeoutMs),
+}));
+
 const SECRET = "test-secret";
 
 function sign(body: string): string {
@@ -29,6 +40,8 @@ describe("POST /api/revalidate", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.stubEnv("WIX_WEBHOOK_SECRET", SECRET);
+    sentryCaptureException.mockReset();
+    sentryFlush.mockReset().mockResolvedValue(true);
   });
 
   it("rejects requests without a signature", async () => {
@@ -190,8 +203,12 @@ describe("POST /api/revalidate — observability (F1)", () => {
     vi.stubEnv("WIX_WEBHOOK_SECRET", "");
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     await post("{}", { "x-wix-signature": "sha256=deadbeef" });
+    // cfw-yqfy: logError now formats as `[scope] message`, err,
+    // extra. With err=undefined, the call is 3 args:
+    // ("[revalidate] misconfigured...", undefined, { correlationId }).
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("[revalidate]"),
+      undefined,
       expect.objectContaining({ correlationId: expect.any(String) }),
     );
     errorSpy.mockRestore();
@@ -209,5 +226,79 @@ describe("POST /api/revalidate — observability (F1)", () => {
       }),
     );
     infoSpy.mockRestore();
+  });
+});
+
+// cfw-yqfy: pin logError integration on the misconfigured-secret
+// fail-closed. A missing WIX_WEBHOOK_SECRET means the Wix CMS webhook
+// can't reach the revalidation endpoint — Brenda's edits stop
+// propagating to the site cache silently. Sentry must page.
+describe("POST /api/revalidate — logError integration on missing WIX_WEBHOOK_SECRET", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    sentryCaptureException.mockReset();
+    sentryFlush.mockReset().mockResolvedValue(true);
+  });
+
+  it("captures scope='revalidate' + op='misconfigured — WIX_WEBHOOK_SECRET missing' + extra { correlationId } + flush(2000) and returns 500", async () => {
+    vi.stubEnv("WIX_WEBHOOK_SECRET", "");
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await post("{}", { "x-wix-signature": "sha256=deadbeef" });
+
+    expect(res.status).toBe(500);
+    expect(sentryCaptureException).toHaveBeenCalledTimes(1);
+    const [reportedErr, opts] = sentryCaptureException.mock.calls[0]!;
+    // No native err thrown → helper synthesizes one.
+    expect(reportedErr).toBeInstanceOf(Error);
+    expect((reportedErr as Error).message).toContain(
+      "misconfigured — WIX_WEBHOOK_SECRET missing",
+    );
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "revalidate",
+      op: "misconfigured — WIX_WEBHOOK_SECRET missing",
+    });
+    expect((opts as { level: string }).level).toBe("error");
+    expect((opts as { extra: { correlationId: string } }).extra.correlationId)
+      .toEqual(expect.any(String));
+    expect(sentryFlush).toHaveBeenCalledWith(2000);
+    errorSpy.mockRestore();
+  });
+
+  it("correlationId in Sentry extra matches the one in the response body (for cross-referencing in support tickets)", async () => {
+    vi.stubEnv("WIX_WEBHOOK_SECRET", "");
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const explicit = "support-ticket-12345";
+    const res = await post("{}", {
+      "x-wix-signature": "sha256=deadbeef",
+      "x-correlation-id": explicit,
+    });
+
+    const body = await res.json();
+    expect(body.errorId).toBe(explicit);
+    const [, opts] = sentryCaptureException.mock.calls[0]!;
+    expect((opts as { extra: { correlationId: string } }).extra.correlationId)
+      .toBe(explicit);
+    errorSpy.mockRestore();
+  });
+
+  it("happy path (signature valid, secret set) does NOT call Sentry", async () => {
+    vi.stubEnv("WIX_WEBHOOK_SECRET", SECRET);
+    const body = JSON.stringify({ collectionId: "products" });
+
+    await post(body, { "x-wix-signature": sign(body) });
+
+    expect(sentryCaptureException).not.toHaveBeenCalled();
+    expect(sentryFlush).not.toHaveBeenCalled();
+  });
+
+  it("invalid-signature 401 does NOT call Sentry — attacker pressure, not an outage", async () => {
+    vi.stubEnv("WIX_WEBHOOK_SECRET", SECRET);
+
+    const res = await post("{}", { "x-wix-signature": "sha256=deadbeef" });
+
+    expect(res.status).toBe(401);
+    expect(sentryCaptureException).not.toHaveBeenCalled();
   });
 });
