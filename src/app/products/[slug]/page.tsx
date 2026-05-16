@@ -20,7 +20,7 @@ import { getCustomerVideoReviewsByProductSlug } from "@/lib/discovery/customer-v
 import { PdpShareButtons } from "@/components/product/PdpShareButtons";
 import { PdpViewItemTracker } from "@/components/product/PdpViewItemTracker";
 import { loadReviews } from "@/lib/discovery/google-reviews";
-import { getProductBySlug } from "@/lib/wix/products";
+import { getCollectionBySlug, getProductBySlug } from "@/lib/wix/products";
 import { logWixFailure } from "@/lib/wix/errors";
 import { listFabricSwatches } from "@/lib/wix/fabrics";
 import { getVideoByProductSlug } from "@/lib/videos/catalog";
@@ -133,11 +133,22 @@ export default async function PdpPage(props: {
   // the default render path so the LCP candidate doesn't change.
   const spinImages = extractSpinFrames(mediaItems);
   const stock = (product.stock ?? null) as StockBadgeInput | null;
-  const [crossSell, alsoBought, productBadges] = await Promise.all([
-    getCrossSellProducts(product),
-    getAlsoBoughtProducts(product),
-    getProductBadges(slug),
-  ]);
+  const [crossSell, alsoBought, productBadges, mattressesCollection] =
+    await Promise.all([
+      getCrossSellProducts(product),
+      getAlsoBoughtProducts(product),
+      getProductBadges(slug),
+      // cf-g640: resolve the mattresses collection so we can suppress the
+      // 15-year frame warranty section on standalone mattress PDPs (their
+      // manufacturer terms differ — surfacing the frame warranty there
+      // misrepresents coverage to the customer).
+      getCollectionBySlug("mattresses"),
+    ]);
+  const mattressesCollectionId = mattressesCollection?._id ?? null;
+  const isMattressProduct = Boolean(
+    mattressesCollectionId &&
+      product.collectionIds?.includes(mattressesCollectionId),
+  );
   const mattresses = isFutonFrame(slug) ? await getMesaMattresses() : [];
   let fabricSwatches: SwatchItem[] = [];
   let fabricSwatchError = false;
@@ -293,6 +304,7 @@ export default async function PdpPage(props: {
       <PdpWarrantyInfo
         productId={product._id ?? ""}
         productName={product.name ?? ""}
+        isMattress={isMattressProduct}
       />
 
       <PdpMattressBundle mattresses={mattresses} />

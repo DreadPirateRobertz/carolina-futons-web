@@ -24,6 +24,22 @@ export type PdpWarrantyInfoProps = {
   productId: string;
   /** Display product name — drives the ?productName pre-fill. */
   productName: string;
+  /**
+   * cf-g640 hot-patch: when true (standalone mattress SKU — product is
+   * a member of the Wix `mattresses` collection), suppress this section.
+   * Standalone mattresses carry separate manufacturer warranty terms,
+   * NOT the 15-year frame warranty advertised below. Surfacing this
+   * section on a mattress PDP misrepresents the warranty to the
+   * customer.
+   *
+   * Frames-with-bundled-mattress SKUs (e.g. "Cody — Loveseat &
+   * Mattress" futon bundle) are NOT in the mattresses collection and
+   * must keep the frame warranty section — gate the boolean on
+   * collection membership at the call site, not a name heuristic.
+   *
+   * Default `false` preserves existing render behavior for frames.
+   */
+  isMattress?: boolean;
 };
 
 /**
@@ -58,6 +74,9 @@ export function PdpWarrantyInfo(props: PdpWarrantyInfoProps) {
   const productId = props.productId.trim();
   const productName = props.productName.trim();
   if (!productId || !productName) return null;
+  // cf-g640: mattress PDPs render no warranty section (separate
+  // manufacturer terms apply — see prop doc).
+  if (props.isMattress) return null;
 
   const registerHref = buildRegisterHref(productId, productName);
 

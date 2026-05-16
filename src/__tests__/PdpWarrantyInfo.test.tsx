@@ -70,3 +70,74 @@ describe("PdpWarrantyInfo — render", () => {
     expect(policy).toHaveAttribute("href", "/warranty");
   });
 });
+
+// cf-g640 hot-patch: mattress PDPs (standalone-mattress SKUs in the
+// `mattresses` Wix collection) carry separate manufacturer warranty
+// terms, NOT the 15-year frame warranty. Surfacing this section on a
+// mattress PDP misrepresents the warranty contract to the customer
+// (legal exposure on NC implied-warranty law). Frames-with-bundled-
+// mattress SKUs (e.g. "Cody — Loveseat & Mattress" futon bundle) are
+// NOT in the mattresses collection — they keep the frame warranty.
+// Gate uses an explicit isMattress boolean rather than a productName
+// regex because the bundle case rules out name-based heuristics.
+describe("PdpWarrantyInfo — cf-g640 mattress gate", () => {
+  it("renders nothing when isMattress is true (standalone mattress SKU)", () => {
+    const { container } = render(
+      <PdpWarrantyInfo
+        productId="m-1"
+        productName="Beauty Rest Pillowtop Queen"
+        isMattress
+      />,
+    );
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("still renders when isMattress is false (frame product)", () => {
+    render(
+      <PdpWarrantyInfo
+        productId="f-1"
+        productName="Kingston Futon Frame"
+        isMattress={false}
+      />,
+    );
+    expect(
+      screen.getByRole("heading", {
+        name: new RegExp(`${BUSINESS.warrantyYears}-year warranty`, "i"),
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("defaults to rendering when isMattress is omitted (back-compat)", () => {
+    render(
+      <PdpWarrantyInfo
+        productId="f-1"
+        productName="Kingston Futon Frame"
+      />,
+    );
+    expect(
+      screen.getByRole("heading", {
+        name: new RegExp(`${BUSINESS.warrantyYears}-year warranty`, "i"),
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders for a futon-with-mattress bundle (frame-bearing — keeps frame warranty)", () => {
+    // Pinning the bundle case: "Cody — Loveseat & Mattress" is a futon
+    // frame product whose SKU bundles a mattress. The mattress portion
+    // of the bundle carries its own manufacturer warranty BUT the frame
+    // portion is what this section advertises — render it, since
+    // isMattress (the collection-membership signal) is false.
+    render(
+      <PdpWarrantyInfo
+        productId="b-1"
+        productName="Cody — Loveseat & Mattress"
+        isMattress={false}
+      />,
+    );
+    expect(
+      screen.getByRole("heading", {
+        name: new RegExp(`${BUSINESS.warrantyYears}-year warranty`, "i"),
+      }),
+    ).toBeInTheDocument();
+  });
+});
