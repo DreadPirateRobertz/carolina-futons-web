@@ -1,4 +1,5 @@
 import { callVelo, VeloRpcError } from "@/lib/wix/velo-client";
+import { logError } from "@/lib/logging/log-error";
 
 export type QuizOption = {
   value: string;
@@ -88,7 +89,8 @@ export async function getQuizRecommendations(
       args: [answers],
     });
   } catch (err) {
-    console.error("[styleQuiz] getQuizRecommendations failed:", err);
+    // cfw-6ngi: Velo upstream call failed — degrade to no recommendations.
+    await logError("style-quiz", "getQuizRecommendations", err);
     return [];
   }
 }
@@ -103,13 +105,11 @@ export async function captureQuizLead(
       args: [email, partialAnswers],
     });
   } catch (err) {
-    if (err instanceof VeloRpcError) {
-      console.error(
-        `[styleQuiz] captureQuizLead rpc failed: HTTP ${err.status}`,
-      );
-    } else {
-      console.error("[styleQuiz] captureQuizLead failed:", err);
-    }
+    // cfw-6ngi: HTTP status lands in Sentry's `extra` so a recurring
+    // 4xx from a specific Velo deploy is groupable, and unexpected
+    // (non-VeloRpcError) errors get their stack via captureException.
+    const httpStatus = err instanceof VeloRpcError ? err.status : undefined;
+    await logError("style-quiz", "captureQuizLead", err, { httpStatus });
     return { success: false };
   }
 }
@@ -123,7 +123,9 @@ export async function getPersonalizedCopy(
       args: [answers],
     });
   } catch (err) {
-    console.error("[styleQuiz] getPersonalizedCopy failed:", err);
+    // cfw-6ngi: copy-personalization is non-critical — fail open with a
+    // safe default profile so the quiz still finishes for the user.
+    await logError("style-quiz", "getPersonalizedCopy", err);
     return { copy: "", profileType: "style" };
   }
 }

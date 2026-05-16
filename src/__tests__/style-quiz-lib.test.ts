@@ -12,8 +12,17 @@ vi.mock("@/lib/wix/velo-client", async () => {
   return { ...actual, callVelo: veloMocks.callVelo };
 });
 
+// cfw-6ngi: all three style-quiz reader catches now route through the
+// shared logError helper. Mock here so failure-path tests assert call
+// shape rather than parsing console output.
+const mockLogError = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 beforeEach(() => {
   veloMocks.callVelo.mockReset();
+  mockLogError.mockReset();
 });
 
 describe("getQuizOptions", () => {
@@ -75,6 +84,12 @@ describe("getQuizRecommendations", () => {
     const { getQuizRecommendations } = await import("@/lib/wix/style-quiz");
     const result = await getQuizRecommendations({});
     expect(result).toEqual([]);
+    // cfw-6ngi: failure routes through logError("style-quiz", "getQuizRecommendations", err)
+    expect(mockLogError).toHaveBeenCalledWith(
+      "style-quiz",
+      "getQuizRecommendations",
+      expect.any(Error),
+    );
   });
 });
 
@@ -90,17 +105,35 @@ describe("captureQuizLead", () => {
     });
   });
 
-  it("returns success:false on error without rethrowing", async () => {
+  it("returns success:false on VeloRpcError and tags httpStatus", async () => {
     const { VeloRpcError } = await import("@/lib/wix/velo-client");
     veloMocks.callVelo.mockRejectedValueOnce(
       new VeloRpcError("styleQuiz/captureQuizLead", 429, "rate limited"),
     );
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { captureQuizLead } = await import("@/lib/wix/style-quiz");
     const result = await captureQuizLead("bad@example.com", {});
     expect(result).toEqual({ success: false });
-    expect(errSpy).toHaveBeenCalled();
-    errSpy.mockRestore();
+    // cfw-6ngi: VeloRpcError surfaces httpStatus in Sentry extras
+    expect(mockLogError).toHaveBeenCalledWith(
+      "style-quiz",
+      "captureQuizLead",
+      expect.any(VeloRpcError),
+      expect.objectContaining({ httpStatus: 429 }),
+    );
+  });
+
+  it("returns success:false on unexpected (non-VeloRpcError) error", async () => {
+    veloMocks.callVelo.mockRejectedValueOnce(new Error("network down"));
+    const { captureQuizLead } = await import("@/lib/wix/style-quiz");
+    const result = await captureQuizLead("x@example.com", {});
+    expect(result).toEqual({ success: false });
+    // Non-VeloRpcError: httpStatus undefined, helper still captures stack
+    expect(mockLogError).toHaveBeenCalledWith(
+      "style-quiz",
+      "captureQuizLead",
+      expect.any(Error),
+      expect.objectContaining({ httpStatus: undefined }),
+    );
   });
 });
 
@@ -122,5 +155,11 @@ describe("getPersonalizedCopy", () => {
     const { getPersonalizedCopy } = await import("@/lib/wix/style-quiz");
     const result = await getPersonalizedCopy({});
     expect(result).toEqual({ copy: "", profileType: "style" });
+    // cfw-6ngi: failure routes through logError("style-quiz", "getPersonalizedCopy", err)
+    expect(mockLogError).toHaveBeenCalledWith(
+      "style-quiz",
+      "getPersonalizedCopy",
+      expect.any(Error),
+    );
   });
 });
