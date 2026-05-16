@@ -12,7 +12,10 @@ import {
   getMesaMattresses,
   isFutonFrame,
 } from "@/lib/product/mattress-bundle";
-import { isStandaloneMattress } from "@/lib/product/warranty-gate";
+import {
+  flagSuspiciousMattressMembership,
+  isStandaloneMattress,
+} from "@/lib/product/warranty-gate";
 import { PdpRecentlyViewed } from "@/components/product/PdpRecentlyViewed";
 import { ShowroomCta } from "@/components/product/ShowroomCta";
 import { PdpReviews, pickPdpReviews } from "@/components/product/PdpReviews";
@@ -153,6 +156,23 @@ export default async function PdpPage(props: {
   // hedged. See warranty-gate.ts module docstring + the
   // FAIL-CLOSED describe block in its tests for the full rationale.
   const isMattressProduct = isStandaloneMattress(product, mattressesCollection);
+  // cf-tmdb (cf-g640.fu4): operator-side signal for merchandiser mis-
+  // tagging. isStandaloneMattress correctly suppresses the warranty
+  // section, but does it SILENTLY — a "Kingston Futon Frame" wrongly
+  // added to the mattresses collection loses its warranty copy with no
+  // signal to on-call. This Sentry breadcrumb fires only when the
+  // suppression is suspicious (frame-shape slug + mattresses
+  // membership) so the merchandiser can fix the CMS instead of the
+  // bug persisting silently. Fire-and-forget — never block the render.
+  if (flagSuspiciousMattressMembership(product, mattressesCollection, slug)) {
+    void logWixFailure(
+      "warranty-gate",
+      "suspicious-mattress-membership",
+      new Error(
+        `Product slug "${slug}" looks like a frame but is classified as a standalone mattress (warranty section suppressed). Investigate Wix Stores collection tagging.`,
+      ),
+    );
+  }
   const mattresses = isFutonFrame(slug) ? await getMesaMattresses() : [];
   let fabricSwatches: SwatchItem[] = [];
   let fabricSwatchError = false;

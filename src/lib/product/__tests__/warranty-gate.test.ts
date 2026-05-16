@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 
-import { isStandaloneMattress } from "@/lib/product/warranty-gate";
+import {
+  flagSuspiciousMattressMembership,
+  isStandaloneMattress,
+  looksLikeFrameByShape,
+} from "@/lib/product/warranty-gate";
 
 // cf-g640 reviewer-driven test suite (5-agent CR on PR #658).
 // Pins the FAIL-CLOSED posture for the PDP frame-warranty gate so a
@@ -96,5 +100,141 @@ describe("isStandaloneMattress — FAIL-CLOSED on indeterminate state (cf-g640 r
 
   it("returns true when BOTH collection lookup failed AND product is orphan", () => {
     expect(isStandaloneMattress({}, null)).toBe(true);
+  });
+});
+
+// cf-tmdb (cf-g640.fu4): merchandiser-mistake operator signal.
+// isStandaloneMattress correctly SUPPRESSES the warranty section when
+// a product is mis-tagged into mattresses; these helpers + the wiring
+// in page.tsx surface the bug to on-call so it gets fixed in the CMS,
+// not just papered over by the silent gate.
+
+describe("looksLikeFrameByShape — frame-shape token detector", () => {
+  it.each([
+    "kingston-futon-frame",
+    "cambridge-futon",
+    "aspen-murphy-bed",
+    "lowline-platform-bed-queen",
+    "cody-sofa-bed",
+    "urban-sofabed",
+    "cody-loveseat",
+  ])("returns true for frame-shape slug %s", (slug) => {
+    expect(looksLikeFrameByShape(slug)).toBe(true);
+  });
+
+  it.each([
+    "mesa-1000-mattress",
+    "mesa-3000-mattress",
+    "organic-cotton-mattress",
+    "twin-mattress-cover",
+    "herringbone-slipcover",
+    "bedside-lamp",
+    "gift-card-50",
+  ])("returns false for non-frame slug %s", (slug) => {
+    expect(looksLikeFrameByShape(slug)).toBe(false);
+  });
+
+  it("returns false for empty/whitespace input (defensive)", () => {
+    expect(looksLikeFrameByShape("")).toBe(false);
+  });
+
+  it("is case-insensitive on token match", () => {
+    expect(looksLikeFrameByShape("KINGSTON-FUTON-FRAME")).toBe(true);
+    expect(looksLikeFrameByShape("Mesa-1000-Mattress")).toBe(false);
+  });
+
+  it("does NOT match the bare 'bed' token (too noisy — mattresses use it too)", () => {
+    expect(looksLikeFrameByShape("bed-pillow-topper")).toBe(false);
+    expect(looksLikeFrameByShape("queen-bed-skirt")).toBe(false);
+  });
+});
+
+describe("flagSuspiciousMattressMembership — merchandiser-mistake signal", () => {
+  const mattresses = { _id: "col-mattresses" };
+
+  it("fires when product is in mattresses AND slug looks like a frame", () => {
+    // The cf-tmdb threat case: "Kingston Futon Frame" tagged into
+    // the mattresses collection by mistake. isStandaloneMattress
+    // returns true (suppresses warranty) but the slug shape says it's
+    // almost certainly a frame. On-call needs the signal.
+    expect(
+      flagSuspiciousMattressMembership(
+        { collectionIds: ["col-mattresses"] },
+        mattresses,
+        "kingston-futon-frame",
+      ),
+    ).toBe(true);
+  });
+
+  it("fires for a bundle-shape slug also in mattresses", () => {
+    expect(
+      flagSuspiciousMattressMembership(
+        { collectionIds: ["col-mattresses"] },
+        mattresses,
+        "cody-loveseat",
+      ),
+    ).toBe(true);
+  });
+
+  it("does NOT fire for a legitimate mattress (mattress slug + in mattresses)", () => {
+    // Real mattress — slug doesn't carry frame tokens. No conflict.
+    expect(
+      flagSuspiciousMattressMembership(
+        { collectionIds: ["col-mattresses"] },
+        mattresses,
+        "mesa-3000-mattress",
+      ),
+    ).toBe(false);
+  });
+
+  it("does NOT fire for a frame NOT in mattresses (the happy path)", () => {
+    // Frame product, correctly tagged. No suppression, no signal.
+    expect(
+      flagSuspiciousMattressMembership(
+        { collectionIds: ["col-futon-frames"] },
+        mattresses,
+        "kingston-futon-frame",
+      ),
+    ).toBe(false);
+  });
+
+  it("does NOT fire for a futon-with-mattress bundle (in futon-frames AND has mattress in name)", () => {
+    // Bundle SKUs live in futon-frames (NOT mattresses) — the gate's
+    // bundle-correctness pin from the existing cf-g640 suite. Signal
+    // must respect that — it fires ONLY when isStandaloneMattress
+    // returns true.
+    expect(
+      flagSuspiciousMattressMembership(
+        { collectionIds: ["col-futon-frames"] },
+        mattresses,
+        "cody-loveseat-with-mattress",
+      ),
+    ).toBe(false);
+  });
+
+  it("fires under fail-closed indeterminate state IF slug shape qualifies", () => {
+    // Indeterminate state (mattressesCollection is null) → isStandalone
+    // returns true → if slug shape ALSO qualifies, the suspicion is
+    // valid. On-call should see "Wix outage AND frame-shaped slug —
+    // investigate whether the membership data is correct."
+    expect(
+      flagSuspiciousMattressMembership(
+        { collectionIds: ["col-futon-frames"] },
+        null,
+        "kingston-futon-frame",
+      ),
+    ).toBe(true);
+  });
+
+  it("does NOT fire under indeterminate state for non-frame slug", () => {
+    // Indeterminate + non-frame slug — could be a real mattress
+    // during an outage. No signal warranted.
+    expect(
+      flagSuspiciousMattressMembership(
+        { collectionIds: ["col-futon-frames"] },
+        null,
+        "mesa-3000-mattress",
+      ),
+    ).toBe(false);
   });
 });
