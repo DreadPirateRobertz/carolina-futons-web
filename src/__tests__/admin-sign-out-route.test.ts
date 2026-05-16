@@ -83,3 +83,51 @@ describe("POST /api/admin/sign-out", () => {
     consoleSpy.mockRestore();
   });
 });
+
+// Pins the logError migration so an accidental revert to a bare
+// console.error("[admin/sign-out] …") (or to a string-interpolated
+// prefix that bypasses the helper) fails loudly. Asserts on the
+// console.error sink because logError forwards there in every env; the
+// Sentry forwarder is prod-only and unit-tested in log.test.ts.
+describe("POST /api/admin/sign-out — logError migration", () => {
+  it("emits the bracketed '[admin/sign-out] upstream logout failed' prefix with the thrown err as the second arg", async () => {
+    cookieStore.set("wix-session", { value: JSON.stringify(memberTokens) });
+    const thrown = new Error("Wix down");
+    logoutSdk.mockRejectedValueOnce(thrown);
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { POST } = await import("@/app/api/admin/sign-out/route");
+    await POST(makeReq("https://test.local/api/admin/sign-out") as never);
+    expect(errSpy).toHaveBeenCalledTimes(1);
+    expect(errSpy.mock.calls[0]![0]).toBe(
+      "[admin/sign-out] upstream logout failed",
+    );
+    expect(errSpy.mock.calls[0]![1]).toBe(thrown);
+    errSpy.mockRestore();
+  });
+
+  it("forwards non-Error throws (string reason) as the second arg, unchanged", async () => {
+    cookieStore.set("wix-session", { value: JSON.stringify(memberTokens) });
+    logoutSdk.mockRejectedValueOnce("network-flap");
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { POST } = await import("@/app/api/admin/sign-out/route");
+    await POST(makeReq("https://test.local/api/admin/sign-out") as never);
+    expect(errSpy).toHaveBeenCalledTimes(1);
+    expect(errSpy.mock.calls[0]![0]).toBe(
+      "[admin/sign-out] upstream logout failed",
+    );
+    expect(errSpy.mock.calls[0]![1]).toBe("network-flap");
+    errSpy.mockRestore();
+  });
+
+  it("does NOT log on a visitor sign-out (no session was present → no upstream call)", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { POST } = await import("@/app/api/admin/sign-out/route");
+    const res = await POST(
+      makeReq("https://test.local/api/admin/sign-out") as never,
+    );
+    expect(res.status).toBe(303);
+    expect(logoutSdk).not.toHaveBeenCalled();
+    expect(errSpy).not.toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
+});

@@ -6,6 +6,7 @@ import {
   SESSION_COOKIE_OPTIONS,
   parseSessionCookie,
 } from "@/lib/auth/session";
+import { logError } from "@/lib/observability/log";
 import { getWixClientWithTokens } from "@/lib/wix-client";
 
 // cfw-wef (cfw-6qd.1): plain-HTML sign-out target for the owner-mode shell.
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
       // Cookie is already cleared — surface the failure for diagnostics
       // but do not block the redirect: the owner is signed out client-side
       // either way.
-      console.error("[admin/sign-out] upstream logout failed:", err);
+      logError("admin/sign-out", "upstream logout failed", err);
     }
   }
 
