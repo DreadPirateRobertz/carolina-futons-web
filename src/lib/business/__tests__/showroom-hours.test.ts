@@ -114,4 +114,47 @@ describe("showroom-hours — getShowroomScheduleLine", () => {
       "Closed Sunday through Tuesday. Closed Wednesday through Saturday.",
     );
   });
+
+  // cf-7pk0 melania CR fold: case-insensitive + whitespace-tolerant
+  // closed-marker comparison. Wix CMS editors may type "closed" /
+  // "CLOSED" / " Closed " — formatter must still pick the
+  // "Closed daysLabel." branch, not leak raw editor input.
+  it("treats lowercase 'closed' as the closed-marker (case-insensitive)", async () => {
+    mockGetSiteContent.mockImplementation(async (key) => {
+      if (key === "visit.hours.sun-tue") return "10 am – 5 pm";
+      if (key === "visit.hours.wed-sat") return "closed";
+      return "";
+    });
+    const { getShowroomScheduleLine } = await import("../showroom-hours");
+    const result = await getShowroomScheduleLine();
+    expect(result).toBe(
+      "Open Sunday through Tuesday, 10 am – 5 pm. Closed Wednesday through Saturday.",
+    );
+  });
+
+  it("treats uppercase 'CLOSED' as the closed-marker", async () => {
+    mockGetSiteContent.mockImplementation(async (key) => {
+      if (key === "visit.hours.sun-tue") return "CLOSED";
+      if (key === "visit.hours.wed-sat") return "10 am – 5 pm";
+      return "";
+    });
+    const { getShowroomScheduleLine } = await import("../showroom-hours");
+    const result = await getShowroomScheduleLine();
+    expect(result).toBe(
+      "Closed Sunday through Tuesday. Open Wednesday through Saturday, 10 am – 5 pm.",
+    );
+  });
+
+  it("trims surrounding whitespace before comparing to the closed-marker", async () => {
+    mockGetSiteContent.mockImplementation(async (key) => {
+      if (key === "visit.hours.sun-tue") return "  Closed  ";
+      if (key === "visit.hours.wed-sat") return "10 am – 5 pm";
+      return "";
+    });
+    const { getShowroomScheduleLine } = await import("../showroom-hours");
+    const result = await getShowroomScheduleLine();
+    expect(result).toBe(
+      "Closed Sunday through Tuesday. Open Wednesday through Saturday, 10 am – 5 pm.",
+    );
+  });
 });

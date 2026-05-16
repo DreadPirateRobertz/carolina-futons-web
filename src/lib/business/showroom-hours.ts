@@ -68,7 +68,12 @@ export async function getShowroomScheduleLine(): Promise<string> {
 }
 
 function formatHalf(daysLabel: string, hoursText: string): string {
-  if (hoursText === SHOWROOM_CLOSED_MARKER) {
+  // cf-7pk0 melania CR fold: case-insensitive + whitespace-tolerant
+  // comparison. Wix CMS editors (Brenda et al) may type "closed",
+  // "CLOSED", or " Closed " — exact-string match leaks the raw editor
+  // input through the formatter ("Open Wed-Sat, closed.") instead of
+  // taking the "Closed Wed-Sat." branch.
+  if (hoursText.trim().toLowerCase() === SHOWROOM_CLOSED_MARKER.toLowerCase()) {
     return `Closed ${daysLabel}.`;
   }
   return `Open ${daysLabel}, ${hoursText}.`;
