@@ -4,6 +4,7 @@ import { ContactForm } from "@/components/contact/ContactForm";
 import { FogScene } from "@/components/mascot/FogScene";
 import { BUSINESS } from "@/lib/business/contact-info";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
 // cf-3qt.5.6: hero + press inquiries CTA + media-contact form. The form
 // reuses the shared sendContactForm Server Action so press inquiries land
@@ -17,14 +18,18 @@ const TITLE = "Press & Media — Carolina Futons";
 const DESCRIPTION =
   "Press resources, story angles, and a direct line to Carolina Futons — a family-owned futon and natural-mattress retailer in Hendersonville, North Carolina, in business since 1991.";
 
+const OG = {
+  title: TITLE,
+  description: DESCRIPTION,
+  images: [DEFAULT_OG_IMAGE],
+};
+
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
-  openGraph: {
-    title: TITLE,
-    description: DESCRIPTION,
-    images: [DEFAULT_OG_IMAGE],
-  },
+  openGraph: OG,
+  // cf-2qxr: per-page twitter card mirror.
+  twitter: twitterFromOpenGraph(OG),
 };
 
 // Revalidate at most once per day so the years-in-business claim flips

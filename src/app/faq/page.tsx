@@ -6,6 +6,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { groupFaqsByCategory, listFaqs } from "@/lib/cms/faq";
 import { buildFaqPageSchema } from "@/lib/seo/json-ld";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
 // cf-3qt.4.1: /faq page.
 //
@@ -26,14 +27,18 @@ const TITLE = "FAQ — Carolina Futons";
 const DESCRIPTION =
   "Common questions about Carolina Futons — shipping, warranty, returns, showroom hours. Family-owned in Hendersonville, NC since 1991.";
 
+const OG = {
+  title: TITLE,
+  description: DESCRIPTION,
+  images: [DEFAULT_OG_IMAGE],
+};
+
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
-  openGraph: {
-    title: TITLE,
-    description: DESCRIPTION,
-    images: [DEFAULT_OG_IMAGE],
-  },
+  openGraph: OG,
+  // cf-2qxr: per-page twitter card mirror.
+  twitter: twitterFromOpenGraph(OG),
 };
 
 export default async function FaqPage() {

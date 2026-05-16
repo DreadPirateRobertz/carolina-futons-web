@@ -7,20 +7,25 @@ import { FogScene } from "@/components/mascot/FogScene";
 import { BUSINESS } from "@/lib/business/contact-info";
 import { getShowroomScheduleLine } from "@/lib/business/showroom-hours";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
 const TITLE = "Contact — Carolina Futons";
 const DESCRIPTION =
   "Reach the Carolina Futons team with questions about frames, mattresses, delivery, or warranty. Family-owned in Hendersonville, NC since 1991.";
 
+const OG = {
+  title: TITLE,
+  description: DESCRIPTION,
+  images: [DEFAULT_OG_IMAGE],
+};
+
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: "/contact" },
-  openGraph: {
-    title: TITLE,
-    description: DESCRIPTION,
-    images: [DEFAULT_OG_IMAGE],
-  },
+  openGraph: OG,
+  // cf-2qxr: per-page twitter card mirror.
+  twitter: twitterFromOpenGraph(OG),
 };
 
 export default async function ContactPage() {

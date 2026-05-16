@@ -597,3 +597,89 @@ describe("/terms metadata", () => {
     expect(ogImageUrls(termsMetadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
   });
 });
+
+// ── cf-2qxr (cf-o5j5.2): pin twitter:card on the same 10 PR #556 pages ──
+//
+// cf-e55k (PR #582 merged) added twitter:card to 5 priority pages
+// (home/about/visit/gift-cards/guides/[slug]) using twitterFromOpenGraph.
+// The 10 pages PR #556 introduced still lacked the twitter mirror — these
+// pins ensure every social-preview surface ships with the same Facebook /
+// Slack / iMessage / X unfurl shape.
+//
+// Contract per page:
+//   - twitter.card === 'summary_large_image'
+//   - twitter.title  === openGraph.title
+//   - twitter.description === openGraph.description
+//   - twitter.images === openGraph.images (mirrored via twitterFromOpenGraph)
+
+describe("cf-2qxr — twitter:card mirror for PR #556 pages", () => {
+  const pages = [
+    { name: "/community-gallery", meta: galleryMetadata },
+    { name: "/community-gallery/submit", meta: gallerySubmitMetadata },
+    { name: "/contact", meta: contactMetadata },
+    { name: "/faq", meta: faqMetadata },
+    { name: "/press", meta: pressMetadata },
+    { name: "/privacy", meta: privacyMetadata },
+    { name: "/referral", meta: referralMetadata },
+    { name: "/signup", meta: signupMetadata },
+    { name: "/terms", meta: termsMetadata },
+  ];
+
+  for (const { name, meta } of pages) {
+    describe(name, () => {
+      it("has twitter.card === 'summary_large_image'", () => {
+        expect((meta.twitter as { card?: string } | undefined)?.card).toBe(
+          "summary_large_image",
+        );
+      });
+
+      it("twitter.title mirrors openGraph.title", () => {
+        const tTitle = (meta.twitter as { title?: string } | undefined)?.title;
+        expect(tTitle).toBe(meta.openGraph?.title);
+      });
+
+      it("twitter.description mirrors openGraph.description", () => {
+        const tDesc = (meta.twitter as { description?: string } | undefined)
+          ?.description;
+        expect(tDesc).toBe(meta.openGraph?.description);
+      });
+
+      it("twitter.images includes DEFAULT_OG_IMAGE url", () => {
+        const tImgs = (meta.twitter as { images?: unknown } | undefined)
+          ?.images;
+        const urls = ogImageUrls(tImgs);
+        expect(urls).toContain(DEFAULT_OG_IMAGE.url);
+      });
+    });
+  }
+});
+
+// /referral/share/[code] uses generateMetadata (async) so it's tested
+// against the dynamic call, not the static metadata export above.
+describe("cf-2qxr — twitter:card mirror for /referral/share/[code]", () => {
+  it("twitter mirrors openGraph for the dynamic share page", async () => {
+    mockGetReferralByCode.mockResolvedValueOnce({
+      success: true,
+      referral: {
+        valid: true,
+        referrerName: "Jane Doe",
+        discountPct: 5,
+      },
+    });
+    const { generateMetadata } = await import(
+      "@/app/referral/share/[code]/page"
+    );
+    const m = await generateMetadata({
+      params: Promise.resolve({ code: "AB12CD" }),
+    });
+    expect((m.twitter as { card?: string } | undefined)?.card).toBe(
+      "summary_large_image",
+    );
+    expect((m.twitter as { title?: string } | undefined)?.title).toBe(
+      m.openGraph?.title,
+    );
+    expect((m.twitter as { description?: string } | undefined)?.description).toBe(
+      m.openGraph?.description,
+    );
+  });
+});
