@@ -4,6 +4,7 @@ export type DashboardTabKey =
   | "overview"
   | "orders"
   | "wishlist"
+  | "addresses"
   | "profile"
   | "preferences";
 
@@ -17,6 +18,8 @@ export const DASHBOARD_TABS: readonly DashboardTab[] = [
   { key: "overview", href: "/dashboard", label: "Overview" },
   { key: "orders", href: "/dashboard/orders", label: "Orders" },
   { key: "wishlist", href: "/dashboard/wishlist", label: "Wishlist" },
+  // cf-dmos (cf-zn5b.2 G-9): saved-address management.
+  { key: "addresses", href: "/dashboard/addresses", label: "Addresses" },
   { key: "profile", href: "/dashboard/profile", label: "Profile" },
   { key: "preferences", href: "/dashboard/preferences", label: "Preferences" },
 ] as const;
