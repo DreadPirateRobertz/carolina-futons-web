@@ -20,6 +20,7 @@
 // wix/products.ts. Companion to PR #485 (cf-r192) on wix-client.ts.
 import "server-only";
 
+import { cache } from "react";
 import * as Sentry from "@sentry/nextjs";
 import type { Product as WixProductSDK } from "@wix/auto_sdk_stores_products";
 import type { Collection as WixCollectionSDK } from "@wix/auto_sdk_stores_collections";
@@ -253,17 +254,25 @@ export async function listProductsOnSale(collectionId: string): Promise<WixProdu
   }
 }
 
-export async function getCollectionBySlug(slug: string): Promise<WixCollection | null> {
-  if (USE_FIXTURES) return getFixtureCollectionBySlug(slug) as unknown as WixCollection | null;
-  try {
-    const client = getWixClient();
-    const result = await client.collections.getCollectionBySlug(slug);
-    return (result.collection ?? null) as WixCollection | null;
-  } catch (err) {
-    await logWixFailure("wix", `getCollectionBySlug(${slug})`, err);
-    return null;
-  }
-}
+// cf-gsca (cf-g640.fu1): request-scoped memoization via React.cache. The
+// mattresses collection (cf-g640 fail-closed gate) is looked up on every
+// PDP render; without this wrap the same slug fires a fresh Wix SDK
+// roundtrip per server-component subtree that consults it. cache() keys
+// by argument identity within one RSC render, so distinct slugs stay
+// independent and the cache is cleared between requests automatically.
+export const getCollectionBySlug = cache(
+  async (slug: string): Promise<WixCollection | null> => {
+    if (USE_FIXTURES) return getFixtureCollectionBySlug(slug) as unknown as WixCollection | null;
+    try {
+      const client = getWixClient();
+      const result = await client.collections.getCollectionBySlug(slug);
+      return (result.collection ?? null) as WixCollection | null;
+    } catch (err) {
+      await logWixFailure("wix", `getCollectionBySlug(${slug})`, err);
+      return null;
+    }
+  },
+);
 
 export async function listCollections(limit = 25): Promise<WixCollection[]> {
   if (USE_FIXTURES) return FIXTURE_COLLECTIONS.slice(0, limit) as unknown as WixCollection[];
