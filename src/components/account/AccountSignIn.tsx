@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 
+import { logError } from "@/lib/observability/log";
+
 // Rejects protocol-relative (//evil.com), backslash-bypass (/\evil.com —
 // browsers normalize /\ to // on window.location assignment), and absolute
 // URLs. Applied to both the outgoing callbackUrl and the incoming redirectTo
@@ -60,7 +62,7 @@ export function AccountSignIn({ next }: { next?: string }) {
       }
       throw new Error("unexpected_response");
     } catch (err) {
-      console.error("[AccountSignIn] login failed", err);
+      logError("AccountSignIn", "login failed", err);
       setError("Sign-in failed. Please try again.");
       setLoading(false);
     }
