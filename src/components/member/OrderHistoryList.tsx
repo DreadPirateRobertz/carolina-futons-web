@@ -1,13 +1,22 @@
+import Link from "next/link";
+
 import type { MemberOrderSummary } from "@/lib/wix/orders";
 
 export type OrderHistoryListProps = {
   orders: readonly MemberOrderSummary[];
+  // cf-fd94 (cf-zn5b.1 G-7): the per-row Track-shipment link needs both
+  // orderNumber + memberEmail to construct the /track-order lookup URL.
+  // Optional so the existing (pre-G-7) callers without email still render.
+  memberEmail?: string | null;
 };
 
 // cf-m1vy: render the member's order history as a list of cards with
 // date, total, status pills, and item count. Empty state owns its own
 // copy + CTA so the page doesn't need to branch.
-export function OrderHistoryList({ orders }: OrderHistoryListProps) {
+export function OrderHistoryList({
+  orders,
+  memberEmail,
+}: OrderHistoryListProps) {
   if (orders.length === 0) {
     return (
       <div
@@ -30,15 +39,38 @@ export function OrderHistoryList({ orders }: OrderHistoryListProps) {
     >
       {orders.map((order) => (
         <li key={order.id}>
-          <OrderHistoryCard order={order} />
+          <OrderHistoryCard order={order} memberEmail={memberEmail} />
         </li>
       ))}
     </ul>
   );
 }
 
-function OrderHistoryCard({ order }: { order: MemberOrderSummary }) {
+// cf-fd94: render a per-order "Track shipment" link when the order is
+// fulfilled AND we have both an order number + the member's email (the
+// /track-order lookup needs both to verify ownership before exposing
+// tracking data). Returns null otherwise so unshipped orders, orders
+// without numbers, and unauthenticated views all skip the link cleanly.
+function trackShipmentHref(
+  order: MemberOrderSummary,
+  memberEmail: string | null | undefined,
+): string | null {
+  if (order.fulfillmentStatus !== "FULFILLED") return null;
+  if (!order.number) return null;
+  if (!memberEmail) return null;
+  const params = new URLSearchParams({ n: order.number, e: memberEmail });
+  return `/track-order?${params.toString()}`;
+}
+
+function OrderHistoryCard({
+  order,
+  memberEmail,
+}: {
+  order: MemberOrderSummary;
+  memberEmail: string | null | undefined;
+}) {
   const orderLabel = order.number ? `Order #${order.number}` : "Order";
+  const trackHref = trackShipmentHref(order, memberEmail);
   return (
     <article
       data-slot="order-history-card"
@@ -82,6 +114,18 @@ function OrderHistoryCard({ order }: { order: MemberOrderSummary }) {
       {order.itemCount > 0 ? (
         <p className="mt-3 text-xs text-cf-muted">
           {order.itemCount === 1 ? "1 item" : `${order.itemCount} items`}
+        </p>
+      ) : null}
+
+      {trackHref ? (
+        <p className="mt-3">
+          <Link
+            href={trackHref}
+            data-slot="order-track-link"
+            className="text-sm font-medium text-cf-cta underline-offset-2 hover:underline"
+          >
+            Track shipment →
+          </Link>
         </p>
       ) : null}
     </article>

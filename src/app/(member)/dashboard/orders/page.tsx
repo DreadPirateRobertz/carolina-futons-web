@@ -54,7 +54,9 @@ export default async function DashboardOrdersPage() {
           </Link>
         </header>
 
-        <OrderHistoryList orders={orders} />
+        {/* cf-fd94: pass memberEmail through so each FULFILLED row
+            can render a Track-shipment Link to /track-order. */}
+        <OrderHistoryList orders={orders} memberEmail={memberEmail} />
       </section>
     </DashboardShell>
   );
