@@ -20,6 +20,13 @@ vi.mock("@/lib/warranty/warranty-registration", () => ({
   registerWarrantyForMember: (...args: unknown[]) => mockRegister(...args),
 }));
 
+// cfw-qnuf: unexpected-error path now routes through logError. Mock here
+// so the 500 test asserts call shape rather than parsing console output.
+const mockLogError = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 const VALID_SESSION = {
   tokens: {
     accessToken: { value: "a", expiresAt: 0 },
@@ -195,10 +202,17 @@ describe("POST /api/warranty/register — helper failure mapping", () => {
     expect((await res.json()).error).toMatch(/couldn'?t/i);
   });
 
-  it("returns 500 when the helper throws unexpectedly", async () => {
+  it("returns 500 + ships logError when the helper throws unexpectedly (cfw-qnuf)", async () => {
     mockRegister.mockRejectedValueOnce(new Error("boom"));
+    mockLogError.mockClear();
     const POST = await route();
     const res = await POST(makeRequest(VALID_BODY));
     expect(res.status).toBe(500);
+    // cfw-qnuf: failure routes through logError("warranty/register", "POST", err)
+    expect(mockLogError).toHaveBeenCalledWith(
+      "warranty/register",
+      "POST",
+      expect.any(Error),
+    );
   });
 });

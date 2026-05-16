@@ -13,6 +13,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getMemberSession } from "@/lib/auth/member";
 import { submitWarrantyClaimForMember } from "@/lib/warranty/warranty-claim";
 import { isValidIssueType } from "@/lib/warranty/warranty-issue-types";
+import { logError } from "@/lib/logging/log-error";
 
 export const dynamic = "force-dynamic";
 
@@ -139,7 +140,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       502,
     );
   } catch (err) {
-    console.error("[/api/warranty/claim] unexpected error:", err);
+    // cfw-i7gi: parallel to cfw-qnuf — ship unexpected catch to Sentry
+    // via the shared logger. 4xx mapping (invalid_input, wix_error)
+    // untouched; this branch is for the genuine "we didn't expect this"
+    // case where the response is a 500.
+    await logError("warranty/claim", "POST", err);
     return bad("Unexpected error. Please try again shortly.", 500);
   }
 }

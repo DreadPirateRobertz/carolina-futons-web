@@ -4,6 +4,7 @@ import { WishlistShareButton } from "@/components/member/WishlistShareButton";
 import { getWishlist } from "@/app/actions/wishlist";
 import { getMemberSession } from "@/lib/auth/member";
 import { getWixClientWithTokens } from "@/lib/wix-client";
+import { logError } from "@/lib/logging/log-error";
 import type { WishlistResponse } from "@/lib/wishlist/wishlist-types";
 
 export const dynamic = "force-dynamic";
@@ -34,7 +35,11 @@ export default async function DashboardWishlistPage() {
       initialItems = result?.items ?? [];
     }
   } catch (err) {
-    console.error("[wishlist] getWishlist failed:", err);
+    // cfw-r6w8: ship to Sentry so the empty-state-on-failure path is
+    // observable. Member dashboard renders the empty state below
+    // either way — the goal is to flag the upstream wishlist outage,
+    // not to surface the error to the member.
+    await logError("wishlist", "getWishlist", err);
     wishlistLoadFailed = true;
   }
 
