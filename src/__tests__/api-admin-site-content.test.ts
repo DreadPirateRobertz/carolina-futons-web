@@ -41,6 +41,12 @@ vi.mock("@/lib/wix/errors", () => ({
   logWixFailure: (...args: unknown[]) => mockLogWixFailure(...args),
 }));
 
+// cfw-s77v: history-write failure now routes through logError.
+const mockLogError = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 const mockRevalidateTag = vi.fn();
 vi.mock("next/cache", () => ({
   revalidateTag: (...args: unknown[]) => mockRevalidateTag(...args),
@@ -563,7 +569,7 @@ describe("POST /api/admin/site-content — cfw-jgl history wire-up", () => {
     expect(mockWriteSiteContentHistory).not.toHaveBeenCalled();
   });
 
-  it("still returns 200 + revalidates when writeSiteContentHistory itself fails (best-effort contract)", async () => {
+  it("still returns 200 + revalidates + ships logError when writeSiteContentHistory itself fails (cfw-s77v)", async () => {
     mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
     mockLookup.mockResolvedValueOnce({ value: "old" });
     mockUpsert.mockResolvedValueOnce({});
@@ -572,20 +578,25 @@ describe("POST /api/admin/site-content — cfw-jgl history wire-up", () => {
       reason: "wix_error",
       status: 404,
     });
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockLogError.mockClear();
 
     const res = await callPost({ key: "footer.tagline", value: "new" });
 
     expect(res.status).toBe(200);
     expect(mockRevalidateTag).toHaveBeenCalledWith("site-content", "default");
-    // The route logs failed history writes for diagnostics — collection
-    // unprovisioned (404) is the most common production case.
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "[admin/site-content] history write failed for footer.tagline",
-      ),
+    // cfw-s77v: history-write failure routes through the shared logger
+    // with reason + status in extras (404 = collection unprovisioned;
+    // most common production case).
+    expect(mockLogError).toHaveBeenCalledWith(
+      "admin/site-content",
+      "writeSiteContentHistory",
+      expect.any(Error),
+      expect.objectContaining({
+        key: "footer.tagline",
+        reason: "wix_error",
+        status: 404,
+      }),
     );
-    consoleSpy.mockRestore();
   });
 
   it("history.before='' when no previous row existed (insert path)", async () => {

@@ -16,9 +16,18 @@ vi.mock("@/lib/newsletter/newsletter-store", async (importOriginal) => {
   return { ...actual, upsertSubscriber: storeMocks.upsertSubscriber };
 });
 
+// cfw-p9rf: upsertSubscriber failure now routes through logError. Mock
+// here so the failure-path test asserts call shape (incl. hashedEmail
+// in extras for cfw-coc PII policy) rather than parsing console output.
+const mockLogError = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 beforeEach(() => {
   storeMocks.upsertSubscriber.mockReset();
   storeMocks.upsertSubscriber.mockResolvedValue({ created: true });
+  mockLogError.mockReset();
 });
 
 function fd(fields: Record<string, string>): FormData {
@@ -94,6 +103,31 @@ describe("subscribeToNewsletter — persistence", () => {
     expect(result.status).toBe("error");
     if (result.status !== "error") return;
     expect(result.storeError).toBeTruthy();
+  });
+
+  it("ships store-failure to logError with hashedEmail in extras (cfw-p9rf + cfw-coc)", async () => {
+    // Pin the LOG_PII_SALT so the hash is deterministic per run; the
+    // exact value doesn't matter, only that hashEmail is invoked and
+    // the raw address never reaches Sentry.
+    process.env.LOG_PII_SALT = "test-salt-cfw-p9rf";
+    storeMocks.upsertSubscriber.mockRejectedValueOnce(new Error("EACCES"));
+    const { subscribeToNewsletter } = await import("@/app/newsletter/actions");
+    await subscribeToNewsletter(null, fd({ email: "leak-me@example.com" }));
+
+    expect(mockLogError).toHaveBeenCalledWith(
+      "newsletter",
+      "upsertSubscriber",
+      expect.any(Error),
+      expect.objectContaining({
+        hashedEmail: expect.stringMatching(/^[0-9a-f]{12}$/),
+      }),
+    );
+    // PII guard: raw email must NOT appear in the extras object.
+    const calls = mockLogError.mock.calls;
+    const extrasArg = calls[0]?.[3] as Record<string, unknown> | undefined;
+    expect(JSON.stringify(extrasArg ?? {})).not.toContain(
+      "leak-me@example.com",
+    );
   });
 });
 
