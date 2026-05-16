@@ -12,6 +12,7 @@ import {
   getMesaMattresses,
   isFutonFrame,
 } from "@/lib/product/mattress-bundle";
+import { isStandaloneMattress } from "@/lib/product/warranty-gate";
 import { PdpRecentlyViewed } from "@/components/product/PdpRecentlyViewed";
 import { ShowroomCta } from "@/components/product/ShowroomCta";
 import { PdpReviews, pickPdpReviews } from "@/components/product/PdpReviews";
@@ -20,7 +21,7 @@ import { getCustomerVideoReviewsByProductSlug } from "@/lib/discovery/customer-v
 import { PdpShareButtons } from "@/components/product/PdpShareButtons";
 import { PdpViewItemTracker } from "@/components/product/PdpViewItemTracker";
 import { loadReviews } from "@/lib/discovery/google-reviews";
-import { getProductBySlug } from "@/lib/wix/products";
+import { getCollectionBySlug, getProductBySlug } from "@/lib/wix/products";
 import { logWixFailure } from "@/lib/wix/errors";
 import { listFabricSwatches } from "@/lib/wix/fabrics";
 import { getVideoByProductSlug } from "@/lib/videos/catalog";
@@ -133,11 +134,25 @@ export default async function PdpPage(props: {
   // the default render path so the LCP candidate doesn't change.
   const spinImages = extractSpinFrames(mediaItems);
   const stock = (product.stock ?? null) as StockBadgeInput | null;
-  const [crossSell, alsoBought, productBadges] = await Promise.all([
-    getCrossSellProducts(product),
-    getAlsoBoughtProducts(product),
-    getProductBadges(slug),
-  ]);
+  const [crossSell, alsoBought, productBadges, mattressesCollection] =
+    await Promise.all([
+      getCrossSellProducts(product),
+      getAlsoBoughtProducts(product),
+      getProductBadges(slug),
+      // cf-g640: resolve the mattresses collection so we can suppress the
+      // 15-year frame warranty section on standalone mattress PDPs (their
+      // manufacturer terms differ — surfacing the frame warranty there
+      // misrepresents coverage to the customer).
+      getCollectionBySlug("mattresses"),
+    ]);
+  // cf-g640: PDP frame-warranty gate. isStandaloneMattress fail-closes
+  // on indeterminate state (Wix outage, slug rename, orphan product)
+  // so a mattress PDP never accidentally claims the 15-year frame
+  // warranty during a degraded window — express-warranty
+  // misrepresentation under NC GS 25-2-313 is the legal cost being
+  // hedged. See warranty-gate.ts module docstring + the
+  // FAIL-CLOSED describe block in its tests for the full rationale.
+  const isMattressProduct = isStandaloneMattress(product, mattressesCollection);
   const mattresses = isFutonFrame(slug) ? await getMesaMattresses() : [];
   let fabricSwatches: SwatchItem[] = [];
   let fabricSwatchError = false;
@@ -293,6 +308,7 @@ export default async function PdpPage(props: {
       <PdpWarrantyInfo
         productId={product._id ?? ""}
         productName={product.name ?? ""}
+        isMattress={isMattressProduct}
       />
 
       <PdpMattressBundle mattresses={mattresses} />

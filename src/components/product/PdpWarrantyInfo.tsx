@@ -24,6 +24,26 @@ export type PdpWarrantyInfoProps = {
   productId: string;
   /** Display product name — drives the ?productName pre-fill. */
   productName: string;
+  /**
+   * cf-g640 hot-patch: when true, suppress this section. Standalone
+   * mattresses carry separate manufacturer warranty terms, NOT the
+   * 15-year frame warranty advertised below — surfacing the frame
+   * warranty on a mattress PDP is an express-warranty
+   * misrepresentation under NC GS 25-2-313 (UCC § 2-313 adoption).
+   *
+   * Callers should drive this prop from collection membership via
+   * `isStandaloneMattress(product, mattressesCollection)` in
+   * @/lib/product/warranty-gate, never a product-name regex —
+   * frame-with-mattress bundle SKUs (a futon whose SKU bundles a
+   * mattress) live in the futon-frames collection and must keep the
+   * frame-warranty section; a name regex would mis-classify them.
+   *
+   * The helper fail-closes on indeterminate state (Wix outage, slug
+   * rename, orphan product) — see warranty-gate.ts module docstring.
+   *
+   * Default `false` preserves existing render behavior for frames.
+   */
+  isMattress?: boolean;
 };
 
 /**
@@ -34,8 +54,10 @@ export type PdpWarrantyInfoProps = {
  * @returns `/warranty/register?productId=…&productName=…`.
  *
  * WHY URLSearchParams: encodes `&` / spaces / em-dashes so a product
- * name like `"Cody — Loveseat & Mattress"` survives the round-trip into
- * the form's `?productName` slot without breaking param parsing.
+ * name with embedded reserved-or-display chars (e.g. ampersand + em-
+ * dash + spaces in a futon-loveseat-bundle SKU display name) survives
+ * the round-trip into the form's `?productName` slot without breaking
+ * param parsing.
  */
 function buildRegisterHref(productId: string, productName: string): string {
   const params = new URLSearchParams();
@@ -58,6 +80,9 @@ export function PdpWarrantyInfo(props: PdpWarrantyInfoProps) {
   const productId = props.productId.trim();
   const productName = props.productName.trim();
   if (!productId || !productName) return null;
+  // cf-g640: mattress PDPs render no warranty section (separate
+  // manufacturer terms apply — see prop doc).
+  if (props.isMattress) return null;
 
   const registerHref = buildRegisterHref(productId, productName);
 

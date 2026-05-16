@@ -49,17 +49,20 @@ describe("PdpWarrantyInfo — render", () => {
   });
 
   it("URL-encodes special characters in productName", () => {
+    // Exercise the reserved/display chars (ampersand, em-dash, spaces)
+    // that broke prior implementations. Product-name string is purely
+    // a fixture for the encoding contract; not tied to a live SKU.
     render(
       <PdpWarrantyInfo
         productId="p-1"
-        productName="Cody — Loveseat & Mattress"
+        productName="Test — Frame & Mattress Combo"
       />,
     );
     const cta = screen.getByRole("link", { name: /register warranty/i });
     const href = cta.getAttribute("href") ?? "";
     // URLSearchParams encodes & + em-dash + spaces safely.
-    expect(href).not.toContain("Cody — Loveseat & Mattress");
-    expect(href).toMatch(/productName=Cody.*Loveseat.*Mattress/);
+    expect(href).not.toContain("Test — Frame & Mattress Combo");
+    expect(href).toMatch(/productName=Test.*Frame.*Mattress/);
   });
 
   it("also links to the /warranty policy page for full coverage details", () => {
@@ -68,5 +71,63 @@ describe("PdpWarrantyInfo — render", () => {
     );
     const policy = screen.getByRole("link", { name: /full warranty details/i });
     expect(policy).toHaveAttribute("href", "/warranty");
+  });
+});
+
+// cf-g640 hot-patch: mattress PDPs (standalone-mattress SKUs in the
+// `mattresses` Wix collection) carry separate manufacturer warranty
+// terms, NOT the 15-year frame warranty. Surfacing this section on a
+// mattress PDP is an express-warranty misrepresentation under NC GS
+// 25-2-313 (UCC § 2-313 adoption). Frame-with-mattress bundle SKUs (a
+// futon whose SKU bundles a mattress) live in `futon-frames`, NOT
+// `mattresses`, and keep the frame-warranty section. Gate uses an
+// explicit isMattress boolean rather than a productName regex because
+// the bundle case rules out name-based heuristics. The collection-
+// membership decision is unit-tested in
+// `src/lib/product/__tests__/warranty-gate.test.ts`.
+describe("PdpWarrantyInfo — cf-g640 mattress gate", () => {
+  it("renders nothing when isMattress is true (standalone mattress SKU)", () => {
+    const { container } = render(
+      <PdpWarrantyInfo
+        productId="m-1"
+        productName="Beauty Rest Pillowtop Queen"
+        isMattress
+      />,
+    );
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("still renders when isMattress is false (frame product)", () => {
+    render(
+      <PdpWarrantyInfo
+        productId="f-1"
+        productName="Kingston Futon Frame"
+        isMattress={false}
+      />,
+    );
+    expect(
+      screen.getByRole("heading", {
+        name: new RegExp(`${BUSINESS.warrantyYears}-year warranty`, "i"),
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders for a futon-with-mattress bundle (frame-bearing — keeps frame warranty)", () => {
+    // Pinning the bundle case: a futon SKU that bundles a mattress is
+    // a FRAME product (frame portion is what's warranted as 15-year).
+    // Must NOT be suppressed since isMattress (the collection-
+    // membership signal at the call site) is false.
+    render(
+      <PdpWarrantyInfo
+        productId="b-1"
+        productName="Generic Futon Loveseat & Mattress Bundle"
+        isMattress={false}
+      />,
+    );
+    expect(
+      screen.getByRole("heading", {
+        name: new RegExp(`${BUSINESS.warrantyYears}-year warranty`, "i"),
+      }),
+    ).toBeInTheDocument();
   });
 });
