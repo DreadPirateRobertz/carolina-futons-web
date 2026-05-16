@@ -6,6 +6,7 @@ import {
   lookupCollectionItemByKey,
   upsertCollectionItemByKey,
 } from "@/lib/wix/data";
+import { logError } from "@/lib/logging/log-error";
 import { logWixFailure } from "@/lib/wix/errors";
 import { SITE_CONTENT_CACHE_TAG } from "@/lib/cms/site-content";
 import { validateOwnerEditKey } from "@/lib/cms/owner-edit-validation";
@@ -164,8 +165,10 @@ export async function POST(req: NextRequest) {
     // Required env not populated — fail loudly (the env() helper throws
     // with a clear "Missing required env var" message). Translate to a
     // 503 so the editor surfaces "service unavailable" rather than the
-    // generic 5xx.
-    console.error("[admin/image-upload] WIX_API_KEY not set:", err);
+    // generic 5xx. cfw-hctl: ship to Sentry so a deploy-time misconfig
+    // is loud in on-call instead of stuck in console output that no
+    // one scrapes in prod.
+    await logError("admin/image-upload", "config", err);
     return NextResponse.json(
       { error: "Image upload not configured for this environment." },
       { status: 503 },
@@ -263,10 +266,10 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     // Look-up failure is non-fatal — if Wix is flaky, prefer the upload+
     // upsert path to succeed and audit ifMatch instead of a wrong before.
-    console.error(
-      "[admin/image-upload] lookupCollectionItemByKey failed (non-fatal):",
-      err,
-    );
+    // cfw-hctl: distinct op ("lookupBefore") so Sentry alerting can
+    // distinguish flaky-read-before-write from the env-config failure
+    // above. Key in extras for per-key grouping.
+    await logError("admin/image-upload", "lookupBefore", err, { key });
     beforeValue = ifMatch;
   }
 

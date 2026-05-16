@@ -23,6 +23,7 @@
 import { NextResponse } from "next/server";
 
 import { hashEmail } from "@/lib/log/hash-pii";
+import { logError } from "@/lib/logging/log-error";
 import {
   coerceNewsletterRequest,
   hasNewsletterErrors,
@@ -71,13 +72,20 @@ export async function POST(request: Request) {
       );
     }
     if (err instanceof Error && err.name === "TimeoutError") {
-      console.error("[api/newsletter] velo timeout:", err);
+      // cfw-1hw7: distinct op so Velo timeouts are a different Sentry
+      // group from unexpected store throws (different recovery actions
+      // for on-call). cfw-coc PII guard: hashed email only.
+      await logError("api/newsletter", "veloTimeout", err, {
+        hashedEmail: hashEmail(req.email),
+      });
       return NextResponse.json(
         { ok: false, error: "velo-unreachable" },
         { status: 502 },
       );
     }
-    console.error("[api/newsletter] upsertSubscriber failed:", err);
+    await logError("api/newsletter", "upsertSubscriber", err, {
+      hashedEmail: hashEmail(req.email),
+    });
     return NextResponse.json(
       { ok: false, error: "velo-error" },
       { status: 502 },
