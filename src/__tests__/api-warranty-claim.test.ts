@@ -20,6 +20,13 @@ vi.mock("@/lib/warranty/warranty-claim", () => ({
   submitWarrantyClaimForMember: (...args: unknown[]) => mockSubmit(...args),
 }));
 
+// cfw-i7gi: unexpected-error path now routes through logError. Mock here
+// so the 500 test asserts call shape rather than parsing console output.
+const mockLogError = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 const VALID_SESSION = {
   tokens: {
     accessToken: { value: "a", expiresAt: 0 },
@@ -219,10 +226,17 @@ describe("POST /api/warranty/claim — helper failure mapping", () => {
     expect((await res.json()).error).toMatch(/couldn'?t/i);
   });
 
-  it("returns 500 when helper throws unexpectedly", async () => {
+  it("returns 500 + ships logError when helper throws unexpectedly (cfw-i7gi)", async () => {
     mockSubmit.mockRejectedValueOnce(new Error("boom"));
+    mockLogError.mockClear();
     const POST = await route();
     const res = await POST(makeRequest(VALID_BODY));
     expect(res.status).toBe(500);
+    // cfw-i7gi: failure routes through logError("warranty/claim", "POST", err)
+    expect(mockLogError).toHaveBeenCalledWith(
+      "warranty/claim",
+      "POST",
+      expect.any(Error),
+    );
   });
 });
