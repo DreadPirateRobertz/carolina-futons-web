@@ -15,11 +15,18 @@ vi.mock("@/lib/wix-client", () => ({
   }),
 }));
 
+// cfw-logger migration: searchOrders catch routes through logError.
+const logErrorMock = vi.fn();
+vi.mock("@/lib/logger", () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
+}));
+
 const tokens = { accessToken: { value: "a" }, refreshToken: { value: "r" } } as unknown as Tokens;
 
 beforeEach(() => {
   wixMocks.searchOrders.mockReset();
   wixMocks.getOrder.mockReset();
+  logErrorMock.mockReset();
 });
 
 describe("getOrdersForMember", () => {
@@ -102,11 +109,41 @@ describe("getOrdersForMember", () => {
 
   it("returns [] and logs when searchOrders throws", async () => {
     wixMocks.searchOrders.mockRejectedValueOnce(new Error("rpc down"));
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { getOrdersForMember } = await import("@/lib/wix/orders");
     const out = await getOrdersForMember({ contactId: "C-1", tokens });
     expect(out).toEqual([]);
-    expect(errSpy).toHaveBeenCalled();
-    errSpy.mockRestore();
+    // Observability now routes through logError (cfw-logger migration).
+    expect(logErrorMock).toHaveBeenCalled();
+  });
+});
+
+// cfw-logger migration: searchOrders catch routes through
+// logError("orders", "searchOrders failed", err). Pin the contract.
+describe("getOrdersForMember — logError observability", () => {
+  it("calls logError when searchOrders throws", async () => {
+    wixMocks.searchOrders.mockRejectedValueOnce(new Error("rpc down"));
+    const { getOrdersForMember } = await import("@/lib/wix/orders");
+    await getOrdersForMember({ contactId: "C-1", tokens });
+    expect(logErrorMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("tags logError with scope='orders' and message='searchOrders failed'", async () => {
+    wixMocks.searchOrders.mockRejectedValueOnce(new Error("rpc down"));
+    const { getOrdersForMember } = await import("@/lib/wix/orders");
+    await getOrdersForMember({ contactId: "C-1", tokens });
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "orders",
+      "searchOrders failed",
+      expect.anything(),
+    );
+  });
+
+  it("passes the caught Error instance directly to logError (preserves stack)", async () => {
+    const err = new Error("rpc down");
+    wixMocks.searchOrders.mockRejectedValueOnce(err);
+    const { getOrdersForMember } = await import("@/lib/wix/orders");
+    await getOrdersForMember({ contactId: "C-1", tokens });
+    const [, , payload] = logErrorMock.mock.calls[0]!;
+    expect(payload).toBe(err);
   });
 });
