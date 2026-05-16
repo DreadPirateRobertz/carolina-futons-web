@@ -39,11 +39,12 @@ import { MetaPixel } from "@/components/analytics/MetaPixel";
 import { GA4Tag } from "@/components/analytics/GA4Tag";
 import { ConsentMode } from "@/components/analytics/ConsentMode";
 import { ConsentBanner } from "@/components/analytics/ConsentBanner";
-import { cookies } from "next/headers";
-import {
-  CONSENT_COOKIE_NAME,
-  parseConsentCookie,
-} from "@/lib/consent/consent-state";
+import { ConsentClientBoot } from "@/components/analytics/ConsentClientBoot";
+// cf-0klm: the previous cookies() + parseConsentCookie chain that ran here
+// opted the entire route tree out of ISR. Consent state is now handled
+// client-side: ConsentMode emits a static all-denied default snippet,
+// ConsentClientBoot upgrades it post-hydration if a stored choice cookie
+// exists, and ConsentBanner reads its own cookie in a useEffect on mount.
 import { THEME_INIT_SCRIPT } from "@/lib/themeInitScript";
 
 const playfair = Playfair_Display({
@@ -92,9 +93,6 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
-  const consentChoice = parseConsentCookie(
-    (await cookies()).get(CONSENT_COOKIE_NAME)?.value,
-  );
 
   // cfw-o2q + cfw-25t: thread owner-editable footer copy from SiteContent.
   // Fallbacks match the Footer component's defaults so the rendered shell
@@ -249,7 +247,14 @@ export default async function RootLayout({
         <TikTokPixel />
         <PinterestTag />
         <MetaPixel />
-        <ConsentBanner initialChoice={consentChoice} />
+        <ConsentBanner />
+        {/* cf-0klm: post-hydration consent upgrade — emits gtag('consent',
+            'update', map) for returning users whose stored cf_consent
+            cookie says "granted" (or a granular grant map). The server-
+            rendered ConsentMode snippet defaults to all-denied; this
+            client-only effect restores the user's choice within a frame
+            of hydration without touching layout's cookies(). */}
+        <ConsentClientBoot />
       </body>
     </html>
   );
