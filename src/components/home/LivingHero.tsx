@@ -27,7 +27,9 @@ import { VintageSunRays } from "@/components/mascot/VintageSunRays";
 import { StargazingHero } from "@/components/mascot/StargazingHero";
 
 export function LivingHero({ compact = false }: { compact?: boolean } = {}) {
-  const { phase, time, mounted, reduceMotion } = useTimeOfDay({ trackTime: true });
+  const { phase, time, mounted, reduceMotion } = useTimeOfDay({
+    trackTime: true,
+  });
 
   // Mount the three non-active phases lazily so initial render paints
   // only one full-bleed SVG. The other three appear after first idle —
@@ -69,16 +71,36 @@ export function LivingHero({ compact = false }: { compact?: boolean } = {}) {
               : "Bear in the Blue Ridge mountains"
       }
     >
-      <Phase active={phase === "night"} mounted={mounted} mountInactive={mountInactive}>
-        <StargazingHero time={time} reduceMotion={reduceMotion} compact={compact} />
+      <Phase
+        active={phase === "night"}
+        mounted={mounted}
+        mountInactive={mountInactive}
+      >
+        <StargazingHero
+          time={time}
+          reduceMotion={reduceMotion}
+          compact={compact}
+        />
       </Phase>
-      <Phase active={phase === "dawn"} mounted={mounted} mountInactive={mountInactive}>
+      <Phase
+        active={phase === "dawn"}
+        mounted={mounted}
+        mountInactive={mountInactive}
+      >
         <VintageSunRays phase="dawn" time={time} />
       </Phase>
-      <Phase active={phase === "day"} mounted={mounted} mountInactive={mountInactive}>
+      <Phase
+        active={phase === "day"}
+        mounted={mounted}
+        mountInactive={mountInactive}
+      >
         <MascotWorldHero />
       </Phase>
-      <Phase active={phase === "dusk"} mounted={mounted} mountInactive={mountInactive}>
+      <Phase
+        active={phase === "dusk"}
+        mounted={mounted}
+        mountInactive={mountInactive}
+      >
         <VintageSunRays phase="dusk" time={time} />
       </Phase>
     </div>
@@ -106,7 +128,15 @@ function Phase({
       style={{
         position: "absolute",
         inset: 0,
-        opacity: !mounted ? 0 : active ? 1 : 0,
+        // cfw-qz7: paint the active phase at full opacity on SSR + first
+        // client frame. Pre-fix the `!mounted ? 0 :` gate sent the active
+        // phase to opacity 0 until hydration completed, and browsers do
+        // not measure LCP on opacity:0 elements — Home LCP fell back to
+        // smaller in-view text. SSR's default phase ("day" per useTimeOfDay's
+        // initial state) renders at opacity 1; if the hydrated real phase
+        // differs (night/dawn/dusk), the post-mount transition (next line)
+        // takes care of the cross-fade.
+        opacity: active ? 1 : 0,
         transition: mounted ? "opacity 4s ease-in-out" : "none",
         pointerEvents: active ? "auto" : "none",
       }}
