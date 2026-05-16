@@ -6,6 +6,7 @@ import {
   type SpinActionState,
   type SpinPrize,
 } from "@/app/spin/spin-state";
+import { logError } from "@/lib/logging/log-error";
 
 const COOLDOWN_HOURS = 24;
 const COOLDOWN_MS = COOLDOWN_HOURS * 60 * 60 * 1000;
@@ -62,7 +63,10 @@ export async function spinWheel(
       cache: "no-store",
       signal: AbortSignal.timeout(5_000),
     }).catch((err) => {
-      console.error("[spin] recordSpinGrant failed (non-fatal):", err);
+      // cfw-mbx0: fire-and-forget — kick off the logError but don't
+      // await it (the surrounding code path already returned a prize to
+      // the user; nothing useful happens by blocking on the Sentry POST).
+      void logError("spin", "recordSpinGrant", err, { prizeId: prize.id });
     });
   }
 

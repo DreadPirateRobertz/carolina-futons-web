@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { callVelo, VeloRpcError } from "@/lib/wix/velo-client";
+import { logError } from "@/lib/logging/log-error";
 
 export const dynamic = "force-dynamic";
 
@@ -48,12 +49,17 @@ export async function POST(req: NextRequest) {
     await callVelo({ method: veloMethod, args: [payload] });
     return NextResponse.json({ ok: true });
   } catch (err) {
-    if (err instanceof VeloRpcError) {
-      console.error(`[email/trigger] Velo ${veloMethod} failed:`, err.status, err.body);
-    } else {
-      console.error(`[email/trigger] unexpected error:`, err);
-    }
-    // Non-fatal — email triggers must not block the primary user flow.
+    // cfw-xm49: collapses VeloRpcError vs unexpected branches into one
+    // logError call with the discriminator in extras (veloMethod is
+    // always set; httpStatus only when err is a VeloRpcError). Email
+    // triggers are non-fatal — the user-visible flow continues even
+    // when the queue write fails.
+    const httpStatus = err instanceof VeloRpcError ? err.status : undefined;
+    const veloBody = err instanceof VeloRpcError ? err.body : undefined;
+    await logError("email/trigger", veloMethod, err, {
+      httpStatus,
+      veloBody,
+    });
     return NextResponse.json({ ok: false, error: "trigger-failed" }, { status: 200 });
   }
 }
