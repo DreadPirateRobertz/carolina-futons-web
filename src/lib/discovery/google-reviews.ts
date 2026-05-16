@@ -1,3 +1,4 @@
+import { logError } from "@/lib/logger";
 import {
   REVIEWS,
   type Review,
@@ -177,7 +178,11 @@ export async function loadReviews(
     });
     return { ...result, source: "google", ok: true };
   } catch (err) {
-    console.error("[google-reviews] load failed:", err);
+    logError(
+      "google-reviews",
+      "load failed",
+      err instanceof Error ? err : { err },
+    );
     return {
       reviews: [],
       averageRating: null,

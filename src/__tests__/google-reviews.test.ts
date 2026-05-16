@@ -1,4 +1,12 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+// cfw-logger migration: loadReviews's catch branch routes through
+// logError so a fetch outage shows up in Sentry under
+// source=google-reviews. The mock isolates the test from real Sentry.
+const logErrorMock = vi.fn();
+vi.mock("@/lib/logger", () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
+}));
 
 import {
   fetchGoogleReviews,
@@ -8,6 +16,10 @@ import {
   type GbpReviewsResponse,
 } from "@/lib/discovery/google-reviews";
 import { REVIEWS } from "@/lib/discovery/reviews";
+
+beforeEach(() => {
+  logErrorMock.mockReset();
+});
 
 function gbpReview(overrides: Partial<GbpReview> = {}): GbpReview {
   return {
@@ -222,9 +234,6 @@ describe("loadReviews", () => {
   });
 
   it("returns ok=false + empty list when the fetch errors (friendly degradation)", async () => {
-    // Suppress the expected console.error so the test output stays clean —
-    // ok=false is the assertion that proves we routed through the catch.
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const fetchImpl = vi.fn(async () => {
       throw new Error("network down");
     }) as unknown as typeof fetch;
@@ -241,6 +250,59 @@ describe("loadReviews", () => {
     expect(result.ok).toBe(false);
     expect(result.source).toBe("empty");
     expect(result.reviews).toEqual([]);
-    errorSpy.mockRestore();
+  });
+});
+
+// cfw-logger migration: loadReviews's catch branch routes through
+// logError("google-reviews", "load failed", err). Pin the contract.
+describe("loadReviews — logError observability", () => {
+  const fetchError = new Error("network down");
+  const fetchImpl = (() =>
+    vi.fn(async () => {
+      throw fetchError;
+    }) as unknown as typeof fetch)();
+
+  it("calls logError when the upstream fetch throws", async () => {
+    await loadReviews({
+      fetchImpl,
+      env: {
+        NODE_ENV: "production",
+        GBP_ACCESS_TOKEN: "tok",
+        GBP_ACCOUNT_ID: "acct",
+        GBP_LOCATION_ID: "loc",
+      },
+    });
+    expect(logErrorMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("tags logError with scope='google-reviews' and message='load failed'", async () => {
+    await loadReviews({
+      fetchImpl,
+      env: {
+        NODE_ENV: "production",
+        GBP_ACCESS_TOKEN: "tok",
+        GBP_ACCOUNT_ID: "acct",
+        GBP_LOCATION_ID: "loc",
+      },
+    });
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "google-reviews",
+      "load failed",
+      expect.anything(),
+    );
+  });
+
+  it("passes the caught Error instance directly to logError (preserves stack)", async () => {
+    await loadReviews({
+      fetchImpl,
+      env: {
+        NODE_ENV: "production",
+        GBP_ACCESS_TOKEN: "tok",
+        GBP_ACCOUNT_ID: "acct",
+        GBP_LOCATION_ID: "loc",
+      },
+    });
+    const [, , payload] = logErrorMock.mock.calls[0]!;
+    expect(payload).toBe(fetchError);
   });
 });
