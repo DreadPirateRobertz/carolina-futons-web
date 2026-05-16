@@ -1,5 +1,6 @@
 "use server";
 
+import { logError } from "@/lib/observability/log";
 import type { SurveyActionState } from "@/app/survey/survey-state";
 
 const FETCH_TIMEOUT_MS = 8_000;
@@ -19,7 +20,7 @@ export async function submitSurvey(
 
   const base = process.env.WIX_VELO_SITE_URL;
   if (!base) {
-    console.error("[survey] WIX_VELO_SITE_URL not set");
+    logError("survey", "WIX_VELO_SITE_URL not set");
     return { status: "error", error: GENERIC_ERROR };
   }
 
@@ -35,12 +36,12 @@ export async function submitSurvey(
       },
     );
     if (!res.ok) {
-      console.error("[survey] Velo responded", res.status);
+      logError("survey", "Velo responded with non-2xx", res.status);
       return { status: "error", error: GENERIC_ERROR };
     }
     return { status: "success" };
   } catch (err) {
-    console.error("[survey] fetch failed:", err);
+    logError("survey", "fetch failed", err);
     return { status: "error", error: GENERIC_ERROR };
   }
 }

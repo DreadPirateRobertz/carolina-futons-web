@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { addToWishlistFromPdp } from "@/app/actions/wishlist";
+import { logError } from "@/lib/observability/log";
 
 export type PdpWishlistButtonProps = {
   productId: string;
@@ -113,7 +114,7 @@ async function redirectToSignIn(returnTo: string): Promise<void> {
     }
     window.location.href = data.authUrl;
   } catch (err) {
-    console.error("[PdpWishlistButton] sign-in init failed", err);
+    logError("PdpWishlistButton", "sign-in init failed", err);
     // Fallback: hard-navigate to the in-app sign-in page so the user can
     // click through manually.
     window.location.href = `/account?return_to=${encodeURIComponent(returnTo)}`;
