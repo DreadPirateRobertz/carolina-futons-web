@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 
+// cfw-to8z: config-misconfig path routes through logError.
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 const TEST_SECRET = "test-cross-rig-secret";
 
 function makeRequest(
@@ -31,7 +37,7 @@ const BASE_BODY = {
 beforeEach(() => {
   vi.stubEnv("CROSS_RIG_SECRET", TEST_SECRET);
   vi.spyOn(console, "log").mockImplementation(() => {});
-  vi.spyOn(console, "error").mockImplementation(() => {});
+  mockLogError.mockReset();
 });
 
 afterEach(() => {
@@ -85,7 +91,7 @@ describe("POST /api/cross-rig — auth", () => {
     expect(res.status).toBe(200);
   });
 
-  it("returns 500 when CROSS_RIG_SECRET env is not set (fail closed)", async () => {
+  it("returns 500 + ships logError when CROSS_RIG_SECRET env is not set (cfw-to8z)", async () => {
     vi.unstubAllEnvs(); // clear the stub so the var is absent
     vi.stubEnv("CROSS_RIG_SECRET", "");
     const POST = await route();
@@ -96,6 +102,12 @@ describe("POST /api/cross-rig — auth", () => {
     expect(res.status).toBe(500);
     const body = await res.json();
     expect(body.ok).toBe(false);
+    // cfw-to8z: misconfig ships to Sentry with synthesized Error
+    expect(mockLogError).toHaveBeenCalledWith(
+      "api/cross-rig",
+      "config",
+      expect.any(Error),
+    );
   });
 });
 
