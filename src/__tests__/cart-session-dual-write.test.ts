@@ -1,10 +1,18 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
+import type { WixCart } from "@/lib/wix/cart";
+
+// Mock the Sentry-backed error helper so tests don't fire @sentry/nextjs
+// + Sentry.flush during the rejection/HTTP-error branches.
+const logWixFailure = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/wix/errors", () => ({
+  logWixFailure: (...args: unknown[]) => logWixFailure(...args),
+}));
+
 import {
   buildDualWritePayload,
   syncCartSession,
 } from "@/lib/wix/cart-session-dual-write";
-import type { WixCart } from "@/lib/wix/cart";
 
 // cf-cart-session-dual-write: the helper must be a no-op on bad inputs and
 // must NEVER throw — the cart Server Actions invoke it without awaiting and
@@ -82,9 +90,10 @@ describe("syncCartSession (cf-cart-session-dual-write)", () => {
   const originalEnv = process.env.WIX_VELO_SITE_URL;
 
   beforeEach(() => {
-    fetchSpy = vi.fn().mockResolvedValue({ ok: true });
+    fetchSpy = vi.fn().mockResolvedValue({ ok: true, status: 200 });
     globalThis.fetch = fetchSpy as unknown as typeof globalThis.fetch;
     process.env.WIX_VELO_SITE_URL = "https://www.example.com";
+    logWixFailure.mockClear();
   });
 
   afterEach(() => {
@@ -139,5 +148,60 @@ describe("syncCartSession (cf-cart-session-dual-write)", () => {
     expect(errSpy).toHaveBeenCalledOnce();
     expect(errSpy.mock.calls[0]![0]).toContain("[cart-session-dual-write]");
     errSpy.mockRestore();
+  });
+
+  // cf-puqx (cf-f9o1.fu2): silent-failure-hunter on PR #611 caught that
+  // `.catch()` only fires on NETWORK failures — a 5xx from the Velo bridge
+  // resolves the fetch promise with `ok: false` and was silently dropped.
+  // Mobile-app cart drift is the consequence. These tests pin the contract:
+  // every non-2xx response must surface a Sentry breadcrumb so on-call sees
+  // the divergence, but must still not throw (fire-and-forget contract).
+  describe("HTTP status handling (cf-puqx)", () => {
+    it("tags Sentry on a 500 response", async () => {
+      fetchSpy.mockResolvedValueOnce({ ok: false, status: 500 });
+      syncCartSession(fakeCart());
+      // microtask + tick — fetch resolves, then ok-check + log run on next.
+      await new Promise((r) => setTimeout(r, 0));
+      expect(logWixFailure).toHaveBeenCalledOnce();
+      const [source, op, err] = logWixFailure.mock.calls[0]!;
+      expect(source).toBe("cart");
+      expect(op).toBe("syncCartSession");
+      expect((err as Error).message).toContain("500");
+    });
+
+    it("tags Sentry on a 4xx response (e.g. 404)", async () => {
+      fetchSpy.mockResolvedValueOnce({ ok: false, status: 404 });
+      syncCartSession(fakeCart());
+      await new Promise((r) => setTimeout(r, 0));
+      expect(logWixFailure).toHaveBeenCalledOnce();
+      const [, , err] = logWixFailure.mock.calls[0]!;
+      expect((err as Error).message).toContain("404");
+    });
+
+    it("does NOT tag Sentry on a 200 OK", async () => {
+      syncCartSession(fakeCart());
+      await new Promise((r) => setTimeout(r, 0));
+      expect(logWixFailure).not.toHaveBeenCalled();
+    });
+
+    it("still tags Sentry on a network rejection (parity with HTTP path)", async () => {
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const networkErr = new Error("velo-down");
+      fetchSpy.mockRejectedValueOnce(networkErr);
+      syncCartSession(fakeCart());
+      await new Promise((r) => setTimeout(r, 0));
+      // logWixFailure called with the original Error from the rejection.
+      expect(logWixFailure).toHaveBeenCalledWith(
+        "cart",
+        "syncCartSession",
+        networkErr,
+      );
+      errSpy.mockRestore();
+    });
+
+    it("does not throw when the response is non-ok (fire-and-forget contract)", () => {
+      fetchSpy.mockResolvedValueOnce({ ok: false, status: 503 });
+      expect(() => syncCartSession(fakeCart())).not.toThrow();
+    });
   });
 });
