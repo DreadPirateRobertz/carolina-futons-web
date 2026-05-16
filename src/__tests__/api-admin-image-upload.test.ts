@@ -508,3 +508,105 @@ describe("POST /api/admin/image-upload (cfw-6qd.8)", () => {
     expect(data.resolvedUrl).toBe("https://cdn/flat.jpg");
   });
 });
+
+// Pins the logError migration of the two direct console.error calls in
+// this route (WIX_API_KEY env-missing + lookupCollectionItemByKey
+// non-fatal failure). logWixFailure calls — a separate helper covering
+// the generate-upload-url and PUT-upload failure paths — are left
+// untouched; they have their own migration path.
+describe("POST /api/admin/image-upload — logError migration", () => {
+  it("emits the bracketed '[admin/image-upload] WIX_API_KEY not set' prefix with the env-helper err on WIX_API_KEY unset", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+    vi.stubEnv("WIX_API_KEY", "");
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const fd = new FormData();
+    fd.set("file", makeFile(new Uint8Array([0xff]), "image/jpeg", "x.jpg"));
+    fd.set("key", "hero.image");
+
+    const res = await callPost(fd);
+
+    expect(res.status).toBe(503);
+    const ourCall = errSpy.mock.calls.find(
+      (c) => c[0] === "[admin/image-upload] WIX_API_KEY not set",
+    );
+    expect(ourCall).toBeDefined();
+    expect(ourCall![1]).toBeInstanceOf(Error);
+    errSpy.mockRestore();
+  });
+
+  it("does NOT log the WIX_API_KEY prefix when the env var IS set (the env-missing branch is skipped)", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        // generate-upload-url 200 → upload URL ack
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({ uploadUrl: "https://wix.local/put" }),
+            { status: 200 },
+          ),
+        )
+        // PUT upload 200 → file descriptor
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({ file: { id: "m-1", url: "https://cdn/ok.jpg" } }),
+            { status: 200 },
+          ),
+        ),
+    );
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const fd = new FormData();
+    fd.set("file", makeFile(new Uint8Array([0xff]), "image/jpeg", "x.jpg"));
+    fd.set("key", "hero.image");
+
+    await callPost(fd);
+    const ourCalls = errSpy.mock.calls.filter(
+      (c) => c[0] === "[admin/image-upload] WIX_API_KEY not set",
+    );
+    expect(ourCalls).toHaveLength(0);
+    errSpy.mockRestore();
+  });
+
+  it("logs the non-fatal lookupCollectionItemByKey failure with the migrated prefix", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+    const lookupErr = new Error("dolt-flap");
+    mockLookup.mockRejectedValueOnce(lookupErr);
+    mockUpsert.mockResolvedValueOnce(undefined);
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({ uploadUrl: "https://wix.local/put" }),
+            { status: 200 },
+          ),
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({ file: { id: "m-1", url: "https://cdn/ok.jpg" } }),
+            { status: 200 },
+          ),
+        ),
+    );
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const fd = new FormData();
+    fd.set("file", makeFile(new Uint8Array([0xff]), "image/jpeg", "x.jpg"));
+    fd.set("key", "hero.image");
+
+    const res = await callPost(fd);
+    expect(res.status).toBe(200);
+    const ourCall = errSpy.mock.calls.find(
+      (c) =>
+        c[0] ===
+        "[admin/image-upload] lookupCollectionItemByKey failed (non-fatal)",
+    );
+    expect(ourCall).toBeDefined();
+    expect(ourCall![1]).toBe(lookupErr);
+    errSpy.mockRestore();
+  });
+});
