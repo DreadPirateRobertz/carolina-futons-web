@@ -54,7 +54,7 @@ export default async function DashboardOrdersPage() {
           </Link>
         </header>
 
-        <OrderHistoryList orders={orders} />
+        <OrderHistoryList orders={orders} memberEmail={memberEmail} />
       </section>
     </DashboardShell>
   );

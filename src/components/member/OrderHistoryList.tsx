@@ -1,13 +1,44 @@
+import Link from "next/link";
+
 import type { MemberOrderSummary } from "@/lib/wix/orders";
 
 export type OrderHistoryListProps = {
   orders: readonly MemberOrderSummary[];
+  /**
+   * The signed-in member's login email. Used to prefill the /track-order
+   * lookup form so the customer doesn't have to retype the email Wix
+   * keys the order on. Optional — `null` means the email is unavailable
+   * (anonymous render or auth-edge case), in which case the per-order
+   * "Track order" link is suppressed (the /track-order form requires
+   * both orderNumber + email).
+   */
+  memberEmail?: string | null;
 };
+
+/**
+ * Fulfillment statuses that mean the carrier has the package — either
+ * fully or partially fulfilled. Wix's NOT_FULFILLED, CANCELED, and any
+ * future status default to "no tracking available yet" semantics.
+ */
+const TRACKABLE_FULFILLMENT_STATUSES = new Set([
+  "FULFILLED",
+  "PARTIALLY_FULFILLED",
+]);
 
 // cf-m1vy: render the member's order history as a list of cards with
 // date, total, status pills, and item count. Empty state owns its own
 // copy + CTA so the page doesn't need to branch.
-export function OrderHistoryList({ orders }: OrderHistoryListProps) {
+//
+// cf-fd94 (cf-zn5b.1): shipped / partially-fulfilled orders carry a
+// "Track order" link to `/track-order?orderNumber=…&email=…`. The link
+// is suppressed when the order has no number, the member email is
+// unavailable, or fulfillmentStatus indicates the package hasn't
+// shipped yet — the /track-order page requires both fields and there's
+// no point linking when one is absent.
+export function OrderHistoryList({
+  orders,
+  memberEmail = null,
+}: OrderHistoryListProps) {
   if (orders.length === 0) {
     return (
       <div
@@ -30,14 +61,39 @@ export function OrderHistoryList({ orders }: OrderHistoryListProps) {
     >
       {orders.map((order) => (
         <li key={order.id}>
-          <OrderHistoryCard order={order} />
+          <OrderHistoryCard order={order} memberEmail={memberEmail} />
         </li>
       ))}
     </ul>
   );
 }
 
-function OrderHistoryCard({ order }: { order: MemberOrderSummary }) {
+/**
+ * Build the /track-order link href for an order that's eligible to show
+ * tracking. Returns `null` when any required input is missing — callers
+ * suppress the link entirely on null.
+ *
+ * @param order - The order summary row.
+ * @param memberEmail - The member's login email (null = unavailable).
+ * @returns The href string, or `null` if no link should render.
+ */
+export function buildTrackOrderHref(
+  order: MemberOrderSummary,
+  memberEmail: string | null | undefined,
+): string | null {
+  if (!order.number || !memberEmail) return null;
+  if (!TRACKABLE_FULFILLMENT_STATUSES.has(order.fulfillmentStatus)) return null;
+  return `/track-order?orderNumber=${encodeURIComponent(order.number)}&email=${encodeURIComponent(memberEmail)}`;
+}
+
+function OrderHistoryCard({
+  order,
+  memberEmail,
+}: {
+  order: MemberOrderSummary;
+  memberEmail: string | null;
+}) {
+  const trackHref = buildTrackOrderHref(order, memberEmail);
   const orderLabel = order.number ? `Order #${order.number}` : "Order";
   return (
     <article
@@ -82,6 +138,18 @@ function OrderHistoryCard({ order }: { order: MemberOrderSummary }) {
       {order.itemCount > 0 ? (
         <p className="mt-3 text-xs text-cf-muted">
           {order.itemCount === 1 ? "1 item" : `${order.itemCount} items`}
+        </p>
+      ) : null}
+
+      {trackHref ? (
+        <p className="mt-4">
+          <Link
+            href={trackHref}
+            data-slot="order-track-link"
+            className="inline-flex items-center text-sm font-medium text-cf-cta hover:underline"
+          >
+            Track order &rarr;
+          </Link>
         </p>
       ) : null}
     </article>
