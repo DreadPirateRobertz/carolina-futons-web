@@ -144,12 +144,30 @@ describe("subscribeToNewsletter — PII redaction in logs (cfw-coc)", () => {
     const { subscribeToNewsletter } = await import("@/app/newsletter/actions");
     await subscribeToNewsletter(null, fd({ email: "leak-me@example.com" }));
 
-    const warned = warn.mock.calls
+    // cfw-d2vn: migrated to logWarn — shape is now
+    // console.warn("[newsletter] rate-limited", err, { emailHash: "<12 hex>" }).
+    // The raw email must STILL NOT appear; the hash must be present.
+    const serialized = JSON.stringify(
+      warn.mock.calls.flat().map((arg) =>
+        arg instanceof Error ? arg.message : arg,
+      ),
+    );
+    expect(serialized).not.toContain("leak-me@example.com");
+    expect(serialized).toMatch(/[0-9a-f]{12}/);
+    // Confirm the prefix is intact and the emailHash key landed in extra.
+    const stringArgs = warn.mock.calls
       .flat()
-      .filter((arg): arg is string => typeof arg === "string")
-      .join(" ");
-    expect(warned).not.toContain("leak-me@example.com");
-    expect(warned).toMatch(/\[newsletter\] rate-limited:.*[0-9a-f]{12}/);
+      .filter((arg): arg is string => typeof arg === "string");
+    expect(stringArgs[0]).toBe("[newsletter] rate-limited");
+    const objectArgs = warn.mock.calls
+      .flat()
+      .filter(
+        (arg): arg is Record<string, unknown> =>
+          arg !== null &&
+          typeof arg === "object" &&
+          !(arg instanceof Error),
+      );
+    expect(objectArgs.some((o) => typeof o.emailHash === "string")).toBe(true);
     warn.mockRestore();
   });
 
@@ -201,7 +219,7 @@ describe("subscribeToNewsletter — logError integration on upsertSubscriber thr
     expect(sentryMocks.flush).toHaveBeenCalledWith(2000);
   });
 
-  it("rate-limit error (NewsletterRateLimitError) does NOT call Sentry — it's user-induced traffic", async () => {
+  it("rate-limit (NewsletterRateLimitError) → captures Sentry at level='warning' (NOT 'error') — keeps trend signal without paging on-call", async () => {
     // Import the class so we can construct it.
     const { NewsletterRateLimitError } = await import(
       "@/lib/newsletter/newsletter-store"
@@ -209,6 +227,7 @@ describe("subscribeToNewsletter — logError integration on upsertSubscriber thr
     storeMocks.upsertSubscriber.mockRejectedValueOnce(
       new NewsletterRateLimitError(),
     );
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { subscribeToNewsletter } = await import(
       "@/app/newsletter/actions"
     );
@@ -219,9 +238,21 @@ describe("subscribeToNewsletter — logError integration on upsertSubscriber thr
     );
 
     expect(result.status).toBe("error");
-    // Rate limits are a user-induced state; would drown the dashboard
-    // if every spammer's hammering surfaced as a Sentry event.
-    expect(sentryMocks.captureException).not.toHaveBeenCalled();
+    // cfw-d2vn: migrated console.warn → logWarn. Rate limits now
+    // surface to Sentry at level='warning' so the trend is visible
+    // on the dashboard, but Sentry alert routing filters on
+    // level='error' so on-call doesn't get paged.
+    expect(sentryMocks.captureException).toHaveBeenCalledTimes(1);
+    const [, opts] = sentryMocks.captureException.mock.calls[0]!;
+    expect((opts as { level: string }).level).toBe("warning");
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "newsletter",
+      op: "rate-limited",
+    });
+    // PII: lead email MUST NOT flow to Sentry; only its hash.
+    const serialized = JSON.stringify(sentryMocks.captureException.mock.calls);
+    expect(serialized).not.toContain("brenda@carolinafutons.com");
+    warn.mockRestore();
   });
 
   it("happy path does NOT call Sentry", async () => {
