@@ -12,6 +12,7 @@
 import "server-only";
 
 import type { WixCart } from "./cart";
+import { logWixFailure } from "./errors";
 
 const VELO_PATH = "/_functions/cartSession";
 
@@ -78,10 +79,26 @@ export function syncCartSession(cart: WixCart | null | undefined): void {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(payload),
-  }).catch((err: unknown) => {
-    console.error("[cart-session-dual-write] velo POST failed", {
-      cartId: payload.cartId,
-      error: err instanceof Error ? err.message : String(err),
+  })
+    .then((res) => {
+      // cf-puqx: `fetch().catch()` only sees NETWORK errors. A 4xx/5xx
+      // from the Velo bridge resolves the promise with `ok: false` and
+      // was previously dropped silently — mobile-app cart drift was the
+      // consequence. Surface non-2xx as a Sentry breadcrumb (still
+      // fire-and-forget; we never throw).
+      if (!res.ok) {
+        void logWixFailure(
+          "cart",
+          "syncCartSession",
+          new Error(`velo POST returned HTTP ${res.status}`),
+        );
+      }
+    })
+    .catch((err: unknown) => {
+      console.error("[cart-session-dual-write] velo POST failed", {
+        cartId: payload.cartId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      void logWixFailure("cart", "syncCartSession", err);
     });
-  });
 }
