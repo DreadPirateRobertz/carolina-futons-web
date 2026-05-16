@@ -19,6 +19,13 @@ vi.mock("@/lib/wix-client", () => ({
   getWixClient: () => ({ items: { query: itemsQuery } }),
 }));
 
+// cfw-logger migration: recordOwnerEdit's catch branch routes through
+// logError so the Wix outage shows up in Sentry under source=audit-log.
+const logErrorMock = vi.fn();
+vi.mock("@/lib/logger", () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
+}));
+
 import { recordOwnerEdit, readOwnerAuditLog } from "@/lib/admin/audit-log";
 
 const tokens: Tokens = {
@@ -35,6 +42,7 @@ beforeEach(() => {
   itemsQuery.mockReturnValue({ descending: itemsDescending });
   itemsFind.mockResolvedValue({ items: [] });
   itemsSave.mockResolvedValue({ _id: "audit-row-1" });
+  logErrorMock.mockReset();
 });
 
 describe("recordOwnerEdit — happy path", () => {
@@ -120,7 +128,6 @@ describe("recordOwnerEdit — happy path", () => {
 describe("recordOwnerEdit — best-effort contract", () => {
   it("returns ok=false on Wix error and does NOT throw", async () => {
     itemsSave.mockRejectedValueOnce(new Error("Wix down"));
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const result = await recordOwnerEdit(
       { actorEmail: "x@x.com", action: "edit", target: "k", before: "", after: "v" },
@@ -132,15 +139,17 @@ describe("recordOwnerEdit — best-effort contract", () => {
       reason: "wix_outage",
       error: "Wix down",
     });
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining("[audit-log] failed to record edit on k"),
+    // Observability now goes through logError (cfw-logger migration);
+    // see the dedicated logError describe block below for the contract.
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "audit-log",
+      expect.stringContaining("failed to record edit on k"),
+      expect.anything(),
     );
-    consoleSpy.mockRestore();
   });
 
   it("handles non-Error throws (Wix SDK occasionally rejects with strings)", async () => {
     itemsSave.mockRejectedValueOnce("not even an Error");
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const result = await recordOwnerEdit(
       { actorEmail: "x@x.com", action: "edit", target: "k", before: "", after: "v" },
@@ -151,7 +160,6 @@ describe("recordOwnerEdit — best-effort contract", () => {
     if (result.ok === false) {
       expect(result.error).toBe("not even an Error");
     }
-    consoleSpy.mockRestore();
   });
 });
 
@@ -205,5 +213,61 @@ describe("readOwnerAuditLog — cfw-xlv", () => {
     const result = await readOwnerAuditLog();
     expect(result.ok).toBe(false);
     if (result.ok === false) expect(result.error).toBe("string error");
+  });
+});
+
+// cfw-logger migration: recordOwnerEdit's catch branch routes through
+// logError("audit-log", ...). Pin the contract so the audit-trail
+// failures stay observable in Sentry with the right source tag.
+describe("recordOwnerEdit — logError observability", () => {
+  it("calls logError when the Wix save throws", async () => {
+    itemsSave.mockRejectedValueOnce(new Error("Wix down"));
+    await recordOwnerEdit(
+      {
+        actorEmail: "brenda@x.com",
+        action: "edit",
+        target: "footer.tagline",
+        before: "old",
+        after: "new",
+      },
+      tokens,
+    );
+    expect(logErrorMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("tags logError with scope='audit-log' + interpolates action+target into the message", async () => {
+    itemsSave.mockRejectedValueOnce(new Error("Wix down"));
+    await recordOwnerEdit(
+      {
+        actorEmail: "brenda@x.com",
+        action: "upload",
+        target: "hero.image",
+        before: "",
+        after: "https://static.wixstatic.com/media/abc.jpg",
+      },
+      tokens,
+    );
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "audit-log",
+      "failed to record upload on hero.image",
+      expect.anything(),
+    );
+  });
+
+  it("passes the caught Error instance directly when err is an Error (preserves stack)", async () => {
+    const err = new Error("Wix down");
+    itemsSave.mockRejectedValueOnce(err);
+    await recordOwnerEdit(
+      {
+        actorEmail: "brenda@x.com",
+        action: "swap",
+        target: "prod-1",
+        before: "",
+        after: "",
+      },
+      tokens,
+    );
+    const [, , payload] = logErrorMock.mock.calls[0]!;
+    expect(payload).toBe(err);
   });
 });
