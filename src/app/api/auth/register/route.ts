@@ -8,6 +8,7 @@ import {
   serializeSessionTokens,
   safeCallbackUrl,
 } from "@/lib/auth/session";
+import { logError } from "@/lib/observability/log";
 import { logWixFailure } from "@/lib/wix/errors";
 import { buildAuthDiag, diagAuthorized } from "@/lib/auth/diag";
 import {
@@ -93,9 +94,11 @@ async function exchangeOrLoginFallback(
   // message we can surface is "check your email" — better than the legacy
   // "Account created. Sign in to continue." which led the user into another
   // dead end. cfw-aik repro path lands here.
-  console.error(
-    "[auth/register] login fallback returned non-success state:",
-    loginState.loginState,
+  await logError(
+    "auth/register",
+    "login fallback returned non-success state",
+    undefined,
+    { loginState: loginState.loginState },
   );
   return { state: "email_verification_required" };
 }
