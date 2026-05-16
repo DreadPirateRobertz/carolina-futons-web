@@ -29,6 +29,7 @@ import { PdpProductVideo } from "@/components/product/PdpProductVideo";
 import { getProductDimensions, getCareGuide } from "@/lib/product/size-guide";
 import { PdpSizeGuide } from "@/components/product/PdpSizeGuide";
 import { PdpWarrantyInfo } from "@/components/product/PdpWarrantyInfo";
+import { qualifiesForFrameWarranty } from "@/lib/product/warranty-eligibility";
 import { ProductInfoModal } from "@/components/product/ProductInfoModal";
 import type { SwatchItem } from "@/lib/swatch-request/swatch-request-schema";
 import { formatPlpPrice } from "@/lib/product/plp-price";
@@ -290,10 +291,16 @@ export default async function PdpPage(props: {
         careGuide={careGuide}
       />
 
-      <PdpWarrantyInfo
-        productId={product._id ?? ""}
-        productName={product.name ?? ""}
-      />
+      {/* cf-g640: gate the frame-warranty surface on slug class. The
+          15-year text in PdpWarrantyInfo only applies to frames; mattresses
+          and covers carry separate manufacturer terms. Misrendering on a
+          mattress PDP creates real consumer-warranty-law exposure. */}
+      {qualifiesForFrameWarranty(slug) ? (
+        <PdpWarrantyInfo
+          productId={product._id ?? ""}
+          productName={product.name ?? ""}
+        />
+      ) : null}
 
       <PdpMattressBundle mattresses={mattresses} />
 
