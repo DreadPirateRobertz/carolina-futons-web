@@ -1,8 +1,23 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type RefObject } from "react";
 import { motion } from "framer-motion";
 import { V3_PAL as c } from "./MascotPalette";
 import { Bear, Deer, Heron, Hummingbird, Pine, Cloud } from "./MascotCharacters";
+
+// cf-sd80.1 (cf-sd80.fu1): secondary mascots (Hummingbird + Deer + Heron)
+// + cursor-eyes mousemove listener are gated on a post-paint idle flag.
+// The day-phase hero's first paint then ships only the load-bearing
+// composition (Bear + Pine + Cloud + ridges + sun) — secondary
+// characters fade in ~200ms later via requestIdleCallback.
+//
+// Why: cf-sd80 baseline F2 traced home SI 6.9s to this component.
+// Lazy-mounting non-LCP-candidate SVG subtrees + deferring the
+// mousemove listener recovers ~0.5-1s of SI while preserving all UX
+// (cursor-eyes activates after idle; users barely notice).
+//
+// Bear stays in first-paint composition because it IS the LCP candidate.
+// Removing the entrance animations is out of scope (would change UX) —
+// only the WHEN-IT-MOUNTS axis is touched here.
 
 export function MascotWorldHero() {
   const ref = useRef<SVGSVGElement>(null);
@@ -10,7 +25,28 @@ export function MascotWorldHero() {
   const [blink, setBlink] = useState(false);
   const [time, setTime] = useState(0);
 
+  const [mountSecondary, setMountSecondary] = useState(false);
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const ric =
+      window.requestIdleCallback ??
+      ((cb: IdleRequestCallback) =>
+        window.setTimeout(() => {
+          cb({ didTimeout: false, timeRemaining: () => 50 });
+        }, 200));
+    const cic = window.cancelIdleCallback ?? window.clearTimeout;
+    const handle = ric(() => setMountSecondary(true));
+    return () => {
+      try {
+        cic(handle as number);
+      } catch {
+        /* cross-browser handle type variance — best-effort cleanup. */
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mountSecondary) return;
     const onMove = (e: MouseEvent) => {
       const r = ref.current?.getBoundingClientRect();
       if (!r) return;
@@ -23,7 +59,7 @@ export function MascotWorldHero() {
     };
     window.addEventListener("mousemove", onMove);
     return () => window.removeEventListener("mousemove", onMove);
-  }, []);
+  }, [mountSecondary]);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -74,104 +110,91 @@ export function MascotWorldHero() {
         </filter>
       </defs>
 
-      <rect width="1920" height="800" fill="url(#mwh-sky)" />
+      <g data-testid="mascot-world-primary">
+        <rect width="1920" height="800" fill="url(#mwh-sky)" />
 
-      {/* Sun — floats gently, enters with a slow fade-scale */}
-      <motion.g
-        initial={{ opacity: 0, scale: 0.7 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1.4, ease: "easeOut", delay: 0.1 }}
-      >
-        <g transform={`translate(1380 ${260 + Math.sin(time * 0.4) * 4})`}>
-          <circle r="220" fill="url(#mwh-sun)" />
-          <circle r="78" fill={c.cream} />
-          <circle r="78" fill={c.sun} opacity="0.6" />
-        </g>
-      </motion.g>
+        {/* Sun — floats gently, enters with a slow fade-scale */}
+        <motion.g
+          initial={{ opacity: 0, scale: 0.7 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.4, ease: "easeOut", delay: 0.1 }}
+        >
+          <g transform={`translate(1380 ${260 + Math.sin(time * 0.4) * 4})`}>
+            <circle r="220" fill="url(#mwh-sun)" />
+            <circle r="78" fill={c.cream} />
+            <circle r="78" fill={c.sun} opacity="0.6" />
+          </g>
+        </motion.g>
 
-      {/* Hummingbird */}
-      <motion.g
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1, delay: 0.4 }}
-      >
-        <g transform={`translate(${1100 + Math.sin(time * 0.6) * 30} ${200 + Math.cos(time * 0.7) * 20})`}>
-          <Hummingbird scale={1.6} />
-        </g>
-      </motion.g>
+        {/* Ridges — staggered entrance from bottom */}
+        <motion.g
+          initial={{ y: 40, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.9, ease: "easeOut", delay: 0.2 }}
+        >
+          <path d="M 0 360 Q 240 330 480 345 Q 720 360 960 320 Q 1200 280 1440 335 Q 1680 390 1920 350 L 1920 800 L 0 800 Z" fill={c.ridge5} opacity="0.85" />
+          <path d="M 0 420 Q 200 380 400 405 Q 600 430 800 390 Q 1040 350 1240 410 Q 1480 470 1680 420 L 1920 415 L 1920 800 L 0 800 Z" fill={c.ridge4} />
+          <rect x="0" y="418" width="1920" height="20" fill={c.cream} opacity="0.18" />
+        </motion.g>
+        <motion.g
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.9, ease: "easeOut", delay: 0.35 }}
+        >
+          <path d="M 0 480 Q 240 440 480 460 Q 720 480 960 445 Q 1200 410 1440 465 Q 1680 525 1920 485 L 1920 800 L 0 800 Z" fill={c.ridge3} />
+          <path d="M 0 540 Q 200 510 400 525 Q 600 540 800 510 Q 1040 475 1240 525 Q 1480 575 1680 540 L 1920 535 L 1920 800 L 0 800 Z" fill={c.ridge2} />
+        </motion.g>
+        <motion.g
+          initial={{ y: 60, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.9, ease: "easeOut", delay: 0.5 }}
+        >
+          <path d="M 0 640 Q 240 600 480 615 Q 720 630 960 595 Q 1200 565 1440 615 Q 1680 660 1920 625 L 1920 800 L 0 800 Z" fill={c.ridge1} />
+          <g transform="translate(0 580)">
+            {[80, 240, 380, 1320, 1500, 1680, 1820].map((x, i) => (
+              <g key={i} transform={`translate(${x} ${Math.sin(i * 1.4) * 8})`}>
+                <Pine scale={0.9 + (i % 3) * 0.2} />
+              </g>
+            ))}
+          </g>
+        </motion.g>
 
-      {/* Ridges — staggered entrance from bottom */}
-      <motion.g
-        initial={{ y: 40, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.9, ease: "easeOut", delay: 0.2 }}
-      >
-        <path d="M 0 360 Q 240 330 480 345 Q 720 360 960 320 Q 1200 280 1440 335 Q 1680 390 1920 350 L 1920 800 L 0 800 Z" fill={c.ridge5} opacity="0.85" />
-        <path d="M 0 420 Q 200 380 400 405 Q 600 430 800 390 Q 1040 350 1240 410 Q 1480 470 1680 420 L 1920 415 L 1920 800 L 0 800 Z" fill={c.ridge4} />
-        <rect x="0" y="418" width="1920" height="20" fill={c.cream} opacity="0.18" />
-      </motion.g>
-      <motion.g
-        initial={{ y: 50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.9, ease: "easeOut", delay: 0.35 }}
-      >
-        <path d="M 0 480 Q 240 440 480 460 Q 720 480 960 445 Q 1200 410 1440 465 Q 1680 525 1920 485 L 1920 800 L 0 800 Z" fill={c.ridge3} />
-        <path d="M 0 540 Q 200 510 400 525 Q 600 540 800 510 Q 1040 475 1240 525 Q 1480 575 1680 540 L 1920 535 L 1920 800 L 0 800 Z" fill={c.ridge2} />
-      </motion.g>
-      <motion.g
-        initial={{ y: 60, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.9, ease: "easeOut", delay: 0.5 }}
-      >
-        <path d="M 0 640 Q 240 600 480 615 Q 720 630 960 595 Q 1200 565 1440 615 Q 1680 660 1920 625 L 1920 800 L 0 800 Z" fill={c.ridge1} />
-        <g transform="translate(0 580)">
-          {[80, 240, 380, 1320, 1500, 1680, 1820].map((x, i) => (
-            <g key={i} transform={`translate(${x} ${Math.sin(i * 1.4) * 8})`}>
-              <Pine scale={0.9 + (i % 3) * 0.2} />
-            </g>
-          ))}
-        </g>
-        <g transform="translate(220 500) scale(0.6)" opacity="0.75">
-          <Deer />
-        </g>
-        <g transform="translate(1620 540)">
-          <Heron scale={1} />
-        </g>
-      </motion.g>
+        {/* The bear — slides up from below, then eyes track cursor (post-idle) */}
+        <motion.g
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 60, damping: 18, delay: 0.7 }}
+        >
+          <g transform="translate(960 670)">
+            <Bear pose="sitting" scale={2.4} eyesTrack={eyes} blink={blink} />
+          </g>
+        </motion.g>
 
-      {/* The bear — slides up from below, then eyes track cursor */}
-      <motion.g
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 60, damping: 18, delay: 0.7 }}
-      >
-        <g transform="translate(960 670)">
-          <Bear pose="sitting" scale={2.4} eyesTrack={eyes} blink={blink} />
-        </g>
-      </motion.g>
+        {/* Drifting clouds */}
+        <motion.g
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.85 }}
+          transition={{ duration: 1.2, delay: 0.3 }}
+        >
+          <g transform={`translate(${((time * 15) % 2200) - 200} 130)`}>
+            <Cloud scale={1.2} />
+          </g>
+          <g transform={`translate(${((time * 10 + 600) % 2200) - 200} 200)`} opacity="0.82">
+            <Cloud scale={0.9} />
+          </g>
+          <g transform={`translate(${((time * 8 + 1200) % 2200) - 200} 90)`} opacity="0.7">
+            <Cloud scale={0.7} />
+          </g>
+        </motion.g>
 
-      {/* Drifting clouds */}
-      <motion.g
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.85 }}
-        transition={{ duration: 1.2, delay: 0.3 }}
-      >
-        <g transform={`translate(${((time * 15) % 2200) - 200} 130)`}>
-          <Cloud scale={1.2} />
+        {/* Birds — strokes, paint-cheap, kept in primary */}
+        <g stroke={c.ink} strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.7">
+          <path d={`M ${480 + Math.sin(time * 0.5) * 4} 180 Q 490 174 500 180 Q 510 174 520 180`} />
+          <path d={`M 540 210 Q 548 204 556 210 Q 564 204 572 210`} />
         </g>
-        <g transform={`translate(${((time * 10 + 600) % 2200) - 200} 200)`} opacity="0.82">
-          <Cloud scale={0.9} />
-        </g>
-        <g transform={`translate(${((time * 8 + 1200) % 2200) - 200} 90)`} opacity="0.7">
-          <Cloud scale={0.7} />
-        </g>
-      </motion.g>
-
-      {/* Birds */}
-      <g stroke={c.ink} strokeWidth="2.5" fill="none" strokeLinecap="round" opacity="0.7">
-        <path d={`M ${480 + Math.sin(time * 0.5) * 4} 180 Q 490 174 500 180 Q 510 174 520 180`} />
-        <path d={`M 540 210 Q 548 204 556 210 Q 564 204 572 210`} />
       </g>
+
+      {mountSecondary ? <SecondaryMascots time={time} svgRef={ref} /> : null}
 
       <rect
         width="1920"
@@ -181,5 +204,47 @@ export function MascotWorldHero() {
         style={{ mixBlendMode: "multiply" }}
       />
     </svg>
+  );
+}
+
+// Secondary mascots gate on the post-idle flag so their SVG subtrees
+// don't paint on the critical path. svgRef is reserved for future
+// per-character cursor interactions; currently unused inside the
+// component but kept so a future refactor doesn't need to plumb it back.
+function SecondaryMascots({
+  time,
+  svgRef: _svgRef,
+}: {
+  time: number;
+  svgRef: RefObject<SVGSVGElement | null>;
+}) {
+  return (
+    <g data-testid="mascot-world-secondary">
+      {/* Hummingbird */}
+      <motion.g
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6 }}
+      >
+        <g transform={`translate(${1100 + Math.sin(time * 0.6) * 30} ${200 + Math.cos(time * 0.7) * 20})`}>
+          <Hummingbird scale={1.6} />
+        </g>
+      </motion.g>
+
+      {/* Deer + Heron — were previously inside the ridge3 motion.g.
+          Now in a separate post-idle group so they don't block first paint. */}
+      <motion.g
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.15 }}
+      >
+        <g transform="translate(220 500) scale(0.6)" opacity="0.75">
+          <Deer />
+        </g>
+        <g transform="translate(1620 540)">
+          <Heron scale={1} />
+        </g>
+      </motion.g>
+    </g>
   );
 }
