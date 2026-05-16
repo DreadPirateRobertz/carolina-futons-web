@@ -161,3 +161,59 @@ describe("ContactPage — showroom schedule (cf-7pk0 F2)", () => {
     );
   });
 });
+
+// ── cf-bbu5 (cf-7pk0.F2): owner-editable contact.* heading / body copy ─────
+// Hardcoded headings + intro body locked Brenda out of editing the page.
+// Wired to SiteContent so she can update marketing copy without a deploy,
+// mirrors the cfw-22e /visit pattern.
+describe("ContactPage — owner-editable contact.* copy (cf-bbu5)", () => {
+  it("queries all 7 contact.* keys with their fallback strings", async () => {
+    await renderPage();
+    const callMap = new Map<string, string>(
+      mockGetSiteContent.mock.calls.map(
+        ([key, fallback]) => [key, (fallback ?? "") as string] as const,
+      ),
+    );
+    expect(callMap.get("contact.eyebrow")).toBe("Contact");
+    expect(callMap.get("contact.intro.heading")).toMatch(/hear from you/i);
+    expect(callMap.get("contact.intro.body")).toMatch(/business day/i);
+    expect(callMap.get("contact.reach.heading")).toBe("Reach us directly");
+    expect(callMap.get("contact.appointment.heading")).toBe(
+      "Schedule a showroom visit",
+    );
+    expect(callMap.get("contact.appointment.body-suffix")).toMatch(
+      /confirm by email/i,
+    );
+    expect(callMap.get("contact.message.heading")).toBe("Send a message");
+  });
+
+  it("renders fallback intro heading when SiteContent is empty", async () => {
+    await renderPage();
+    expect(
+      screen.getByRole("heading", { level: 1, name: /hear from you/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders Brenda's edits when SiteContent returns overrides", async () => {
+    mockGetSiteContent.mockImplementation(async (key, fallback) => {
+      if (key === "contact.intro.heading") return "Drop us a line.";
+      if (key === "contact.reach.heading") return "Get in touch";
+      if (key === "contact.message.heading") return "Write to us";
+      // Keep hours falling back so the page still renders the schedule line.
+      return fallback;
+    });
+    await renderPage();
+    expect(
+      screen.getByRole("heading", { name: /drop us a line/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /get in touch/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /write to us/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /hear from you/i }),
+    ).not.toBeInTheDocument();
+  });
+});
