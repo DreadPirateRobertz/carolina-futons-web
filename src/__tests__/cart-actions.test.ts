@@ -16,6 +16,15 @@ const removeCoupon = vi.fn();
 // `@sentry/nextjs` import + `Sentry.flush(2000)` don't fire under jsdom.
 const logWixFailure = vi.fn().mockResolvedValue(undefined);
 
+// cf-f3zo: extractAppliedCoupon is the live (non-mocked) helper — keeping
+// it real lets these tests assert end-to-end behavior from "Wix cart
+// shape with appliedDiscounts" through to the action's returned
+// appliedCoupon field, instead of stubbing the parser itself. The unit
+// tests for the helper live in src/__tests__/extract-applied-coupon.test.ts.
+const realCart = await vi.importActual<typeof import("@/lib/wix/cart")>(
+  "@/lib/wix/cart",
+);
+
 vi.mock("@/lib/wix/cart", () => ({
   addToCart: (...args: unknown[]) => addToCart(...args),
   removeFromCart: (...args: unknown[]) => removeFromCart(...args),
@@ -25,10 +34,7 @@ vi.mock("@/lib/wix/cart", () => ({
   wixCartToLines: (...args: unknown[]) => wixCartToLines(...args),
   applyCoupon: (...args: unknown[]) => applyCoupon(...args),
   removeCoupon: (...args: unknown[]) => removeCoupon(...args),
-  // cf-56ue: extractAppliedCoupon is called by applyCouponAction +
-  // hydrateCartAction; return undefined so existing tests that assert
-  // { ok: true, cart } / { ok: true, lines } stay unaffected.
-  extractAppliedCoupon: () => undefined,
+  extractAppliedCoupon: realCart.extractAppliedCoupon,
 }));
 
 vi.mock("@/lib/wix/errors", () => ({
@@ -252,6 +258,44 @@ describe("cart server actions", () => {
       // user is correcting a typo, not hitting a backend outage.
       expect(logWixFailure).not.toHaveBeenCalled();
     });
+
+    // cf-f3zo (cf-5qv7.fu1): pin that applyCouponAction extracts
+    // appliedCoupon from the Wix cart's appliedDiscounts[0] and returns
+    // it on the success shape. Without this, CartCouponEntry's
+    // setAppliedCoupon dispatch never fires (the field would be
+    // undefined), and the CartDrawer discount line never renders.
+    it("returns appliedCoupon when the Wix cart carries one (cf-f3zo)", async () => {
+      const fakeCart = {
+        _id: "cart1",
+        lineItems: [],
+        appliedDiscounts: [
+          {
+            coupon: { code: "SUMMER15", amount: { amount: "15.00" } },
+          },
+        ],
+      };
+      applyCoupon.mockResolvedValueOnce(fakeCart);
+      const { applyCouponAction } = await import("@/app/actions/cart");
+      const result = await applyCouponAction("SUMMER15");
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.appliedCoupon).toEqual({
+          code: "SUMMER15",
+          discountCents: 1500,
+        });
+      }
+    });
+
+    it("omits appliedCoupon when the Wix cart has no applied discounts (cf-f3zo)", async () => {
+      const fakeCart = { _id: "cart1", lineItems: [], appliedDiscounts: [] };
+      applyCoupon.mockResolvedValueOnce(fakeCart);
+      const { applyCouponAction } = await import("@/app/actions/cart");
+      const result = await applyCouponAction("SUMMER15");
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.appliedCoupon).toBeUndefined();
+      }
+    });
   });
 
   describe("removeCouponAction", () => {
@@ -323,6 +367,53 @@ describe("cart server actions", () => {
       // offender" — an empty /cart page on hydrate failure previously
       // landed with no error breadcrumb at all.
       expect(logWixFailure).toHaveBeenCalledWith("cart", "hydrateCartAction", err);
+    });
+
+    // cf-f3zo: pin appliedCoupon extraction on the hydrate path so cart
+    // state restores its applied coupon on page reload. Without this,
+    // CartHydrator would re-hydrate lines but drop the coupon, making
+    // the CartDrawer's discount line disappear after a refresh.
+    it("returns appliedCoupon when the server cart carries one (cf-f3zo)", async () => {
+      const mockLine = {
+        id: "p1",
+        productId: "p1",
+        productName: "Daisy Futon",
+        quantity: 1,
+        unitPriceCents: 79900,
+        formattedUnitPrice: "$799.00",
+      };
+      const fakeCart = {
+        _id: "cart1",
+        lineItems: [{}],
+        appliedDiscounts: [
+          {
+            coupon: { code: "WELCOME", amount: { amount: "5.00" } },
+          },
+        ],
+      };
+      getCurrentCart.mockResolvedValueOnce(fakeCart);
+      wixCartToLines.mockReturnValueOnce([mockLine]);
+      const { hydrateCartAction } = await import("@/app/actions/cart");
+      const result = await hydrateCartAction();
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.appliedCoupon).toEqual({
+          code: "WELCOME",
+          discountCents: 500,
+        });
+      }
+    });
+
+    it("omits appliedCoupon when the server cart has no applied discount (cf-f3zo)", async () => {
+      const fakeCart = { _id: "cart1", lineItems: [{}], appliedDiscounts: [] };
+      getCurrentCart.mockResolvedValueOnce(fakeCart);
+      wixCartToLines.mockReturnValueOnce([]);
+      const { hydrateCartAction } = await import("@/app/actions/cart");
+      const result = await hydrateCartAction();
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.appliedCoupon).toBeUndefined();
+      }
     });
   });
 });
