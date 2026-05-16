@@ -13,6 +13,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { getMemberSession } from "@/lib/auth/member";
 import { registerWarrantyForMember } from "@/lib/warranty/warranty-registration";
+import { logError } from "@/lib/logging/log-error";
 
 export const dynamic = "force-dynamic";
 
@@ -139,7 +140,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       502,
     );
   } catch (err) {
-    console.error("[/api/warranty/register] unexpected error:", err);
+    // cfw-qnuf: unexpected error path — ship to Sentry via the shared
+    // logger. The 500 response is the explicit "we don't know what
+    // happened" signal to the client; the Sentry breadcrumb gives
+    // on-call a stack to debug from.
+    await logError("warranty/register", "POST", err);
     return bad("Unexpected error. Please try again shortly.", 500);
   }
 }
