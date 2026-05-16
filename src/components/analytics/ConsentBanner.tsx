@@ -55,17 +55,18 @@ function readChoiceFromCookie(): ConsentChoice {
 }
 
 export function ConsentBanner() {
-  const [choice, setChoice] = useState<ConsentChoice>("unknown");
+  const [choice, setChoice] = useState<ConsentChoice>(
+    () => readChoiceFromCookie(),
+  );
   const [pending, startTransition] = useTransition();
 
   // Defer the banner to post-hydration so a cached HTML shell served to a
   // known user can't briefly flash the banner before the Server Action's
-  // cookie hits the next request. The same effect hydrates `choice`
-  // from the cookie, so by the time mounted flips true the gate below
-  // already reflects the stored choice for returning users.
+  // cookie hits the next request. The lazy useState initializer above
+  // hydrates `choice` client-side on mount (SSR-safe: readChoiceFromCookie
+  // returns "unknown" when document is undefined).
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
-    setChoice(readChoiceFromCookie());
     setMounted(true);
   }, []);
 
