@@ -1,3 +1,5 @@
+import { hashEmail } from "@/lib/log/hash-pii";
+import { logError } from "@/lib/observability/log";
 import { callVelo, VeloRpcError } from "@/lib/wix/velo-client";
 
 export type QuizOption = {
@@ -88,7 +90,7 @@ export async function getQuizRecommendations(
       args: [answers],
     });
   } catch (err) {
-    console.error("[styleQuiz] getQuizRecommendations failed:", err);
+    await logError("styleQuiz", "getQuizRecommendations failed", err);
     return [];
   }
 }
@@ -103,12 +105,19 @@ export async function captureQuizLead(
       args: [email, partialAnswers],
     });
   } catch (err) {
+    // Email is PII (cfw-coc) — hash it before sending to Sentry so
+    // an outage report doesn't leak the lead's email address into
+    // the ops dashboard.
+    const emailHash = hashEmail(email);
     if (err instanceof VeloRpcError) {
-      console.error(
-        `[styleQuiz] captureQuizLead rpc failed: HTTP ${err.status}`,
-      );
+      await logError("styleQuiz", "captureQuizLead rpc failed", err, {
+        emailHash,
+        status: err.status,
+      });
     } else {
-      console.error("[styleQuiz] captureQuizLead failed:", err);
+      await logError("styleQuiz", "captureQuizLead failed", err, {
+        emailHash,
+      });
     }
     return { success: false };
   }
@@ -123,7 +132,7 @@ export async function getPersonalizedCopy(
       args: [answers],
     });
   } catch (err) {
-    console.error("[styleQuiz] getPersonalizedCopy failed:", err);
+    await logError("styleQuiz", "getPersonalizedCopy failed", err);
     return { copy: "", profileType: "style" };
   }
 }

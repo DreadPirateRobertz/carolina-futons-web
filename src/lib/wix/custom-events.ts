@@ -1,3 +1,4 @@
+import { logError } from "@/lib/observability/log";
 import { callVelo, VeloRpcError } from "@/lib/wix/velo-client";
 
 export type TrackCustomEventParams = {
@@ -26,14 +27,14 @@ export async function trackCustomEvent(
     });
   } catch (err) {
     if (err instanceof VeloRpcError) {
-      console.error(
-        `[customEvents] trackCustomEvent("${eventName}") rpc failed: HTTP ${err.status} — ${err.message}`,
-      );
+      await logError("customEvents", "trackCustomEvent rpc failed", err, {
+        eventName,
+        status: err.status,
+      });
     } else {
-      console.error(
-        `[customEvents] trackCustomEvent("${eventName}") failed:`,
-        err,
-      );
+      await logError("customEvents", "trackCustomEvent failed", err, {
+        eventName,
+      });
     }
     return { success: false };
   }
