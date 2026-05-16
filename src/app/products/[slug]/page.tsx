@@ -25,7 +25,11 @@ import { getCustomerVideoReviewsByProductSlug } from "@/lib/discovery/customer-v
 import { PdpShareButtons } from "@/components/product/PdpShareButtons";
 import { PdpViewItemTracker } from "@/components/product/PdpViewItemTracker";
 import { loadReviews } from "@/lib/discovery/google-reviews";
-import { getCollectionBySlug, getProductBySlug } from "@/lib/wix/products";
+import {
+  getCollectionBySlug,
+  getProductBySlug,
+  listAllProducts,
+} from "@/lib/wix/products";
 import { loadPdpCatalogSafely } from "@/lib/product/pdp-catalog-load";
 import { logWixFailure } from "@/lib/wix/errors";
 import { listFabricSwatches } from "@/lib/wix/fabrics";
@@ -71,6 +75,27 @@ import { wixImageUrl } from "@/lib/wix/wix-image";
 // tag-based invalidation lands, revalidate can drop to longer windows
 // with explicit invalidation on stock/price webhooks.
 export const revalidate = 3600;
+
+// cf-c736 (cf-0oj5.fu5): pre-render every catalog slug at build time.
+// Combined with dynamicParams=false, this serves known slugs from the
+// build-time cache (instant 200, no Wix SDK roundtrip per request) and
+// returns 404 for unknown slugs. The revalidate=3600 window above
+// continues to refresh cached pages every hour for content updates.
+// Unblocks once cf-0klm removed layout.tsx's cookies() opt-out (PR #714).
+export async function generateStaticParams() {
+  const products = await listAllProducts();
+  return products
+    .filter(
+      (p): p is typeof p & { slug: string } =>
+        typeof p.slug === "string" && p.slug.length > 0,
+    )
+    .map((p) => ({ slug: p.slug }));
+}
+
+// 404 unknown slugs at the edge instead of paying for a runtime SSR
+// fallback. The catalog ID set is closed (~88 SKUs); a slug that wasn't
+// in the build-time crawl is almost certainly a typo or scraper request.
+export const dynamicParams = false;
 
 export async function generateMetadata(props: {
   params: Promise<{ slug: string }>;
