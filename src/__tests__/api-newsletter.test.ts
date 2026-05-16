@@ -162,3 +162,46 @@ describe("POST /api/newsletter — PII redaction in logs (cfw-t22e)", () => {
     warn.mockRestore();
   });
 });
+
+// Pins the logError migration so an accidental revert to a bare
+// console.error("[api/newsletter] …") (or to a string-interpolated prefix
+// that bypasses the helper) fails loudly. Asserts on the console.error
+// sink because logError forwards there in every env; the Sentry forwarder
+// is prod-only and unit-tested in log.test.ts.
+describe("POST /api/newsletter — logError migration", () => {
+  it("emits '[api/newsletter] velo timeout' with the TimeoutError as the second arg on store TimeoutError", async () => {
+    const timeoutErr = new Error("timed out");
+    timeoutErr.name = "TimeoutError";
+    mockUpsert.mockRejectedValue(timeoutErr);
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await POST(makePost({ email: "ada@example.com" }));
+    expect(res.status).toBe(502);
+    expect(errSpy).toHaveBeenCalledTimes(1);
+    expect(errSpy.mock.calls[0]![0]).toBe("[api/newsletter] velo timeout");
+    expect(errSpy.mock.calls[0]![1]).toBe(timeoutErr);
+    errSpy.mockRestore();
+  });
+
+  it("emits '[api/newsletter] upsertSubscriber failed' with the thrown err as the second arg on any other store failure", async () => {
+    const thrown = new Error("boom");
+    mockUpsert.mockRejectedValue(thrown);
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await POST(makePost({ email: "ada@example.com" }));
+    expect(res.status).toBe(502);
+    expect(errSpy).toHaveBeenCalledTimes(1);
+    expect(errSpy.mock.calls[0]![0]).toBe(
+      "[api/newsletter] upsertSubscriber failed",
+    );
+    expect(errSpy.mock.calls[0]![1]).toBe(thrown);
+    errSpy.mockRestore();
+  });
+
+  it("does NOT log on the happy path (store resolves cleanly)", async () => {
+    mockUpsert.mockResolvedValue({ created: true });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await POST(makePost({ email: "ada@example.com" }));
+    expect(res.status).toBe(200);
+    expect(errSpy).not.toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
+});
