@@ -6,6 +6,7 @@ import Image from "next/image";
 import { ProductCard } from "@/components/product/ProductCard";
 import type { WixProduct } from "@/lib/wix/products";
 import type { ColorChoice } from "@/lib/product/color-options";
+import type { FilterFirstHeroCopy } from "@/lib/cms/filter-first-content";
 
 export type ThemeDCategory = {
   slug: string;
@@ -34,6 +35,7 @@ function matchesPrice(p: WixProduct, rangeIdx: number): boolean {
 export function FilterFirst({
   categories,
   colorChoicesByProductId,
+  heroCopy,
 }: {
   categories: ThemeDCategory[];
   /**
@@ -42,6 +44,14 @@ export function FilterFirst({
    * skips the swatch row gracefully.
    */
   colorChoicesByProductId?: ReadonlyMap<string, ReadonlyArray<ColorChoice>>;
+  /**
+   * Brenda-editable hero copy resolved by the server parent via
+   * `loadFilterFirstHeroCopy()`. Required prop so consumers cannot ship
+   * with stale hardcoded copy; the loader's fallbacks match the pre-refactor
+   * shipped strings, so the rendered output is identical when the CMS rows
+   * are absent.
+   */
+  heroCopy: FilterFirstHeroCopy;
 }) {
   const [categorySlug, setCategorySlug] = useState<string>("all");
   const [priceIdx, setPriceIdx] = useState(0);
@@ -82,19 +92,17 @@ export function FilterFirst({
         <div className="grid items-center gap-8 md:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-12">
           <div className="order-2 md:order-1">
         <p className="text-xs font-medium uppercase tracking-[0.22em] text-cf-cta">
-          Family owned · Hendersonville, NC
+          {heroCopy.eyebrow}
         </p>
         <h1
           id="theme-d-heading"
           className="mt-3 text-5xl font-bold leading-[1.02] tracking-tight text-cf-espresso sm:text-6xl lg:text-7xl"
           style={{ fontFamily: "var(--font-theme-d-heading, var(--font-heading))" }}
         >
-          Find your perfect futon
+          {heroCopy.headline}
         </h1>
         <p className="mt-4 max-w-xl text-lg text-cf-charcoal/70">
-          Choose from our selection of high-quality futon frames, bedroom
-          furniture and casegoods, Murphy Cabinet Beds, and craftsman-built
-          futon mattresses for your bed or futon frame.
+          {heroCopy.subhead}
         </p>
 
         {/* Category chips */}

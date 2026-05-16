@@ -29,6 +29,7 @@ import {
 } from "@/lib/wix/products";
 import { getVideoCatalog } from "@/lib/videos/catalog";
 import { getSiteContent } from "@/lib/cms/site-content";
+import { loadFilterFirstHeroCopy } from "@/lib/cms/filter-first-content";
 import { HomeCategoryGridV9 } from "@/components/home/HomeCategoryGridV9";
 import { HomeSaleStrip } from "@/components/home/HomeSaleStrip";
 import { ContinueShoppingStrip } from "@/components/home/ContinueShoppingStrip";
@@ -82,7 +83,10 @@ const FILTER_CATEGORIES = [
 const SHOWCASE_IDS = ["vid-asheville", "vid-studio-conversion", "vid-moonglider-conversion"];
 
 export default async function HomePage() {
-  const valueProps = await loadValueProps();
+  const [valueProps, filterFirstHeroCopy] = await Promise.all([
+    loadValueProps(),
+    loadFilterFirstHeroCopy(),
+  ]);
   const categories = await Promise.all(
     FILTER_CATEGORIES.map(async (cat): Promise<ThemeDCategory> => {
       const collection = await getCollectionBySlug(cat.collectionSlug);
@@ -136,6 +140,7 @@ export default async function HomePage() {
       <FilterFirst
         categories={categories}
         colorChoicesByProductId={colorChoicesByProductId}
+        heroCopy={filterFirstHeroCopy}
       />
 
       {/* ── Recently Viewed — localStorage LRU, hidden for first-time visitors (cf-l6aj.8) ── */}
