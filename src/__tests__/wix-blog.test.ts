@@ -248,10 +248,13 @@ describe("searchPosts — substring match (cf-1lf)", () => {
     { _id: "4", slug: "the-warranty-explained", title: "The warranty explained", excerpt: "" },
   ];
 
+  // cfw-ran6: cf-1lf changed searchPosts to return { items, total } envelope
+  // (with { page, pageSize } opts) so the API matches PLP search shape.
+  // Tests destructure `items` for the post array and use the new opts.
   it("returns posts whose title contains q anywhere (not just startsWith)", async () => {
     queryPosts.mockReturnValue(builderReturning(POSTS));
-    const results = await blog.searchPosts("futon");
-    const slugs = results.map((p) => p.slug);
+    const { items } = await blog.searchPosts("futon");
+    const slugs = items.map((p) => p.slug);
     expect(slugs).toContain("futon-mattress-care");
     expect(slugs).toContain("best-mattress-for-a-futon");
     expect(slugs).not.toContain("murphy-bed-buying-guide");
@@ -259,34 +262,34 @@ describe("searchPosts — substring match (cf-1lf)", () => {
 
   it("matches case-insensitively", async () => {
     queryPosts.mockReturnValue(builderReturning(POSTS));
-    const results = await blog.searchPosts("WARRANTY");
-    expect(results.map((p) => p.slug)).toEqual(["the-warranty-explained"]);
+    const { items } = await blog.searchPosts("WARRANTY");
+    expect(items.map((p) => p.slug)).toEqual(["the-warranty-explained"]);
   });
 
-  it("returns [] for empty q without hitting the SDK", async () => {
-    const results = await blog.searchPosts("");
-    expect(results).toEqual([]);
+  it("returns empty envelope for empty q without hitting the SDK", async () => {
+    const result = await blog.searchPosts("");
+    expect(result).toEqual({ items: [], total: 0 });
     expect(queryPosts).not.toHaveBeenCalled();
   });
 
-  it("returns [] for whitespace-only q without hitting the SDK", async () => {
-    const results = await blog.searchPosts("   ");
-    expect(results).toEqual([]);
+  it("returns empty envelope for whitespace-only q without hitting the SDK", async () => {
+    const result = await blog.searchPosts("   ");
+    expect(result).toEqual({ items: [], total: 0 });
     expect(queryPosts).not.toHaveBeenCalled();
   });
 
-  it("respects the limit parameter (slices after filtering)", async () => {
+  it("respects the pageSize parameter (slices after filtering)", async () => {
     queryPosts.mockReturnValue(builderReturning(POSTS));
-    const results = await blog.searchPosts("a", 2); // "a" matches every title
-    expect(results.length).toBeLessThanOrEqual(2);
+    const { items } = await blog.searchPosts("a", { pageSize: 2 }); // "a" matches every title
+    expect(items.length).toBeLessThanOrEqual(2);
   });
 
-  it("returns [] and logs when the SDK throws", async () => {
+  it("returns empty envelope and logs when the SDK throws", async () => {
     queryPosts.mockImplementationOnce(() => {
       throw new Error("Wix Blog down");
     });
-    const results = await blog.searchPosts("futon");
-    expect(results).toEqual([]);
+    const result = await blog.searchPosts("futon");
+    expect(result).toEqual({ items: [], total: 0 });
     expect(logWixFailure).toHaveBeenCalledWith(
       "wix",
       "searchPosts(futon)",
