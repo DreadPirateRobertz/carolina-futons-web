@@ -9,6 +9,21 @@ vi.mock("@/app/actions/cart", () => ({
   removeCouponAction: (...args: unknown[]) => removeCouponAction(...args),
 }));
 
+// cf-5qv7: CartCouponEntry now reads appliedCoupon from useCart() and
+// dispatches setAppliedCoupon/clearAppliedCoupon on success. Mock the hook
+// so these unit tests don't need a real CartProvider tree.
+const setAppliedCoupon = vi.fn();
+const clearAppliedCoupon = vi.fn();
+let mockAppliedCoupon: { code: string; discountCents: number } | undefined;
+
+vi.mock("@/components/cart/CartProvider", () => ({
+  useCart: () => ({
+    appliedCoupon: mockAppliedCoupon,
+    setAppliedCoupon,
+    clearAppliedCoupon,
+  }),
+}));
+
 import { CartCouponEntry } from "@/components/cart/CartCouponEntry";
 
 // cf-snil (cf-wsrr.F2): in-cart coupon entry. UI smoke for the CartDrawer
@@ -18,6 +33,7 @@ import { CartCouponEntry } from "@/components/cart/CartCouponEntry";
 describe("CartCouponEntry — cf-snil (cf-wsrr.F2)", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    mockAppliedCoupon = undefined;
   });
 
   it("starts collapsed with a 'Have a promo code?' toggle", () => {

@@ -6,31 +6,25 @@ import {
   applyCouponAction,
   removeCouponAction,
 } from "@/app/actions/cart";
+import { useCart } from "@/components/cart/CartProvider";
 
-// cf-snil (cf-wsrr.F2): in-cart coupon entry. Surfaces the
-// `currentCart.updateCurrentCart({ couponCode })` SDK hook so users with
-// promo codes from email campaigns / sale URLs / referral links can apply
-// the code BEFORE they redirect to the Wix-hosted checkout page.
+// cf-snil (cf-wsrr.F2) + cf-5qv7 (cf-snil.fu1): in-cart coupon entry.
+// Surfaces the `currentCart.updateCurrentCart({ couponCode })` SDK hook so
+// users with promo codes from email campaigns / sale URLs / referral
+// links can apply the code BEFORE they redirect to the Wix-hosted
+// checkout page. cf-5qv7 wires success/remove paths into CartProvider so
+// the CartDrawer footer can render the discount line + post-discount
+// total before redirect.
 //
-// Pre-cf-snil: cfw had no UI for coupons; users had to enter the code on
-// the Wix-hosted page after the checkout redirect. cf-wsrr cart-parity
-// audit (2026-05-15) graded this as the single most-impactful cart parity
-// gap vs Wix Studio.
-//
-// Scope of THIS component:
-// - Collapsible input + Apply button
-// - "Applied" state showing the accepted code + Remove control
-// - Inline error message for invalid codes (no toast layer in this rev)
-//
-// NOT in scope (cf-snil.fu1):
-// - Reflecting the discount in the CartDrawer subtotal (requires
-//   threading appliedDiscounts through CartProvider state). The Wix-
-//   hosted checkout page still shows the discount correctly — the
-//   in-cart "Applied" indicator is the first-cut feedback users need.
+// "Applied" state reads from CartProvider's appliedCoupon (sourced by
+// CartHydrator on mount + setAppliedCoupon on successful apply), not a
+// local prop — that way an applyCouponAction success on PDP would
+// immediately surface as applied in any CartDrawer that mounts later.
 
 export type CartCouponEntryProps = {
-  // Optional initial applied code (for SSR hydration once
-  // CartProvider tracks it). Today this is undefined.
+  // Optional initial applied code (test-only — production code reads from
+  // useCart().appliedCoupon). Kept for the cf-snil unit tests that pre-
+  // date the provider wiring.
   initialAppliedCode?: string;
 };
 
@@ -41,12 +35,14 @@ type Status =
   | { kind: "error"; message: string };
 
 export function CartCouponEntry({ initialAppliedCode }: CartCouponEntryProps = {}) {
-  const [expanded, setExpanded] = useState(Boolean(initialAppliedCode));
+  const { appliedCoupon, setAppliedCoupon, clearAppliedCoupon } = useCart();
+  // Provider state wins over the test-only prop; the prop only matters
+  // when no provider coupon exists yet.
+  const activeCode = appliedCoupon?.code ?? initialAppliedCode;
+  const [expanded, setExpanded] = useState(Boolean(activeCode));
   const [code, setCode] = useState("");
   const [status, setStatus] = useState<Status>(
-    initialAppliedCode
-      ? { kind: "applied", code: initialAppliedCode }
-      : { kind: "idle" },
+    activeCode ? { kind: "applied", code: activeCode } : { kind: "idle" },
   );
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -54,7 +50,14 @@ export function CartCouponEntry({ initialAppliedCode }: CartCouponEntryProps = {
     setStatus({ kind: "applying" });
     const result = await applyCouponAction(code);
     if (result.ok) {
-      setStatus({ kind: "applied", code: code.trim() });
+      const acceptedCode = result.appliedCoupon?.code ?? code.trim();
+      if (result.appliedCoupon) {
+        setAppliedCoupon(
+          result.appliedCoupon.code,
+          result.appliedCoupon.discountCents,
+        );
+      }
+      setStatus({ kind: "applied", code: acceptedCode });
       setCode("");
       return;
     }
@@ -65,6 +68,7 @@ export function CartCouponEntry({ initialAppliedCode }: CartCouponEntryProps = {
     setStatus({ kind: "applying" });
     const result = await removeCouponAction();
     if (result.ok) {
+      clearAppliedCoupon();
       setStatus({ kind: "idle" });
       return;
     }
@@ -109,9 +113,11 @@ export function CartCouponEntry({ initialAppliedCode }: CartCouponEntryProps = {
             Remove
           </button>
         </div>
-        <p className="mt-1 text-xs text-cf-espresso/80">
-          Discount will be reflected on the next page after checkout.
-        </p>
+        {appliedCoupon && appliedCoupon.discountCents > 0 ? null : (
+          <p className="mt-1 text-xs text-cf-espresso/80">
+            Discount will be reflected on the next page after checkout.
+          </p>
+        )}
       </div>
     );
   }

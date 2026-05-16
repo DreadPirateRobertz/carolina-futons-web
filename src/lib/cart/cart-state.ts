@@ -21,8 +21,20 @@ export type CartLineItem = {
   productUrl?: string;
 };
 
+export type AppliedCoupon = {
+  code: string;
+  discountCents: number;
+};
+
 export type CartState = {
   lines: ReadonlyArray<CartLineItem>;
+  // cf-5qv7 (cf-snil.fu1): optional applied-coupon snapshot so CartDrawer
+  // can render '- Discount: -$X.XX' before the user redirects to the
+  // Wix-hosted checkout page. The server is authoritative — applied
+  // coupons MUST flow through hydrateCartAction so we never display a
+  // stale discount; the reducer's `setCoupon` is for the immediate
+  // optimistic write after a successful applyCouponAction call.
+  appliedCoupon?: AppliedCoupon;
 };
 
 export type CartAction =
@@ -30,7 +42,13 @@ export type CartAction =
   | { type: "remove"; id: string }
   | { type: "setQuantity"; id: string; quantity: number }
   | { type: "clear" }
-  | { type: "hydrate"; lines: ReadonlyArray<CartLineItem> };
+  | {
+      type: "hydrate";
+      lines: ReadonlyArray<CartLineItem>;
+      appliedCoupon?: AppliedCoupon;
+    }
+  | { type: "setCoupon"; code: string; discountCents: number }
+  | { type: "clearCoupon" };
 
 export const EMPTY_CART: CartState = { lines: [] };
 
@@ -52,7 +70,7 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
       }
       const existing = state.lines.findIndex((l) => l.id === action.line.id);
       if (existing === -1) {
-        return { lines: [...state.lines, action.line] };
+        return { ...state, lines: [...state.lines, action.line] };
       }
       const next = state.lines.slice();
       const prev = next[existing];
@@ -64,14 +82,14 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
         ...action.line,
         quantity: prev.quantity + action.line.quantity,
       };
-      return { lines: next };
+      return { ...state, lines: next };
     }
     case "remove": {
       if (!state.lines.some((l) => l.id === action.id)) {
         warnBadInput("remove.id", action.id);
         return state;
       }
-      return { lines: state.lines.filter((l) => l.id !== action.id) };
+      return { ...state, lines: state.lines.filter((l) => l.id !== action.id) };
     }
     case "setQuantity": {
       if (!isFiniteNonNeg(action.quantity)) {
@@ -83,9 +101,13 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
         return state;
       }
       if (action.quantity <= 0) {
-        return { lines: state.lines.filter((l) => l.id !== action.id) };
+        return {
+          ...state,
+          lines: state.lines.filter((l) => l.id !== action.id),
+        };
       }
       return {
+        ...state,
         lines: state.lines.map((l) =>
           l.id === action.id ? { ...l, quantity: action.quantity } : l,
         ),
@@ -94,7 +116,38 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
     case "clear":
       return EMPTY_CART;
     case "hydrate":
-      return { lines: [...action.lines] };
+      // The hydrate path is authoritative — the server cart shape wins.
+      // Omitting appliedCoupon in the payload means "no coupon on server",
+      // which should propagate to client state (not preserved from prior
+      // local state). cf-5qv7.
+      return action.appliedCoupon
+        ? { lines: [...action.lines], appliedCoupon: action.appliedCoupon }
+        : { lines: [...action.lines] };
+    case "setCoupon": {
+      // cf-5qv7: optimistic write after a successful applyCouponAction.
+      // Guard against empty/whitespace codes and negative discounts —
+      // the server should never return these, but a future caller bug
+      // shouldn't render "$NaN" or "-$-500.00" in the drawer footer.
+      const trimmed = action.code.trim();
+      if (trimmed.length === 0) {
+        warnBadInput("setCoupon.code", action.code);
+        return state;
+      }
+      if (!isFiniteNonNeg(action.discountCents)) {
+        warnBadInput("setCoupon.discountCents", action.discountCents);
+        return state;
+      }
+      return {
+        ...state,
+        appliedCoupon: { code: trimmed, discountCents: action.discountCents },
+      };
+    }
+    case "clearCoupon": {
+      if (!state.appliedCoupon) return state;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { appliedCoupon: _, ...rest } = state;
+      return rest;
+    }
     default: {
       const _exhaustive: never = action;
       void _exhaustive;
@@ -117,7 +170,9 @@ type BadInputField =
   | "add.unitPriceCents"
   | "remove.id"
   | "setQuantity.quantity"
-  | "setQuantity.id";
+  | "setQuantity.id"
+  | "setCoupon.code"
+  | "setCoupon.discountCents";
 
 // Dev-only console.warn keeps "Add to Cart does nothing" debuggable without
 // attaching a debugger. In production the reducer still silently returns
@@ -140,6 +195,17 @@ export function cartItemCount(state: CartState): number {
 
 export function cartSubtotalCents(state: CartState): number {
   return state.lines.reduce((sum, l) => sum + l.unitPriceCents * l.quantity, 0);
+}
+
+// cf-5qv7: subtotal minus applied-coupon discount, floored at 0. Used by
+// the CartDrawer footer to render the post-discount total above the
+// checkout CTA. Wix returns a non-negative discount on the server side;
+// the floor is defensive against future bugs and matches the "no negative
+// money" invariant the rest of the cart code follows.
+export function cartTotalCents(state: CartState): number {
+  const subtotal = cartSubtotalCents(state);
+  const discount = state.appliedCoupon?.discountCents ?? 0;
+  return Math.max(0, subtotal - discount);
 }
 
 export function formatCents(cents: number, currency = "USD"): string {
