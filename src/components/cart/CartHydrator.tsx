@@ -29,7 +29,18 @@ export function CartHydrator() {
     hydrateCartAction()
       .then((result) => {
         if (result.ok) {
-          dispatch({ type: "hydrate", lines: result.lines });
+          // cf-5qv7: hydrate carries appliedCoupon when the server cart
+          // has a coupon — the reducer's hydrate path is authoritative,
+          // so omitting it when absent correctly clears stale local state.
+          dispatch(
+            result.appliedCoupon
+              ? {
+                  type: "hydrate",
+                  lines: result.lines,
+                  appliedCoupon: result.appliedCoupon,
+                }
+              : { type: "hydrate", lines: result.lines },
+          );
         } else {
           console.error("[CartHydrator] hydrateCartAction failed:", result.error);
           setLoadFailed(true);

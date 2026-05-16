@@ -23,6 +23,8 @@ export function CartDrawer() {
     state,
     itemCount,
     subtotalCents,
+    totalCents,
+    appliedCoupon,
     isOpen,
     isCartPending,
     setOpen,
@@ -160,13 +162,46 @@ export function CartDrawer() {
                     above the subtotal so users discover it BEFORE they
                     commit to the checkout redirect. */}
                 <CartCouponEntry />
-                <div className="mt-3 flex items-center justify-between text-base">
-                  <span className="font-medium text-cf-espresso">Subtotal</span>
+                <div className="mt-3 flex items-center justify-between text-sm">
+                  <span className="text-cf-espresso/80">Subtotal</span>
+                  <span
+                    className="text-cf-espresso/80"
+                    data-testid="cart-subtotal-line"
+                  >
+                    {formatCents(subtotalCents)}
+                  </span>
+                </div>
+                {appliedCoupon && appliedCoupon.discountCents > 0 ? (
+                  <div
+                    className="mt-1 flex items-center justify-between text-sm"
+                    data-testid="cart-discount-line"
+                  >
+                    <span className="text-cf-espresso/80">
+                      Discount (
+                      <span data-testid="cart-discount-code">
+                        {appliedCoupon.code}
+                      </span>
+                      )
+                    </span>
+                    <span
+                      className="text-cf-espresso/80"
+                      data-testid="cart-discount-amount"
+                    >
+                      −{formatCents(appliedCoupon.discountCents)}
+                    </span>
+                  </div>
+                ) : null}
+                <div className="mt-2 flex items-center justify-between text-base">
+                  <span className="font-medium text-cf-espresso">
+                    {appliedCoupon && appliedCoupon.discountCents > 0
+                      ? "Total"
+                      : "Subtotal"}
+                  </span>
                   <span
                     className="font-semibold text-cf-espresso"
                     data-testid="cart-subtotal"
                   >
-                    {formatCents(subtotalCents)}
+                    {formatCents(totalCents)}
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-cf-espresso/60">

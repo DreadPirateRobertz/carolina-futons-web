@@ -402,3 +402,70 @@ describe("CartTrigger — aria-live announcer (cf-zmsq)", () => {
     );
   });
 });
+
+// cf-5qv7 (cf-snil.fu1): when CartProvider state has appliedCoupon, the
+// CartDrawer footer renders a Discount line + relabels the final line
+// "Total" instead of "Subtotal" so the user sees the post-discount
+// amount before clicking "Go to checkout".
+function SeedCoupon({
+  code,
+  discountCents,
+}: {
+  code: string;
+  discountCents: number;
+}) {
+  const { setAppliedCoupon } = useCart();
+  useEffect(() => {
+    setAppliedCoupon(code, discountCents);
+  }, [code, discountCents, setAppliedCoupon]);
+  return null;
+}
+
+describe("CartDrawer — applied-coupon discount line (cf-5qv7)", () => {
+  function renderWithCoupon() {
+    return render(
+      <CartProvider>
+        <Seed lines={[lineA]} />
+        <SeedCoupon code="SUMMER15" discountCents={1500} />
+        <CartTrigger />
+        <CartDrawer />
+      </CartProvider>,
+    );
+  }
+
+  it("renders Discount line with the code + dollar amount when applied", () => {
+    renderWithCoupon();
+    fireEvent.click(screen.getByTestId("cart-trigger"));
+    expect(screen.getByTestId("cart-discount-line")).toBeInTheDocument();
+    expect(screen.getByTestId("cart-discount-code")).toHaveTextContent(
+      "SUMMER15",
+    );
+    expect(screen.getByTestId("cart-discount-amount")).toHaveTextContent(
+      "−$15.00",
+    );
+  });
+
+  it("relabels Subtotal → Total when a discount is applied", () => {
+    renderWithCoupon();
+    fireEvent.click(screen.getByTestId("cart-trigger"));
+    // The final-line label changes from "Subtotal" to "Total" — the bare
+    // "Subtotal" still appears as the first informational line.
+    const labels = screen.getAllByText(/^(Subtotal|Total)$/);
+    expect(labels.map((el) => el.textContent)).toContain("Total");
+  });
+
+  it("total reflects subtotal minus discount", () => {
+    renderWithCoupon();
+    fireEvent.click(screen.getByTestId("cart-trigger"));
+    // lineA is $799.00; discount is $15.00; total is $784.00.
+    expect(screen.getByTestId("cart-subtotal")).toHaveTextContent("$784.00");
+  });
+
+  it("omits the Discount line when no coupon is applied", () => {
+    renderWith([lineA]);
+    fireEvent.click(screen.getByTestId("cart-trigger"));
+    expect(screen.queryByTestId("cart-discount-line")).toBeNull();
+    // Subtotal label still used when no coupon.
+    expect(screen.queryByTestId("cart-subtotal")).toHaveTextContent("$799.00");
+  });
+});

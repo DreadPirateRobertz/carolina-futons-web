@@ -4,6 +4,7 @@ import {
   cartItemCount,
   cartReducer,
   cartSubtotalCents,
+  cartTotalCents,
   EMPTY_CART,
   formatCents,
   makeLineId,
@@ -283,5 +284,153 @@ describe("makeLineId", () => {
 
   it("combines productId and variantId", () => {
     expect(makeLineId("p-1", "v-full-linen")).toBe("p-1:v-full-linen");
+  });
+});
+
+// cf-5qv7 (cf-snil.fu1): applied-coupon state on CartState lets CartDrawer
+// surface the discount amount before redirecting to Wix-hosted checkout.
+describe("cartReducer — applied-coupon state (cf-5qv7)", () => {
+  const sampleLine: CartLineItem = {
+    id: "p-1",
+    productId: "p-1",
+    productName: "Test Product",
+    quantity: 1,
+    unitPriceCents: 10000,
+    formattedUnitPrice: "$100.00",
+  };
+
+  it("setCoupon stores the code + discount", () => {
+    const state = cartReducer(
+      { lines: [sampleLine] },
+      { type: "setCoupon", code: "SUMMER15", discountCents: 1500 },
+    );
+    expect(state.appliedCoupon).toEqual({
+      code: "SUMMER15",
+      discountCents: 1500,
+    });
+    expect(state.lines).toHaveLength(1);
+  });
+
+  it("setCoupon rejects negative discountCents (no state change)", () => {
+    const before = { lines: [sampleLine] };
+    const after = cartReducer(before, {
+      type: "setCoupon",
+      code: "BAD",
+      discountCents: -100,
+    });
+    expect(after).toEqual(before);
+  });
+
+  it("setCoupon rejects empty/whitespace code", () => {
+    const before = { lines: [sampleLine] };
+    expect(
+      cartReducer(before, { type: "setCoupon", code: "", discountCents: 100 }),
+    ).toEqual(before);
+    expect(
+      cartReducer(before, { type: "setCoupon", code: "   ", discountCents: 100 }),
+    ).toEqual(before);
+  });
+
+  it("setCoupon trims surrounding whitespace from the code", () => {
+    const state = cartReducer(
+      { lines: [sampleLine] },
+      { type: "setCoupon", code: "  SUMMER15  ", discountCents: 1500 },
+    );
+    expect(state.appliedCoupon?.code).toBe("SUMMER15");
+  });
+
+  it("clearCoupon removes appliedCoupon but preserves lines", () => {
+    const withCoupon = cartReducer(
+      { lines: [sampleLine] },
+      { type: "setCoupon", code: "SUMMER15", discountCents: 1500 },
+    );
+    const cleared = cartReducer(withCoupon, { type: "clearCoupon" });
+    expect(cleared.appliedCoupon).toBeUndefined();
+    expect(cleared.lines).toHaveLength(1);
+  });
+
+  it("hydrate carries appliedCoupon when provided", () => {
+    const state = cartReducer(EMPTY_CART, {
+      type: "hydrate",
+      lines: [sampleLine],
+      appliedCoupon: { code: "WELCOME", discountCents: 500 },
+    });
+    expect(state.appliedCoupon).toEqual({
+      code: "WELCOME",
+      discountCents: 500,
+    });
+  });
+
+  it("hydrate clears prior appliedCoupon when none provided (authoritative server cart)", () => {
+    const withCoupon: CartState = {
+      lines: [sampleLine],
+      appliedCoupon: { code: "OLD", discountCents: 999 },
+    };
+    const hydrated = cartReducer(withCoupon, {
+      type: "hydrate",
+      lines: [sampleLine],
+    });
+    expect(hydrated.appliedCoupon).toBeUndefined();
+  });
+
+  it("add/remove/setQuantity preserve appliedCoupon", () => {
+    const withCoupon: CartState = {
+      lines: [sampleLine],
+      appliedCoupon: { code: "SUMMER15", discountCents: 1500 },
+    };
+    const added = cartReducer(withCoupon, {
+      type: "add",
+      line: { ...sampleLine, id: "p-2", productId: "p-2" },
+    });
+    expect(added.appliedCoupon?.code).toBe("SUMMER15");
+    const updated = cartReducer(added, {
+      type: "setQuantity",
+      id: "p-1",
+      quantity: 2,
+    });
+    expect(updated.appliedCoupon?.code).toBe("SUMMER15");
+    const removed = cartReducer(updated, { type: "remove", id: "p-2" });
+    expect(removed.appliedCoupon?.code).toBe("SUMMER15");
+  });
+
+  it("clear discards appliedCoupon (cart empty → nothing to discount)", () => {
+    const withCoupon: CartState = {
+      lines: [sampleLine],
+      appliedCoupon: { code: "SUMMER15", discountCents: 1500 },
+    };
+    expect(cartReducer(withCoupon, { type: "clear" })).toEqual(EMPTY_CART);
+  });
+});
+
+describe("cartTotalCents (cf-5qv7)", () => {
+  const sampleLine: CartLineItem = {
+    id: "p-1",
+    productId: "p-1",
+    productName: "Test Product",
+    quantity: 2,
+    unitPriceCents: 10000,
+    formattedUnitPrice: "$100.00",
+  };
+
+  it("returns subtotal when no coupon applied", () => {
+    expect(cartTotalCents({ lines: [sampleLine] })).toBe(20000);
+  });
+
+  it("subtracts discount from subtotal", () => {
+    expect(
+      cartTotalCents({
+        lines: [sampleLine],
+        appliedCoupon: { code: "X", discountCents: 1500 },
+      }),
+    ).toBe(18500);
+  });
+
+  it("floors at 0 if discount exceeds subtotal (defensive — Wix shouldn't)", () => {
+    expect(
+      cartTotalCents({
+        lines: [sampleLine],
+        appliedCoupon: { code: "X", discountCents: 999999 },
+      }),
+    ).toBe(0);
   });
 });

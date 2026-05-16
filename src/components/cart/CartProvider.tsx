@@ -16,7 +16,9 @@ import {
   cartItemCount,
   cartReducer,
   cartSubtotalCents,
+  cartTotalCents,
   EMPTY_CART,
+  type AppliedCoupon,
   type CartAction,
   type CartLineItem,
   type CartState,
@@ -30,6 +32,8 @@ type CartContextValue = {
   state: CartState;
   itemCount: number;
   subtotalCents: number;
+  totalCents: number;
+  appliedCoupon: AppliedCoupon | undefined;
   isOpen: boolean;
   isCartPending: boolean;
   openCart: () => void;
@@ -40,6 +44,8 @@ type CartContextValue = {
   removeLine: (id: string) => void;
   setQuantity: (id: string, quantity: number) => void;
   clear: () => void;
+  setAppliedCoupon: (code: string, discountCents: number) => void;
+  clearAppliedCoupon: () => void;
   beginCartWrite: () => void;
   endCartWrite: () => void;
 };
@@ -85,6 +91,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [],
   );
   const clear = useCallback(() => dispatch({ type: "clear" }), []);
+  const setAppliedCoupon = useCallback(
+    (code: string, discountCents: number) =>
+      dispatch({ type: "setCoupon", code, discountCents }),
+    [],
+  );
+  const clearAppliedCoupon = useCallback(
+    () => dispatch({ type: "clearCoupon" }),
+    [],
+  );
   const beginCartWrite = useCallback(
     () => setPendingWrites((n) => n + 1),
     [],
@@ -99,6 +114,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       state,
       itemCount: cartItemCount(state),
       subtotalCents: cartSubtotalCents(state),
+      totalCents: cartTotalCents(state),
+      appliedCoupon: state.appliedCoupon,
       isOpen,
       isCartPending: pendingWrites > 0,
       openCart,
@@ -109,10 +126,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       removeLine,
       setQuantity,
       clear,
+      setAppliedCoupon,
+      clearAppliedCoupon,
       beginCartWrite,
       endCartWrite,
     }),
-    [state, isOpen, pendingWrites, openCart, closeCart, addLine, removeLine, setQuantity, clear, beginCartWrite, endCartWrite],
+    [state, isOpen, pendingWrites, openCart, closeCart, addLine, removeLine, setQuantity, clear, setAppliedCoupon, clearAppliedCoupon, beginCartWrite, endCartWrite],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
