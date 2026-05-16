@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import Link from "next/link";
 
+import { logError } from "@/lib/log";
+
 // cfw-1rb: error boundary scoped to the /admin route group. Without
 // this, a thrown error during /admin/* page render falls through to
 // the root error boundary (src/app/error.tsx) whose CTAs are 'Try
@@ -10,10 +12,20 @@ import Link from "next/link";
 // owner. Replace with the same Try Again reset + a link to /admin
 // home so Brenda stays in owner-mode after a transient failure.
 //
-// Logs to console.error inside useEffect so the existing Sentry
-// server-side capture still picks up the digest. The error.digest
-// is surfaced in the UI for support-ticket correlation.
+// Forwards the error to logError so it lands in Sentry with the
+// "admin-error-boundary" source tag — distinct from the root boundary
+// (cfw-logger migration). The digest is still surfaced in the UI for
+// support-ticket correlation.
 
+/**
+ * Error boundary for /admin/*. Mounted by Next when a child segment
+ * throws; forwards the error to Sentry via `logError` and renders the
+ * owner-targeted recovery UI.
+ *
+ * @param error - The boundary-caught error. `digest` is the Next stable
+ *   id surfaced in the Ref line for support-ticket correlation.
+ * @param reset - Re-renders the segment that threw; wired to "Try again".
+ */
 export default function AdminError({
   error,
   reset,
@@ -22,7 +34,7 @@ export default function AdminError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[admin error boundary]", error);
+    void logError("admin-error-boundary", "client-render", error);
   }, [error]);
 
   return (
