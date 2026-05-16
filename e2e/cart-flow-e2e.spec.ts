@@ -22,11 +22,12 @@
  *   7. Checkout CTA → /order-confirmation (fixture redirect)
  *   8. Order-confirmation page renders without crash
  *
- * Coupon path (steps 4-6) uses fixture mode's stubbed action shape: the
- * apply action returns ok=true with the entered code regardless of
- * validity, so the spec only verifies the UI plumbing (toggle, input,
- * applied-state render, remove). Real Wix coupon validation lives in
- * cf-w1u1 staging-gated coverage.
+ * Coupon path (steps 4-6) uses fixture mode's short-circuited action
+ * shape (cf-no2d): apply/removeCouponAction return ok=true with cart=null
+ * when NEXT_PUBLIC_USE_FIXTURE_PRODUCTS=1, so the spec verifies the UI
+ * plumbing deterministically (toggle, input, applied-state render,
+ * remove). Real Wix coupon validation lives in cf-w1u1 staging-gated
+ * coverage.
  */
 
 import { test, expect } from "@playwright/test";
@@ -86,29 +87,20 @@ test.describe("cart-flow e2e — full buy-button path (cf-7utd)", () => {
     await applyBtn.click();
 
     // ── 5. Applied-state UI verified (cf-snil) ────────────────────────
-    // The apply action either:
-    //   (a) returns ok with appliedCoupon → cart-coupon-entry-applied renders
-    //   (b) returns ok without appliedCoupon → applied-state renders with
-    //       the entered code only (no discount line)
-    //   (c) errors → cart-coupon-error renders
-    // Fixture mode short-circuits Wix, so most likely path is (b) or (c)
-    // depending on how the action handles fixture mode. We tolerate
-    // either applied OR error — what we're NOT tolerating is the form
-    // staying in the "applying" / empty-idle state, which would be a
-    // wiring bug.
+    // cf-no2d: applyCouponAction now short-circuits in fixture mode and
+    // returns ok=true without appliedCoupon. UI renders applied-state
+    // using the entered code (CartCouponEntry handleSubmit: line 53-60).
+    // No errorState tolerance — that masks regressions.
     const appliedState = page.locator('[data-testid="cart-coupon-entry-applied"]');
-    const errorState = page.locator('[data-testid="cart-coupon-error"]');
-    await expect(appliedState.or(errorState)).toBeVisible({ timeout: 5_000 });
+    await expect(appliedState).toBeVisible({ timeout: 5_000 });
 
-    // ── 6. Coupon remove (only if apply landed) → back to baseline ────
-    if (await appliedState.isVisible()) {
-      const removeBtn = page.locator('[data-testid="cart-coupon-remove"]');
-      await expect(removeBtn).toBeVisible();
-      await removeBtn.click();
-      // After remove, the form returns to the empty input state (cf-snil
-      // UX choice — pinned in CartCouponEntry.test.tsx).
-      await expect(couponInput).toBeVisible({ timeout: 5_000 });
-    }
+    // ── 6. Coupon remove → back to baseline ───────────────────────────
+    const removeBtn = page.locator('[data-testid="cart-coupon-remove"]');
+    await expect(removeBtn).toBeVisible();
+    await removeBtn.click();
+    // After remove, the form returns to the empty input state (cf-snil
+    // UX choice — pinned in CartCouponEntry.test.tsx).
+    await expect(couponInput).toBeVisible({ timeout: 5_000 });
 
     // ── 7. Checkout CTA → /order-confirmation (fixture redirect) ──────
     const checkoutCta = page.locator('[data-testid="cart-checkout-cta"]');
