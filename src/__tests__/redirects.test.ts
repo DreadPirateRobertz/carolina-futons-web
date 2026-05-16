@@ -147,6 +147,16 @@ describe("next.config redirects (cf-3qt.8.6) — pre-cutover redirect map gaps",
   });
 });
 
+describe("next.config redirects (cf-ajvr / cf-ruhm-w3.4) — subscriptions ingress", () => {
+  it("redirects /account/my-subscriptions → /dashboard permanently (closes Wix-email ingress gap)", async () => {
+    const redirects = await nextConfig.redirects!();
+    const r = redirects.find((x) => x.source === "/account/my-subscriptions");
+    expect(r, "redirect for /account/my-subscriptions").toBeDefined();
+    expect(r!.destination).toBe("/dashboard");
+    expect(r!.permanent).toBe(true);
+  });
+});
+
 describe("next.config redirects (cf-9eh / cf-ruhm-w3.1) — member-dashboard URL space", () => {
   it("redirects every Wix /account/* sub-route to the cfw /dashboard/* equivalent", async () => {
     const redirects = await nextConfig.redirects!();
