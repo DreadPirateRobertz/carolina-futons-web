@@ -5,6 +5,7 @@ import { getWishlist } from "@/app/actions/wishlist";
 import { getMemberSession } from "@/lib/auth/member";
 import { getWixClientWithTokens } from "@/lib/wix-client";
 import type { WishlistResponse } from "@/lib/wishlist/wishlist-types";
+import { logError } from "@/lib/log";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,7 @@ export default async function DashboardWishlistPage() {
       initialItems = result?.items ?? [];
     }
   } catch (err) {
-    console.error("[wishlist] getWishlist failed:", err);
+    await logError("dashboard-wishlist", "getWishlist", err);
     wishlistLoadFailed = true;
   }
 
