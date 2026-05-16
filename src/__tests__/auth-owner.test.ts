@@ -25,6 +25,11 @@ vi.mock("@/lib/wix-client", () => ({
   getWixClientWithTokens: () => ({ members: { getCurrentMember } }),
 }));
 
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/log", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 const memberTokens: Tokens = {
   accessToken: { value: "access-m", expiresAt: 1_780_000_000 },
   refreshToken: { value: "refresh-m", role: "member" as Tokens["refreshToken"]["role"] },
@@ -153,11 +158,48 @@ describe("getOwnerSession", () => {
     getCurrentMember
       .mockResolvedValueOnce({ member: { _id: "member-owner" } })
       .mockRejectedValueOnce(new Error("Wix down"));
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { getOwnerSession } = await import("@/lib/auth/owner");
     expect(await getOwnerSession()).toBeNull();
-    expect(consoleSpy).toHaveBeenCalled();
-    consoleSpy.mockRestore();
+  });
+
+  // Logger migration (cfw-logger batch 5): the outage catch in owner.ts
+  // now forwards through logError so the Wix-outage path lands in Sentry
+  // with the "auth/owner" source tag — distinct from the rest of the
+  // Wix surface (e.g. logWixFailure tags for plp/cross-sell). Three
+  // tests pin source/op shape, error pass-through, and the happy-path
+  // no-op (don't capture a non-throwing email lookup).
+  it("calls logError with source='auth/owner' on Wix outage", async () => {
+    process.env.OWNER_EMAILS = "brenda@carolinafutons.com";
+    cookieStore.set("wix-session", { value: JSON.stringify(memberTokens) });
+    getCurrentMember
+      .mockResolvedValueOnce({ member: { _id: "member-owner" } })
+      .mockRejectedValueOnce(new Error("Wix down"));
+    const { getOwnerSession } = await import("@/lib/auth/owner");
+    await getOwnerSession();
+    expect(mockLogError).toHaveBeenCalledTimes(1);
+    expect(mockLogError.mock.calls[0][0]).toBe("auth/owner");
+  });
+
+  it("passes op='getCurrentMember' and the thrown error through to logError", async () => {
+    process.env.OWNER_EMAILS = "brenda@carolinafutons.com";
+    cookieStore.set("wix-session", { value: JSON.stringify(memberTokens) });
+    const wixErr = new Error("Wix down");
+    getCurrentMember
+      .mockResolvedValueOnce({ member: { _id: "member-owner" } })
+      .mockRejectedValueOnce(wixErr);
+    const { getOwnerSession } = await import("@/lib/auth/owner");
+    await getOwnerSession();
+    const [, op, err] = mockLogError.mock.calls[0];
+    expect(op).toBe("getCurrentMember");
+    expect(err).toBe(wixErr);
+  });
+
+  it("does NOT call logError when the email lookup succeeds (happy path)", async () => {
+    process.env.OWNER_EMAILS = "brenda@carolinafutons.com";
+    cookieStore.set("wix-session", { value: JSON.stringify(memberTokens) });
+    const { getOwnerSession } = await import("@/lib/auth/owner");
+    await getOwnerSession();
+    expect(mockLogError).not.toHaveBeenCalled();
   });
 
   it("returns OwnerSession when allowlisted owner is signed in", async () => {
