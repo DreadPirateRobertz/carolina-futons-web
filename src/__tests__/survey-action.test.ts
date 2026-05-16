@@ -15,16 +15,20 @@ import {
   vi,
 } from "vitest";
 
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/log", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 import { submitSurvey } from "@/app/actions/survey";
 import { initialSurveyActionState } from "@/app/survey/survey-state";
 
 const fetchMock = vi.fn<typeof fetch>();
-const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
 beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   fetchMock.mockReset();
-  consoleError.mockClear();
+  mockLogError.mockClear();
   vi.stubEnv("WIX_VELO_SITE_URL", "https://www.carolinafutons.com");
 });
 
@@ -102,8 +106,10 @@ describe("submitSurvey — WIX_VELO_SITE_URL handling", () => {
       error: "Couldn't save your response — please try again shortly.",
     });
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(consoleError).toHaveBeenCalledWith(
-      "[survey] WIX_VELO_SITE_URL not set",
+    expect(mockLogError).toHaveBeenCalledWith(
+      "survey",
+      "config",
+      expect.any(Error),
     );
   });
 
@@ -194,7 +200,7 @@ describe("submitSurvey — response handling", () => {
   });
 
   it.each([400, 401, 403, 404, 500, 502, 503])(
-    "%d response → generic error + log",
+    "%d response → generic error + logError(submitSurvey.non-ok)",
     async (status) => {
       fetchMock.mockResolvedValueOnce(new Response(null, { status }));
 
@@ -204,12 +210,16 @@ describe("submitSurvey — response handling", () => {
         status: "error",
         error: "Couldn't save your response — please try again shortly.",
       });
-      expect(consoleError).toHaveBeenCalledWith("[survey] Velo responded", status);
+      const lastCall = mockLogError.mock.calls.at(-1)!;
+      expect(lastCall[0]).toBe("survey");
+      expect(lastCall[1]).toBe("submitSurvey.non-ok");
+      expect((lastCall[2] as Error).message).toContain(String(status));
     },
   );
 
-  it("fetch rejects (network / timeout) → generic error + log", async () => {
-    fetchMock.mockRejectedValueOnce(new TypeError("fetch failed"));
+  it("fetch rejects (network / timeout) → generic error + logError(submitSurvey.fetch)", async () => {
+    const networkErr = new TypeError("fetch failed");
+    fetchMock.mockRejectedValueOnce(networkErr);
 
     const result = await submitSurvey(IDLE, fd({ score: "8" }));
 
@@ -217,9 +227,16 @@ describe("submitSurvey — response handling", () => {
       status: "error",
       error: "Couldn't save your response — please try again shortly.",
     });
-    expect(consoleError).toHaveBeenCalledWith(
-      "[survey] fetch failed:",
-      expect.any(TypeError),
+    expect(mockLogError).toHaveBeenCalledWith(
+      "survey",
+      "submitSurvey.fetch",
+      networkErr,
     );
+  });
+
+  it("does NOT call logError on the happy path (200 response)", async () => {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 200 }));
+    await submitSurvey(IDLE, fd({ score: "8" }));
+    expect(mockLogError).not.toHaveBeenCalled();
   });
 });
