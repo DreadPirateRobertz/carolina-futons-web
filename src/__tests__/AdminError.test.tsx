@@ -1,6 +1,12 @@
 import { describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
+// cfw-logger migration: AdminError's useEffect routes through logError.
+const logErrorMock = vi.fn();
+vi.mock("@/lib/logger", () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
+}));
+
 import AdminError from "@/app/admin/error";
 
 // cfw-1rb: route-group error boundary for /admin/*. Tests pin the
@@ -63,13 +69,53 @@ describe("/admin/error", () => {
     expect(screen.queryByRole("link", { name: /shop/i })).toBeNull();
   });
 
-  it("logs the error to console.error inside useEffect (Sentry capture)", () => {
-    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-    render(<AdminError error={new Error("boom")} reset={vi.fn()} />);
-    expect(spy).toHaveBeenCalledWith(
-      "[admin error boundary]",
-      expect.any(Error),
+  it("logs the error via logError inside useEffect (cfw-logger migration)", () => {
+    logErrorMock.mockReset();
+    const err = new Error("boom");
+    render(<AdminError error={err} reset={vi.fn()} />);
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "admin-error-boundary",
+      "admin page render threw",
+      err,
     );
-    spy.mockRestore();
+  });
+});
+
+// cfw-logger migration: 3 dedicated contract tests pinning the
+// logError shape on both error boundaries.
+describe("error boundaries — logError observability", () => {
+  it("AdminError tags scope='admin-error-boundary' with the Error payload", () => {
+    logErrorMock.mockReset();
+    const err = new Error("admin boom");
+    render(<AdminError error={err} reset={vi.fn()} />);
+    expect(logErrorMock).toHaveBeenCalledTimes(1);
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "admin-error-boundary",
+      "admin page render threw",
+      err,
+    );
+  });
+
+  it("AdminError still calls logError when the Error carries a digest", () => {
+    logErrorMock.mockReset();
+    const err = Object.assign(new Error("digest case"), { digest: "abc" });
+    render(<AdminError error={err} reset={vi.fn()} />);
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "admin-error-boundary",
+      "admin page render threw",
+      err,
+    );
+  });
+
+  it("RootError tags scope='root-error-boundary' with the Error payload", async () => {
+    logErrorMock.mockReset();
+    const { default: RootError } = await import("@/app/error");
+    const err = new Error("root boom");
+    render(<RootError error={err} reset={vi.fn()} />);
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "root-error-boundary",
+      "page render threw",
+      err,
+    );
   });
 });

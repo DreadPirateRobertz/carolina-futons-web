@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import Link from "next/link";
 
+import { logError } from "@/lib/logger";
+
 export default function RootError({
   error,
   reset,
@@ -11,7 +13,7 @@ export default function RootError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[root error boundary]", error);
+    logError("root-error-boundary", "page render threw", error);
   }, [error]);
 
   return (
