@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { logError } from "@/lib/observability/log";
 import { callVelo, VeloRpcError } from "@/lib/wix/velo-client";
 
 export const dynamic = "force-dynamic";
@@ -49,9 +50,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     if (err instanceof VeloRpcError) {
-      console.error(`[email/trigger] Velo ${veloMethod} failed:`, err.status, err.body);
+      await logError("email/trigger", `Velo ${veloMethod} failed`, err, {
+        status: err.status,
+        body: err.body,
+      });
     } else {
-      console.error(`[email/trigger] unexpected error:`, err);
+      await logError("email/trigger", "unexpected error", err);
     }
     // Non-fatal — email triggers must not block the primary user flow.
     return NextResponse.json({ ok: false, error: "trigger-failed" }, { status: 200 });

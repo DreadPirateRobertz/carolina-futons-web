@@ -11,6 +11,15 @@ const veloMocks = vi.hoisted(() => ({
   callVelo: vi.fn(),
 }));
 
+// cfw-437z: preferences.ts catches now route through logError →
+// Sentry. Mock @sentry/nextjs so tests don't ship real events AND the
+// new logError-integration describe below can assert on (scope, op)
+// tags.
+const sentryMocks = vi.hoisted(() => ({
+  captureException: vi.fn(),
+  flush: vi.fn().mockResolvedValue(true),
+}));
+
 vi.mock("@/lib/auth/member", () => ({
   withMember: authMocks.withMember,
 }));
@@ -19,8 +28,15 @@ vi.mock("@/lib/wix/velo-client", () => ({
   callVelo: veloMocks.callVelo,
 }));
 
+vi.mock("@sentry/nextjs", () => ({
+  captureException: sentryMocks.captureException,
+  flush: sentryMocks.flush,
+}));
+
 beforeEach(() => {
   veloMocks.callVelo.mockReset();
+  sentryMocks.captureException.mockReset();
+  sentryMocks.flush.mockReset().mockResolvedValue(true);
 });
 
 describe("getMyPushPreferences", () => {
@@ -145,5 +161,75 @@ describe("managePushPreferences", () => {
       error: "Could not save preferences.",
     });
     errSpy.mockRestore();
+  });
+});
+
+// cfw-437z: pin logError integration on both catches. Wix-side push-
+// preference outages MUST surface to Sentry — a member who toggled
+// marketing OFF and gets a silent "Could not save" with no operational
+// signal is the exact compliance footgun this migration prevents.
+describe("preferences — logError integration", () => {
+  it("getMyPushPreferences throw → captures with scope='preferences' + op='getMyPushPreferences failed' + flush(2000)", async () => {
+    const err = new Error("rpc 1");
+    veloMocks.callVelo.mockRejectedValueOnce(err);
+    const errSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const { getMyPushPreferences } = await import(
+      "@/app/actions/preferences"
+    );
+
+    await getMyPushPreferences();
+
+    const matching = sentryMocks.captureException.mock.calls.find(
+      ([, opts]) =>
+        (opts as { tags?: { op?: string } }).tags?.op ===
+        "getMyPushPreferences failed",
+    );
+    expect(matching).toBeDefined();
+    const [reportedErr, opts] = matching!;
+    expect(reportedErr).toBe(err);
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "preferences",
+      op: "getMyPushPreferences failed",
+    });
+    expect(sentryMocks.flush).toHaveBeenCalledWith(2000);
+    errSpy.mockRestore();
+  });
+
+  it("managePushPreferences throw → captures with scope='preferences' + op='managePushPreferences failed'", async () => {
+    const err = new Error("rpc 2");
+    veloMocks.callVelo.mockRejectedValueOnce(err);
+    const errSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const { managePushPreferences } = await import(
+      "@/app/actions/preferences"
+    );
+
+    await managePushPreferences({ marketing: false });
+
+    const matching = sentryMocks.captureException.mock.calls.find(
+      ([, opts]) =>
+        (opts as { tags?: { op?: string } }).tags?.op ===
+        "managePushPreferences failed",
+    );
+    expect(matching).toBeDefined();
+    const [reportedErr] = matching!;
+    expect(reportedErr).toBe(err);
+    errSpy.mockRestore();
+  });
+
+  it("happy path on either action does NOT call Sentry — keeps signal-to-noise high", async () => {
+    veloMocks.callVelo.mockResolvedValueOnce({
+      success: true,
+      prefs: { marketing: true },
+    });
+    const { getMyPushPreferences } = await import(
+      "@/app/actions/preferences"
+    );
+    await getMyPushPreferences();
+
+    expect(sentryMocks.captureException).not.toHaveBeenCalled();
   });
 });
