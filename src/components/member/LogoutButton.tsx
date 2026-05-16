@@ -38,7 +38,7 @@ export function LogoutButton() {
         onClick={handleLogout}
         disabled={pending}
         data-testid="logout-button"
-        className="rounded-md border border-cf-espresso/30 px-4 py-2 text-sm font-medium text-cf-espresso transition hover:bg-cf-espresso/5 disabled:opacity-50"
+        className="rounded-md border border-cf-espresso/30 px-4 py-2 text-sm font-medium text-cf-espresso transition hover:bg-cf-espresso/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2 disabled:opacity-50"
       >
         {pending ? "Signing out…" : "Sign out"}
       </button>

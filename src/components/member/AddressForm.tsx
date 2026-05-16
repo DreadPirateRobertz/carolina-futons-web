@@ -131,7 +131,7 @@ export function AddressForm({ address, onDone }: AddressFormProps) {
           type="submit"
           disabled={pending}
           data-testid="address-form-submit"
-          className="rounded-md bg-cf-cta px-4 py-2 text-sm font-semibold text-white hover:bg-cf-cta/90 disabled:opacity-60"
+          className="rounded-md bg-cf-cta px-4 py-2 text-sm font-semibold text-white hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2 disabled:opacity-60"
         >
           {pending ? "Saving…" : address ? "Save changes" : "Add address"}
         </button>
@@ -140,7 +140,7 @@ export function AddressForm({ address, onDone }: AddressFormProps) {
             type="button"
             onClick={onDone}
             disabled={pending}
-            className="text-sm text-cf-muted underline-offset-2 hover:underline"
+            className="rounded-sm text-sm text-cf-muted underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
           >
             Cancel
           </button>

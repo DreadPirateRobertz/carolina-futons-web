@@ -143,6 +143,11 @@ export default async function SearchPage(props: {
             assistive-tech behavioural drift (per WAI-ARIA Authoring
             Practices on live regions). */}
         <p
+          // cf-613 / cf-uoe (folded into cf-if28): role="status" complements
+          // aria-live="polite" — some screen readers detect the role attribute
+          // more reliably than aria-live alone for total-result announcements.
+          role="status"
+          data-testid="search-total-count"
           className="text-sm text-cf-muted"
           role="status"
           aria-live="polite"

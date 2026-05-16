@@ -55,7 +55,7 @@ export function WishlistShareButton({ loadFailed }: { loadFailed?: boolean }) {
       disabled={state === "pending"}
       aria-label="Copy shareable wishlist link to clipboard"
       data-testid="wishlist-share-button"
-      className="rounded border border-cf-espresso/30 px-3 py-1.5 text-sm text-cf-espresso transition hover:bg-cf-espresso/5 disabled:opacity-50"
+      className="rounded border border-cf-espresso/30 px-3 py-1.5 text-sm text-cf-espresso transition hover:bg-cf-espresso/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2 disabled:opacity-50"
     >
       {label}
     </button>
