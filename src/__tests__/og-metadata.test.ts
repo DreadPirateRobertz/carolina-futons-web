@@ -54,6 +54,11 @@ vi.mock("@/lib/product/cross-sell", () => ({ getCrossSellProducts: vi.fn() }));
 vi.mock("next/navigation", () => ({ notFound: vi.fn(), redirect: vi.fn() }));
 vi.mock("next/headers", () => ({ cookies: vi.fn() }));
 
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/log", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 import { metadata as layoutMetadata } from "@/app/layout";
 import { metadata as shopMetadata } from "@/app/shop/page";
 import { generateMetadata as categoryGenerateMeta } from "@/app/shop/[category]/page";
@@ -258,15 +263,52 @@ describe("PDP generateMetadata", () => {
   });
 
   it("falls back to DEFAULT_OG_IMAGE for non-HTTPS image URL", async () => {
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockLogError.mockClear();
     mockGetProductBySlug.mockResolvedValue({
       ...product,
       media: { mainMedia: { image: { url: "wix:image://v1/abc.jpg" } } },
     } as never);
     const meta = await pdpGenerateMeta({ params: Promise.resolve({ slug: "monterey-futon" }) });
     expect(ogImageUrls(meta.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
-    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining("non-HTTPS"), expect.any(String));
-    errSpy.mockRestore();
+  });
+
+  // Logger migration (cfw-logger batch 6): the non-HTTPS marker is a
+  // catalog-data hygiene observability event — it doesn't throw, but we
+  // want Sentry coverage so Brenda's bad media uploads surface in the
+  // dashboard. Three tests pin: source tag, op tag, error message
+  // payload carrying both slug + URL for triage.
+  it("calls logError with source='PDP' when product image is non-HTTPS", async () => {
+    mockLogError.mockClear();
+    mockGetProductBySlug.mockResolvedValue({
+      ...product,
+      media: { mainMedia: { image: { url: "wix:image://v1/abc.jpg" } } },
+    } as never);
+    await pdpGenerateMeta({ params: Promise.resolve({ slug: "monterey-futon" }) });
+    expect(mockLogError).toHaveBeenCalledTimes(1);
+    expect(mockLogError.mock.calls[0][0]).toBe("PDP");
+  });
+
+  it("passes op='generateMetadata.non-https-image' so Sentry can group these together", async () => {
+    mockLogError.mockClear();
+    mockGetProductBySlug.mockResolvedValue({
+      ...product,
+      media: { mainMedia: { image: { url: "wix:image://v1/abc.jpg" } } },
+    } as never);
+    await pdpGenerateMeta({ params: Promise.resolve({ slug: "monterey-futon" }) });
+    expect(mockLogError.mock.calls[0][1]).toBe("generateMetadata.non-https-image");
+  });
+
+  it("error message carries both the slug and the bad URL for triage", async () => {
+    mockLogError.mockClear();
+    mockGetProductBySlug.mockResolvedValue({
+      ...product,
+      media: { mainMedia: { image: { url: "wix:image://v1/abc.jpg" } } },
+    } as never);
+    await pdpGenerateMeta({ params: Promise.resolve({ slug: "monterey-futon" }) });
+    const passed = mockLogError.mock.calls[0][2] as Error;
+    expect(passed).toBeInstanceOf(Error);
+    expect(passed.message).toContain("monterey-futon");
+    expect(passed.message).toContain("wix:image://v1/abc.jpg");
   });
 
   it("returns fallback title 'Product — Carolina Futons' when product is not found", async () => {
