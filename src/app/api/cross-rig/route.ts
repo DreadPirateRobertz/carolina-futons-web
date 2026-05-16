@@ -1,6 +1,8 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 
+import { logError } from "@/lib/logging/log-error";
+
 export const dynamic = "force-dynamic";
 
 const ALLOWED_SOURCE_RIGS = new Set(["cfutons_mobile"]);
@@ -47,7 +49,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // client error. Matches the revalidate route's fail-closed pattern.
     // TODO cf-0qk9 follow-up: add HMAC + ts replay window once mobile
     // client can sign requests (same risk class as Stage 3 credit issuance).
-    console.error("[cross-rig] CROSS_RIG_SECRET env var not set");
+    // cfw-to8z: synthesize an Error for Sentry fingerprinting (cfw-1r9n
+    // pattern). Cross-rig is security-sensitive — a deploy where this
+    // env never got populated would silently 500 every mobile-side
+    // gamification event; Sentry alerting catches that immediately.
+    await logError(
+      "api/cross-rig",
+      "config",
+      new Error("CROSS_RIG_SECRET env var not set"),
+    );
     return bad(500, "server misconfiguration");
   }
   if (!verifySecret(req.headers.get("x-cross-rig-secret"), secret)) {

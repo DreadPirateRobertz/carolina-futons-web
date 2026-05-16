@@ -76,7 +76,9 @@ export async function getVisitorCartClient() {
         // jar, serializer crash) stop disappearing into console-only.
         // Fire-and-forget — we still want to return the seeded client
         // for this request even though the session won't persist.
-        console.error("[wix-visitor-client] unexpected jar.set failure:", err);
+        // cfw-q9rn: logWixFailure already writes the structured
+        // [source] op failed console line; the bare console.error
+        // here duplicated that.
         void logWixFailure("cart", "setVisitorTokens", err);
       }
     }
@@ -89,7 +91,9 @@ export async function getVisitorCartClient() {
     // distinct events sharing the same root Error, distinguished by
     // their `op` tag (auth-layer vs action-layer). This is the
     // layer-boundary signal on-call uses to triage.
-    console.error("[wix-visitor-client] generateVisitorTokens failed:", err);
+    // cfw-q9rn: logWixFailure already writes the structured
+    // [source] op failed console line; the bare console.error here
+    // duplicated that.
     void logWixFailure("cart", "generateVisitorTokens", err);
     throw err;
   }

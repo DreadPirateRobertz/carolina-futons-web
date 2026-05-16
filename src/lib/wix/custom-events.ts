@@ -1,4 +1,5 @@
 import { callVelo, VeloRpcError } from "@/lib/wix/velo-client";
+import { logError } from "@/lib/logging/log-error";
 
 export type TrackCustomEventParams = {
   source?: string;
@@ -25,16 +26,15 @@ export async function trackCustomEvent(
       args: [eventName, params],
     });
   } catch (err) {
-    if (err instanceof VeloRpcError) {
-      console.error(
-        `[customEvents] trackCustomEvent("${eventName}") rpc failed: HTTP ${err.status} — ${err.message}`,
-      );
-    } else {
-      console.error(
-        `[customEvents] trackCustomEvent("${eventName}") failed:`,
-        err,
-      );
-    }
+    // cfw-vuqd: same shape as cfw-6ngi captureQuizLead — collapses the
+    // VeloRpcError vs unexpected branches into one logError with the
+    // discriminator in extras. eventName always present so Sentry can
+    // group per-event (e.g. only badge_earned failing).
+    const httpStatus = err instanceof VeloRpcError ? err.status : undefined;
+    await logError("customEvents", "trackCustomEvent", err, {
+      eventName,
+      httpStatus,
+    });
     return { success: false };
   }
 }
