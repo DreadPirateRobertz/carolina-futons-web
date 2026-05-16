@@ -13,7 +13,7 @@
 // authoritative Stores write. See `cart-session-dual-write.ts`.
 import "server-only";
 
-import { makeLineId, type CartLineItem } from "@/lib/cart/cart-state";
+import { makeLineId, type AppliedCoupon, type CartLineItem } from "@/lib/cart/cart-state";
 import {
   getExistingVisitorCartClient,
   getVisitorCartClient,
@@ -168,6 +168,21 @@ export async function removeCoupon() {
 }
 
 export type WixCart = NonNullable<Awaited<ReturnType<typeof getCurrentCart>>>;
+
+// Extracts the applied coupon from a Wix cart response. The Wix SDK surfaces
+// applied discounts via cart.appliedDiscounts[0].coupon.{code, amount.amount}.
+// Returns undefined when no coupon is present (cart is null, no discounts, or
+// the first discount entry has no coupon — e.g. automatic rule, not a code).
+export function extractAppliedCoupon(cart: WixCart | null): AppliedCoupon | undefined {
+  type CouponDiscount = { coupon?: { code?: string; amount?: { amount?: string } } };
+  const discounts = cart?.appliedDiscounts as CouponDiscount[] | undefined;
+  const coupon = discounts?.[0]?.coupon;
+  if (!coupon?.code) return undefined;
+  const discountCents = coupon.amount?.amount
+    ? Math.round(Number(coupon.amount.amount) * 100)
+    : 0;
+  return { code: coupon.code, discountCents };
+}
 
 // Maps a Wix server cart to the CartProvider line format. Used by the cart
 // hydration path so the client cart reflects Wix state on page load.
