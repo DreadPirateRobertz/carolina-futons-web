@@ -84,3 +84,47 @@ describe("POST /api/auth/forgot-password", () => {
     consoleSpy.mockRestore();
   });
 });
+
+// Pins the logError migration so an accidental revert to a bare
+// console.error("[auth/forgot-password] …") (or to a string-interpolated
+// prefix that bypasses the helper) fails loudly. Asserts on the
+// console.error sink because logError forwards there in every env; the
+// Sentry forwarder is prod-only and unit-tested in log.test.ts.
+describe("POST /api/auth/forgot-password — logError migration", () => {
+  it("emits the bracketed '[auth/forgot-password] sendRecoveryEmail failed' prefix with the thrown err as the second arg", async () => {
+    const thrown = new Error("Wix down");
+    sendPasswordResetEmailMock.mockRejectedValueOnce(thrown);
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { POST } = await import("@/app/api/auth/forgot-password/route");
+    await POST(makeReq({ email: "user@example.com" }) as never);
+    expect(consoleSpy).toHaveBeenCalledTimes(1);
+    expect(consoleSpy.mock.calls[0]![0]).toBe(
+      "[auth/forgot-password] sendRecoveryEmail failed",
+    );
+    expect(consoleSpy.mock.calls[0]![1]).toBe(thrown);
+    consoleSpy.mockRestore();
+  });
+
+  it("forwards non-Error throws (string reason) as the second arg, unchanged", async () => {
+    sendPasswordResetEmailMock.mockRejectedValueOnce("wix-degraded");
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { POST } = await import("@/app/api/auth/forgot-password/route");
+    await POST(makeReq({ email: "user@example.com" }) as never);
+    expect(consoleSpy).toHaveBeenCalledTimes(1);
+    expect(consoleSpy.mock.calls[0]![0]).toBe(
+      "[auth/forgot-password] sendRecoveryEmail failed",
+    );
+    expect(consoleSpy.mock.calls[0]![1]).toBe("wix-degraded");
+    consoleSpy.mockRestore();
+  });
+
+  it("does NOT log on the happy path (Wix resolves cleanly)", async () => {
+    sendPasswordResetEmailMock.mockResolvedValueOnce(undefined);
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { POST } = await import("@/app/api/auth/forgot-password/route");
+    const res = await POST(makeReq({ email: "user@example.com" }) as never);
+    expect(res.status).toBe(200);
+    expect(consoleSpy).not.toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+});
