@@ -33,6 +33,7 @@ import {
   SESSION_COOKIE_NAME,
   SESSION_COOKIE_OPTIONS,
 } from "@/lib/auth/session";
+import { logError } from "@/lib/logger";
 import { getWixClientWithTokens } from "@/lib/wix-client";
 import { logWixFailure } from "@/lib/wix/errors";
 
@@ -76,7 +77,11 @@ export async function getVisitorCartClient() {
         // jar, serializer crash) stop disappearing into console-only.
         // Fire-and-forget — we still want to return the seeded client
         // for this request even though the session won't persist.
-        console.error("[wix-visitor-client] unexpected jar.set failure:", err);
+        logError(
+          "wix-visitor-client",
+          "unexpected jar.set failure",
+          err instanceof Error ? err : { err },
+        );
         void logWixFailure("cart", "setVisitorTokens", err);
       }
     }
@@ -89,7 +94,11 @@ export async function getVisitorCartClient() {
     // distinct events sharing the same root Error, distinguished by
     // their `op` tag (auth-layer vs action-layer). This is the
     // layer-boundary signal on-call uses to triage.
-    console.error("[wix-visitor-client] generateVisitorTokens failed:", err);
+    logError(
+      "wix-visitor-client",
+      "generateVisitorTokens failed",
+      err instanceof Error ? err : { err },
+    );
     void logWixFailure("cart", "generateVisitorTokens", err);
     throw err;
   }

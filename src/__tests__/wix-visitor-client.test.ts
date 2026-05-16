@@ -24,6 +24,13 @@ vi.mock("@/lib/wix/errors", () => ({
   logWixFailure: (...args: unknown[]) => logWixFailure(...args),
 }));
 
+// cfw-logger migration: catch branches route through logError before
+// the existing logWixFailure Wix-shape call.
+const logErrorMock = vi.fn();
+vi.mock("@/lib/logger", () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
+}));
+
 import { cookies } from "next/headers";
 import { getWixClientWithTokens } from "@/lib/wix-client";
 import { parseSessionCookie } from "@/lib/auth/session";
@@ -55,6 +62,7 @@ beforeEach(() => {
   );
   mockAnonClient.auth.generateVisitorTokens.mockResolvedValue(mockTokens);
   logWixFailure.mockClear();
+  logErrorMock.mockReset();
 });
 
 describe("getVisitorCartClient", () => {
@@ -235,6 +243,45 @@ describe("getVisitorCartClient", () => {
       await expect(getVisitorCartClient()).rejects.toThrow("auth-fail-order");
       expect(logCalledBeforeThrow).toBe(true);
       errSpy.mockRestore();
+    });
+  });
+
+  // cfw-logger migration: both catch branches route through logError
+  // before the existing logWixFailure Wix-shape call. Pin the contract.
+  describe("logError observability (cfw-logger)", () => {
+    it("calls logError when generateVisitorTokens throws", async () => {
+      mockAnonClient.auth.generateVisitorTokens.mockRejectedValueOnce(
+        new Error("auth-fail"),
+      );
+      await expect(getVisitorCartClient()).rejects.toThrow();
+      expect(logErrorMock).toHaveBeenCalledWith(
+        "wix-visitor-client",
+        "generateVisitorTokens failed",
+        expect.anything(),
+      );
+    });
+
+    it("calls logError when jar.set fails with an unexpected error", async () => {
+      mockJar.set.mockImplementationOnce(() => {
+        throw new Error("corrupt jar — not the RSC context guard message");
+      });
+      await getVisitorCartClient();
+      expect(logErrorMock).toHaveBeenCalledWith(
+        "wix-visitor-client",
+        "unexpected jar.set failure",
+        expect.anything(),
+      );
+    });
+
+    it("does NOT call logError on the RSC-context jar.set skip (warn path)", async () => {
+      mockJar.set.mockImplementationOnce(() => {
+        throw new Error("Cookies can only be modified in a Server Action");
+      });
+      // Suppress the expected console.warn so the test output stays clean.
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      await getVisitorCartClient();
+      expect(logErrorMock).not.toHaveBeenCalled();
+      warnSpy.mockRestore();
     });
   });
 });
