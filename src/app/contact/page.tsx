@@ -6,6 +6,7 @@ import { ContactForm } from "@/components/contact/ContactForm";
 import { FogScene } from "@/components/mascot/FogScene";
 import { BUSINESS } from "@/lib/business/contact-info";
 import { getShowroomScheduleLine } from "@/lib/business/showroom-hours";
+import { getSiteContent } from "@/lib/cms/site-content";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
 import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
@@ -28,13 +29,63 @@ export const metadata: Metadata = {
   twitter: twitterFromOpenGraph(OG),
 };
 
+// cf-bbu5: SiteContent fallbacks for /contact. Every heading + section
+// label is owner-editable via the Wix SiteContent collection. Fallbacks
+// below match the pre-cf-bbu5 hardcoded copy verbatim so a Wix-down /
+// unprovisioned render is byte-identical to today.
+//
+// Hours are NOT mirrored here — they're fetched via getShowroomScheduleLine
+// from the SAME SiteContent keys (`visit.hours.sun-tue` / `visit.hours.wed-sat`)
+// that /visit reads. Single-source-of-truth invariant pinned by the
+// drift test in `contact-page.test.tsx`.
+const CONTACT_COPY_FALLBACKS = {
+  eyebrow: "Contact",
+  introHeading: "We’d love to hear from you.",
+  introBody:
+    "Questions about a frame, a mattress, delivery, or a past order? Drop us a note and a human will reply within one business day.",
+  directHeading: "Reach us directly",
+  appointmentHeading: "Schedule a showroom visit",
+  appointmentBodySuffix:
+    " Request a slot and we’ll confirm by email within one business day.",
+  formHeading: "Send a message",
+};
+
 export default async function ContactPage() {
-  // cf-7pk0 F2: read the canonical showroom hours from SiteContent so
-  // this page can't drift from /visit. Pre-fix, line 97 hardcoded
-  // "Wednesday through Saturday, 10 am–5 pm" while /visit's published
-  // schedule said wed-sat is Closed — sending customers to a closed
-  // showroom. Single source of truth now.
-  const showroomScheduleLine = await getShowroomScheduleLine();
+  // cf-7pk0 F2 (resolved earlier): showroom hours from SiteContent via
+  // the same keys /visit reads — drift-proof.
+  // cf-bbu5: also wire headings + section labels to SiteContent so they
+  // can change without a deploy.
+  const [
+    showroomScheduleLine,
+    eyebrow,
+    introHeading,
+    introBody,
+    directHeading,
+    appointmentHeading,
+    appointmentBodySuffix,
+    formHeading,
+  ] = await Promise.all([
+    getShowroomScheduleLine(),
+    getSiteContent("contact.eyebrow", CONTACT_COPY_FALLBACKS.eyebrow),
+    getSiteContent(
+      "contact.intro.heading",
+      CONTACT_COPY_FALLBACKS.introHeading,
+    ),
+    getSiteContent("contact.intro.body", CONTACT_COPY_FALLBACKS.introBody),
+    getSiteContent(
+      "contact.direct.heading",
+      CONTACT_COPY_FALLBACKS.directHeading,
+    ),
+    getSiteContent(
+      "contact.appointment.heading",
+      CONTACT_COPY_FALLBACKS.appointmentHeading,
+    ),
+    getSiteContent(
+      "contact.appointment.body-suffix",
+      CONTACT_COPY_FALLBACKS.appointmentBodySuffix,
+    ),
+    getSiteContent("contact.form.heading", CONTACT_COPY_FALLBACKS.formHeading),
+  ]);
 
   return (
     <main className="w-full">
@@ -43,14 +94,13 @@ export default async function ContactPage() {
         <article className="mx-auto max-w-[65ch] space-y-10 font-source-sans text-cf-ink">
           <header className="space-y-3">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
-              Contact
+              {eyebrow}
             </p>
             <h1 className="font-playfair text-4xl font-semibold tracking-tight sm:text-5xl">
-              We’d love to hear from you.
+              {introHeading}
             </h1>
             <p className="text-lg leading-relaxed text-cf-muted">
-              Questions about a frame, a mattress, delivery, or a past order?
-              Drop us a note and a human will reply within one business day.
+              {introBody}
             </p>
           </header>
 
@@ -59,7 +109,7 @@ export default async function ContactPage() {
               id="contact-direct"
               className="font-playfair text-2xl font-semibold tracking-tight"
             >
-              Reach us directly
+              {directHeading}
             </h2>
             <dl className="space-y-2 text-base leading-relaxed">
               {/* cfw-eqk: tap-to-call/tap-to-email — Lucide Phone/Mail icons
@@ -105,11 +155,11 @@ export default async function ContactPage() {
               id="appointment-form"
               className="font-playfair text-2xl font-semibold tracking-tight"
             >
-              Schedule a showroom visit
+              {appointmentHeading}
             </h2>
             <p className="text-sm leading-relaxed text-cf-muted">
-              {showroomScheduleLine} Request a slot and we&apos;ll confirm by
-              email within one business day.
+              {showroomScheduleLine}
+              {appointmentBodySuffix}
             </p>
             <AppointmentForm />
           </section>
@@ -119,7 +169,7 @@ export default async function ContactPage() {
               id="contact-form"
               className="font-playfair text-2xl font-semibold tracking-tight"
             >
-              Send a message
+              {formHeading}
             </h2>
             <ContactForm />
           </section>
