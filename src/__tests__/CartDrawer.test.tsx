@@ -6,6 +6,11 @@ const trackBeginCheckout = vi.fn();
 vi.mock("@/lib/analytics/ga4-events", () => ({
   trackBeginCheckout: (...args: unknown[]) => trackBeginCheckout(...args),
 }));
+
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/log", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
 // Sentinel: renders Next.js Links as <a data-nextlink="true"> so tests can
 // assert the checkout CTA is a plain <a> that won't drop cross-origin 307s.
 vi.mock("next/link", () => ({
@@ -31,6 +36,7 @@ import type { CartLineItem } from "@/lib/cart/cart-state";
 
 beforeEach(() => {
   trackBeginCheckout.mockReset();
+  mockLogError.mockClear();
 });
 
 function Seed({ lines }: { lines: ReadonlyArray<CartLineItem> }) {
@@ -278,6 +284,40 @@ describe("CartDrawer (cf-3qt.2.3)", () => {
       metaKey: true,
     });
     expect(trackBeginCheckout).not.toHaveBeenCalled();
+  });
+
+  // Logger migration (cfw-logger batch 17): the onClick trackBeginCheckout
+  // catch forwards to logError so non-fatal analytics failures land in
+  // Sentry with source="cart-drawer". Fire-and-forget (sync onClick).
+  it("calls logError with source='cart-drawer' op='trackBeginCheckout' when tracking throws", () => {
+    trackBeginCheckout.mockImplementationOnce(() => {
+      throw new Error("analytics down");
+    });
+    renderWith([lineA]);
+    fireEvent.click(screen.getByTestId("cart-trigger"));
+    fireEvent.click(screen.getByTestId("cart-checkout-cta"));
+    expect(mockLogError).toHaveBeenCalledTimes(1);
+    const [source, op] = mockLogError.mock.calls[0];
+    expect(source).toBe("cart-drawer");
+    expect(op).toBe("trackBeginCheckout");
+  });
+
+  it("passes the thrown analytics error through to logError as err", () => {
+    const analyticsErr = new Error("analytics down");
+    trackBeginCheckout.mockImplementationOnce(() => {
+      throw analyticsErr;
+    });
+    renderWith([lineA]);
+    fireEvent.click(screen.getByTestId("cart-trigger"));
+    fireEvent.click(screen.getByTestId("cart-checkout-cta"));
+    expect(mockLogError.mock.calls[0][2]).toBe(analyticsErr);
+  });
+
+  it("does NOT call logError when trackBeginCheckout succeeds", () => {
+    renderWith([lineA]);
+    fireEvent.click(screen.getByTestId("cart-trigger"));
+    fireEvent.click(screen.getByTestId("cart-checkout-cta"));
+    expect(mockLogError).not.toHaveBeenCalled();
   });
 
   // cf-cfol: checkout race guard — while a cart write is pending (addItemAction
