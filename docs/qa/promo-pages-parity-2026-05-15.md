@@ -125,8 +125,18 @@ If any of 1-3 are present on the Wix version, the cfw page is a feature regressi
 Per cf-3qt.6 parallel-run + parity audit acceptance:
 
 - [ ] `/spring-sale` parity — ⚠️ BLOCKED on `Landings` Wix-Data seed (blaidd). Current cfw is a copy-snapshot. Wire after seed lands.
-- [ ] `/gift-cards` parity — ⚠️ GAP, recipient/message/scheduled-send personalization missing. Scope: 2 PRs.
+- [x] `/gift-cards` parity — ✅ CLOSED by **cf-gift-g1 PR #589** (merged 2026-05-15). Adds "Send as a gift" toggle revealing recipient email + recipient name + sender name + personal message + scheduled delivery; fields ride along as Wix line-item `customTextFields`. Default-off path is byte-identical to pre-cf-gift-g1 payload (single-click self-buy preserved). TDD pin: `src/__tests__/cart-customTextFields.test.ts` (5 cases).
 - [x] `/referral` parity — ✅ OK at core flow. 3 minor questions pending Stilgar visual check.
+
+### Addendum 2026-05-15 (post-cf-gift-g1 reconciliation)
+
+The F2 gap this audit identified shipped within hours of filing — cf-gift-g1 PR #589 (merged 17:48 MT) implemented exactly the recommended scope (the 5 customTextFields + the "Send as a gift" expand panel). The 2-PR scope estimate in F2 collapsed to 1 PR because Wix's line-item `customTextFields` slot absorbed the recipient-meta carry without needing a new backend webMethod — the data rides existing `addItemAction`.
+
+Remaining cf-yu2l surface:
+- **F1** still blaidd-blocked on the `Landings` Wix-Data seed. Re-poll after CMS-COLLECTION-AUDIT seed phase completes.
+- **/referral** Stilgar visual-check items 1-3 still pending — file as a P3 follow-on bead if any of redemption-history / referred-friends-list / loyalty-tier-surface are present on the live Wix page.
+
+Recommend transitioning cf-yu2l to **blocked-on-blaidd** until Landings seed lands, then reopening for F1 wiring against `getCollectionItemBySlug<Landing>("Landings", "spring-sale")`.
 
 ## Out of scope (file separately)
 
