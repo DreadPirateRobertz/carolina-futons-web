@@ -31,7 +31,7 @@ A follow-on **manual** browser parity check by Stilgar against the live Wix prev
 
 ## F1 — HIGH parity gap: `/spring-sale` hero copy is hardcoded, not editor-managed
 
-**Where:** `src/app/spring-sale/page.tsx:56-66`
+**Where:** `src/app/spring-sale/page.tsx:67-77`
 
 ```tsx
 <h1 id="spring-sale-hero" className="...">
@@ -51,18 +51,19 @@ A follow-on **manual** browser parity check by Stilgar against the live Wix prev
 The Wix page reads hero copy + image from a `Landings` CMS collection so marketing can edit promos without a deploy. cfw bypasses the data layer and ships static copy baked into the component.
 
 **Helper already exists** for reading the collection:
-- `src/lib/wix/cf3qt.ts` — `getCollectionItemBySlug<Landing>("Landings", slug)`
+- `src/lib/wix/cf3qt.ts` — `getLandingBySlug(slug)` (exported wrapper around `getCollectionItemBySlug`)
 
 **Blocker:** Per `docs/cf-3qt/CMS-COLLECTION-AUDIT.md`:
 > `Landings` (`spring-sale` row) — blocks `/spring-sale`. Pull hero copy + image from current Wix Studio Sale page (radahn has it) → seed script. **Phase 5 impl**, blaidd seeds.
 
-The Landings collection is missing in Wix Headless. Until blaidd seeds it, cfw can't read what isn't there. The current hardcoded copy is a **snapshot** of the Wix copy at migration time — acceptable as a placeholder, but the page should be re-wired to read from `getCollectionItemBySlug("Landings", "spring-sale")` once seeded, falling back to the hardcoded literals on outage (mirroring the `result.error` pattern at line 43 of the same file).
+The Landings collection is missing in Wix Headless. Until blaidd seeds it, cfw can't read what isn't there. The current hardcoded copy is a **snapshot** of the Wix copy at migration time — acceptable as a placeholder, but the page should be re-wired to read from `getLandingBySlug("spring-sale")` once seeded, falling back to the hardcoded literals on outage (mirroring the `result.error` pattern at line 43 of the same file).
 
 **Recommended fix (post-seed):**
 ```tsx
-const landing = await getCollectionItemBySlug<Landing>("Landings", "spring-sale");
-const heroTitle = landing?.heroTitle ?? "Spring Sale on mattresses";
-const heroBody = landing?.heroBody ?? /* current hardcoded literal */;
+import { getLandingBySlug } from "@/lib/wix/cf3qt";
+const landing = await getLandingBySlug("spring-sale");
+const heroTitle = landing?.headline ?? "Spring Sale on mattresses";
+const heroBody = landing?.subheadline ?? /* current hardcoded literal */;
 const heroImageUrl = landing?.heroImageUrl;
 ```
 
@@ -136,7 +137,7 @@ Remaining cf-yu2l surface:
 - **F1** still blaidd-blocked on the `Landings` Wix-Data seed. Re-poll after CMS-COLLECTION-AUDIT seed phase completes.
 - **/referral** Stilgar visual-check items 1-3 still pending — file as a P3 follow-on bead if any of redemption-history / referred-friends-list / loyalty-tier-surface are present on the live Wix page.
 
-Recommend transitioning cf-yu2l to **blocked-on-blaidd** until Landings seed lands, then reopening for F1 wiring against `getCollectionItemBySlug<Landing>("Landings", "spring-sale")`.
+Recommend transitioning cf-yu2l to **blocked-on-blaidd** until Landings seed lands, then reopening for F1 wiring against `getLandingBySlug("spring-sale")` from `@/lib/wix/cf3qt`.
 
 ## Out of scope (file separately)
 
@@ -149,6 +150,6 @@ Recommend transitioning cf-yu2l to **blocked-on-blaidd** until Landings seed lan
 
 - `docs/cf-3qt/URL-CMS-MAP.md` (cfutons) — Wix data layer per route
 - `docs/cf-3qt/CMS-COLLECTION-AUDIT.md` (cfutons) — unresolved seed dependencies, `Landings` blocker
-- `src/lib/wix/cf3qt.ts` (cfw) — `getCollectionItemBySlug` helper, ready for F1 wiring
+- `src/lib/wix/cf3qt.ts` (cfw) — `getLandingBySlug` exported helper, ready for F1 wiring (fields: `headline`, `subheadline`, `heroImageUrl`)
 - `docs/cf-3qt-9-wix-retirement-checklist.md` (cfutons) — Phase 9 retirement gate
 - Parent epic: cf-3qt.6 (parallel run + parity audit)
