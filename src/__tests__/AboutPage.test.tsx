@@ -92,10 +92,10 @@ describe("AboutPage — SiteContent key wiring (cf-7pk0.F1)", () => {
     await renderPage();
     for (const [key, fallback] of mockGetSiteContent.mock.calls) {
       expect(typeof fallback).toBe("string");
-      expect((fallback as string).length).toBeGreaterThan(
-        0,
+      expect(
+        (fallback as string).length,
         `fallback for ${key} must be a non-empty string`,
-      );
+      ).toBeGreaterThan(0);
     }
   });
 });
