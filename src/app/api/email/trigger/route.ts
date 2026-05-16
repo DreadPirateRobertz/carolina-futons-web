@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { callVelo, VeloRpcError } from "@/lib/wix/velo-client";
+import { logError } from "@/lib/log";
 
 export const dynamic = "force-dynamic";
 
@@ -48,11 +49,10 @@ export async function POST(req: NextRequest) {
     await callVelo({ method: veloMethod, args: [payload] });
     return NextResponse.json({ ok: true });
   } catch (err) {
-    if (err instanceof VeloRpcError) {
-      console.error(`[email/trigger] Velo ${veloMethod} failed:`, err.status, err.body);
-    } else {
-      console.error(`[email/trigger] unexpected error:`, err);
-    }
+    // op split mirrors style-quiz (cfw-logger batch 11): Velo HTTP-level
+    // failures get .rpc so Sentry can split them from generic throws.
+    const op = err instanceof VeloRpcError ? `${veloMethod}.rpc` : veloMethod;
+    await logError("email/trigger", op, err);
     // Non-fatal — email triggers must not block the primary user flow.
     return NextResponse.json({ ok: false, error: "trigger-failed" }, { status: 200 });
   }
