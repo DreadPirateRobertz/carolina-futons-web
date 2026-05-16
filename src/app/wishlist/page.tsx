@@ -18,6 +18,7 @@ import { redirect } from "next/navigation";
 import { getWishlist } from "@/app/actions/wishlist";
 import { WishlistView } from "@/components/wishlist/WishlistView";
 import { getMemberSession } from "@/lib/auth/member";
+import { logError } from "@/lib/logging/log-error";
 import type { WishlistResponse } from "@/lib/wishlist/wishlist-types";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +44,12 @@ export default async function WishlistPage() {
       initialItems = result?.items ?? [];
     }
   } catch (err) {
-    console.error("[wishlist] page load failed:", err);
+    // cfw-4tu9: parallel to cfw-r6w8 dashboard wishlist page. Distinct
+    // op so Sentry groups standalone-page failures separately from the
+    // dashboard-tab failures — they have different surfaces (this is a
+    // deep-link landing for emails/shares) and may degrade differently
+    // under sustained outage.
+    await logError("wishlist/page", "getWishlist", err);
   }
 
   return <WishlistView initialItems={initialItems} />;
