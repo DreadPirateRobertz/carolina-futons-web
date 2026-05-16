@@ -1,8 +1,8 @@
 "use server";
 
-import * as Sentry from "@sentry/nextjs";
 import { optionalEnv } from "@/lib/env";
 import { listCollectionItems } from "@/lib/wix/data";
+import { logError } from "@/lib/log";
 import {
   coerceSwatchContactInfo,
   hasSwatchContactErrors,
@@ -32,12 +32,6 @@ export type SwatchListResult = {
   error?: boolean;
 };
 
-function captureWithId(err: unknown, context: string): string {
-  const errorId = crypto.randomUUID();
-  Sentry.captureException(err, { extra: { context, errorId } });
-  return errorId;
-}
-
 function transportFailure(
   values: SwatchContactInfo,
   selectedIds: string[],
@@ -64,8 +58,7 @@ async function verifyTurnstile(
     const data = (await res.json()) as { success: boolean };
     return { ok: data.success === true };
   } catch (err) {
-    const errorId = captureWithId(err, "verifyTurnstile");
-    console.error("[swatch-request] Turnstile verify failed:", errorId, err);
+    await logError("swatch-request", "verifyTurnstile", err);
     return { ok: false, networkError: true };
   }
 }
@@ -87,8 +80,7 @@ export async function listSwatchesAction(): Promise<SwatchListResult> {
         })),
     };
   } catch (err) {
-    const errorId = captureWithId(err, "listSwatchesAction");
-    console.error("[swatch-request] listSwatchesAction failed:", errorId, err);
+    await logError("swatch-request", "listSwatchesAction", err);
     return { items: [], error: true };
   }
 }
@@ -134,11 +126,11 @@ export async function submitSwatchRequestAction(
   const turnstileToken = formData.get("cf-turnstile-response");
   const hasSecret = !!process.env.TURNSTILE_SECRET_KEY;
   if (!hasSecret && process.env.NODE_ENV === "production") {
-    const errorId = captureWithId(
+    await logError(
+      "swatch-request",
+      "captchaConfig",
       new Error("TURNSTILE_SECRET_KEY not set in production"),
-      "submitSwatchRequestAction:captchaConfig",
     );
-    console.error("[swatch-request] TURNSTILE_SECRET_KEY not set in production — blocking submission:", errorId);
     return transportFailure(contactInfo, selectedIds, TRANSPORT_ERROR_GENERIC);
   }
   if (hasSecret) {
@@ -175,8 +167,7 @@ export async function submitSwatchRequestAction(
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
   } catch (err) {
-    const errorId = captureWithId(err, "submitSwatchRequestAction:fetch");
-    console.error("[swatch-request] fetch to Velo failed:", errorId, err);
+    await logError("swatch-request", "submitSwatchRequestAction.fetch", err);
     return transportFailure(contactInfo, selectedIds, TRANSPORT_ERROR_GENERIC);
   }
 
@@ -197,18 +188,16 @@ export async function submitSwatchRequestAction(
       veloErrorForLog = body.error.slice(0, 500);
     }
   } catch (parseErr) {
-    const errorId = captureWithId(parseErr, "submitSwatchRequestAction:parseVeloError");
-    console.error("[swatch-request] failed to parse Velo error body:", errorId, parseErr);
+    await logError(
+      "swatch-request",
+      "submitSwatchRequestAction.parseVeloError",
+      parseErr,
+    );
   }
-  const errorId = captureWithId(
+  await logError(
+    "swatch-request",
+    "submitSwatchRequestAction.veloRejected",
     new Error(`Velo ${res.status}: ${veloErrorForLog ?? "(no body)"}`),
-    "submitSwatchRequestAction:veloRejected",
-  );
-  console.error(
-    "[swatch-request] Velo endpoint rejected submission:",
-    errorId,
-    res.status,
-    veloErrorForLog,
   );
   return transportFailure(contactInfo, selectedIds, TRANSPORT_ERROR_GENERIC);
 }

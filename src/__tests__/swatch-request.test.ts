@@ -7,6 +7,11 @@ vi.mock("@sentry/nextjs", () => ({
   flush: vi.fn().mockResolvedValue(true),
 }));
 
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/log", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 // ── Mocks ─────────────────────────────────────────────────────────────────
 
 const mockListCollectionItems = vi.fn();
@@ -178,21 +183,18 @@ describe("listSwatchesAction", () => {
     expect(mockListCollectionItems).toHaveBeenCalledWith("FabricSwatches", 100);
   });
 
-  it("calls Sentry.captureException on CMS failure", async () => {
-    const { captureException } = await import("@sentry/nextjs");
-    const captureSpy = vi.mocked(captureException);
+  it("calls logError on CMS failure with source='swatch-request' op='listSwatchesAction'", async () => {
+    mockLogError.mockClear();
     mockListCollectionItems.mockRejectedValueOnce(new Error("wix down"));
     const { listSwatchesAction } = await import("@/app/actions/swatch-request");
     await listSwatchesAction();
-    expect(captureSpy).toHaveBeenCalledOnce();
-    const [, opts] = captureSpy.mock.calls[0];
-    expect((opts as { extra: { errorId: string } }).extra.errorId).toMatch(
-      /^[0-9a-f-]{36}$/,
-    );
+    expect(mockLogError).toHaveBeenCalledOnce();
+    const [source, op] = mockLogError.mock.calls[0];
+    expect(source).toBe("swatch-request");
+    expect(op).toBe("listSwatchesAction");
   });
 
   it("returns error:true on CMS failure", async () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     mockListCollectionItems.mockRejectedValueOnce(new Error("wix down"));
     const { listSwatchesAction } = await import(
       "@/app/actions/swatch-request"
@@ -200,8 +202,6 @@ describe("listSwatchesAction", () => {
     const result = await listSwatchesAction();
     expect(result.items).toEqual([]);
     expect(result.error).toBe(true);
-    expect(errorSpy).toHaveBeenCalled();
-    errorSpy.mockRestore();
   });
 
   it("sorts items without sortOrder using 0 as default", async () => {
@@ -347,9 +347,8 @@ describe("submitSwatchRequestAction", () => {
     }
   });
 
-  it("returns generic transport error on 500", async () => {
-    const { captureException } = await import("@sentry/nextjs");
-    const captureSpy = vi.mocked(captureException);
+  it("returns generic transport error on 500 + calls logError", async () => {
+    mockLogError.mockClear();
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
@@ -363,12 +362,15 @@ describe("submitSwatchRequestAction", () => {
     if (result.status === "error") {
       expect(result.transportError).toBeTruthy();
     }
-    expect(captureSpy).toHaveBeenCalledOnce();
+    // veloRejected branch — one logError call
+    expect(mockLogError).toHaveBeenCalledOnce();
+    expect(mockLogError.mock.calls[0][1]).toBe(
+      "submitSwatchRequestAction.veloRejected",
+    );
   });
 
-  it("returns generic error on fetch throw", async () => {
-    const { captureException } = await import("@sentry/nextjs");
-    const captureSpy = vi.mocked(captureException);
+  it("returns generic error on fetch throw + calls logError", async () => {
+    mockLogError.mockClear();
     mockFetch.mockRejectedValueOnce(new Error("network down"));
     const { submitSwatchRequestAction } = await import(
       "@/app/actions/swatch-request"
@@ -378,7 +380,10 @@ describe("submitSwatchRequestAction", () => {
     if (result.status === "error") {
       expect(result.transportError).toBeTruthy();
     }
-    expect(captureSpy).toHaveBeenCalledOnce();
+    expect(mockLogError).toHaveBeenCalledOnce();
+    expect(mockLogError.mock.calls[0][1]).toBe(
+      "submitSwatchRequestAction.fetch",
+    );
   });
 
   it("returns generic error on 400 (Velo error not echoed to user)", async () => {
@@ -439,9 +444,8 @@ describe("submitSwatchRequestAction", () => {
     expect(veloCalls).toHaveLength(0);
   });
 
-  it("returns network-error copy when Turnstile verify fetch throws", async () => {
-    const { captureException } = await import("@sentry/nextjs");
-    const captureSpy = vi.mocked(captureException);
+  it("returns network-error copy when Turnstile verify fetch throws + calls logError", async () => {
+    mockLogError.mockClear();
     process.env.TURNSTILE_SECRET_KEY = "secret-key";
     mockFetch.mockRejectedValueOnce(new Error("network down"));
     const fd = makeFormData();
@@ -454,12 +458,12 @@ describe("submitSwatchRequestAction", () => {
     if (result.status === "error") {
       expect(result.transportError).toMatch(/couldn't verify/i);
     }
-    expect(captureSpy).toHaveBeenCalledOnce();
+    expect(mockLogError).toHaveBeenCalledOnce();
+    expect(mockLogError.mock.calls[0][1]).toBe("verifyTurnstile");
   });
 
-  it("hard-fails in production when TURNSTILE_SECRET_KEY is missing", async () => {
-    const { captureException } = await import("@sentry/nextjs");
-    const captureSpy = vi.mocked(captureException);
+  it("hard-fails in production when TURNSTILE_SECRET_KEY is missing + calls logError", async () => {
+    mockLogError.mockClear();
     vi.stubEnv("NODE_ENV", "production");
     const { submitSwatchRequestAction } = await import(
       "@/app/actions/swatch-request"
@@ -467,7 +471,8 @@ describe("submitSwatchRequestAction", () => {
     const result = await submitSwatchRequestAction(null, makeFormData());
     expect(result.status).toBe("error");
     expect(mockFetch).not.toHaveBeenCalled();
-    expect(captureSpy).toHaveBeenCalledOnce();
+    expect(mockLogError).toHaveBeenCalledOnce();
+    expect(mockLogError.mock.calls[0][1]).toBe("captchaConfig");
     vi.unstubAllEnvs();
   });
 
@@ -506,9 +511,8 @@ describe("submitSwatchRequestAction", () => {
     }
   });
 
-  it("falls back to generic error when Velo error body is not JSON", async () => {
-    const { captureException } = await import("@sentry/nextjs");
-    const captureSpy = vi.mocked(captureException);
+  it("falls back to generic error when Velo error body is not JSON + calls logError for both branches", async () => {
+    mockLogError.mockClear();
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
@@ -522,8 +526,11 @@ describe("submitSwatchRequestAction", () => {
     if (result.status === "error") {
       expect(result.transportError).toMatch(/couldn't submit/i);
     }
-    // parseVeloError + veloRejected each call captureWithId
-    expect(captureSpy).toHaveBeenCalledTimes(2);
+    // parseVeloError + veloRejected — two logError calls.
+    expect(mockLogError).toHaveBeenCalledTimes(2);
+    const ops = mockLogError.mock.calls.map((c) => c[1]);
+    expect(ops).toContain("submitSwatchRequestAction.parseVeloError");
+    expect(ops).toContain("submitSwatchRequestAction.veloRejected");
   });
 
   it("includes productSlug in payload when provided", async () => {
