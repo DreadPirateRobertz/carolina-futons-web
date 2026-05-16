@@ -263,3 +263,61 @@ describe("PdpWhiteGlove (zone-aware)", () => {
     errSpy.mockRestore();
   });
 });
+
+// Pins the logError migration so an accidental revert to a bare
+// console.error("[PdpWhiteGlove] …") (or to a string-interpolated prefix
+// that bypasses the helper) fails loudly. Asserts on the
+// console.error sink because logError forwards there in every env; the
+// Sentry forwarder is prod-only and unit-tested in log.test.ts.
+describe("PdpWhiteGlove — logError migration", () => {
+  it("emits the bracketed '[PdpWhiteGlove] /api/delivery-zone failed' prefix on fetch failure", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const reason = new Error("ECONNRESET");
+    fetchMock.mockRejectedValueOnce(reason);
+    const user = userEvent.setup();
+    render(<PdpWhiteGlove unitPriceCents={297_800} />);
+    await user.type(screen.getByRole("textbox", { name: /zip/i }), "28739");
+    await user.click(screen.getByRole("button", { name: /^check$/i }));
+    await screen.findByRole("alert");
+    expect(errSpy).toHaveBeenCalledTimes(1);
+    expect(errSpy.mock.calls[0]![0]).toBe(
+      "[PdpWhiteGlove] /api/delivery-zone failed",
+    );
+    expect(errSpy.mock.calls[0]![1]).toBe(reason);
+    errSpy.mockRestore();
+  });
+
+  it("forwards non-Error throws (string reason) as the second arg, unchanged", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    fetchMock.mockRejectedValueOnce("boom-string");
+    const user = userEvent.setup();
+    render(<PdpWhiteGlove unitPriceCents={297_800} />);
+    await user.type(screen.getByRole("textbox", { name: /zip/i }), "28739");
+    await user.click(screen.getByRole("button", { name: /^check$/i }));
+    await screen.findByRole("alert");
+    expect(errSpy).toHaveBeenCalledTimes(1);
+    expect(errSpy.mock.calls[0]![0]).toBe(
+      "[PdpWhiteGlove] /api/delivery-zone failed",
+    );
+    expect(errSpy.mock.calls[0]![1]).toBe("boom-string");
+    errSpy.mockRestore();
+  });
+
+  it("does NOT log when the request is intentionally aborted (AbortError)", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    // Shape an AbortError exactly the way DOM fetch surfaces it: name set,
+    // not an instanceof DOMException dependency.
+    const abort = Object.assign(new Error("aborted"), { name: "AbortError" });
+    fetchMock.mockRejectedValueOnce(abort);
+    const user = userEvent.setup();
+    render(<PdpWhiteGlove unitPriceCents={297_800} />);
+    await user.type(screen.getByRole("textbox", { name: /zip/i }), "28739");
+    await user.click(screen.getByRole("button", { name: /^check$/i }));
+    // Loading state should clear back via the state machine eventually;
+    // assert no alert AND no console.error call.
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(errSpy).not.toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
+});
