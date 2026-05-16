@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { sendPasswordResetEmail } from "@/lib/wix/auth";
+import { hashEmail } from "@/lib/log/hash-pii";
+import { logError } from "@/lib/logging/log-error";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +24,14 @@ export async function POST(req: NextRequest) {
   try {
     await sendPasswordResetEmail(email, redirectUrl);
   } catch (err) {
-    console.error("[auth/forgot-password] sendRecoveryEmail failed:", err);
+    // cfw-pyx1: the route always returns ok:true to prevent member-
+    // email enumeration, so Sentry is the ONLY signal that a recovery-
+    // email outage exists. cfw-coc PII guard: hashed email in extras
+    // so a recurring per-address failure is groupable without
+    // shipping the raw email into log storage.
+    await logError("auth/forgot-password", "sendPasswordResetEmail", err, {
+      hashedEmail: hashEmail(email),
+    });
   }
 
   return NextResponse.json({ ok: true });
