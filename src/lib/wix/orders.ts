@@ -1,6 +1,7 @@
 import "server-only";
 import type { Tokens } from "@wix/sdk";
 import { getWixClient, getWixClientWithTokens } from "@/lib/wix-client";
+import { logError } from "@/lib/logging/log-error";
 
 // Synthetic order returned in fixture mode when orderId starts with "fixture-".
 // Shaped to satisfy every field OrderConfirmationPage reads (priceSummary,
@@ -117,7 +118,10 @@ export async function getOrdersForMember(args: {
       cursorPaging: { limit },
     });
   } catch (err) {
-    console.error("[orders] searchOrders failed:", err);
+    // cfw-zrhq: ship to Sentry via the shared logger. Empty list is the
+    // deliberate "render empty state, not a 500" fallback for the member
+    // orders dashboard.
+    await logError("orders", "searchOrders", err, { contactId: args.contactId });
     return [];
   }
 

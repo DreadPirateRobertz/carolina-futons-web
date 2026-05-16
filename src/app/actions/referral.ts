@@ -1,6 +1,7 @@
 "use server";
 
 import { getMemberSession, withMember } from "@/lib/auth/member";
+import { logError } from "@/lib/logging/log-error";
 import { callVelo } from "@/lib/wix/velo-client";
 
 const r = (method: string) => `referralService/${method}`;
@@ -33,7 +34,7 @@ export async function getMyReferralCodeAction(): Promise<
     }
     return { success: true, code: res.code };
   } catch (err) {
-    console.error("[referral] getMyReferralCodeAction failed:", err);
+    await logError("referral", "getMyReferralCode", err);
     return { success: false, error: "Could not load referral code. Please try again." };
   }
 }
@@ -54,7 +55,7 @@ export async function getMyReferralStatsAction(): Promise<
     }
     return { success: true, stats: res.stats };
   } catch (err) {
-    console.error("[referral] getMyReferralStatsAction failed:", err);
+    await logError("referral", "getMyReferralStats", err);
     return { success: false, error: "Could not load stats. Please try again." };
   }
 }
@@ -72,7 +73,11 @@ export async function getReferralByCodeAction(code: string): Promise<
     }
     return { success: true, referral: res.referral };
   } catch (err) {
-    console.error("[referral] getReferralByCodeAction failed:", err);
+    // cfw-x2at: include the code in extras so a recurring failure on a
+    // specific referral code (corrupt row, decommissioned referrer) is
+    // groupable. The code itself isn't PII — it's a public, owner-
+    // shareable identifier.
+    await logError("referral", "getReferralByCode", err, { code });
     return { success: false, error: "Could not validate referral link." };
   }
 }
@@ -86,8 +91,12 @@ export async function claimReferralAction(
       args: [code],
       accessToken: m.accessToken,
     }),
-  ).catch((err) => {
-    console.error("[referral] claimReferralAction failed:", err);
+  ).catch(async (err) => {
+    // cfw-x2at: same per-code grouping rationale as getReferralByCode.
+    // The catch is on a .catch chain rather than a try/catch, so the
+    // handler is async — logError must be awaited inside before the
+    // returned object resolves the chain.
+    await logError("referral", "claimReferral", err, { code });
     return { success: false, error: "Could not apply referral. Please try again." };
   });
 }
