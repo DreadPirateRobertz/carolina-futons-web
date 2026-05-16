@@ -33,7 +33,7 @@ export const metadata: Metadata = {
 export default function GettingItHomePage() {
   return (
     <main className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
-      <article className="mx-auto max-w-3xl space-y-10 font-source-sans text-cf-ink dark:text-cf-cream">
+      <article className="mx-auto max-w-3xl space-y-10 font-source-sans text-cf-ink">
         <header className="space-y-3">
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
             Delivery
@@ -44,8 +44,8 @@ export default function GettingItHomePage() {
           <p className="text-lg leading-relaxed text-cf-muted">
             Carolina Futons runs its own truck-delivery network across the
             Southeast. Type in your ZIP and we&rsquo;ll tell you which zone
-            you&rsquo;re in, what curbside and white-glove cost, and how long
-            it takes.
+            you&rsquo;re in, what curbside and white-glove cost, and how long it
+            takes.
           </p>
         </header>
 
@@ -82,13 +82,13 @@ export default function GettingItHomePage() {
                 data-zone={zone.code}
                 className="rounded-md border border-cf-divider bg-cf-cream p-4"
               >
-                <p className="font-medium text-cf-espresso dark:text-cf-cream">{zone.name}</p>
+                <p className="font-medium text-cf-espresso">{zone.name}</p>
                 <p className="text-sm text-cf-espresso/80">
                   {zone.description}
                 </p>
                 <p className="mt-2 text-xs text-cf-muted">
-                  Curbside ${zone.delivery} · White-glove $
-                  {zone.whiteGlove} · {zone.deliveryDays} business days
+                  Curbside ${zone.delivery} · White-glove ${zone.whiteGlove} ·{" "}
+                  {zone.deliveryDays} business days
                 </p>
               </li>
             ))}

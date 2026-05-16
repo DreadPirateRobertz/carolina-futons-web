@@ -36,7 +36,7 @@ export default async function GuidesIndexPage() {
   return (
     <main className="w-full">
       <ReadingScene className="max-h-64" />
-      <div className="mx-auto max-w-6xl space-y-12 px-4 py-12 font-source-sans text-cf-ink dark:text-cf-cream sm:px-6 sm:py-16">
+      <div className="mx-auto max-w-6xl space-y-12 px-4 py-12 font-source-sans text-cf-ink sm:px-6 sm:py-16">
         <HeroReveal>
           <header className="mx-auto max-w-[65ch] space-y-3">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
@@ -46,8 +46,8 @@ export default async function GuidesIndexPage() {
               Figure out what you actually need
             </h1>
             <p className="text-lg leading-relaxed text-cf-muted">
-              35 years of answering the same questions at the showroom,
-              written down so you can read them in your own time.
+              35 years of answering the same questions at the showroom, written
+              down so you can read them in your own time.
             </p>
           </header>
         </HeroReveal>

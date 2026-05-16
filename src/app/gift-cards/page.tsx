@@ -34,12 +34,10 @@ export default async function GiftCardsPage() {
           <Gift className="h-5 w-5" />
         </span>
         <div>
-          <h1 className="font-heading text-3xl font-semibold tracking-tight text-cf-espresso dark:text-cf-cream">
+          <h1 className="font-heading text-3xl font-semibold tracking-tight text-cf-espresso">
             Gift Cards
           </h1>
-          <p className="mt-2 text-cf-charcoal/70 dark:text-cf-cream/70">
-            {DESCRIPTION}
-          </p>
+          <p className="mt-2 text-cf-charcoal/70">{DESCRIPTION}</p>
         </div>
       </div>
 
@@ -47,10 +45,10 @@ export default async function GiftCardsPage() {
 
       {/* Redeem note */}
       <div className="mt-12 rounded-lg border border-cf-smoke bg-cf-sand/30 px-5 py-4 dark:border-cf-cream/20 dark:bg-cf-sand/60">
-        <h2 className="text-sm font-semibold text-cf-espresso dark:text-cf-cream">
+        <h2 className="text-sm font-semibold text-cf-espresso">
           Redeeming a gift card?
         </h2>
-        <p className="mt-1 text-sm text-cf-charcoal/70 dark:text-cf-cream/70">
+        <p className="mt-1 text-sm text-cf-charcoal/70">
           Enter your gift card code at checkout. Gift cards are applied before
           any other payment method and can be combined with promotions.
         </p>

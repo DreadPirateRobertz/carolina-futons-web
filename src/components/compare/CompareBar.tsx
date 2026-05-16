@@ -46,7 +46,7 @@ export function CompareBar() {
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
         <p
-          className="text-sm font-medium text-cf-ink dark:text-cf-cream"
+          className="text-sm font-medium text-cf-ink"
           aria-live="polite"
           aria-atomic="true"
         >
@@ -73,7 +73,7 @@ export function CompareBar() {
               setSlugs([]); // optimistic — UI clears immediately even if localStorage fails
               setCompareSlugs([]);
             }}
-            className="text-xs text-cf-muted underline-offset-2 hover:text-cf-ink hover:underline dark:hover:text-cf-cream"
+            className="text-xs text-cf-muted underline-offset-2 hover:text-cf-ink hover:underline"
           >
             Clear
           </button>

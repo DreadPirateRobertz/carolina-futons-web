@@ -70,7 +70,7 @@ export function QuantityStepper({
       data-testid="qty-stepper"
       className={
         "inline-flex items-center gap-0 rounded-md border border-cf-sand " +
-        "bg-white text-cf-ink dark:border-zinc-700 dark:bg-zinc-900 dark:text-cf-cream " +
+        "bg-white text-cf-ink dark:border-zinc-700 dark:bg-zinc-900 " +
         (className ?? "")
       }
     >
@@ -80,7 +80,7 @@ export function QuantityStepper({
         aria-label={`Decrease quantity of ${productName}`}
         onClick={() => onChange(clamp(value - 1, min, max))}
         disabled={disabled || atMin}
-        className="inline-flex h-10 w-10 items-center justify-center text-cf-ink/80 transition hover:bg-cf-sand/50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-cf-cream/80 dark:hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-espresso focus-visible:ring-offset-2"
+        className="inline-flex h-10 w-10 items-center justify-center text-cf-ink/80 transition hover:bg-cf-sand/50 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-espresso focus-visible:ring-offset-2"
       >
         <Minus className="h-4 w-4" aria-hidden="true" />
       </button>
@@ -111,7 +111,7 @@ export function QuantityStepper({
         aria-label={`Increase quantity of ${productName}`}
         onClick={() => onChange(clamp(value + 1, min, max))}
         disabled={disabled || atMax}
-        className="inline-flex h-10 w-10 items-center justify-center text-cf-ink/80 transition hover:bg-cf-sand/50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-cf-cream/80 dark:hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-espresso focus-visible:ring-offset-2"
+        className="inline-flex h-10 w-10 items-center justify-center text-cf-ink/80 transition hover:bg-cf-sand/50 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-espresso focus-visible:ring-offset-2"
       >
         <Plus className="h-4 w-4" aria-hidden="true" />
       </button>

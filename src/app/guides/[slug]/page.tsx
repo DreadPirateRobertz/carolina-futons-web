@@ -62,7 +62,7 @@ export default async function GuideDetailPage({
     <>
       <GuideReadingProgress />
       <main className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
-        <article className="mx-auto max-w-[65ch] space-y-10 font-source-sans text-cf-ink dark:text-cf-cream">
+        <article className="mx-auto max-w-[65ch] space-y-10 font-source-sans text-cf-ink">
           <HeroReveal>
             <header className="space-y-3">
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
