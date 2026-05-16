@@ -195,5 +195,46 @@ describe("getVisitorCartClient", () => {
       );
       errSpy.mockRestore();
     });
+
+    it("passes a non-Error rejection through without wrapping (parity with addItemAction)", async () => {
+      // cart-actions.test.ts pins this for addItemAction; visitor-client
+      // must match — Wix SDK rejections occasionally surface as strings,
+      // and a future `instanceof Error` guard added here would silently
+      // swallow them. `.rejects.toBe` pins identity, not just truthiness.
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      mockAnonClient.auth.generateVisitorTokens.mockRejectedValueOnce(
+        "auth-string-not-error",
+      );
+
+      await expect(getVisitorCartClient()).rejects.toBe(
+        "auth-string-not-error",
+      );
+      expect(logWixFailure).toHaveBeenCalledWith(
+        "cart",
+        "generateVisitorTokens",
+        "auth-string-not-error",
+      );
+      errSpy.mockRestore();
+    });
+
+    it("logs to Sentry BEFORE re-throwing on generateVisitorTokens failure (call order)", async () => {
+      // A future refactor could move logging into a `.catch()` on the
+      // re-thrown promise — this test pins the synchronous log-then-throw
+      // order so the breadcrumb ships before the action-level catch sees
+      // the same error and double-tags it.
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const authErr = new Error("auth-fail-order");
+      mockAnonClient.auth.generateVisitorTokens.mockRejectedValueOnce(authErr);
+
+      let logCalledBeforeThrow = false;
+      logWixFailure.mockImplementationOnce(async () => {
+        logCalledBeforeThrow = true;
+        return undefined;
+      });
+
+      await expect(getVisitorCartClient()).rejects.toThrow("auth-fail-order");
+      expect(logCalledBeforeThrow).toBe(true);
+      errSpy.mockRestore();
+    });
   });
 });
