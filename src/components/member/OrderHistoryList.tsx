@@ -122,7 +122,7 @@ function OrderHistoryCard({
           <Link
             href={trackHref}
             data-slot="order-track-link"
-            className="text-sm font-medium text-cf-cta underline-offset-2 hover:underline"
+            className="rounded-sm text-sm font-medium text-cf-cta underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
           >
             Track shipment →
           </Link>

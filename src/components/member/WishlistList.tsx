@@ -53,7 +53,7 @@ export function WishlistList({ initialItems }: WishlistListProps) {
         </p>
         <Link
           href="/shop"
-          className="mt-4 inline-block text-sm font-medium text-cf-cta hover:underline"
+          className="mt-4 inline-block rounded-sm text-sm font-medium text-cf-cta hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
         >
           Browse the shop &rarr;
         </Link>
@@ -120,7 +120,7 @@ function WishlistRow({
       <div className="min-w-0 flex-1">
         <Link
           href={productHref}
-          className="block truncate font-medium text-cf-ink hover:underline"
+          className="block truncate rounded-sm font-medium text-cf-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
         >
           {item.name || "Product"}
         </Link>
@@ -138,7 +138,7 @@ function WishlistRow({
         onClick={() => onRemove(item.productId)}
         disabled={pending}
         aria-label={`Remove ${item.name || "item"} from wishlist`}
-        className="text-sm text-cf-muted underline-offset-2 hover:text-cf-ink hover:underline disabled:opacity-60"
+        className="rounded-sm text-sm text-cf-muted underline-offset-2 hover:text-cf-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2 disabled:opacity-60"
       >
         Remove
       </button>

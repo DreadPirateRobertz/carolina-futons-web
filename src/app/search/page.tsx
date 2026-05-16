@@ -141,10 +141,12 @@ export default async function SearchPage(props: {
             role="status" implies aria-live="polite" + aria-atomic="true",
             but specifying all three is explicit and survives any future
             assistive-tech behavioural drift (per WAI-ARIA Authoring
-            Practices on live regions). */}
+            Practices on live regions). cf-613 (folded into cf-if28)
+            added the data-testid for the test contract. */}
         <p
           className="text-sm text-cf-muted"
           role="status"
+          data-testid="search-total-count"
           aria-live="polite"
           aria-atomic="true"
         >

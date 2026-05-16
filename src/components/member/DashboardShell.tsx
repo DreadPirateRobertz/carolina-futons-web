@@ -73,7 +73,7 @@ export function DashboardShell({
               href={tab.href}
               aria-current={isActive ? "page" : undefined}
               data-active={isActive ? "true" : "false"}
-              className="border-b-2 border-transparent px-4 py-3 text-sm font-medium text-cf-muted transition-colors hover:text-cf-ink data-[active=true]:border-cf-cta data-[active=true]:text-cf-ink"
+              className="border-b-2 border-transparent px-4 py-3 text-sm font-medium text-cf-muted transition-colors hover:text-cf-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2 rounded-t-sm data-[active=true]:border-cf-cta data-[active=true]:text-cf-ink"
             >
               {tab.label}
             </Link>

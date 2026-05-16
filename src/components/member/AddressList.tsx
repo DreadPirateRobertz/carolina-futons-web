@@ -89,7 +89,7 @@ export function AddressList({ initial }: AddressListProps) {
                   onClick={() => a._id && setEditingId(a._id)}
                   disabled={pending}
                   data-testid="address-row-edit"
-                  className="text-cf-cta underline-offset-2 hover:underline"
+                  className="rounded-sm text-cf-cta underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
                 >
                   Edit
                 </button>
@@ -98,7 +98,7 @@ export function AddressList({ initial }: AddressListProps) {
                   onClick={() => a._id && handleDelete(a._id)}
                   disabled={pending}
                   data-testid="address-row-delete"
-                  className="text-red-600 underline-offset-2 hover:underline disabled:opacity-50"
+                  className="rounded-sm text-red-600 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2 disabled:opacity-50"
                 >
                   Delete
                 </button>
@@ -115,7 +115,7 @@ export function AddressList({ initial }: AddressListProps) {
           type="button"
           onClick={() => setAdding(true)}
           data-testid="address-list-add-trigger"
-          className="rounded-md border border-cf-cta px-4 py-2 text-sm font-semibold text-cf-cta hover:bg-cf-cta hover:text-white"
+          className="rounded-md border border-cf-cta px-4 py-2 text-sm font-semibold text-cf-cta hover:bg-cf-cta hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
         >
           Add a new address
         </button>
