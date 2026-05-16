@@ -85,8 +85,10 @@ export async function getVisitorCartClient() {
     // cf-puqx: log with op="generateVisitorTokens" BEFORE re-throwing so
     // the breadcrumb identifies the auth layer as the failure point.
     // The action-level catch (e.g. addItemAction → logWixFailure) will
-    // also tag this same error but with the action's op — the two tags
-    // together let on-call see the layer boundary.
+    // re-tag the same Error after the re-throw — Sentry will see two
+    // distinct events sharing the same root Error, distinguished by
+    // their `op` tag (auth-layer vs action-layer). This is the
+    // layer-boundary signal on-call uses to triage.
     console.error("[wix-visitor-client] generateVisitorTokens failed:", err);
     void logWixFailure("cart", "generateVisitorTokens", err);
     throw err;
