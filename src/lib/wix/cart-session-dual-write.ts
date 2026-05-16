@@ -87,18 +87,35 @@ export function syncCartSession(cart: WixCart | null | undefined): void {
       // consequence. Surface non-2xx as a Sentry breadcrumb (still
       // fire-and-forget; we never throw).
       if (!res.ok) {
-        void logWixFailure(
+        // cartId is the join key the mobile-app cart-drift triage flow
+        // uses to correlate a Velo CartSessions miss back to the Wix
+        // Stores cart of record. The synthetic Error is plain (not
+        // Wix-SDK-shaped) so logWixFailure's `extra.httpStatus` field
+        // stays undefined — both signals (status + cartId) have to live
+        // in the message string for on-call to see them.
+        //
+        // `return`, not `void`: re-attaches the Sentry.flush promise to
+        // the fetch chain so Sentry's serverless instrumentation can
+        // hold the request open until the event ships, instead of
+        // racing the Vercel function freeze.
+        return logWixFailure(
           "cart",
           "syncCartSession",
-          new Error(`velo POST returned HTTP ${res.status}`),
+          new Error(
+            `velo POST returned HTTP ${res.status} (cartId=${payload.cartId})`,
+          ),
         );
       }
+      return undefined;
     })
     .catch((err: unknown) => {
       console.error("[cart-session-dual-write] velo POST failed", {
         cartId: payload.cartId,
         error: err instanceof Error ? err.message : String(err),
       });
-      void logWixFailure("cart", "syncCartSession", err);
+      // Same `return` rationale as the HTTP-error branch above — re-attach
+      // the flush promise to the chain so Sentry can hold the function
+      // open instead of racing the Vercel freeze.
+      return logWixFailure("cart", "syncCartSession", err);
     });
 }
