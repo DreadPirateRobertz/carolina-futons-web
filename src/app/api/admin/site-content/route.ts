@@ -6,6 +6,7 @@ import {
   lookupCollectionItemByKey,
   upsertCollectionItemByKey,
 } from "@/lib/wix/data";
+import { logError } from "@/lib/observability/log";
 import { logWixFailure } from "@/lib/wix/errors";
 import {
   AUTH_INPUT_ERROR_MESSAGES,
@@ -179,8 +180,9 @@ export async function POST(req: NextRequest) {
     actorEmail: owner.email,
   });
   if (!historyResult.ok) {
-    console.error(
-      `[admin/site-content] history write failed for ${key}: ${historyResult.reason}${historyResult.status ? ` (${historyResult.status})` : ""}`,
+    logError(
+      "admin/site-content",
+      `history write failed for ${key}: ${historyResult.reason}${historyResult.status ? ` (${historyResult.status})` : ""}`,
     );
   }
 

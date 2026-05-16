@@ -623,3 +623,64 @@ describe("POST /api/admin/site-content — cfw-jgl history wire-up", () => {
     expect(args.after).toBe(upsertCall.fields.value);
   });
 });
+
+// Pins the logError migration of the history-write-failure diagnostic.
+// Asserts on the console.error sink because logError forwards there in
+// every env; the Sentry forwarder is prod-only and unit-tested in
+// log.test.ts.
+describe("POST /api/admin/site-content — logError migration", () => {
+  it("emits the bracketed '[admin/site-content] history write failed …' prefix with status code when writeSiteContentHistory returns ok=false", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+    mockLookup.mockResolvedValueOnce({ value: "old" });
+    mockUpsert.mockResolvedValueOnce({});
+    mockWriteSiteContentHistory.mockResolvedValueOnce({
+      ok: false,
+      reason: "wix_error",
+      status: 404,
+    });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await callPost({ key: "footer.tagline", value: "new" });
+
+    expect(res.status).toBe(200);
+    expect(errSpy).toHaveBeenCalledTimes(1);
+    expect(errSpy.mock.calls[0]![0]).toBe(
+      "[admin/site-content] history write failed for footer.tagline: wix_error (404)",
+    );
+    // logError with no err is called single-arg — guards against an
+    // accidental trailing undefined slot.
+    expect(errSpy.mock.calls[0]!.length).toBe(1);
+    errSpy.mockRestore();
+  });
+
+  it("omits the trailing '(status)' segment when history returns ok=false without a status code", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+    mockLookup.mockResolvedValueOnce({ value: "old" });
+    mockUpsert.mockResolvedValueOnce({});
+    mockWriteSiteContentHistory.mockResolvedValueOnce({
+      ok: false,
+      reason: "wix_error",
+    });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await callPost({ key: "footer.tagline", value: "new" });
+
+    expect(errSpy.mock.calls[0]![0]).toBe(
+      "[admin/site-content] history write failed for footer.tagline: wix_error",
+    );
+    errSpy.mockRestore();
+  });
+
+  it("does NOT log on the happy path (history write succeeds)", async () => {
+    mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
+    mockLookup.mockResolvedValueOnce({ value: "old" });
+    mockUpsert.mockResolvedValueOnce({});
+    mockWriteSiteContentHistory.mockResolvedValueOnce({ ok: true });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await callPost({ key: "footer.tagline", value: "new" });
+    expect(res.status).toBe(200);
+    expect(errSpy).not.toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
+});
