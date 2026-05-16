@@ -136,6 +136,24 @@ Implementation: Sentry → Alerts → Create Alert Rule. Set the metric to "Numb
 
 ---
 
+## 6.5. Verification — confirm the tag is being emitted
+
+Before relying on the alert rules above, confirm the cf-h345.t1 wrapper is actually firing in production. Sentry search:
+
+```text
+project:cfw has:next.revalidate_reason
+```
+
+If zero results after a deploy that exercised `onRequestError`, the wrapper isn't being invoked. Likely causes:
+
+1. `instrumentation.ts` not loaded — confirm `register()` was called (Next.js logs `[Instrumentation] register() ran` on cold start)
+2. Sentry server config not loaded — confirm `sentry.server.config.ts` exists and imports cleanly
+3. Error happened in an edge runtime path — the wrapper runs in both nodejs + edge, but verify `process.env.NEXT_RUNTIME` was set correctly
+
+The contract is pinned in code by `src/__tests__/instrumentation.test.ts` (cf-h345.t1). If a future refactor renames a tag value (e.g. `none` → `normal`), CI fails before the rename can break this runbook's filter queries.
+
+---
+
 ## 7.5. When ISR activates: mental-model re-calibration
 
 When cf-0klm lands and ISR turns on for real, this runbook's signal volume changes. **Re-read sections 1, 3, and 4 within 24h of the activation deploy** to re-anchor expectations:
