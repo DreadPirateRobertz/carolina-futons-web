@@ -3,6 +3,7 @@
 import nodemailer from "nodemailer";
 import * as Sentry from "@sentry/nextjs";
 import { optionalEnv } from "@/lib/env";
+import { logError } from "@/lib/observability/log";
 import { BUSINESS } from "@/lib/business/contact-info";
 import {
   coerceContactRequest,
@@ -123,7 +124,7 @@ export async function sendContactForm(
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
   } catch (err) {
-    console.error("[contact-form] fetch to Velo failed:", err);
+    logError("contact-form", "fetch to Velo failed", err);
     return transportFailure(req, TRANSPORT_ERROR_GENERIC);
   }
 
@@ -142,13 +143,11 @@ export async function sendContactForm(
       veloError = body.error.slice(0, VELO_ERROR_MAX_LEN);
     }
   } catch (parseErr) {
-    console.error("[contact-form] failed to parse Velo error body:", parseErr);
+    logError("contact-form", "failed to parse Velo error body", parseErr);
   }
-  console.error(
-    "[contact-form] Velo endpoint rejected submission:",
-    res.status,
+  logError("contact-form", "Velo endpoint rejected submission", res.status, {
     veloError,
-  );
+  });
   return transportFailure(req, veloError ?? TRANSPORT_ERROR_GENERIC);
 }
 
@@ -228,7 +227,7 @@ export async function bookAppointment(
 
   const env = readEnv();
   if (!env) {
-    console.error("[appointment-form] SMTP env vars missing — cannot send");
+    logError("appointment-form", "SMTP env vars missing — cannot send");
     return {
       status: "error",
       errors: {},
@@ -253,7 +252,7 @@ export async function bookAppointment(
       text: buildAppointmentBody(req),
     });
   } catch (err) {
-    console.error("[appointment-form] sendMail failed:", err);
+    logError("appointment-form", "sendMail failed", err);
     return {
       status: "error",
       errors: {},
