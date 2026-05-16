@@ -25,6 +25,10 @@ vi.mock("@/lib/wix/cart", () => ({
   wixCartToLines: (...args: unknown[]) => wixCartToLines(...args),
   applyCoupon: (...args: unknown[]) => applyCoupon(...args),
   removeCoupon: (...args: unknown[]) => removeCoupon(...args),
+  // cf-56ue: extractAppliedCoupon is called by applyCouponAction +
+  // hydrateCartAction; return undefined so existing tests that assert
+  // { ok: true, cart } / { ok: true, lines } stay unaffected.
+  extractAppliedCoupon: () => undefined,
 }));
 
 vi.mock("@/lib/wix/errors", () => ({

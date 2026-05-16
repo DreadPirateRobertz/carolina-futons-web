@@ -175,21 +175,24 @@ describe("/search page — results", () => {
   // cf-33a (cf-ruhm.4): QuickView button on every product result row so
   // shoppers can open the variant picker + add-to-cart without a PDP click.
   it("renders a QuickView button on every product result row (cf-33a)", async () => {
-    mockSearchProducts.mockResolvedValue([
-      {
-        _id: "p1",
-        slug: "monterey-futon",
-        name: "Monterey Futon",
-        priceData: { formatted: { price: "$899.00" } },
-      },
-      {
-        _id: "p2",
-        slug: "asheville-daybed",
-        name: "Asheville Daybed",
-        priceData: { formatted: { price: "$799.00" } },
-      },
-    ] as never);
-    mockSearchPosts.mockResolvedValue([]);
+    mockSearchProducts.mockResolvedValue({
+      items: [
+        {
+          _id: "p1",
+          slug: "monterey-futon",
+          name: "Monterey Futon",
+          priceData: { formatted: { price: "$899.00" } },
+        },
+        {
+          _id: "p2",
+          slug: "asheville-daybed",
+          name: "Asheville Daybed",
+          priceData: { formatted: { price: "$799.00" } },
+        },
+      ],
+      total: 2,
+    } as never);
+    mockSearchPosts.mockResolvedValue({ items: [], total: 0 });
     await renderSearch({ q: "f" });
 
     const monterey = screen.getByRole("button", {
@@ -208,11 +211,14 @@ describe("/search page — results", () => {
   });
 
   it("skips the QuickView button when a result is missing a slug (cf-33a defensive)", async () => {
-    mockSearchProducts.mockResolvedValue([
-      // No slug field — QuickView needs slug to fetch product detail.
-      { _id: "p1", name: "Slugless Frame", priceData: { formatted: { price: "$0.00" } } },
-    ] as never);
-    mockSearchPosts.mockResolvedValue([]);
+    mockSearchProducts.mockResolvedValue({
+      items: [
+        // No slug field — QuickView needs slug to fetch product detail.
+        { _id: "p1", name: "Slugless Frame", priceData: { formatted: { price: "$0.00" } } },
+      ],
+      total: 1,
+    } as never);
+    mockSearchPosts.mockResolvedValue({ items: [], total: 0 });
     await renderSearch({ q: "frame" });
     expect(
       screen.queryByRole("button", { name: /quick view: slugless frame/i }),

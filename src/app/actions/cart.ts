@@ -1,10 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { type CartLineItem } from "@/lib/cart/cart-state";
+import { type AppliedCoupon, type CartLineItem } from "@/lib/cart/cart-state";
 import {
   addToCart,
   applyCoupon,
+  extractAppliedCoupon,
   getCurrentCart,
   removeCoupon,
   removeFromCart,
@@ -17,11 +18,11 @@ import { syncCartSession } from "@/lib/wix/cart-session-dual-write";
 import { logWixFailure } from "@/lib/wix/errors";
 
 export type CartActionResult =
-  | { ok: true; cart: WixCart | null }
+  | { ok: true; cart: WixCart | null; appliedCoupon?: AppliedCoupon }
   | { ok: false; error: string };
 
 export type HydrateCartResult =
-  | { ok: true; lines: CartLineItem[] }
+  | { ok: true; lines: CartLineItem[]; appliedCoupon?: AppliedCoupon }
   | { ok: false; error: string };
 
 export async function addItemAction(
@@ -106,7 +107,8 @@ export async function applyCouponAction(code: string): Promise<CartActionResult>
   try {
     const cart = await applyCoupon(trimmed);
     revalidatePath("/cart");
-    return { ok: true, cart };
+    const appliedCoupon = extractAppliedCoupon(cart);
+    return appliedCoupon ? { ok: true, cart, appliedCoupon } : { ok: true, cart };
   } catch (err) {
     // cf-h78k: invalid-code rejections from Wix carry an "INVALID_ARGUMENT"
     // shape; outages carry generic 5xx. Both are real backend failures
@@ -146,7 +148,9 @@ export async function getCartAction(): Promise<CartActionResult> {
 export async function hydrateCartAction(): Promise<HydrateCartResult> {
   try {
     const cart = await getCurrentCart();
-    return { ok: true, lines: cart ? wixCartToLines(cart) : [] };
+    const lines = cart ? wixCartToLines(cart) : [];
+    const appliedCoupon = extractAppliedCoupon(cart ?? null);
+    return appliedCoupon ? { ok: true, lines, appliedCoupon } : { ok: true, lines };
   } catch (err) {
     // cf-8ys6: bead spec's "worst offender" — without this, an empty
     // /cart page on hydrate failure (Wix outage, expired session)
