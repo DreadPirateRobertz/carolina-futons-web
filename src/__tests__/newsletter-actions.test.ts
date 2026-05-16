@@ -16,9 +16,16 @@ vi.mock("@/lib/newsletter/newsletter-store", async (importOriginal) => {
   return { ...actual, upsertSubscriber: storeMocks.upsertSubscriber };
 });
 
+// cfw-logger migration: subscribeToNewsletter's catch routes through logError.
+const logErrorMock = vi.fn();
+vi.mock("@/lib/logger", () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
+}));
+
 beforeEach(() => {
   storeMocks.upsertSubscriber.mockReset();
   storeMocks.upsertSubscriber.mockResolvedValue({ created: true });
+  logErrorMock.mockReset();
 });
 
 function fd(fields: Record<string, string>): FormData {
@@ -141,5 +148,47 @@ describe("subscribeToNewsletter — PII redaction in logs (cfw-coc)", () => {
   afterEach(() => {
     if (ORIGINAL_SALT === undefined) delete process.env.LOG_PII_SALT;
     else process.env.LOG_PII_SALT = ORIGINAL_SALT;
+  });
+});
+
+// cfw-logger migration: subscribeToNewsletter's catch (non-rate-limit
+// branch) routes through logError("newsletter", "upsertSubscriber failed", err).
+describe("subscribeToNewsletter — logError observability", () => {
+  it("calls logError when upsertSubscriber throws a generic Error", async () => {
+    const err = new Error("store down");
+    storeMocks.upsertSubscriber.mockRejectedValueOnce(err);
+    const { subscribeToNewsletter } = await import("@/app/newsletter/actions");
+    const result = await subscribeToNewsletter(null, fd({ email: "u@x.com" }));
+    expect(result.status).toBe("error");
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "newsletter",
+      "upsertSubscriber failed",
+      err,
+    );
+  });
+
+  it("does NOT call logError on a NewsletterRateLimitError (warn path)", async () => {
+    const { NewsletterRateLimitError } = await import(
+      "@/lib/newsletter/newsletter-store"
+    );
+    storeMocks.upsertSubscriber.mockRejectedValueOnce(
+      new NewsletterRateLimitError(),
+    );
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { subscribeToNewsletter } = await import("@/app/newsletter/actions");
+    await subscribeToNewsletter(null, fd({ email: "u@x.com" }));
+    expect(logErrorMock).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it("wraps non-Error rejections under { err } in the logError payload", async () => {
+    storeMocks.upsertSubscriber.mockRejectedValueOnce("string-error");
+    const { subscribeToNewsletter } = await import("@/app/newsletter/actions");
+    await subscribeToNewsletter(null, fd({ email: "u@x.com" }));
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "newsletter",
+      "upsertSubscriber failed",
+      { err: "string-error" },
+    );
   });
 });
