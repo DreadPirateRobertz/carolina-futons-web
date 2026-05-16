@@ -4,6 +4,11 @@ import { render, screen, fireEvent } from "@testing-library/react";
 vi.mock("@/lib/analytics/ga4-events", () => ({
   trackBeginCheckout: vi.fn(),
 }));
+// cfw-logger migration: cart-page's checkout-CTA catch routes through logError.
+const logErrorMock = vi.fn();
+vi.mock("@/lib/logger", () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
+}));
 vi.mock("@/components/cart/CartProvider", () => ({
   useCart: vi.fn(),
 }));
@@ -21,6 +26,7 @@ import type { CartLineItem } from "@/lib/cart/cart-state";
 
 beforeEach(() => {
   vi.mocked(trackBeginCheckout).mockReset();
+  logErrorMock.mockReset();
 });
 
 const removeLine = vi.fn();
@@ -28,6 +34,7 @@ const setQuantity = vi.fn();
 
 beforeEach(() => {
   vi.mocked(trackBeginCheckout).mockReset();
+  logErrorMock.mockReset();
 });
 
 const LINE: CartLineItem = {
@@ -196,5 +203,50 @@ describe("CartPage", () => {
       // 79900 × 2 = 159800 cents → 1598 dollars
       1598,
     );
+  });
+
+  // cfw-logger migration: the checkout CTA's catch routes through
+  // logError("cart-page", "trackBeginCheckout failed", err).
+  describe("trackBeginCheckout failure — logError observability", () => {
+    const sampleLine: CartLineItem = {
+      id: "li-1",
+      productId: "P1",
+      productName: "Kingston Frame",
+      unitPriceCents: 79900,
+      formattedUnitPrice: "$799.00",
+      quantity: 1,
+    };
+
+    it("calls logError when trackBeginCheckout throws", () => {
+      vi.mocked(trackBeginCheckout).mockImplementationOnce(() => {
+        throw new Error("ga4 outage");
+      });
+      mockCart([sampleLine]);
+      render(<CartPage />);
+      const cta = screen.getByText(/proceed to checkout/i);
+      fireEvent.click(cta);
+      expect(logErrorMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("tags logError with scope='cart-page' and message='trackBeginCheckout failed'", () => {
+      vi.mocked(trackBeginCheckout).mockImplementationOnce(() => {
+        throw new Error("ga4 outage");
+      });
+      mockCart([sampleLine]);
+      render(<CartPage />);
+      fireEvent.click(screen.getByText(/proceed to checkout/i));
+      expect(logErrorMock).toHaveBeenCalledWith(
+        "cart-page",
+        "trackBeginCheckout failed",
+        expect.anything(),
+      );
+    });
+
+    it("does NOT call logError on a normal checkout click (no throw)", () => {
+      mockCart([sampleLine]);
+      render(<CartPage />);
+      fireEvent.click(screen.getByText(/proceed to checkout/i));
+      expect(logErrorMock).not.toHaveBeenCalled();
+    });
   });
 });
