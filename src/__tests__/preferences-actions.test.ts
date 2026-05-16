@@ -19,8 +19,16 @@ vi.mock("@/lib/wix/velo-client", () => ({
   callVelo: veloMocks.callVelo,
 }));
 
+// cfw-dhxv: failure paths route through logError. Mock here so failure
+// tests assert call shape rather than parsing console output.
+const mockLogError = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 beforeEach(() => {
   veloMocks.callVelo.mockReset();
+  mockLogError.mockReset();
 });
 
 describe("getMyPushPreferences", () => {
@@ -64,16 +72,19 @@ describe("getMyPushPreferences", () => {
     expect(result).toEqual({ success: false, error: "unauthenticated" });
   });
 
-  it("returns success:false on a thrown velo error without rethrowing", async () => {
+  it("returns success:false + ships logError on a thrown velo error (cfw-dhxv)", async () => {
     veloMocks.callVelo.mockRejectedValueOnce(new Error("rpc fail"));
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { getMyPushPreferences } = await import("@/app/actions/preferences");
     const result = await getMyPushPreferences();
     expect(result).toEqual({
       success: false,
       error: "Could not load preferences.",
     });
-    errSpy.mockRestore();
+    expect(mockLogError).toHaveBeenCalledWith(
+      "preferences",
+      "getMyPushPreferences",
+      expect.any(Error),
+    );
   });
 });
 
@@ -133,9 +144,8 @@ describe("managePushPreferences", () => {
     });
   });
 
-  it("returns success:false on a thrown velo error without rethrowing", async () => {
+  it("returns success:false + ships logError on a thrown velo error (cfw-dhxv)", async () => {
     veloMocks.callVelo.mockRejectedValueOnce(new Error("rpc fail"));
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { managePushPreferences } = await import(
       "@/app/actions/preferences"
     );
@@ -144,6 +154,10 @@ describe("managePushPreferences", () => {
       success: false,
       error: "Could not save preferences.",
     });
-    errSpy.mockRestore();
+    expect(mockLogError).toHaveBeenCalledWith(
+      "preferences",
+      "managePushPreferences",
+      expect.any(Error),
+    );
   });
 });
