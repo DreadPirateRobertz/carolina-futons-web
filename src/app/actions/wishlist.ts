@@ -3,6 +3,7 @@
 import { getMemberSession, withMember } from "@/lib/auth/member";
 import { signMemberId, verifyShareToken } from "@/lib/wishlist/share-token";
 import type { WishlistResponse } from "@/lib/wishlist/wishlist-types";
+import { logError } from "@/lib/log";
 import {
   addWishlistItem,
   fetchWishlist,
@@ -56,7 +57,7 @@ export async function addToWishlistFromPdp(
     }
     return { success: true };
   } catch (err) {
-    console.error("[wishlist] addToWishlistFromPdp failed:", err);
+    await logError("wishlist", "addToWishlistFromPdp", err);
     return { success: false, error: "Could not save. Please try again." };
   }
 }
@@ -85,7 +86,7 @@ export async function getWishlistCount(): Promise<number> {
     if (!result?.success) return 0;
     return result.total ?? result.items?.length ?? 0;
   } catch (err) {
-    console.error("[wishlist] getWishlistCount failed:", err);
+    await logError("wishlist", "getWishlistCount", err);
     return 0;
   }
 }
@@ -125,7 +126,7 @@ export async function getSharedWishlist(token: string): Promise<
     if (!result?.success) return { success: false };
     return { success: true, items: result.items, total: result.total };
   } catch (err) {
-    console.error("[wishlist] getSharedWishlist failed:", err);
+    await logError("wishlist", "getSharedWishlist", err);
     return { success: false };
   }
 }
