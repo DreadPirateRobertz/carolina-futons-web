@@ -6,6 +6,7 @@ import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { useCart } from "@/components/cart/CartProvider";
 import { formatCents } from "@/lib/cart/cart-state";
 import { trackBeginCheckout } from "@/lib/analytics/ga4-events";
+import { logError } from "@/lib/logging/log-error";
 import { cn } from "@/lib/utils";
 import { EmptyCartIllustration } from "@/components/illustrations/EmptyCartIllustration";
 import { PackingBearIllustration } from "@/components/illustrations/PackingBearIllustration";
@@ -206,7 +207,11 @@ export default function CartPage() {
                   subtotalCents / 100,
                 );
               } catch (e) {
-                console.error("[cart-page] trackBeginCheckout failed", e);
+                // cfw-v704: parallel to cfw-0uv0 CartDrawer trackBeginCheckout
+                // — GA4 failure is non-fatal; void so the checkout-link
+                // click handler returns immediately and Sentry ships in
+                // the background.
+                void logError("cart-page", "trackBeginCheckout", e);
               }
             }}
             className={cn(
