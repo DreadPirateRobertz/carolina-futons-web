@@ -36,7 +36,7 @@ beforeEach(() => {
     value: "",
   });
   gtagSpy = vi.fn();
-  (window as Window).gtag = gtagSpy;
+  (window as Window).gtag = gtagSpy as unknown as (...args: unknown[]) => void;
 });
 
 afterEach(() => {
