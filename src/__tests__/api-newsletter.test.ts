@@ -16,6 +16,17 @@ vi.mock("@/lib/newsletter/newsletter-store", async () => {
   };
 });
 
+// cfw-0tpn: the timeout + upsert-fail catches now route through
+// logError → Sentry. Mock @sentry/nextjs so the runner doesn't ship
+// events AND the new logError-integration describe below can assert
+// (scope, op) tags + emailHash extra (cfw-coc PII pattern).
+const sentryCaptureException = vi.fn();
+const sentryFlush = vi.fn().mockResolvedValue(true);
+vi.mock("@sentry/nextjs", () => ({
+  captureException: (...args: unknown[]) => sentryCaptureException(...args),
+  flush: (timeoutMs?: number) => sentryFlush(timeoutMs),
+}));
+
 import {
   upsertSubscriber,
   NewsletterRateLimitError,
@@ -36,6 +47,8 @@ const ORIGINAL_VELO = process.env.WIX_VELO_SITE_URL;
 
 beforeEach(() => {
   mockUpsert.mockReset();
+  sentryCaptureException.mockReset();
+  sentryFlush.mockReset().mockResolvedValue(true);
   process.env.WIX_VELO_SITE_URL = "https://www.carolinafutons.com";
 });
 
@@ -160,5 +173,91 @@ describe("POST /api/newsletter — PII redaction in logs (cfw-t22e)", () => {
     expect(warned).not.toContain("leak-me@example.com");
     expect(warned).toMatch(/\[api\/newsletter\] rate-limited:.*[0-9a-f]{12}/);
     warn.mockRestore();
+  });
+});
+
+// cfw-0tpn: pin logError integration on both backend-error catches.
+// Newsletter signup is a top-of-funnel marketing pipeline — silent
+// Velo outages drop leads. cfw-coc PII contract: email NEVER flows
+// raw to Sentry; only its hash.
+describe("POST /api/newsletter — logError integration", () => {
+  const ORIGINAL_SALT = process.env.LOG_PII_SALT;
+  beforeEach(() => {
+    process.env.LOG_PII_SALT = "test-salt-cfw-0tpn";
+  });
+  afterEach(() => {
+    if (ORIGINAL_SALT === undefined) delete process.env.LOG_PII_SALT;
+    else process.env.LOG_PII_SALT = ORIGINAL_SALT;
+  });
+
+  it("TimeoutError → captures scope='api/newsletter' + op='velo timeout' + extra { emailHash } — raw email MUST NOT appear", async () => {
+    const timeoutErr = new Error("timed out");
+    timeoutErr.name = "TimeoutError";
+    mockUpsert.mockRejectedValue(timeoutErr);
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await POST(makePost({ email: "brenda@example.com" }));
+
+    expect(res.status).toBe(502);
+    expect(sentryCaptureException).toHaveBeenCalledTimes(1);
+    const [reportedErr, opts] = sentryCaptureException.mock.calls[0]!;
+    expect(reportedErr).toBe(timeoutErr);
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "api/newsletter",
+      op: "velo timeout",
+    });
+    expect((opts as { level: string }).level).toBe("error");
+    const extra = (opts as { extra: Record<string, unknown> }).extra;
+    expect(typeof extra.emailHash).toBe("string");
+    expect((extra.emailHash as string).length).toBeGreaterThan(0);
+    expect(extra.emailHash).not.toContain("brenda@example.com");
+    const serialized = JSON.stringify(sentryCaptureException.mock.calls);
+    expect(serialized).not.toContain("brenda@example.com");
+    expect(sentryFlush).toHaveBeenCalledWith(2000);
+    errSpy.mockRestore();
+  });
+
+  it("upsertSubscriber throw → captures op='upsertSubscriber failed' + extra { emailHash }", async () => {
+    const thrown = new Error("velo 500");
+    mockUpsert.mockRejectedValue(thrown);
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await POST(makePost({ email: "brenda@example.com" }));
+
+    expect(res.status).toBe(502);
+    expect(sentryCaptureException).toHaveBeenCalledTimes(1);
+    const [reportedErr, opts] = sentryCaptureException.mock.calls[0]!;
+    expect(reportedErr).toBe(thrown);
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "api/newsletter",
+      op: "upsertSubscriber failed",
+    });
+    const extra = (opts as { extra: Record<string, unknown> }).extra;
+    expect(extra.emailHash).toBeDefined();
+    expect((extra.emailHash as string)).not.toContain("brenda@example.com");
+    errSpy.mockRestore();
+  });
+
+  it("rate-limit (NewsletterRateLimitError) does NOT call Sentry — user-induced traffic", async () => {
+    mockUpsert.mockRejectedValue(new NewsletterRateLimitError());
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const res = await POST(makePost({ email: "user@example.com" }));
+
+    expect(res.status).toBe(429);
+    // Rate limit floods would drown the dashboard if every spammer's
+    // hammering surfaced as a Sentry event.
+    expect(sentryCaptureException).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it("happy path (success) does NOT call Sentry", async () => {
+    mockUpsert.mockResolvedValue({ created: true });
+
+    const res = await POST(makePost({ email: "user@example.com" }));
+
+    expect(res.status).toBe(200);
+    expect(sentryCaptureException).not.toHaveBeenCalled();
+    expect(sentryFlush).not.toHaveBeenCalled();
   });
 });
