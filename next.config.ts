@@ -133,6 +133,9 @@ const nextConfig: NextConfig = {
       { source: "/account/profile", destination: "/dashboard/profile", permanent: true },
       { source: "/account/my-account", destination: "/dashboard/profile", permanent: true },
       { source: "/account/notifications", destination: "/dashboard/preferences", permanent: true },
+      // cf-ajvr (cf-ruhm-w3.4): /account/my-subscriptions is a real Wix prod URL (200);
+      // cfw has no subscriptions feature yet — redirect to dashboard rather than 404.
+      { source: "/account/my-subscriptions", destination: "/dashboard", permanent: true },
 
       // Order confirmation aliases.
       {
