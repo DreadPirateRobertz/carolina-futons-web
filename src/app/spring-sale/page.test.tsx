@@ -241,3 +241,102 @@ describe("SpringSalePage — generateMetadata (cf-yu2l.F1.2 SEO field wiring)", 
     expect(meta.alternates?.canonical).toBe("/spring-sale");
   });
 });
+
+describe("SpringSalePage — cf-yu2l.F1 v2 self-CR fold", () => {
+  // The first wave shipped with `landing?.X ?? FALLBACK.X`. Plain `??`
+  // does NOT coalesce empty strings — only null/undefined. Wix's
+  // CMS editor saves cleared fields as "" not null, so a marketer who
+  // deletes the headline ships an empty h1. v2 fixes via a coalesce
+  // helper that rejects empty/whitespace-only strings.
+
+  it("falls back to hardcoded headline when Landing.headline is empty string", async () => {
+    getLandingBySlug.mockResolvedValue({
+      _id: "x",
+      slug: "spring-sale",
+      title: "x",
+      headline: "",
+    });
+    await renderSpringSale();
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: /Spring Sale on mattresses/i,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("falls back to hardcoded subheading when Landing.subheadline is whitespace-only", async () => {
+    getLandingBySlug.mockResolvedValue({
+      _id: "x",
+      slug: "spring-sale",
+      title: "x",
+      headline: "x",
+      subheadline: "   ",
+    });
+    await renderSpringSale();
+    expect(
+      screen.getByText(/Hendersonville, NC\. American-made mattresses/i),
+    ).toBeInTheDocument();
+  });
+
+  it("falls back to hardcoded CTA href when Landing.ctaPrimaryHref is empty string", async () => {
+    // Most load-bearing case: empty href would produce <a href=""> →
+    // bookmarks the current page on click → broken UX.
+    getLandingBySlug.mockResolvedValue({
+      _id: "x",
+      slug: "spring-sale",
+      title: "x",
+      headline: "x",
+      ctaPrimaryLabel: "Shop seasonal picks",
+      ctaPrimaryHref: "",
+    });
+    await renderSpringSale();
+    const cta = screen.getByRole("link", { name: /Shop seasonal picks/i });
+    expect(cta.getAttribute("href")).toBe("/shop/mattresses-sale");
+  });
+
+  it("falls back to default meta.description when Landing.seoDescription is empty", async () => {
+    getLandingBySlug.mockResolvedValue({
+      _id: "x",
+      slug: "spring-sale",
+      title: "x",
+      headline: "x",
+      seoDescription: "",
+    });
+    const meta = await generateMetadata();
+    expect(meta.description).toMatch(/Mattress promotions running this season/i);
+  });
+
+  it("Landing-driven og:image carries 1200x630 social-card dimensions", async () => {
+    // Crawlers pre-size cards using width/height — DEFAULT_OG_IMAGE
+    // already carries them; the Landing-driven path must match so
+    // social previews render consistently across the two codepaths.
+    getLandingBySlug.mockResolvedValue({
+      _id: "x",
+      slug: "spring-sale",
+      title: "x",
+      headline: "x",
+      ogImageUrl: "https://static.wixstatic.com/social-card.jpg",
+    });
+    const meta = await generateMetadata();
+    const og = meta.openGraph as { images: { url: string; width?: number; height?: number }[] };
+    expect(og.images?.[0]?.width).toBe(1200);
+    expect(og.images?.[0]?.height).toBe(630);
+  });
+
+  it("trims surrounding whitespace from Landing.headline (editor copy-paste hygiene)", async () => {
+    getLandingBySlug.mockResolvedValue({
+      _id: "x",
+      slug: "spring-sale",
+      title: "x",
+      headline: "  Editor headline with stray whitespace  ",
+    });
+    await renderSpringSale();
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Editor headline with stray whitespace",
+      }),
+    ).toBeInTheDocument();
+  });
+});
