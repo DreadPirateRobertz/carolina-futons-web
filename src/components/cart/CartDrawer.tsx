@@ -12,6 +12,7 @@ import { EmptyCartIllustration } from "@/components/illustrations/EmptyCartIllus
 import { formatCents } from "@/lib/cart/cart-state";
 import { trackBeginCheckout } from "@/lib/analytics/ga4-events";
 import { cn } from "@/lib/utils";
+import { focusRingCta } from "@/lib/ui/focus-ring";
 
 // Right-hand slide-in cart drawer. `Dialog.Root` is explicitly `modal` so
 // focus is trapped, the body is scroll-locked, and outside pointer events are
@@ -63,7 +64,10 @@ export function CartDrawer() {
             </Dialog.Title>
             <Dialog.Close
               aria-label="Close cart"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-md text-cf-espresso transition-colors hover:bg-cf-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
+              className={cn(
+                "inline-flex h-11 w-11 items-center justify-center rounded-md text-cf-espresso transition-colors hover:bg-cf-sand",
+                focusRingCta,
+              )}
             >
               <X className="size-5" aria-hidden="true" />
             </Dialog.Close>
@@ -244,7 +248,7 @@ export function CartDrawer() {
                   data-testid="cart-checkout-cta"
                   className={cn(
                     "mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-md bg-cf-cta px-4 text-sm font-semibold text-white transition-colors",
-                    "hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2",
+                    cn("hover:bg-cf-cta/90", focusRingCta),
                     isCartPending && "cursor-not-allowed opacity-60",
                   )}
                 >
@@ -293,7 +297,7 @@ function EmptyCart({ onClose }: { onClose: () => void }) {
         }}
         className={cn(
           "mt-2 inline-flex min-h-11 items-center justify-center rounded-md bg-cf-cta px-5 text-sm font-semibold text-white transition-colors",
-          "hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2",
+          cn("hover:bg-cf-cta/90", focusRingCta),
         )}
       >
         Start shopping
