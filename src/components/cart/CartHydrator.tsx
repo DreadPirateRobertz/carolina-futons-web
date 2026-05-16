@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { hydrateCartAction } from "@/app/actions/cart";
 import { useCart } from "@/components/cart/CartProvider";
+import { logError } from "@/lib/log";
 
 // Runs once on mount to pull the Wix server cart into the in-memory
 // CartProvider. Without this, a page refresh shows an empty cart even when
@@ -42,12 +43,18 @@ export function CartHydrator() {
               : { type: "hydrate", lines: result.lines },
           );
         } else {
-          console.error("[CartHydrator] hydrateCartAction failed:", result.error);
+          // result.error is a string from the server action; wrap so
+          // logError's Sentry capture gets a proper Error shape.
+          void logError(
+            "cart-hydrator",
+            "hydrateCartAction.result-error",
+            new Error(`hydrateCartAction failed: ${result.error}`),
+          );
           setLoadFailed(true);
         }
       })
       .catch((err) => {
-        console.error("[CartHydrator] hydrateCartAction transport error:", err);
+        void logError("cart-hydrator", "hydrateCartAction.transport", err);
         setLoadFailed(true);
       });
   }, [dispatch]);
