@@ -104,6 +104,12 @@ export async function updateQuantityAction(
 export async function applyCouponAction(code: string): Promise<CartActionResult> {
   const trimmed = code?.trim() ?? "";
   if (!trimmed) return { ok: false, error: "Enter a promo code" };
+  // cf-no2d (cf-7utd.fu1): fixture short-circuit pairs to addItemAction (cf-f9o1).
+  // Without this, e2e in NEXT_PUBLIC_USE_FIXTURE_PRODUCTS=1 calls Wix without
+  // a client id and falls into the catch — UI shows errorState, and the
+  // cart-flow spec masked it behind an `appliedState.or(errorState)` tolerance.
+  if (process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1")
+    return { ok: true, cart: null };
   try {
     const cart = await applyCoupon(trimmed);
     revalidatePath("/cart");
@@ -120,6 +126,9 @@ export async function applyCouponAction(code: string): Promise<CartActionResult>
 }
 
 export async function removeCouponAction(): Promise<CartActionResult> {
+  // cf-no2d: paired fixture short-circuit (see applyCouponAction).
+  if (process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1")
+    return { ok: true, cart: null };
   try {
     const cart = await removeCoupon();
     revalidatePath("/cart");

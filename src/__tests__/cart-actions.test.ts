@@ -296,6 +296,33 @@ describe("cart server actions", () => {
         expect(result.appliedCoupon).toBeUndefined();
       }
     });
+
+    // cf-no2d (cf-7utd.fu1): in fixture mode (NEXT_PUBLIC_USE_FIXTURE_PRODUCTS=1)
+    // the cart action MUST short-circuit before touching Wix. Without this,
+    // applyCoupon() inside the action calls getWixClient() which throws
+    // because WIX_CLIENT_ID_HEADLESS is unset in fixture env. Result: cart-
+    // flow e2e sees errorState rather than appliedState, masking real
+    // regressions behind the `.or(errorState)` tolerance.
+    //
+    // Mirrors the existing addItemAction fixture short-circuit at
+    // src/app/actions/cart.ts:39 (cf-f9o1 reference impl).
+    it("short-circuits in fixture mode without calling Wix (cf-no2d)", async () => {
+      const prev = process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS;
+      process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS = "1";
+      try {
+        const { applyCouponAction } = await import("@/app/actions/cart");
+        const result = await applyCouponAction("TESTCODE");
+        expect(result).toEqual({ ok: true, cart: null });
+        expect(applyCoupon).not.toHaveBeenCalled();
+        expect(logWixFailure).not.toHaveBeenCalled();
+      } finally {
+        if (prev === undefined) {
+          delete process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS;
+        } else {
+          process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS = prev;
+        }
+      }
+    });
   });
 
   describe("removeCouponAction", () => {
@@ -326,6 +353,25 @@ describe("cart server actions", () => {
         "removeCouponAction",
         err,
       );
+    });
+
+    // cf-no2d (cf-7utd.fu1): paired fixture short-circuit (see applyCouponAction).
+    it("short-circuits in fixture mode without calling Wix (cf-no2d)", async () => {
+      const prev = process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS;
+      process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS = "1";
+      try {
+        const { removeCouponAction } = await import("@/app/actions/cart");
+        const result = await removeCouponAction();
+        expect(result).toEqual({ ok: true, cart: null });
+        expect(removeCoupon).not.toHaveBeenCalled();
+        expect(logWixFailure).not.toHaveBeenCalled();
+      } finally {
+        if (prev === undefined) {
+          delete process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS;
+        } else {
+          process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS = prev;
+        }
+      }
     });
   });
 
