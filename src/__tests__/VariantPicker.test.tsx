@@ -1,6 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 
+// cf-pdv4: VariantPicker now uses next/navigation hooks for URL
+// hydration + sync. Provide a minimal mock so the existing
+// behavioral tests still pass — URL-specific behavior is covered by
+// VariantPicker-url-hydration.test.tsx.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn(), refresh: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/products/test-frame",
+}));
+
 import { VariantPicker } from "@/components/product/VariantPicker";
 import type {
   ProductOptionInput,
