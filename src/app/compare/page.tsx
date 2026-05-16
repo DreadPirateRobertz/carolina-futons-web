@@ -89,8 +89,9 @@ export default async function ComparePage(props: {
         <p className="text-xs font-medium uppercase tracking-[0.18em] text-cf-cta">
           Side-by-side comparison
         </p>
-        <h1 className="mt-2 font-heading text-2xl font-semibold text-cf-ink dark:text-cf-cream sm:text-3xl">
-          Compare {products.length} {products.length === 1 ? "product" : "products"}
+        <h1 className="mt-2 font-heading text-2xl font-semibold text-cf-ink sm:text-3xl">
+          Compare {products.length}{" "}
+          {products.length === 1 ? "product" : "products"}
         </h1>
         <p className="mt-2 text-sm text-cf-muted">
           Rows highlighted where values differ.
@@ -119,7 +120,7 @@ function CompareEmptyState({
       data-reason={reason}
       className="mx-auto w-full max-w-3xl px-4 py-16 text-center sm:px-6"
     >
-      <h1 className="font-heading text-2xl font-semibold text-cf-ink dark:text-cf-cream">
+      <h1 className="font-heading text-2xl font-semibold text-cf-ink">
         Pick {COMPARE_MIN}–{COMPARE_MAX} products to compare
       </h1>
       <p className="mt-3 text-sm text-cf-muted">

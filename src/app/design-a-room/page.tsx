@@ -38,7 +38,7 @@ export default function DesignARoomPage() {
       <div className="max-h-72 w-full overflow-hidden">
         <StargazingHero />
       </div>
-      <article className="mx-auto max-w-[65ch] space-y-24 px-4 py-12 font-source-sans text-cf-ink dark:text-cf-cream sm:px-6 sm:py-16">
+      <article className="mx-auto max-w-[65ch] space-y-24 px-4 py-12 font-source-sans text-cf-ink sm:px-6 sm:py-16">
         <HeroReveal>
           <header className="space-y-3">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
@@ -48,10 +48,10 @@ export default function DesignARoomPage() {
               Design a room around a futon
             </h1>
             <p className="text-lg leading-relaxed text-cf-muted">
-              Family-owned in Hendersonville since 1991. Stop by the showroom
-              or give us a call — we&rsquo;ll help you plan a room that sleeps
-              guests, holds up to daily use, and still looks like a room, not
-              a folded-out mattress.
+              Family-owned in Hendersonville since 1991. Stop by the showroom or
+              give us a call — we&rsquo;ll help you plan a room that sleeps
+              guests, holds up to daily use, and still looks like a room, not a
+              folded-out mattress.
             </p>
           </header>
         </HeroReveal>
@@ -65,14 +65,15 @@ export default function DesignARoomPage() {
               See it in a room
             </h2>
             <p className="text-sm leading-relaxed text-cf-muted">
-              Explore how a futon frame, murphy bed, or platform bed looks inside
-              a styled room. Switch styles to find a look that fits your space.
+              Explore how a futon frame, murphy bed, or platform bed looks
+              inside a styled room. Switch styles to find a look that fits your
+              space.
             </p>
             <RoomSceneViewer />
           </section>
         </HeroReveal>
 
-        <HeroReveal delay={0.10}>
+        <HeroReveal delay={0.1}>
           <section className="space-y-6" aria-labelledby="planner-heading">
             <h2
               id="planner-heading"
@@ -81,8 +82,8 @@ export default function DesignARoomPage() {
               Check if it fits
             </h2>
             <p className="text-sm leading-relaxed text-cf-muted">
-              Enter your room dimensions and pick a futon or Murphy bed to see
-              a rough top-down layout.
+              Enter your room dimensions and pick a futon or Murphy bed to see a
+              rough top-down layout.
             </p>
             <RoomPlannerCanvas />
           </section>
@@ -154,7 +155,7 @@ export default function DesignARoomPage() {
           </section>
         </HeroReveal>
 
-        <HeroReveal delay={0.20}>
+        <HeroReveal delay={0.2}>
           <section className="space-y-6" aria-labelledby="three-ways">
             <h2
               id="three-ways"
@@ -196,7 +197,8 @@ export default function DesignARoomPage() {
                   Visit in person
                 </h3>
                 <address className="not-italic text-sm leading-relaxed">
-                  {BUSINESS.street}, {BUSINESS.city}, {BUSINESS.state} {BUSINESS.zip}
+                  {BUSINESS.street}, {BUSINESS.city}, {BUSINESS.state}{" "}
+                  {BUSINESS.zip}
                   <br />
                   {SHOWROOM_HOURS}
                 </address>
@@ -217,8 +219,8 @@ export default function DesignARoomPage() {
                 className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
               >
                 full catalog
-              </Link>
-              {" "}or read the{" "}
+              </Link>{" "}
+              or read the{" "}
               <Link
                 href="/guides"
                 className="text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"

@@ -34,7 +34,9 @@ export function QuickViewModal({
   fetchProduct = getQuickViewProductData,
 }: Props) {
   const [data, setData] = useState<QuickViewProduct | null>(null);
-  const [loadState, setLoadState] = useState<"idle" | "loading" | "error">("idle");
+  const [loadState, setLoadState] = useState<"idle" | "loading" | "error">(
+    "idle",
+  );
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -100,7 +102,7 @@ export function QuickViewModal({
           type="button"
           onClick={onClose}
           aria-label="Close quick view"
-          className="absolute right-3 top-3 rounded-md p-2 text-cf-muted hover:text-cf-ink dark:text-cf-cream/60 dark:hover:text-cf-cream"
+          className="absolute right-3 top-3 rounded-md p-2 text-cf-muted hover:text-cf-ink"
         >
           <span aria-hidden="true">×</span>
         </button>
@@ -123,7 +125,7 @@ export function QuickViewModal({
               </div>
             ) : null}
             <div>
-              <h2 className="text-lg font-semibold text-cf-ink dark:text-cf-cream">{data.name}</h2>
+              <h2 className="text-lg font-semibold text-cf-ink">{data.name}</h2>
               <p className="mt-1 text-base text-cf-muted">{data.priceText}</p>
             </div>
             {data.colorChoices.length > 0 ? (
@@ -142,7 +144,9 @@ export function QuickViewModal({
                       <span
                         aria-hidden="true"
                         className="h-3 w-3 rounded-full border border-zinc-400"
-                        style={{ backgroundColor: c.hex ?? colorNameToHex(c.label) }}
+                        style={{
+                          backgroundColor: c.hex ?? colorNameToHex(c.label),
+                        }}
                       />
                       <span>{c.label}</span>
                     </li>
@@ -151,7 +155,7 @@ export function QuickViewModal({
               </div>
             ) : null}
             {data.description ? (
-              <p className="text-sm text-cf-ink/80 dark:text-cf-cream/80">{data.description}</p>
+              <p className="text-sm text-cf-ink/80">{data.description}</p>
             ) : null}
             <div className="flex items-center justify-between gap-3 pt-2">
               <Link

@@ -74,7 +74,7 @@ export default async function ComparePopularFutonsPage() {
         <p className="text-xs font-medium uppercase tracking-[0.18em] text-cf-cta">
           Buying guide
         </p>
-        <h1 className="font-heading text-3xl font-semibold text-cf-ink dark:text-cf-cream sm:text-4xl">
+        <h1 className="font-heading text-3xl font-semibold text-cf-ink sm:text-4xl">
           Compare popular futon frames
         </h1>
         <p className="text-base leading-relaxed text-cf-muted">
@@ -112,7 +112,7 @@ function PopularCompareUnavailable() {
       data-slot="compare-popular-unavailable"
       className="rounded-md border border-cf-divider bg-cf-cream/40 p-6 dark:bg-cf-ink/10"
     >
-      <p className="text-sm text-cf-ink dark:text-cf-cream">
+      <p className="text-sm text-cf-ink">
         We couldn&rsquo;t load the comparison just now.{" "}
         <Link href="/shop/futon-frames" className="text-cf-cta hover:underline">
           Browse all futon frames

@@ -17,9 +17,18 @@ export const metadata: Metadata = {
 };
 
 const DELIVERY_STEPS = [
-  { label: "Order received", detail: "We've got it — you'll get a confirmation email shortly." },
-  { label: "Handcrafted & packed", detail: "Our Hendersonville team builds and inspects your futon." },
-  { label: "Shipped", detail: "Tracking info will arrive by email once it's on its way." },
+  {
+    label: "Order received",
+    detail: "We've got it — you'll get a confirmation email shortly.",
+  },
+  {
+    label: "Handcrafted & packed",
+    detail: "Our Hendersonville team builds and inspects your futon.",
+  },
+  {
+    label: "Shipped",
+    detail: "Tracking info will arrive by email once it's on its way.",
+  },
   { label: "Delivered", detail: "Sit back and enjoy your new Carolina Futon." },
 ] as const;
 
@@ -42,7 +51,8 @@ export default async function OrderConfirmationPage(props: {
   const shipping = order.priceSummary?.shipping?.formattedAmount ?? "";
   const tax = order.priceSummary?.tax?.formattedAmount ?? "";
   const orderNumber = order.number ?? order._id ?? "";
-  const shippingAddress = order.shippingInfo?.logistics?.shippingDestination?.address;
+  const shippingAddress =
+    order.shippingInfo?.logistics?.shippingDestination?.address;
   const billingAddress = order.billingInfo?.address;
 
   // cf-3qt.7.3: priceSummary.total.amount is a stringified decimal per Wix conventions;
@@ -97,7 +107,9 @@ export default async function OrderConfirmationPage(props: {
             currency={orderCurrency}
             items={ga4Items}
             tax={Number.isFinite(taxAmount) ? taxAmount : undefined}
-            shipping={Number.isFinite(shippingAmount) ? shippingAmount : undefined}
+            shipping={
+              Number.isFinite(shippingAmount) ? shippingAmount : undefined
+            }
           />
         </>
       ) : null}
@@ -106,7 +118,7 @@ export default async function OrderConfirmationPage(props: {
         <p className="text-sm font-medium uppercase tracking-[0.15em] text-cf-cta">
           Order confirmed
         </p>
-        <h1 className="mt-2 font-playfair text-3xl font-semibold tracking-tight text-cf-ink dark:text-cf-cream">
+        <h1 className="mt-2 font-playfair text-3xl font-semibold tracking-tight text-cf-ink">
           Thanks for your order
         </h1>
         {orderNumber ? (
@@ -119,10 +131,10 @@ export default async function OrderConfirmationPage(props: {
         data-testid="brenda-message"
         className="mt-8 rounded-lg border border-cf-blue/20 bg-cf-sand p-6"
       >
-        <p className="font-playfair text-lg font-semibold text-cf-ink dark:text-cf-cream">
+        <p className="font-playfair text-lg font-semibold text-cf-ink">
           A note from Brenda
         </p>
-        <p className="mt-2 leading-relaxed text-cf-ink dark:text-cf-cream">
+        <p className="mt-2 leading-relaxed text-cf-ink">
           Every futon that leaves our shop in Hendersonville is built by hand —
           the same way we&rsquo;ve been doing it since {BUSINESS.foundedYear}.
           Thank you for trusting us with your home. If you ever have a question,
@@ -149,7 +161,7 @@ export default async function OrderConfirmationPage(props: {
                 {i + 1}
               </span>
               <div className="pt-0.5">
-                <p className="font-medium text-cf-ink dark:text-cf-cream">{step.label}</p>
+                <p className="font-medium text-cf-ink">{step.label}</p>
                 <p className="mt-0.5 text-sm text-cf-muted">{step.detail}</p>
               </div>
             </li>
@@ -176,10 +188,16 @@ export default async function OrderConfirmationPage(props: {
                 <div className="h-20 w-20 rounded bg-cf-sand" />
               )}
               <div className="flex-1">
-                <p className="font-medium text-cf-ink dark:text-cf-cream">{li.productName?.original ?? ""}</p>
-                <p className="mt-1 text-sm text-cf-muted">Qty {li.quantity ?? 1}</p>
+                <p className="font-medium text-cf-ink">
+                  {li.productName?.original ?? ""}
+                </p>
+                <p className="mt-1 text-sm text-cf-muted">
+                  Qty {li.quantity ?? 1}
+                </p>
               </div>
-              <p className="text-sm text-cf-ink dark:text-cf-cream">{li.price?.formattedAmount ?? ""}</p>
+              <p className="text-sm text-cf-ink">
+                {li.price?.formattedAmount ?? ""}
+              </p>
             </li>
           ))}
         </ul>
@@ -218,9 +236,12 @@ export default async function OrderConfirmationPage(props: {
           data-testid="social-share"
           className="mt-8 rounded-lg border border-cf-ink/10 dark:border-cf-cream/10 p-5 text-center"
         >
-          <p className="font-medium text-cf-ink dark:text-cf-cream">Love your new futon? Share it!</p>
+          <p className="font-medium text-cf-ink">
+            Love your new futon? Share it!
+          </p>
           <p className="mt-1 text-sm text-cf-muted">
-            Show us how it looks in your home — tag us and you might be featured.
+            Show us how it looks in your home — tag us and you might be
+            featured.
           </p>
           <div className="mt-4 flex justify-center gap-4">
             {SHARE_SOCIALS.map((s) => (
@@ -229,7 +250,7 @@ export default async function OrderConfirmationPage(props: {
                 href={s.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-md border border-cf-ink/15 dark:border-cf-cream/15 px-4 py-2 text-sm font-medium text-cf-ink dark:text-cf-cream hover:border-cf-cta hover:text-cf-cta"
+                className="rounded-md border border-cf-ink/15 dark:border-cf-cream/15 px-4 py-2 text-sm font-medium text-cf-ink hover:border-cf-cta hover:text-cf-cta"
               >
                 {s.name}
               </a>
@@ -258,7 +279,9 @@ export default async function OrderConfirmationPage(props: {
         data-testid="newsletter-section"
         className="mt-8 rounded-lg bg-cf-navy px-6 py-8 text-center text-white"
       >
-        <p className="font-playfair text-xl font-semibold">Stay in the family</p>
+        <p className="font-playfair text-xl font-semibold">
+          Stay in the family
+        </p>
         <p className="mt-2 text-sm text-white/80">
           Get care tips, new arrivals, and Hendersonville-made exclusives.
         </p>
@@ -277,7 +300,7 @@ export default async function OrderConfirmationPage(props: {
         </Link>
         <Link
           href="/signup"
-          className="rounded-md border border-cf-ink/20 dark:border-cf-cream/20 px-5 py-2.5 text-sm font-medium text-cf-ink dark:text-cf-cream hover:border-cf-cta"
+          className="rounded-md border border-cf-ink/20 dark:border-cf-cream/20 px-5 py-2.5 text-sm font-medium text-cf-ink hover:border-cf-cta"
         >
           Create an account
         </Link>
@@ -299,8 +322,8 @@ function Row({
     <div
       className={
         emphasize
-          ? "flex justify-between border-t border-cf-ink/10 dark:border-cf-cream/10 pt-2 text-base font-semibold text-cf-ink dark:text-cf-cream"
-          : "flex justify-between text-cf-ink dark:text-cf-cream"
+          ? "flex justify-between border-t border-cf-ink/10 dark:border-cf-cream/10 pt-2 text-base font-semibold text-cf-ink"
+          : "flex justify-between text-cf-ink"
       }
     >
       <dt>{label}</dt>
@@ -309,14 +332,16 @@ function Row({
   );
 }
 
-type AnyAddress = {
-  addressLine?: string | null;
-  addressLine2?: string | null;
-  city?: string | null;
-  subdivision?: string | null;
-  postalCode?: string | null;
-  country?: string | null;
-} | undefined;
+type AnyAddress =
+  | {
+      addressLine?: string | null;
+      addressLine2?: string | null;
+      city?: string | null;
+      subdivision?: string | null;
+      postalCode?: string | null;
+      country?: string | null;
+    }
+  | undefined;
 
 function AddressBlock({ address }: { address: AnyAddress }) {
   if (!address) return <p className="mt-2 text-sm text-cf-muted">—</p>;
@@ -329,7 +354,7 @@ function AddressBlock({ address }: { address: AnyAddress }) {
     address.country,
   ].filter(Boolean) as string[];
   return (
-    <address className="mt-2 space-y-0.5 text-sm not-italic text-cf-ink dark:text-cf-cream">
+    <address className="mt-2 space-y-0.5 text-sm not-italic text-cf-ink">
       {parts.map((line, i) => (
         <p key={i}>{line}</p>
       ))}

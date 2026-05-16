@@ -82,8 +82,8 @@ export function SearchTabs({ q, type, counts }: SearchTabsProps) {
                 data-active={active ? "true" : "false"}
                 className={
                   active
-                    ? "inline-flex items-center gap-1 border-b-2 border-cf-cta px-3 py-2 font-medium text-cf-espresso dark:text-cf-cream"
-                    : "inline-flex items-center gap-1 border-b-2 border-transparent px-3 py-2 text-cf-muted hover:border-cf-divider hover:text-cf-espresso dark:hover:text-cf-cream"
+                    ? "inline-flex items-center gap-1 border-b-2 border-cf-cta px-3 py-2 font-medium text-cf-espresso"
+                    : "inline-flex items-center gap-1 border-b-2 border-transparent px-3 py-2 text-cf-muted hover:border-cf-divider hover:text-cf-espresso"
                 }
               >
                 {TAB_LABELS[id]}
