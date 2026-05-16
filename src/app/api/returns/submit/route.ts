@@ -12,6 +12,7 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 
+import { logError } from "@/lib/observability/log";
 import { isValidReason } from "@/lib/returns/return-reasons";
 import { submitGuestReturn } from "@/lib/returns/return-submission";
 
@@ -114,7 +115,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       502,
     );
   } catch (err) {
-    console.error("[/api/returns/submit] unexpected error:", err);
+    logError("/api/returns/submit", "unexpected error", err);
     return bad("Unexpected error. Please try again shortly.", 500);
   }
 }

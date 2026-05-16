@@ -194,8 +194,60 @@ describe("POST /api/returns/submit — helper failure mapping", () => {
 
   it("returns 500 when the helper throws unexpectedly", async () => {
     mockSubmit.mockRejectedValueOnce(new Error("boom"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const POST = await route();
     const res = await POST(makeRequest(VALID_BODY));
     expect(res.status).toBe(500);
+    errSpy.mockRestore();
+  });
+});
+
+// Pins the logError migration so an accidental revert to a bare
+// console.error("[/api/returns/submit] …") (or to a string-interpolated
+// prefix that bypasses the helper) fails loudly. Asserts on the
+// console.error sink because logError forwards there in every env; the
+// Sentry forwarder is prod-only and unit-tested in log.test.ts.
+describe("POST /api/returns/submit — logError migration", () => {
+  it("emits the bracketed '[/api/returns/submit] unexpected error' prefix with the thrown err on helper throw", async () => {
+    const thrown = new Error("boom");
+    mockSubmit.mockRejectedValueOnce(thrown);
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const POST = await route();
+    const res = await POST(makeRequest(VALID_BODY));
+    expect(res.status).toBe(500);
+    expect(errSpy).toHaveBeenCalledTimes(1);
+    expect(errSpy.mock.calls[0]![0]).toBe(
+      "[/api/returns/submit] unexpected error",
+    );
+    expect(errSpy.mock.calls[0]![1]).toBe(thrown);
+    errSpy.mockRestore();
+  });
+
+  it("forwards non-Error throws (string reason) as the second arg, unchanged", async () => {
+    mockSubmit.mockRejectedValueOnce("boom-string");
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const POST = await route();
+    const res = await POST(makeRequest(VALID_BODY));
+    expect(res.status).toBe(500);
+    expect(errSpy).toHaveBeenCalledTimes(1);
+    expect(errSpy.mock.calls[0]![0]).toBe(
+      "[/api/returns/submit] unexpected error",
+    );
+    expect(errSpy.mock.calls[0]![1]).toBe("boom-string");
+    errSpy.mockRestore();
+  });
+
+  it("does NOT log on a handled helper failure (wix_error → 502 is mapped, not logged)", async () => {
+    mockSubmit.mockResolvedValueOnce({
+      ok: false,
+      reason: "wix_error",
+      status: 502,
+    });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const POST = await route();
+    const res = await POST(makeRequest(VALID_BODY));
+    expect(res.status).toBe(502);
+    expect(errSpy).not.toHaveBeenCalled();
+    errSpy.mockRestore();
   });
 });
