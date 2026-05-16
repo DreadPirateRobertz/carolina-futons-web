@@ -134,17 +134,60 @@ export default async function PdpPage(props: {
   // the default render path so the LCP candidate doesn't change.
   const spinImages = extractSpinFrames(mediaItems);
   const stock = (product.stock ?? null) as StockBadgeInput | null;
-  const [crossSell, alsoBought, productBadges, mattressesCollection] =
-    await Promise.all([
-      getCrossSellProducts(product),
-      getAlsoBoughtProducts(product),
-      getProductBadges(slug),
-      // cf-g640: resolve the mattresses collection so we can suppress the
-      // 15-year frame warranty section on standalone mattress PDPs (their
-      // manufacturer terms differ — surfacing the frame warranty there
-      // misrepresents coverage to the customer).
-      getCollectionBySlug("mattresses"),
-    ]);
+  // cf-8xw2 (cf-g640.fu2): Promise.allSettled isolates failure modes
+  // across the 4 catalog reads. All 4 helpers return-null-on-throw
+  // today, but a future refactor that propagates instead would
+  // cascade one helper's outage into a 5xx on every PDP. allSettled
+  // means a hypothetical badge-service hiccup can't take down the
+  // warranty gate, cross-sell, or also-bought sections. Each unwrap
+  // logs the rejection + falls back to the helper's documented
+  // "no data" shape — same observable behavior as today for the
+  // happy path, but with independent failure surfaces.
+  const [
+    crossSellSettled,
+    alsoBoughtSettled,
+    productBadgesSettled,
+    mattressesCollectionSettled,
+  ] = await Promise.allSettled([
+    getCrossSellProducts(product),
+    getAlsoBoughtProducts(product),
+    getProductBadges(slug),
+    // cf-g640: resolve the mattresses collection so we can suppress the
+    // 15-year frame warranty section on standalone mattress PDPs (their
+    // manufacturer terms differ — surfacing the frame warranty there
+    // misrepresents coverage to the customer).
+    getCollectionBySlug("mattresses"),
+  ]);
+
+  const crossSell = await unwrapSettled(
+    crossSellSettled,
+    { items: [] },
+    "pdp:getCrossSellProducts",
+    slug,
+  );
+  const alsoBought = await unwrapSettled(
+    alsoBoughtSettled,
+    { items: [] },
+    "pdp:getAlsoBoughtProducts",
+    slug,
+  );
+  const productBadges = await unwrapSettled(
+    productBadgesSettled,
+    [],
+    "pdp:getProductBadges",
+    slug,
+  );
+  // mattressesCollection is the cf-g640 warranty-gate signal —
+  // `isStandaloneMattress` fail-closes on null so a rejection here
+  // safely treats the product as "potentially mattress, suppress
+  // warranty" rather than accidentally surfacing frame copy on a
+  // degraded read.
+  const mattressesCollection = await unwrapSettled(
+    mattressesCollectionSettled,
+    null,
+    "pdp:getCollectionBySlug:mattresses",
+    slug,
+  );
   // cf-g640: PDP frame-warranty gate. isStandaloneMattress fail-closes
   // on indeterminate state (Wix outage, slug rename, orphan product)
   // so a mattress PDP never accidentally claims the 15-year frame
@@ -350,6 +393,38 @@ export default async function PdpPage(props: {
 function toCents(price: number | null | undefined): number {
   if (typeof price !== "number" || !Number.isFinite(price)) return 0;
   return Math.round(price * 100);
+}
+
+/**
+ * cf-8xw2 (cf-g640.fu2): unwrap a PromiseSettledResult into its
+ * fulfilled value, or return `fallback` after logging the rejection
+ * with stable context. Wraps the "Promise.allSettled gives us
+ * independent failure surfaces" pattern in a single audited shape so
+ * each catalog read in the PDP Promise.allSettled batch logs through
+ * the same convention.
+ *
+ * @param settled  - The PromiseSettledResult from `Promise.allSettled`.
+ * @param fallback - The "no data" fallback to return on rejection.
+ *   Should match the underlying helper's documented null/empty shape
+ *   so downstream consumers can't tell the difference between
+ *   "helper said no data" and "helper threw and we fell back".
+ * @param context  - A stable string for logWixFailure correlation
+ *   (e.g. `"pdp:getCrossSellProducts"`).
+ * @param slug     - The product slug for log breadcrumbs.
+ */
+async function unwrapSettled<T>(
+  settled: PromiseSettledResult<T>,
+  fallback: T,
+  context: string,
+  slug: string,
+): Promise<T> {
+  if (settled.status === "fulfilled") return settled.value;
+  // Rejected — log + fall back. Awaiting logWixFailure here is safe
+  // because this is a server-render path; we want the Sentry tag
+  // before the page resolves so the trace correlates with the PDP
+  // request.
+  await logWixFailure(context, slug, settled.reason);
+  return fallback;
 }
 
 type WixMediaProduct = {
