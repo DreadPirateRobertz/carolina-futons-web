@@ -13,6 +13,7 @@ import { formatCents } from "@/lib/cart/cart-state";
 import { trackBeginCheckout } from "@/lib/analytics/ga4-events";
 import { cn } from "@/lib/utils";
 import { focusRingCta } from "@/lib/ui/focus-ring";
+import { logError } from "@/lib/log";
 
 // Right-hand slide-in cart drawer. `Dialog.Root` is explicitly `modal` so
 // focus is trapped, the body is scroll-locked, and outside pointer events are
@@ -241,7 +242,7 @@ export function CartDrawer() {
                         subtotalCents / 100,
                       );
                     } catch (e) {
-                      console.error("[cart-drawer] trackBeginCheckout failed", e);
+                      void logError("cart-drawer", "trackBeginCheckout", e);
                     }
                     setOpen(false);
                   }}
