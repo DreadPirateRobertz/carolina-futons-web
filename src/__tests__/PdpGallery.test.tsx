@@ -58,6 +58,40 @@ vi.mock("framer-motion", () => ({
   useTransform: motionMocks.useTransform,
 }));
 
+// cf-h345.t3: next/image passthrough mock. Renders <img> with src/alt
+// unchanged so existing test assertions (main.src === raw URL) still
+// pass. priority/width/height/sizes props are dropped — they're
+// load-bearing in production but irrelevant to behavior tests; the
+// PdpGalleryNextImage.test.tsx file pins the contract for those props.
+vi.mock("next/image", () => ({
+  __esModule: true,
+  default: ({
+    src,
+    alt,
+    onError,
+    className,
+    "data-testid": testId,
+  }: {
+    src: string;
+    alt: string;
+    onError?: () => void;
+    className?: string;
+    "data-testid"?: string;
+  }) => {
+    // Strip props that don't apply to a plain <img> in jsdom.
+    // eslint-disable-next-line @next/next/no-img-element
+    return (
+      <img
+        src={src}
+        alt={alt}
+        onError={onError}
+        className={className}
+        data-testid={testId}
+      />
+    );
+  },
+}));
+
 const multiImages = [
   { url: "https://img/a.jpg", alt: "Front" },
   { url: "https://img/b.jpg", alt: "Side" },
@@ -190,14 +224,14 @@ describe("PdpGallery", () => {
     expect(thumbs[2].getAttribute("aria-label")).toMatch(/3 of 3/);
   });
 
-  // Wraps the main image in a scroll-driven zoom container. The wrapper div
-  // has overflow-hidden so the zoom doesn't bleed outside the gallery
-  // footprint; the testid stays on the inner img so existing assertions
-  // still pass.
+  // cf-h345.t3: post-refactor DOM is <div overflow-hidden> → <m.div
+  // aspect-square> → <Image>. The zoom-container assertion now walks
+  // two ancestors up to reach the outer overflow-hidden div.
   it("wraps the main image in an overflow-hidden zoom container", () => {
     render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
     const main = screen.getByTestId("pdp-main-image");
-    const zoomContainer = main.parentElement;
+    // overflow-hidden is on the grandparent post-h345.t3 wrapper-and-image split.
+    const zoomContainer = main.parentElement?.parentElement;
     expect(zoomContainer).not.toBeNull();
     expect(zoomContainer!.className).toMatch(/overflow-hidden/);
   });
