@@ -12,8 +12,26 @@ vi.mock("@/lib/wix/velo-client", async () => {
   return { ...actual, callVelo: veloMocks.callVelo };
 });
 
+// cfw-eog2: style-quiz catches now route through logError → Sentry.
+// Mock @sentry/nextjs so the runner doesn't ship events AND the new
+// logError-integration describe below can assert (scope, op) tags
+// + emailHash extra (cfw-coc PII redaction pattern).
+const sentryMocks = vi.hoisted(() => ({
+  captureException: vi.fn(),
+  flush: vi.fn().mockResolvedValue(true),
+}));
+vi.mock("@sentry/nextjs", () => ({
+  captureException: sentryMocks.captureException,
+  flush: sentryMocks.flush,
+}));
+
 beforeEach(() => {
   veloMocks.callVelo.mockReset();
+  sentryMocks.captureException.mockReset();
+  sentryMocks.flush.mockReset().mockResolvedValue(true);
+  // PII hash needs a salt; set deterministic value so emailHash is
+  // verifiable across runs.
+  process.env.LOG_PII_SALT = "test-salt-cfw-eog2";
 });
 
 describe("getQuizOptions", () => {
@@ -101,6 +119,119 @@ describe("captureQuizLead", () => {
     expect(result).toEqual({ success: false });
     expect(errSpy).toHaveBeenCalled();
     errSpy.mockRestore();
+  });
+});
+
+// cfw-eog2: pin logError integration on all four catches. Quiz-lead
+// captures are a P1 marketing pipeline — every silent failure is a
+// lost lead. Plus cfw-coc PII contract: the lead's email MUST NOT
+// flow to Sentry, only its hash.
+describe("style-quiz — logError integration", () => {
+  it("getQuizRecommendations throw → captures scope='styleQuiz' + op='getQuizRecommendations failed' + flush(2000)", async () => {
+    const err = new Error("rpc 1");
+    veloMocks.callVelo.mockRejectedValueOnce(err);
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { getQuizRecommendations } = await import("@/lib/wix/style-quiz");
+    await getQuizRecommendations({ roomType: "dorm" });
+
+    expect(sentryMocks.captureException).toHaveBeenCalledTimes(1);
+    const [reportedErr, opts] = sentryMocks.captureException.mock.calls[0]!;
+    expect(reportedErr).toBe(err);
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "styleQuiz",
+      op: "getQuizRecommendations failed",
+    });
+    expect((opts as { level: string }).level).toBe("error");
+    expect(sentryMocks.flush).toHaveBeenCalledWith(2000);
+    errSpy.mockRestore();
+  });
+
+  it("captureQuizLead VeloRpcError → captures op='captureQuizLead rpc failed' + extra { emailHash, status } — raw email MUST NOT appear", async () => {
+    const { VeloRpcError } = await import("@/lib/wix/velo-client");
+    const veloErr = new VeloRpcError(
+      "styleQuiz/captureQuizLead",
+      429,
+      "rate limited",
+    );
+    veloMocks.callVelo.mockRejectedValueOnce(veloErr);
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { captureQuizLead } = await import("@/lib/wix/style-quiz");
+    await captureQuizLead("brenda@example.com", { roomType: "dorm" });
+
+    expect(sentryMocks.captureException).toHaveBeenCalledTimes(1);
+    const [reportedErr, opts] = sentryMocks.captureException.mock.calls[0]!;
+    expect(reportedErr).toBe(veloErr);
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "styleQuiz",
+      op: "captureQuizLead rpc failed",
+    });
+    const extra = (opts as { extra: Record<string, unknown> }).extra;
+    expect(extra.status).toBe(429);
+    // cfw-coc: lead email MUST NOT leak to Sentry — only its hash.
+    expect(typeof extra.emailHash).toBe("string");
+    expect((extra.emailHash as string).length).toBeGreaterThan(0);
+    expect(extra.emailHash).not.toContain("brenda@example.com");
+    expect(extra.emailHash).not.toContain("@");
+    // The Sentry payload as a whole MUST NOT contain the raw email.
+    const serialized = JSON.stringify(sentryMocks.captureException.mock.calls);
+    expect(serialized).not.toContain("brenda@example.com");
+    errSpy.mockRestore();
+  });
+
+  it("captureQuizLead non-Velo throw → captures op='captureQuizLead failed' + extra { emailHash } (no status)", async () => {
+    const thrown = new Error("ECONNRESET");
+    veloMocks.callVelo.mockRejectedValueOnce(thrown);
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { captureQuizLead } = await import("@/lib/wix/style-quiz");
+    await captureQuizLead("brenda@example.com", {});
+
+    expect(sentryMocks.captureException).toHaveBeenCalledTimes(1);
+    const [reportedErr, opts] = sentryMocks.captureException.mock.calls[0]!;
+    expect(reportedErr).toBe(thrown);
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "styleQuiz",
+      op: "captureQuizLead failed",
+    });
+    const extra = (opts as { extra: Record<string, unknown> }).extra;
+    expect(extra.emailHash).toBeDefined();
+    expect("status" in extra).toBe(false);
+    errSpy.mockRestore();
+  });
+
+  it("getPersonalizedCopy throw → captures op='getPersonalizedCopy failed' with the original err", async () => {
+    const thrown = new Error("network");
+    veloMocks.callVelo.mockRejectedValueOnce(thrown);
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { getPersonalizedCopy } = await import("@/lib/wix/style-quiz");
+    await getPersonalizedCopy({});
+
+    expect(sentryMocks.captureException).toHaveBeenCalledTimes(1);
+    const [reportedErr, opts] = sentryMocks.captureException.mock.calls[0]!;
+    expect(reportedErr).toBe(thrown);
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "styleQuiz",
+      op: "getPersonalizedCopy failed",
+    });
+    errSpy.mockRestore();
+  });
+
+  it("happy paths across all three velo-backed functions do NOT call Sentry", async () => {
+    veloMocks.callVelo
+      .mockResolvedValueOnce([]) // getQuizRecommendations
+      .mockResolvedValueOnce({ success: true }) // captureQuizLead
+      .mockResolvedValueOnce({ copy: "x", profileType: "y" }); // getPersonalizedCopy
+
+    const styleQuiz = await import("@/lib/wix/style-quiz");
+    await styleQuiz.getQuizRecommendations({});
+    await styleQuiz.captureQuizLead("test@example.com", {});
+    await styleQuiz.getPersonalizedCopy({});
+
+    expect(sentryMocks.captureException).not.toHaveBeenCalled();
+    expect(sentryMocks.flush).not.toHaveBeenCalled();
   });
 });
 

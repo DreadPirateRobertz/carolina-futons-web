@@ -28,10 +28,22 @@ const BASE_BODY = {
   payload: {},
 };
 
+// cfw-mpik: env-missing catch now routes through logError → Sentry.
+// Mock @sentry/nextjs so the runner doesn't ship events AND the new
+// logError-integration test below can assert (scope, op) tags.
+const sentryCaptureException = vi.fn();
+const sentryFlush = vi.fn().mockResolvedValue(true);
+vi.mock("@sentry/nextjs", () => ({
+  captureException: (...args: unknown[]) => sentryCaptureException(...args),
+  flush: (timeoutMs?: number) => sentryFlush(timeoutMs),
+}));
+
 beforeEach(() => {
   vi.stubEnv("CROSS_RIG_SECRET", TEST_SECRET);
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
+  sentryCaptureException.mockReset();
+  sentryFlush.mockReset().mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -413,5 +425,69 @@ describe("POST /api/cross-rig — response shape", () => {
     const body = await res.json();
     expect(body.ok).toBe(false);
     expect(typeof body.error).toBe("string");
+  });
+});
+
+// cfw-mpik: pin logError integration on the env-missing fail-closed.
+// Missing CROSS_RIG_SECRET is a server-misconfiguration outage — the
+// mobile rig's reward-issuance flow stops working entirely. Sentry
+// must page before the next dropped event.
+describe("POST /api/cross-rig — logError integration on env-missing fail-closed", () => {
+  it("captures scope='cross-rig' + op='CROSS_RIG_SECRET env var not set' + flush(2000) and returns 500", async () => {
+    vi.unstubAllEnvs();
+    vi.stubEnv("CROSS_RIG_SECRET", "");
+
+    const POST = await route();
+    const res = await POST(
+      makeRequest({ ...BASE_BODY, event: "badge_earned" }, { secret: null }),
+    );
+
+    expect(res.status).toBe(500);
+    expect(sentryCaptureException).toHaveBeenCalledTimes(1);
+    const [reportedErr, opts] = sentryCaptureException.mock.calls[0]!;
+    // No native err thrown → helper synthesizes one.
+    expect(reportedErr).toBeInstanceOf(Error);
+    expect((reportedErr as Error).message).toContain(
+      "CROSS_RIG_SECRET env var not set",
+    );
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "cross-rig",
+      op: "CROSS_RIG_SECRET env var not set",
+    });
+    expect((opts as { level: string }).level).toBe("error");
+    expect((opts as { extra: Record<string, unknown> }).extra).toEqual({
+      route: "/api/cross-rig",
+    });
+    expect(sentryFlush).toHaveBeenCalledWith(2000);
+  });
+
+  it("happy path (secret present, valid event) does NOT call Sentry", async () => {
+    const POST = await route();
+    const res = await POST(
+      makeRequest({
+        ...BASE_BODY,
+        event: "badge_earned",
+        payload: { badgeId: "b1" },
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(sentryCaptureException).not.toHaveBeenCalled();
+    expect(sentryFlush).not.toHaveBeenCalled();
+  });
+
+  it("unauthorized (wrong secret) does NOT call Sentry — that's an attack signal, not an outage", async () => {
+    const POST = await route();
+    const res = await POST(
+      makeRequest(
+        { ...BASE_BODY, event: "badge_earned", payload: { badgeId: "b1" } },
+        { secret: "wrong-secret" },
+      ),
+    );
+
+    expect(res.status).toBe(401);
+    // 401 floods Sentry would be a denial-of-budget problem; let WAF
+    // / rate-limit handle attacker pressure instead.
+    expect(sentryCaptureException).not.toHaveBeenCalled();
   });
 });
