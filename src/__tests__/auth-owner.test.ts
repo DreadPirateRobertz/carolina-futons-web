@@ -25,6 +25,17 @@ vi.mock("@/lib/wix-client", () => ({
   getWixClientWithTokens: () => ({ members: { getCurrentMember } }),
 }));
 
+// cfw-iqhx: getOwnerSession's Wix-outage path now routes through logError
+// (Sentry.captureException + flush). Mock @sentry/nextjs so the test
+// runner doesn't ship real events AND the new logError-integration tests
+// below can assert on the (scope, op) tag pair.
+const sentryCaptureException = vi.fn();
+const sentryFlush = vi.fn().mockResolvedValue(true);
+vi.mock("@sentry/nextjs", () => ({
+  captureException: (...args: unknown[]) => sentryCaptureException(...args),
+  flush: (timeoutMs?: number) => sentryFlush(timeoutMs),
+}));
+
 const memberTokens: Tokens = {
   accessToken: { value: "access-m", expiresAt: 1_780_000_000 },
   refreshToken: { value: "refresh-m", role: "member" as Tokens["refreshToken"]["role"] },
@@ -215,5 +226,74 @@ describe("requireOwnerSession", () => {
     const owner = await requireOwnerSession();
     expect(owner.email).toBe("brenda@carolinafutons.com");
     expect(redirectMock).not.toHaveBeenCalled();
+  });
+});
+
+// cfw-iqhx: pin logError integration on the owner-mode auth gate.
+// A Wix outage during the email lookup MUST NOT grant ownership (the
+// fail-closed semantics are non-negotiable for an owner gate), but it
+// MUST also surface to Sentry — silently returning null on every
+// Wix outage would mask 'allowlist regression' from 'Wix down' for
+// ops triage.
+describe("getOwnerSession — logError integration on Wix email-lookup outage", () => {
+  it("captures with scope='auth/owner' + op='getCurrentMember failed' + Sentry.flush awaited", async () => {
+    process.env.OWNER_EMAILS = "brenda@carolinafutons.com";
+    cookieStore.set("wix-session", { value: JSON.stringify(memberTokens) });
+    const err = new Error("wix members API 502");
+    // First call (getMemberSession's memberId resolve) succeeds; second
+    // (owner.ts's email lookup) throws — same shape as the existing
+    // "returns null on Wix outage" test.
+    getCurrentMember
+      .mockResolvedValueOnce({ member: { _id: "member-owner" } })
+      .mockRejectedValueOnce(err);
+    const consoleSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    const { getOwnerSession } = await import("@/lib/auth/owner");
+    const result = await getOwnerSession();
+
+    // Fail-closed: still returns null on outage.
+    expect(result).toBeNull();
+
+    expect(sentryCaptureException).toHaveBeenCalledTimes(1);
+    const [reportedErr, opts] = sentryCaptureException.mock.calls[0]!;
+    expect(reportedErr).toBe(err);
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "auth/owner",
+      op: "getCurrentMember failed",
+    });
+    expect((opts as { level: string }).level).toBe("error");
+    expect(sentryFlush).toHaveBeenCalledWith(2000);
+
+    consoleSpy.mockRestore();
+  });
+
+  it("happy path (Wix returns the allowlisted owner) does NOT call Sentry", async () => {
+    process.env.OWNER_EMAILS = "brenda@carolinafutons.com";
+    cookieStore.set("wix-session", { value: JSON.stringify(memberTokens) });
+    // Default beforeEach mock returns the allowlisted owner.
+
+    const { getOwnerSession } = await import("@/lib/auth/owner");
+    const result = await getOwnerSession();
+
+    expect(result?.email).toBe("brenda@carolinafutons.com");
+    expect(sentryCaptureException).not.toHaveBeenCalled();
+    expect(sentryFlush).not.toHaveBeenCalled();
+  });
+
+  it("non-owner signed-in path (Wix succeeds, email NOT in allowlist) does NOT call Sentry", async () => {
+    process.env.OWNER_EMAILS = "brenda@carolinafutons.com";
+    cookieStore.set("wix-session", { value: JSON.stringify(memberTokens) });
+    getCurrentMember.mockResolvedValue({
+      member: { _id: "member-other", loginEmail: "random@example.com" },
+    });
+
+    const { getOwnerSession } = await import("@/lib/auth/owner");
+    const result = await getOwnerSession();
+
+    // Not-owner is normal traffic; Sentry would drown in noise.
+    expect(result).toBeNull();
+    expect(sentryCaptureException).not.toHaveBeenCalled();
   });
 });

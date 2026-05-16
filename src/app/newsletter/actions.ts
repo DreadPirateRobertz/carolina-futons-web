@@ -10,6 +10,7 @@ import {
   NewsletterRateLimitError,
 } from "@/lib/newsletter/newsletter-store";
 import { hashEmail } from "@/lib/log/hash-pii";
+import { logError } from "@/lib/observability/log";
 import type { NewsletterActionState } from "@/app/newsletter/newsletter-state";
 
 // Endpoint-only — no /newsletter page route exists or is planned (cf-7ue0).
@@ -48,7 +49,9 @@ export async function subscribeToNewsletter(
         storeError: "Too many attempts — please try again in a few minutes.",
       };
     }
-    console.error("[newsletter] upsertSubscriber failed:", err);
+    await logError("newsletter", "upsertSubscriber failed", err, {
+      emailHash: hashEmail(req.email),
+    });
     return {
       status: "error",
       errors: {},

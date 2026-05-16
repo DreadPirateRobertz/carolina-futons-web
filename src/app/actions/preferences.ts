@@ -1,6 +1,7 @@
 "use server";
 
 import { withMember } from "@/lib/auth/member";
+import { logError } from "@/lib/observability/log";
 import { callVelo } from "@/lib/wix/velo-client";
 import {
   DEFAULT_PREFERENCES,
@@ -38,7 +39,7 @@ export async function getMyPushPreferences(): Promise<PreferencesResult> {
         prefs: { ...DEFAULT_PREFERENCES, ...(result.prefs ?? {}) },
       } satisfies PreferencesResult;
     } catch (err) {
-      console.error("[preferences] getMyPushPreferences failed:", err);
+      await logError("preferences", "getMyPushPreferences failed", err);
       return { success: false, error: "Could not load preferences." };
     }
   });
@@ -73,7 +74,7 @@ export async function managePushPreferences(
         prefs: { ...DEFAULT_PREFERENCES, ...(result.prefs ?? cleaned) },
       };
     } catch (err) {
-      console.error("[preferences] managePushPreferences failed:", err);
+      await logError("preferences", "managePushPreferences failed", err);
       return { success: false, error: "Could not save preferences." };
     }
   });
