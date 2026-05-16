@@ -3,6 +3,7 @@ import { WishlistList } from "@/components/member/WishlistList";
 import { WishlistShareButton } from "@/components/member/WishlistShareButton";
 import { getWishlist } from "@/app/actions/wishlist";
 import { getMemberSession } from "@/lib/auth/member";
+import { logError } from "@/lib/logger";
 import { getWixClientWithTokens } from "@/lib/wix-client";
 import type { WishlistResponse } from "@/lib/wishlist/wishlist-types";
 
@@ -34,7 +35,11 @@ export default async function DashboardWishlistPage() {
       initialItems = result?.items ?? [];
     }
   } catch (err) {
-    console.error("[wishlist] getWishlist failed:", err);
+    logError(
+      "dashboard-wishlist",
+      "getWishlist failed",
+      err instanceof Error ? err : { err },
+    );
     wishlistLoadFailed = true;
   }
 

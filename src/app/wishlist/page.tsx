@@ -18,6 +18,7 @@ import { redirect } from "next/navigation";
 import { getWishlist } from "@/app/actions/wishlist";
 import { WishlistView } from "@/components/wishlist/WishlistView";
 import { getMemberSession } from "@/lib/auth/member";
+import { logError } from "@/lib/logger";
 import type { WishlistResponse } from "@/lib/wishlist/wishlist-types";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +44,11 @@ export default async function WishlistPage() {
       initialItems = result?.items ?? [];
     }
   } catch (err) {
-    console.error("[wishlist] page load failed:", err);
+    logError(
+      "wishlist-page",
+      "page load failed",
+      err instanceof Error ? err : { err },
+    );
   }
 
   return <WishlistView initialItems={initialItems} />;
