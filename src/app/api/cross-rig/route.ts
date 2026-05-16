@@ -1,6 +1,8 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 
+import { logError } from "@/lib/observability/log";
+
 export const dynamic = "force-dynamic";
 
 const ALLOWED_SOURCE_RIGS = new Set(["cfutons_mobile"]);
@@ -47,7 +49,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // client error. Matches the revalidate route's fail-closed pattern.
     // TODO cf-0qk9 follow-up: add HMAC + ts replay window once mobile
     // client can sign requests (same risk class as Stage 3 credit issuance).
-    console.error("[cross-rig] CROSS_RIG_SECRET env var not set");
+    await logError(
+      "cross-rig",
+      "CROSS_RIG_SECRET env var not set",
+      undefined,
+      { route: "/api/cross-rig" },
+    );
     return bad(500, "server misconfiguration");
   }
   if (!verifySecret(req.headers.get("x-cross-rig-secret"), secret)) {
