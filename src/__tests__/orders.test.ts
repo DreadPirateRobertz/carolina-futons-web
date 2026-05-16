@@ -15,11 +15,27 @@ vi.mock("@/lib/wix-client", () => ({
   }),
 }));
 
+// cfw-5k11: getOrdersForMember catch now routes through logError →
+// Sentry. Mock @sentry/nextjs so the runner doesn't ship events AND
+// the new logError-integration describe below can assert on the
+// (scope, op) tag pair + contactId extra.
+const sentryMocks = vi.hoisted(() => ({
+  captureException: vi.fn(),
+  flush: vi.fn().mockResolvedValue(true),
+}));
+
+vi.mock("@sentry/nextjs", () => ({
+  captureException: sentryMocks.captureException,
+  flush: sentryMocks.flush,
+}));
+
 const tokens = { accessToken: { value: "a" }, refreshToken: { value: "r" } } as unknown as Tokens;
 
 beforeEach(() => {
   wixMocks.searchOrders.mockReset();
   wixMocks.getOrder.mockReset();
+  sentryMocks.captureException.mockReset();
+  sentryMocks.flush.mockReset().mockResolvedValue(true);
 });
 
 describe("getOrdersForMember", () => {
@@ -108,5 +124,53 @@ describe("getOrdersForMember", () => {
     expect(out).toEqual([]);
     expect(errSpy).toHaveBeenCalled();
     errSpy.mockRestore();
+  });
+});
+
+// cfw-5k11: pin logError integration on the getOrdersForMember catch.
+// A silent searchOrders outage previously rendered the dashboard with
+// "no orders" (empty state) and no operational signal — exactly the
+// kind of P1 ops gap a member-reported ticket might miss.
+describe("getOrdersForMember — logError integration", () => {
+  it("captures with scope='orders' + op='searchOrders failed' + extra { contactId } + flush(2000)", async () => {
+    const err = new Error("rpc down");
+    wixMocks.searchOrders.mockRejectedValueOnce(err);
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { getOrdersForMember } = await import("@/lib/wix/orders");
+    const out = await getOrdersForMember({ contactId: "C-42", tokens });
+
+    expect(out).toEqual([]);
+    expect(sentryMocks.captureException).toHaveBeenCalledTimes(1);
+    const [reportedErr, opts] = sentryMocks.captureException.mock.calls[0]!;
+    expect(reportedErr).toBe(err);
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "orders",
+      op: "searchOrders failed",
+    });
+    expect((opts as { level: string }).level).toBe("error");
+    expect((opts as { extra: Record<string, unknown> }).extra).toEqual({
+      contactId: "C-42",
+    });
+    expect(sentryMocks.flush).toHaveBeenCalledWith(2000);
+    errSpy.mockRestore();
+  });
+
+  it("happy path (searchOrders resolves) does NOT call Sentry", async () => {
+    wixMocks.searchOrders.mockResolvedValueOnce({ orders: [] });
+
+    const { getOrdersForMember } = await import("@/lib/wix/orders");
+    await getOrdersForMember({ contactId: "C-1", tokens });
+
+    expect(sentryMocks.captureException).not.toHaveBeenCalled();
+    expect(sentryMocks.flush).not.toHaveBeenCalled();
+  });
+
+  it("empty-contactId early-return does NOT call Sentry — short-circuit before SDK", async () => {
+    const { getOrdersForMember } = await import("@/lib/wix/orders");
+    await getOrdersForMember({ contactId: "", tokens });
+
+    expect(wixMocks.searchOrders).not.toHaveBeenCalled();
+    expect(sentryMocks.captureException).not.toHaveBeenCalled();
   });
 });
