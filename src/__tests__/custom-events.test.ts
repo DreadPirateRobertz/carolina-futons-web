@@ -12,8 +12,15 @@ vi.mock("@/lib/wix/velo-client", async () => {
   return { ...actual, callVelo: veloMocks.callVelo };
 });
 
+// cfw-vuqd: trackCustomEvent failure path routes through logError.
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 beforeEach(() => {
   veloMocks.callVelo.mockReset();
+  mockLogError.mockReset();
 });
 
 describe("trackCustomEvent", () => {
@@ -44,28 +51,38 @@ describe("trackCustomEvent", () => {
     });
   });
 
-  it("returns success:false on VeloRpcError without rethrowing", async () => {
+  it("returns success:false + ships logError with httpStatus on VeloRpcError (cfw-vuqd)", async () => {
     const { VeloRpcError } = await import("@/lib/wix/velo-client");
     veloMocks.callVelo.mockRejectedValueOnce(
       new VeloRpcError("trackCustomEvent", 500, "boom"),
     );
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { trackCustomEvent } = await import("@/lib/wix/custom-events");
     const result = await trackCustomEvent("winback_landing_view");
     expect(result).toEqual({ success: false });
-    expect(errSpy).toHaveBeenCalledWith(
-      expect.stringContaining("HTTP 500"),
+    expect(mockLogError).toHaveBeenCalledWith(
+      "customEvents",
+      "trackCustomEvent",
+      expect.any(VeloRpcError),
+      expect.objectContaining({
+        eventName: "winback_landing_view",
+        httpStatus: 500,
+      }),
     );
-    errSpy.mockRestore();
   });
 
-  it("returns success:false on a network/abort error without rethrowing", async () => {
+  it("returns success:false + ships logError with httpStatus undefined on unexpected (cfw-vuqd)", async () => {
     veloMocks.callVelo.mockRejectedValueOnce(new Error("ECONNRESET"));
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { trackCustomEvent } = await import("@/lib/wix/custom-events");
     const result = await trackCustomEvent("winback_landing_view");
     expect(result).toEqual({ success: false });
-    expect(errSpy).toHaveBeenCalled();
-    errSpy.mockRestore();
+    expect(mockLogError).toHaveBeenCalledWith(
+      "customEvents",
+      "trackCustomEvent",
+      expect.any(Error),
+      expect.objectContaining({
+        eventName: "winback_landing_view",
+        httpStatus: undefined,
+      }),
+    );
   });
 });

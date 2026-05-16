@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+
+// cfw-km75: register-failure path routes through logError.
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 import { SignUpForm } from "@/components/account/SignUpForm";
 
 const mockFetch = vi.fn();
@@ -131,7 +138,7 @@ describe("SignUpForm", () => {
     });
   });
 
-  it("shows generic error on fetch failure", async () => {
+  it("shows generic error + ships logError on fetch failure (cfw-km75)", async () => {
     mockFetch.mockRejectedValueOnce(new Error("network"));
     render(<SignUpForm />);
     fillForm();
@@ -139,6 +146,11 @@ describe("SignUpForm", () => {
     await waitFor(() => {
       expect(screen.getByRole("alert").textContent).toMatch(/please try again/i);
     });
+    expect(mockLogError).toHaveBeenCalledWith(
+      "SignUpForm",
+      "register",
+      expect.any(Error),
+    );
   });
 
   it("shows generic error when API returns empty body (unexpected_response path)", async () => {

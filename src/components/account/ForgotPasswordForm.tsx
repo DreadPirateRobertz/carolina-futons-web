@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 
+import { logError } from "@/lib/logging/log-error";
+
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,7 +30,14 @@ export function ForgotPasswordForm() {
       setSent(true);
       setLoading(false);
     } catch (err) {
-      console.error("[ForgotPasswordForm] submit failed", err);
+      // cfw-qeb6: first client-component logger migration in the wave.
+      // void — we DON'T want to await the Sentry flush before showing
+      // the user the error message and re-enabling the form. Sentry's
+      // browser SDK uses fetch keepalive / sendBeacon and ships
+      // immediately; the awaited 2 s flush is a no-op in this context
+      // but `void` makes the intent explicit and removes any chance
+      // of a future refactor accidentally blocking on it.
+      void logError("ForgotPasswordForm", "submit", err);
       setError("Something went wrong. Please try again.");
       setLoading(false);
     }
