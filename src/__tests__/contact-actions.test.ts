@@ -1,7 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
+// cfw-i4rr: contact/actions.ts now routes through logError (which
+// calls Sentry.captureException AND Sentry.flush). The original mock
+// only had captureException — add flush so the flush(2000) await
+// doesn't crash on `undefined is not a function`.
+const sentryCaptureException = vi.fn();
+const sentryFlush = vi.fn().mockResolvedValue(true);
 vi.mock("@sentry/nextjs", () => ({
-  captureException: vi.fn(),
+  captureException: (...args: unknown[]) => sentryCaptureException(...args),
+  flush: (timeoutMs?: number) => sentryFlush(timeoutMs),
 }));
 
 import { sendContactForm } from "@/app/contact/actions";
@@ -312,5 +319,105 @@ describe("sendContactForm — Turnstile CAPTCHA", () => {
     expect(
       (fetchMock.mock.calls[1]! as [string])[0],
     ).toContain("contactSubmissions");
+  });
+});
+
+// cfw-i4rr: pin logError integration on the contact-form catches.
+// Replaces the old captureWithId pattern (which lacked (scope, op)
+// tags + level=error). The new contract: every failure path tags
+// scope='contact-form' or 'appointment-form' with a descriptive op,
+// awaits flush(2000) for Vercel serverless safety, and matches the
+// shape used across the rest of the cfw codebase (cfw-u9g1+).
+describe("contact actions — logError integration (scope, op) tags", () => {
+  beforeEach(() => {
+    sentryCaptureException.mockReset();
+    sentryFlush.mockReset().mockResolvedValue(true);
+  });
+
+  it("fetch to Velo throw → scope='contact-form' + op='fetch to Velo failed'", async () => {
+    const thrown = new TypeError("ECONNRESET");
+    fetchMock.mockRejectedValueOnce(thrown);
+
+    await sendContactForm(null, fd(VALID));
+
+    const matching = sentryCaptureException.mock.calls.find(
+      ([, opts]) =>
+        (opts as { tags?: { op?: string } }).tags?.op ===
+        "fetch to Velo failed",
+    );
+    expect(matching).toBeDefined();
+    const [reportedErr, opts] = matching!;
+    expect(reportedErr).toBe(thrown);
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "contact-form",
+      op: "fetch to Velo failed",
+    });
+    expect((opts as { level: string }).level).toBe("error");
+    expect(sentryFlush).toHaveBeenCalledWith(2000);
+  });
+
+  it("Velo non-2xx → scope='contact-form' + op='Velo endpoint rejected submission' + extra { status, veloError }", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ success: false, error: "rate" }), {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    await sendContactForm(null, fd(VALID));
+
+    const matching = sentryCaptureException.mock.calls.find(
+      ([, opts]) =>
+        (opts as { tags?: { op?: string } }).tags?.op ===
+        "Velo endpoint rejected submission",
+    );
+    expect(matching).toBeDefined();
+    const [, opts] = matching!;
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "contact-form",
+      op: "Velo endpoint rejected submission",
+    });
+    expect((opts as { extra: Record<string, unknown> }).extra).toEqual({
+      status: 500,
+      veloError: "rate",
+    });
+  });
+
+  it("happy path (200 success) does NOT call Sentry", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    await sendContactForm(null, fd(VALID));
+
+    // Filter out potentially unrelated emits — none expected.
+    expect(sentryCaptureException).not.toHaveBeenCalled();
+    expect(sentryFlush).not.toHaveBeenCalled();
+  });
+
+  it("validation 400 (missing required field) does NOT call Sentry — user input, not an outage", async () => {
+    await sendContactForm(
+      null,
+      fd({ name: "", email: "", subject: "", message: "" }),
+    );
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(sentryCaptureException).not.toHaveBeenCalled();
+  });
+
+  it("Velo 429 rate-limit does NOT call Sentry — user-induced traffic", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(null, { status: 429 }),
+    );
+
+    const result = await sendContactForm(null, fd(VALID));
+
+    expect(result.status).toBe("error");
+    // Rate-limit floods would drown the dashboard. 429 is handled
+    // before the catch path.
+    expect(sentryCaptureException).not.toHaveBeenCalled();
   });
 });
