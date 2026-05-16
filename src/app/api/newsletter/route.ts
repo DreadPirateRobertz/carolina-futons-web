@@ -23,6 +23,7 @@
 import { NextResponse } from "next/server";
 
 import { hashEmail } from "@/lib/log/hash-pii";
+import { logError } from "@/lib/observability/log";
 import {
   coerceNewsletterRequest,
   hasNewsletterErrors,
@@ -71,13 +72,13 @@ export async function POST(request: Request) {
       );
     }
     if (err instanceof Error && err.name === "TimeoutError") {
-      console.error("[api/newsletter] velo timeout:", err);
+      logError("api/newsletter", "velo timeout", err);
       return NextResponse.json(
         { ok: false, error: "velo-unreachable" },
         { status: 502 },
       );
     }
-    console.error("[api/newsletter] upsertSubscriber failed:", err);
+    logError("api/newsletter", "upsertSubscriber failed", err);
     return NextResponse.json(
       { ok: false, error: "velo-error" },
       { status: 502 },
