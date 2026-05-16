@@ -276,6 +276,54 @@ describe("AccountPage — catch-path logging", () => {
   });
 });
 
+// Pins the logError migration so an accidental revert to a bare
+// console.error("[AccountSignIn] …") (or to a string-interpolated prefix
+// that bypasses the helper) fails loudly. Asserts on the console.error
+// sink because logError forwards there in every env; the Sentry forwarder
+// is prod-only and unit-tested in log.test.ts.
+describe("AccountSignIn — logError migration", () => {
+  it("emits the bracketed '[AccountSignIn] login failed' prefix when fetch rejects", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const thrown = new Error("network down");
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(thrown));
+    await renderPage();
+    fillAndSubmit();
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy.mock.calls[0]![0]).toBe("[AccountSignIn] login failed");
+    expect(spy.mock.calls[0]![1]).toBe(thrown);
+  });
+
+  it("forwards non-Error throws (string reason) as the second arg, unchanged", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue("boom-string"));
+    await renderPage();
+    fillAndSubmit();
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy.mock.calls[0]![0]).toBe("[AccountSignIn] login failed");
+    expect(spy.mock.calls[0]![1]).toBe("boom-string");
+  });
+
+  it("does NOT log on the email-verification-required branch (not a failure)", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => ({ state: "email_verification_required" }),
+      }),
+    );
+    await renderPage();
+    fillAndSubmit();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: /check your email/i }),
+      ).toBeInTheDocument(),
+    );
+    expect(spy).not.toHaveBeenCalled();
+  });
+});
+
 describe("AccountPage — ?next= redirect (cf-w5ks)", () => {
   it("redirects to ?next= after successful login when next is a safe internal path", async () => {
     vi.stubGlobal(
