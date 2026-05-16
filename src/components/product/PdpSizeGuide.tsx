@@ -8,7 +8,7 @@ import {
   type CareGuide,
   type ProductDimensions,
   type RoomFitVerdict,
-} from "@/lib/product/size-guide";
+} from "@/lib/product/size-guide-shared";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

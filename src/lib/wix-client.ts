@@ -1,3 +1,14 @@
+// cf-r192: gate this module to server-only. Without this marker, Turbopack
+// walks the server-action call graph from "use client" components and lifts
+// wix-client + its 9 sub-package imports into a shared async client chunk
+// (~117 KiB transferred / 905 KB raw on Kingston PDP, despite cf-g6vx
+// narrowing the surface). The `serverExternalPackages` config flag only
+// affects the SERVER build; the client-side leak needs a hard module-graph
+// boundary, which `import "server-only"` enforces — Next throws at build
+// time if a "use client" component reaches this import, surfacing the
+// actual leak path with a stack trace.
+import "server-only";
+
 import { createClient, OAuthStrategy, type Tokens } from "@wix/sdk";
 // cf-g6vx: direct sub-package imports skip the @wix/<umbrella> barrels.
 // The umbrella packages (@wix/stores, @wix/ecom, @wix/members, @wix/data,
