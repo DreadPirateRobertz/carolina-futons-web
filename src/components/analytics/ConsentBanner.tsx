@@ -4,38 +4,68 @@ import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 
 import { setConsentChoice } from "@/app/actions/consent";
-import { consentMapFor, type ConsentChoice } from "@/lib/consent/consent-state";
-
-export type ConsentBannerProps = {
-  initialChoice: ConsentChoice;
-};
+import {
+  CONSENT_COOKIE_NAME,
+  consentMapFor,
+  isConsentChoice,
+  isConsentGrantMap,
+  type ConsentChoice,
+} from "@/lib/consent/consent-state";
 
 // cf-zhkr / cfw-pa1: bottom-anchored full-width sticky bar for first-time
-// visitors. Renders only when the server-rendered initialChoice is
-// "unknown" — the cookie set by setConsentChoice() flips initialChoice on
-// the next request and the banner stays hidden thereafter. The bar spans
-// the full viewport so it never overlaps right-column content or stacks
-// under a newsletter modal (cfw-y2i.2 visual-parity finding).
+// visitors. Renders only when the parsed cookie choice is "unknown" —
+// the cookie set by setConsentChoice() flips the parse result and the
+// banner stays hidden thereafter. The bar spans the full viewport so it
+// never overlaps right-column content or stacks under a newsletter modal
+// (cfw-y2i.2 visual-parity finding).
+//
+// cf-0klm: self-contained — no initialChoice prop. Reads document.cookie
+// in the mount-only useEffect so layout.tsx + ConsentMode can stay
+// cookies()-free (ISR-eligible). The first client render sees
+// mounted=false and returns null — by the time mounted flips true,
+// `choice` has been hydrated from the cookie in the same effect.
 //
 // Accept / Reject both: (1) call the Server Action to persist the choice
-// in cf_consent (so the next page load emits the correct
-// gtag('consent', 'default', ...) inline before pixels), AND (2) emit
-// gtag('consent', 'update', ...) immediately for the current page so
-// downstream pixels see the new state without a full reload.
+// in cf_consent (so the next page load's ConsentClientBoot sees the
+// stored choice + emits update), AND (2) emit gtag('consent', 'update',
+// ...) immediately for the current page so downstream pixels see the
+// new state without a full reload.
 
-export function ConsentBanner({ initialChoice }: ConsentBannerProps) {
-  const [choice, setChoice] = useState<ConsentChoice>(initialChoice);
+function readChoiceFromCookie(): ConsentChoice {
+  if (typeof document === "undefined") return "unknown";
+  for (const entry of document.cookie.split(";")) {
+    const [name, ...rest] = entry.trim().split("=");
+    if (name !== CONSENT_COOKIE_NAME) continue;
+    let raw: string;
+    try {
+      raw = decodeURIComponent(rest.join("="));
+    } catch {
+      raw = rest.join("=");
+    }
+    if (isConsentChoice(raw)) return raw;
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (isConsentGrantMap(parsed)) return "granted";
+    } catch {
+      // fall through
+    }
+    return "unknown";
+  }
+  return "unknown";
+}
+
+export function ConsentBanner() {
+  const [choice, setChoice] = useState<ConsentChoice>("unknown");
   const [pending, startTransition] = useTransition();
 
   // Defer the banner to post-hydration so a cached HTML shell served to a
   // known user can't briefly flash the banner before the Server Action's
-  // cookie hits the next request. useState's lazy initializer can't read
-  // window.document during SSR (always undefined), so the first client
-  // render sees mounted=false → renders null → effect flips to true on
-  // the next paint.
+  // cookie hits the next request. The same effect hydrates `choice`
+  // from the cookie, so by the time mounted flips true the gate below
+  // already reflects the stored choice for returning users.
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-only flag; lazy init is unsafe during SSR
+    setChoice(readChoiceFromCookie());
     setMounted(true);
   }, []);
 
