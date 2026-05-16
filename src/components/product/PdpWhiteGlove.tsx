@@ -7,6 +7,7 @@ import type {
   DeliveryZoneOk,
   DeliveryZoneResponse,
 } from "@/lib/shipping/delivery-zone-types";
+import { logError } from "@/lib/log";
 
 // cf-w2my follow-up: white-glove delivery promo on PDP for orders ≥ $1,500.
 // The bead's phase-1 scope ("gate purely on price") shipped under cf-3r9v;
@@ -117,7 +118,7 @@ export function PdpWhiteGlove({
       // AbortError fires when the user resubmits or the component
       // unmounts mid-flight; that's not a failure to surface.
       if ((err as Error)?.name === "AbortError") return;
-      console.error("[PdpWhiteGlove] /api/delivery-zone failed:", err);
+      await logError("pdp-white-glove", "delivery-zone-fetch", err);
       setState({
         kind: "error",
         message: "We couldn't check that ZIP — please try again.",
