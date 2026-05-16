@@ -6,6 +6,7 @@ import {
   lookupCollectionItemByKey,
   upsertCollectionItemByKey,
 } from "@/lib/wix/data";
+import { logError } from "@/lib/observability/log";
 import { logWixFailure } from "@/lib/wix/errors";
 import { SITE_CONTENT_CACHE_TAG } from "@/lib/cms/site-content";
 import { validateOwnerEditKey } from "@/lib/cms/owner-edit-validation";
@@ -165,7 +166,7 @@ export async function POST(req: NextRequest) {
     // with a clear "Missing required env var" message). Translate to a
     // 503 so the editor surfaces "service unavailable" rather than the
     // generic 5xx.
-    console.error("[admin/image-upload] WIX_API_KEY not set:", err);
+    await logError("admin/image-upload", "WIX_API_KEY not set", err);
     return NextResponse.json(
       { error: "Image upload not configured for this environment." },
       { status: 503 },
@@ -263,9 +264,11 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     // Look-up failure is non-fatal — if Wix is flaky, prefer the upload+
     // upsert path to succeed and audit ifMatch instead of a wrong before.
-    console.error(
-      "[admin/image-upload] lookupCollectionItemByKey failed (non-fatal):",
+    await logError(
+      "admin/image-upload",
+      "lookupCollectionItemByKey failed (non-fatal)",
       err,
+      { key },
     );
     beforeValue = ifMatch;
   }
