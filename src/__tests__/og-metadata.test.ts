@@ -20,6 +20,16 @@ vi.mock("@/components/motion/LenisProvider", () => ({ LenisProvider: () => null 
 vi.mock("@/components/motion/MotionProvider", () => ({ MotionProvider: ({ children }: { children: unknown }) => children }));
 vi.mock("@/components/motion/PageTransition", () => ({ PageTransition: ({ children }: { children: unknown }) => children }));
 
+// Referral action — used by referral/share/[code] generateMetadata
+vi.mock("@/app/actions/referral", () => ({
+  getReferralByCodeAction: vi.fn(),
+  getMyReferralCodeAction: vi.fn(),
+  getMyReferralStatsAction: vi.fn(),
+}));
+vi.mock("@/lib/auth/member", () => ({ getMemberSession: vi.fn() }));
+vi.mock("@/lib/cms/faq", () => ({ listFaqs: vi.fn(), groupFaqsByCategory: vi.fn() }));
+vi.mock("@/lib/wix/community-gallery", () => ({ listCommunityPhotos: vi.fn() }));
+
 // Server/SDK dependencies used by category + PDP pages
 vi.mock("@sentry/nextjs", () => ({
   captureException: vi.fn(),
@@ -41,14 +51,25 @@ vi.mock("@/lib/shop/categories", async () => {
 vi.mock("@/lib/shop/derived-products", () => ({ resolveDerivedProducts: vi.fn() }));
 vi.mock("@/lib/shop/plp-observability", () => ({ logOverPaginatedRender: vi.fn() }));
 vi.mock("@/lib/product/cross-sell", () => ({ getCrossSellProducts: vi.fn() }));
-vi.mock("next/navigation", () => ({ notFound: vi.fn() }));
+vi.mock("next/navigation", () => ({ notFound: vi.fn(), redirect: vi.fn() }));
 
 import { metadata as layoutMetadata } from "@/app/layout";
 import { metadata as shopMetadata } from "@/app/shop/page";
 import { generateMetadata as categoryGenerateMeta } from "@/app/shop/[category]/page";
 import { generateMetadata as pdpGenerateMeta } from "@/app/products/[slug]/page";
+import { metadata as galleryMetadata } from "@/app/community-gallery/page";
+import { metadata as gallerySubmitMetadata } from "@/app/community-gallery/submit/page";
+import { metadata as contactMetadata } from "@/app/contact/page";
+import { metadata as faqMetadata } from "@/app/faq/page";
+import { metadata as pressMetadata } from "@/app/press/page";
+import { metadata as privacyMetadata } from "@/app/privacy/page";
+import { metadata as referralMetadata } from "@/app/referral/page";
+import { generateMetadata as referralShareGenerateMeta } from "@/app/referral/share/[code]/page";
+import { metadata as signupMetadata } from "@/app/signup/page";
+import { metadata as termsMetadata } from "@/app/terms/page";
 import { findCategory } from "@/lib/shop/categories";
 import { getProductBySlug } from "@/lib/wix/products";
+import { getReferralByCodeAction } from "@/app/actions/referral";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
 
 const mockFindCategory = vi.mocked(findCategory);
@@ -409,5 +430,161 @@ describe("cf-ceex per-page OG sweep", () => {
         m.metadata.openGraph?.title,
       );
     }
+  });
+});
+
+// ── cf-o5j5.fu1: backfill OG tests for 10 pages from PR #556 ─────────────
+// PR #556 shipped openGraph on these pages with zero test coverage.
+// These pin the contract so future edits can't silently break OG metadata.
+
+const mockGetReferralByCode = vi.mocked(getReferralByCodeAction);
+
+describe("/community-gallery metadata", () => {
+  it("has correct OG title", () => {
+    expect(galleryMetadata.openGraph?.title).toBe("Community Gallery — Carolina Futons");
+  });
+  it("has non-empty OG description", () => {
+    expect((galleryMetadata.openGraph?.description ?? "").length).toBeGreaterThan(0);
+  });
+  it("uses DEFAULT_OG_IMAGE", () => {
+    expect(ogImageUrls(galleryMetadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+});
+
+describe("/community-gallery/submit metadata", () => {
+  it("has correct OG title", () => {
+    expect(gallerySubmitMetadata.openGraph?.title).toBe(
+      "Share Your Photo — Community Gallery | Carolina Futons",
+    );
+  });
+  it("has non-empty OG description", () => {
+    expect((gallerySubmitMetadata.openGraph?.description ?? "").length).toBeGreaterThan(0);
+  });
+  it("uses DEFAULT_OG_IMAGE", () => {
+    expect(ogImageUrls(gallerySubmitMetadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+});
+
+describe("/contact metadata", () => {
+  it("has correct OG title", () => {
+    expect(contactMetadata.openGraph?.title).toBe("Contact — Carolina Futons");
+  });
+  it("OG description matches page description", () => {
+    expect(contactMetadata.openGraph?.description).toBe(contactMetadata.description);
+  });
+  it("uses DEFAULT_OG_IMAGE", () => {
+    expect(ogImageUrls(contactMetadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+  it("has canonical /contact", () => {
+    expect(contactMetadata.alternates?.canonical).toBe("/contact");
+  });
+});
+
+describe("/faq metadata", () => {
+  it("has correct OG title", () => {
+    expect(faqMetadata.openGraph?.title).toBe("FAQ — Carolina Futons");
+  });
+  it("OG description matches page description", () => {
+    expect(faqMetadata.openGraph?.description).toBe(faqMetadata.description);
+  });
+  it("uses DEFAULT_OG_IMAGE", () => {
+    expect(ogImageUrls(faqMetadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+});
+
+describe("/press metadata", () => {
+  it("has correct OG title", () => {
+    expect(pressMetadata.openGraph?.title).toBe("Press & Media — Carolina Futons");
+  });
+  it("OG description mentions family-owned / Hendersonville", () => {
+    expect(pressMetadata.openGraph?.description).toContain("Hendersonville");
+  });
+  it("uses DEFAULT_OG_IMAGE", () => {
+    expect(ogImageUrls(pressMetadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+});
+
+describe("/privacy metadata", () => {
+  it("has correct OG title", () => {
+    expect(privacyMetadata.openGraph?.title).toBe("Privacy Policy — Carolina Futons");
+  });
+  it("OG description matches page description", () => {
+    expect(privacyMetadata.openGraph?.description).toBe(privacyMetadata.description);
+  });
+  it("uses DEFAULT_OG_IMAGE", () => {
+    expect(ogImageUrls(privacyMetadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+});
+
+describe("/referral metadata", () => {
+  it("has correct OG title", () => {
+    expect(referralMetadata.openGraph?.title).toBe("Referral Program — Carolina Futons");
+  });
+  it("OG description matches page description", () => {
+    expect(referralMetadata.openGraph?.description).toBe(referralMetadata.description);
+  });
+  it("uses DEFAULT_OG_IMAGE", () => {
+    expect(ogImageUrls(referralMetadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+});
+
+describe("/referral/share/[code] generateMetadata", () => {
+  it("personalises title when referrer name is known", async () => {
+    mockGetReferralByCode.mockResolvedValue({
+      success: true,
+      referral: { referrerName: "Alice" },
+    } as never);
+    const meta = await referralShareGenerateMeta({
+      params: Promise.resolve({ code: "ABC123" }),
+    });
+    expect(meta.openGraph?.title).toBe("Alice invited you — 5% off at Carolina Futons");
+  });
+
+  it("uses generic title when referral code is not found", async () => {
+    mockGetReferralByCode.mockResolvedValue({ success: false } as never);
+    const meta = await referralShareGenerateMeta({
+      params: Promise.resolve({ code: "UNKNOWN" }),
+    });
+    expect(meta.openGraph?.title).toBe("You're invited — 5% off at Carolina Futons");
+  });
+
+  it("always includes DEFAULT_OG_IMAGE", async () => {
+    mockGetReferralByCode.mockResolvedValue({ success: false } as never);
+    const meta = await referralShareGenerateMeta({
+      params: Promise.resolve({ code: "X" }),
+    });
+    expect(ogImageUrls(meta.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+
+  it("description mentions 5% off", async () => {
+    mockGetReferralByCode.mockResolvedValue({ success: false } as never);
+    const meta = await referralShareGenerateMeta({
+      params: Promise.resolve({ code: "X" }),
+    });
+    expect(meta.openGraph?.description).toContain("5%");
+  });
+});
+
+describe("/signup metadata", () => {
+  it("has correct OG title", () => {
+    expect(signupMetadata.openGraph?.title).toBe("Create Account — Carolina Futons");
+  });
+  it("OG description matches page description", () => {
+    expect(signupMetadata.openGraph?.description).toBe(signupMetadata.description);
+  });
+  it("uses DEFAULT_OG_IMAGE", () => {
+    expect(ogImageUrls(signupMetadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+});
+
+describe("/terms metadata", () => {
+  it("has correct OG title", () => {
+    expect(termsMetadata.openGraph?.title).toBe("Terms of Service — Carolina Futons");
+  });
+  it("OG description matches page description", () => {
+    expect(termsMetadata.openGraph?.description).toBe(termsMetadata.description);
+  });
+  it("uses DEFAULT_OG_IMAGE", () => {
+    expect(ogImageUrls(termsMetadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
   });
 });
