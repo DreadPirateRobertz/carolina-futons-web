@@ -1,4 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
+
+import { hashEmail } from "@/lib/log/hash-pii";
+import { logError } from "@/lib/observability/log";
 import { sendPasswordResetEmail } from "@/lib/wix/auth";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +25,11 @@ export async function POST(req: NextRequest) {
   try {
     await sendPasswordResetEmail(email, redirectUrl);
   } catch (err) {
-    console.error("[auth/forgot-password] sendRecoveryEmail failed:", err);
+    // cfw-coc: hash email before flowing to Sentry — never log the
+    // raw address, even on the password-reset path.
+    await logError("auth/forgot-password", "sendRecoveryEmail failed", err, {
+      emailHash: hashEmail(email),
+    });
   }
 
   return NextResponse.json({ ok: true });
