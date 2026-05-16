@@ -75,10 +75,20 @@ export function syncCartSession(cart: WixCart | null | undefined): void {
   if (!base) return; // unset in fixture / preview builds — no-op
 
   const url = `${base.replace(/\/$/, "")}${VELO_PATH}`;
+  // cf-puqx: header comment promises this function must NEVER throw, but
+  // an unguarded JSON.stringify would propagate on circular refs / BigInt
+  // / RangeError. Lib-layer defense — caller shapes can drift over time.
+  let body: string;
+  try {
+    body = JSON.stringify(payload);
+  } catch (err) {
+    void logWixFailure("cart", "syncCartSession", err);
+    return;
+  }
   void fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify(payload),
+    body,
   })
     .then((res) => {
       // cf-puqx: `fetch().catch()` only sees NETWORK errors. A 4xx/5xx

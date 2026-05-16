@@ -17,6 +17,13 @@ vi.mock("@/lib/auth/session", () => ({
   serializeSessionTokens: vi.fn((t) => JSON.stringify(t)),
 }));
 
+// cf-puqx (cf-f9o1.fu2 wave 2): mock the Sentry-backed error helper so
+// the new logWixFailure assertions don't fire @sentry/nextjs + flush.
+const logWixFailure = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/wix/errors", () => ({
+  logWixFailure: (...args: unknown[]) => logWixFailure(...args),
+}));
+
 import { cookies } from "next/headers";
 import { getWixClientWithTokens } from "@/lib/wix-client";
 import { parseSessionCookie } from "@/lib/auth/session";
@@ -47,6 +54,7 @@ beforeEach(() => {
     (tokens?: unknown) => (tokens ? mockSeededClient : mockAnonClient),
   );
   mockAnonClient.auth.generateVisitorTokens.mockResolvedValue(mockTokens);
+  logWixFailure.mockClear();
 });
 
 describe("getVisitorCartClient", () => {
@@ -133,5 +141,59 @@ describe("getVisitorCartClient", () => {
       expect.stringContaining("unparseable"),
     );
     warnSpy.mockRestore();
+  });
+
+  // cf-puqx wave 2: Sentry tagging for the silent-failure paths SFH flagged
+  // on PR #611. Tests pin the breadcrumb contract — Sentry has to see the
+  // failure so on-call can correlate cart-session bugs back to the auth
+  // layer, not just the cart API where the error eventually surfaces.
+  describe("Sentry tagging on silent-failure paths", () => {
+    it("tags Sentry on unexpected jar.set failure (NOT the expected RSC-context warning)", async () => {
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const jarErr = new Error("serializer crash");
+      mockJar.set.mockImplementation(() => {
+        throw jarErr;
+      });
+
+      const client = await getVisitorCartClient();
+
+      expect(client).toBe(mockSeededClient); // still returns valid client
+      expect(logWixFailure).toHaveBeenCalledWith(
+        "cart",
+        "setVisitorTokens",
+        jarErr,
+      );
+      errSpy.mockRestore();
+    });
+
+    it("does NOT tag Sentry on the expected RSC-context jar.set warning", async () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+      mockJar.set.mockImplementation(() => {
+        throw new Error("Cookies can only be modified in a Server Action or Route Handler");
+      });
+
+      await getVisitorCartClient();
+
+      // RSC context is expected — should warn, not tag.
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("RSC"));
+      expect(logWixFailure).not.toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
+    it("tags Sentry with auth-layer op before re-throwing generateVisitorTokens failure", async () => {
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const authErr = new Error("auth backend 503");
+      mockAnonClient.auth.generateVisitorTokens.mockRejectedValueOnce(authErr);
+
+      await expect(getVisitorCartClient()).rejects.toThrow("auth backend 503");
+      // Op tag MUST distinguish auth-layer failure from the cart-API
+      // catches that will also see this error after re-throw.
+      expect(logWixFailure).toHaveBeenCalledWith(
+        "cart",
+        "generateVisitorTokens",
+        authErr,
+      );
+      errSpy.mockRestore();
+    });
   });
 });

@@ -34,6 +34,7 @@ import {
   SESSION_COOKIE_OPTIONS,
 } from "@/lib/auth/session";
 import { getWixClientWithTokens } from "@/lib/wix-client";
+import { logWixFailure } from "@/lib/wix/errors";
 
 const VISITOR_SESSION_MAX_AGE = 30 * 24 * 60 * 60; // 30 days
 
@@ -71,12 +72,23 @@ export async function getVisitorCartClient() {
       if (msg.includes("Cookies can only be modified")) {
         console.warn("[wix-visitor-client] jar.set skipped (RSC context) — session will not persist");
       } else {
+        // cf-puqx: tag Sentry so unexpected jar.set failures (corrupt
+        // jar, serializer crash) stop disappearing into console-only.
+        // Fire-and-forget — we still want to return the seeded client
+        // for this request even though the session won't persist.
         console.error("[wix-visitor-client] unexpected jar.set failure:", err);
+        void logWixFailure("cart", "setVisitorTokens", err);
       }
     }
     return getWixClientWithTokens(tokens);
   } catch (err) {
+    // cf-puqx: log with op="generateVisitorTokens" BEFORE re-throwing so
+    // the breadcrumb identifies the auth layer as the failure point.
+    // The action-level catch (e.g. addItemAction → logWixFailure) will
+    // also tag this same error but with the action's op — the two tags
+    // together let on-call see the layer boundary.
     console.error("[wix-visitor-client] generateVisitorTokens failed:", err);
+    void logWixFailure("cart", "generateVisitorTokens", err);
     throw err;
   }
 }
