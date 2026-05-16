@@ -2,6 +2,7 @@ import "server-only";
 
 import { listCollectionItems, queryCollectionWhere } from "@/lib/wix/data";
 import { logWixFailure } from "@/lib/wix/errors";
+import { logWarn } from "@/lib/observability/log";
 
 // CMS contract — the TypeScript types below don't capture the Wix collection
 // shape, so it lives here:
@@ -18,19 +19,22 @@ export type ProductSwatch = {
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 
-function parseSwatch(raw: unknown): ProductSwatch | null {
+async function parseSwatch(raw: unknown): Promise<ProductSwatch | null> {
   if (typeof raw !== "object" || raw === null) return null;
   const r = raw as { name?: unknown; hex?: unknown };
   const name = typeof r.name === "string" ? r.name.trim() : "";
   const hex = typeof r.hex === "string" ? r.hex.trim() : "";
   if (!name || !HEX_RE.test(hex)) {
-    // Visible signal so a content editor entering "blue" instead of "#0000ff"
-    // doesn't silently disappear from the grid.
-    if (typeof console !== "undefined") {
-      console.warn(
-        `[product-swatches] dropping malformed swatch row: name=${JSON.stringify(r.name)} hex=${JSON.stringify(r.hex)}`,
-      );
-    }
+    // cfw-herv: visible signal so a content editor entering "blue"
+    // instead of "#0000ff" doesn't silently disappear from the grid.
+    // Now routed through logWarn so Sentry sees the trend and ops
+    // can ping Brenda when content drifts.
+    await logWarn(
+      "product-swatches",
+      "dropping malformed swatch row",
+      undefined,
+      { name: r.name, hex: r.hex },
+    );
     return null;
   }
   return { name, hex };
@@ -41,12 +45,12 @@ type SwatchRow = {
   swatches?: unknown;
 };
 
-function parseRow(row: SwatchRow): ProductSwatch[] {
+async function parseRow(row: SwatchRow): Promise<ProductSwatch[]> {
   const raw = row.swatches;
   if (!Array.isArray(raw)) return [];
   const parsed: ProductSwatch[] = [];
   for (const entry of raw) {
-    const swatch = parseSwatch(entry);
+    const swatch = await parseSwatch(entry);
     if (swatch) parsed.push(swatch);
   }
   return parsed;
@@ -64,7 +68,7 @@ export async function getProductSwatches(
       slug,
       1,
     );
-    return rows.length > 0 ? parseRow(rows[0]) : [];
+    return rows.length > 0 ? await parseRow(rows[0]) : [];
   } catch (err) {
     await logWixFailure("wix-cms", `getProductSwatches(${slug})`, err);
     return [];
@@ -81,7 +85,7 @@ export async function listAllProductSwatches(): Promise<
       if (!row.productSlug) continue;
       // Don't pre-filter empty results — the consumer (enrich-colors) does its
       // own empty check, and pre-filtering hides "all rows dropped" outages.
-      map.set(row.productSlug, parseRow(row));
+      map.set(row.productSlug, await parseRow(row));
     }
     // Three indistinguishable observations otherwise: empty collection /
     // all-rows-dropped / thrown error. The thrown error is logged via the
