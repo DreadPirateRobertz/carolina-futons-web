@@ -18,6 +18,12 @@ vi.mock("@/lib/wix-client", () => ({
   getWixClientWithTokens: () => ({ members: { getCurrentMember } }),
 }));
 
+// cfw-logger migration: getMemberSession's catch routes through logError.
+const logErrorMock = vi.fn();
+vi.mock("@/lib/logger", () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
+}));
+
 const memberTokens: Tokens = {
   accessToken: { value: "access-m", expiresAt: 1_780_000_000 },
   refreshToken: { value: "refresh-m", role: "member" as Tokens["refreshToken"]["role"] },
@@ -56,14 +62,44 @@ describe("getMemberSession", () => {
   it("returns null if getCurrentMember throws (token may be expired)", async () => {
     cookieStore.set("wix-session", { value: JSON.stringify(memberTokens) });
     getCurrentMember.mockRejectedValueOnce(new Error("401"));
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const mod = await import("@/lib/auth/member");
     expect(await mod.getMemberSession()).toBeNull();
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining("[auth] getMemberSession"),
-      expect.any(Error),
+    // Observability now routes through logError (cfw-logger migration).
+    expect(logErrorMock).toHaveBeenCalled();
+  });
+});
+
+// cfw-logger migration: getMemberSession's catch branch routes through
+// logError("auth/member", "getMemberSession: resolveMemberId failed", err).
+describe("getMemberSession — logError observability", () => {
+  it("calls logError when resolveMemberId throws", async () => {
+    cookieStore.set("wix-session", { value: JSON.stringify(memberTokens) });
+    getCurrentMember.mockRejectedValueOnce(new Error("401"));
+    const mod = await import("@/lib/auth/member");
+    await mod.getMemberSession();
+    expect(logErrorMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("tags logError with scope='auth/member' + resolveMemberId message", async () => {
+    cookieStore.set("wix-session", { value: JSON.stringify(memberTokens) });
+    getCurrentMember.mockRejectedValueOnce(new Error("401"));
+    const mod = await import("@/lib/auth/member");
+    await mod.getMemberSession();
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "auth/member",
+      "getMemberSession: resolveMemberId failed",
+      expect.anything(),
     );
-    consoleSpy.mockRestore();
+  });
+
+  it("passes the caught Error instance directly to logError (preserves stack)", async () => {
+    const err = new Error("401");
+    cookieStore.set("wix-session", { value: JSON.stringify(memberTokens) });
+    getCurrentMember.mockRejectedValueOnce(err);
+    const mod = await import("@/lib/auth/member");
+    await mod.getMemberSession();
+    const [, , payload] = logErrorMock.mock.calls[0]!;
+    expect(payload).toBe(err);
   });
 });
 
