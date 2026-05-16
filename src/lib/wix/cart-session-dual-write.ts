@@ -11,6 +11,7 @@
 
 import "server-only";
 
+import { logError } from "@/lib/logger";
 import type { WixCart } from "./cart";
 import { logWixFailure } from "./errors";
 
@@ -119,7 +120,10 @@ export function syncCartSession(cart: WixCart | null | undefined): void {
       return undefined;
     })
     .catch((err: unknown) => {
-      console.error("[cart-session-dual-write] velo POST failed", {
+      // Console + breadcrumb via the standard entry point. logWixFailure
+      // below still runs because it adds Wix-shape classification
+      // (code/httpStatus) that the generic logError can't infer.
+      logError("cart-session-dual-write", "velo POST failed", {
         cartId: payload.cartId,
         error: err instanceof Error ? err.message : String(err),
       });

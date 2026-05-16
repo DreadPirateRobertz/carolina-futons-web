@@ -9,6 +9,13 @@ vi.mock("@/lib/wix/errors", () => ({
   logWixFailure: (...args: unknown[]) => logWixFailure(...args),
 }));
 
+// cfw-logger migration: catch branch's console.error replaced with logError.
+// Mock so the contract test can assert without firing real Sentry events.
+const logErrorMock = vi.fn();
+vi.mock("@/lib/logger", () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
+}));
+
 import {
   buildDualWritePayload,
   syncCartSession,
@@ -94,6 +101,7 @@ describe("syncCartSession (cf-cart-session-dual-write)", () => {
     globalThis.fetch = fetchSpy as unknown as typeof globalThis.fetch;
     process.env.WIX_VELO_SITE_URL = "https://www.example.com";
     logWixFailure.mockClear();
+    logErrorMock.mockReset();
   });
 
   afterEach(() => {
@@ -140,14 +148,14 @@ describe("syncCartSession (cf-cart-session-dual-write)", () => {
   });
 
   it("does not throw when the Velo POST rejects", async () => {
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     fetchSpy.mockRejectedValueOnce(new Error("velo-down"));
     expect(() => syncCartSession(fakeCart())).not.toThrow();
     // Let the microtask queue run so the .catch handler fires.
     await new Promise((r) => setTimeout(r, 0));
-    expect(errSpy).toHaveBeenCalledOnce();
-    expect(errSpy.mock.calls[0]![0]).toContain("[cart-session-dual-write]");
-    errSpy.mockRestore();
+    // Observability routes through logError (cfw-logger migration); the
+    // logWixFailure call still fires for Wix-shape classification.
+    expect(logErrorMock).toHaveBeenCalledOnce();
+    expect(logErrorMock.mock.calls[0]![0]).toBe("cart-session-dual-write");
   });
 
   // cf-puqx: `.catch()` only fires on NETWORK failures — a 5xx from the
@@ -259,6 +267,36 @@ describe("syncCartSession (cf-cart-session-dual-write)", () => {
       );
       expect(fetchSpy).not.toHaveBeenCalled();
       stringifySpy.mockRestore();
+    });
+  });
+
+  // cfw-logger migration: catch branch routes through logError before the
+  // existing logWixFailure Wix-shape call. Pin all three contract points.
+  describe("logError observability (cfw-logger)", () => {
+    it("calls logError once when the Velo POST rejects", async () => {
+      fetchSpy.mockRejectedValueOnce(new Error("velo-down"));
+      syncCartSession(fakeCart());
+      await new Promise((r) => setTimeout(r, 0));
+      expect(logErrorMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("tags logError with scope='cart-session-dual-write' and message='velo POST failed'", async () => {
+      fetchSpy.mockRejectedValueOnce(new Error("velo-down"));
+      syncCartSession(fakeCart());
+      await new Promise((r) => setTimeout(r, 0));
+      expect(logErrorMock).toHaveBeenCalledWith(
+        "cart-session-dual-write",
+        "velo POST failed",
+        expect.objectContaining({ cartId: "cart-1" }),
+      );
+    });
+
+    it("logError still runs alongside logWixFailure (different signals, both fire)", async () => {
+      fetchSpy.mockRejectedValueOnce(new Error("velo-down"));
+      syncCartSession(fakeCart());
+      await new Promise((r) => setTimeout(r, 0));
+      expect(logErrorMock).toHaveBeenCalled();
+      expect(logWixFailure).toHaveBeenCalled();
     });
   });
 });
