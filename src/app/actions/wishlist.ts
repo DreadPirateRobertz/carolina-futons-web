@@ -1,6 +1,7 @@
 "use server";
 
 import { getMemberSession, withMember } from "@/lib/auth/member";
+import { logError } from "@/lib/logging/log-error";
 import { signMemberId, verifyShareToken } from "@/lib/wishlist/share-token";
 import type { WishlistResponse } from "@/lib/wishlist/wishlist-types";
 import {
@@ -56,7 +57,8 @@ export async function addToWishlistFromPdp(
     }
     return { success: true };
   } catch (err) {
-    console.error("[wishlist] addToWishlistFromPdp failed:", err);
+    // cfw-387y: PDP add-to-wishlist failure → friendly retry, real Sentry event.
+    await logError("wishlist", "addToWishlistFromPdp", err);
     return { success: false, error: "Could not save. Please try again." };
   }
 }
@@ -85,7 +87,10 @@ export async function getWishlistCount(): Promise<number> {
     if (!result?.success) return 0;
     return result.total ?? result.items?.length ?? 0;
   } catch (err) {
-    console.error("[wishlist] getWishlistCount failed:", err);
+    // cfw-387y: header-badge count failure → silent 0 (badge hides),
+    // but Sentry still sees the upstream outage so on-call can spot
+    // sustained wishlist degradation.
+    await logError("wishlist", "getWishlistCount", err);
     return 0;
   }
 }
@@ -125,7 +130,11 @@ export async function getSharedWishlist(token: string): Promise<
     if (!result?.success) return { success: false };
     return { success: true, items: result.items, total: result.total };
   } catch (err) {
-    console.error("[wishlist] getSharedWishlist failed:", err);
+    // cfw-387y: share-token recipient view failure → opaque
+    // { success: false } (the share page renders an empty state), but
+    // Sentry sees the upstream so a recurring failure on a specific
+    // memberId (corrupt row, etc.) is groupable.
+    await logError("wishlist", "getSharedWishlist", err);
     return { success: false };
   }
 }
