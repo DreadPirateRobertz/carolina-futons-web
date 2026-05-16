@@ -9,12 +9,17 @@ import { cleanup, render, screen } from "@testing-library/react";
 
 // Mock the data layer at the cf3qt helper boundary. We do NOT mock the wix
 // SDK directly — the helper is the contract we depend on.
-const { getLandingBySlug } = vi.hoisted(() => ({
+const { getLandingBySlug, logWixFailure } = vi.hoisted(() => ({
   getLandingBySlug: vi.fn(),
+  logWixFailure: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@/lib/wix/cf3qt", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/wix/cf3qt")>();
   return { ...actual, getLandingBySlug };
+});
+vi.mock("@/lib/wix/errors", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/wix/errors")>();
+  return { ...actual, logWixFailure };
 });
 
 // Stub the derived-products resolver so the test stays page-shape-focused.
@@ -27,6 +32,7 @@ import SpringSalePage, { generateMetadata } from "./page";
 afterEach(() => {
   cleanup();
   getLandingBySlug.mockReset();
+  logWixFailure.mockClear();
 });
 
 async function renderSpringSale() {
@@ -338,5 +344,143 @@ describe("SpringSalePage — cf-yu2l.F1 v2 self-CR fold", () => {
         name: "Editor headline with stray whitespace",
       }),
     ).toBeInTheDocument();
+  });
+});
+
+describe("SpringSalePage — cf-yu2l.F1 v3 5-agent CR fold", () => {
+  // 5-agent retry surfaced 3 converged findings beyond the v2 fold:
+  // - silent-failure CRITICAL: .catch(() => null) swallowed TypeError /
+  //   ReferenceError silently (import drift undetectable)
+  // - pr-test-analyzer F3: String.trim() does NOT strip ​
+  //   (zero-width space) — Wix editor "clear" leaves these
+  // - pr-test-analyzer F1: React.cache dedup claimed but unverified
+
+  it("falls back when Landing.headline is just a zero-width space (Wix editor cleared field)", async () => {
+    // Wix's RICH_TEXT editor often leaves a U+200B (zero-width space)
+    // when a marketer "clears" a field. trim() does NOT strip these
+    // per ECMA-262 — they're not in the WhiteSpace category. Without
+    // the zero-width-strip in coalesce, the page would ship
+    // <h1>​</h1> (invisible but layout-impacting + SEO-fatal).
+    getLandingBySlug.mockResolvedValue({
+      _id: "x",
+      slug: "spring-sale",
+      title: "x",
+      headline: "​",
+    });
+    await renderSpringSale();
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: /Spring Sale on mattresses/i,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("falls back when Landing.headline is mixed ASCII whitespace + zero-width", async () => {
+    getLandingBySlug.mockResolvedValue({
+      _id: "x",
+      slug: "spring-sale",
+      title: "x",
+      headline: "  ​‌  ‍ ﻿  ",
+    });
+    await renderSpringSale();
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: /Spring Sale on mattresses/i,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("strips zero-width chars from inside an otherwise-valid headline", async () => {
+    // Wix editor sometimes injects U+FEFF (BOM) at the start of a
+    // pasted string. coalesce should strip + keep the rest.
+    getLandingBySlug.mockResolvedValue({
+      _id: "x",
+      slug: "spring-sale",
+      title: "x",
+      headline: "﻿Editor Headline With BOM Prefix",
+    });
+    await renderSpringSale();
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Editor Headline With BOM Prefix",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("falls back when Landing.ctaPrimaryHref is just a zero-width space", async () => {
+    // Most load-bearing case for zero-width: <a href="​"> bookmarks
+    // the current page on click → broken UX, silent failure.
+    getLandingBySlug.mockResolvedValue({
+      _id: "x",
+      slug: "spring-sale",
+      title: "x",
+      headline: "x",
+      ctaPrimaryLabel: "Shop seasonal picks",
+      ctaPrimaryHref: "​​",
+    });
+    await renderSpringSale();
+    const cta = screen.getByRole("link", { name: /Shop seasonal picks/i });
+    expect(cta.getAttribute("href")).toBe("/shop/mattresses-sale");
+  });
+
+  it("surfaces import-drift TypeError to Sentry via logWixFailure (silent-failure CR fold)", async () => {
+    // 5-agent CR critical: a refactor that renames getLandingBySlug
+    // would resolve undefined at call site → TypeError. v2's bare
+    // .catch(() => null) swallowed this silently. v3 narrows the
+    // catch to log + continue so the failure surfaces in Sentry.
+    getLandingBySlug.mockRejectedValue(
+      new TypeError("getLandingBySlug is not a function"),
+    );
+    await renderSpringSale();
+    expect(logWixFailure).toHaveBeenCalledTimes(1);
+    expect(logWixFailure).toHaveBeenCalledWith(
+      "spring-sale",
+      "getLandingBySlug",
+      expect.any(TypeError),
+    );
+    // Render still degrades to fallback (no 500).
+    expect(
+      screen.getByRole("heading", { level: 1, name: /Spring Sale on mattresses/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("surfaces Wix-outage Error to Sentry via logWixFailure", async () => {
+    // The intended-Error path also logs now (it was silent before).
+    // Operators see a unified failure signal across all failure
+    // modes — distinguishable from sustained no-Landing-found by
+    // log volume.
+    getLandingBySlug.mockRejectedValue(new Error("Wix unreachable"));
+    await renderSpringSale();
+    expect(logWixFailure).toHaveBeenCalledTimes(1);
+    expect(logWixFailure).toHaveBeenCalledWith(
+      "spring-sale",
+      "getLandingBySlug",
+      expect.any(Error),
+    );
+  });
+
+  // The v2 fold's stated optimization: React.cache dedupes the Wix
+  // fetch across generateMetadata + page render so one Wix round-trip
+  // per request, not two. We CANNOT verify this in Vitest because
+  // React.cache requires an active RSC request context (AsyncLocalStorage
+  // scope set up by the Next.js App Router runtime). Two top-level
+  // `await`s in a unit test each create their own scope → cache misses.
+  //
+  // Filed as cf-yu2l.F1.cache-test follow-on (e2e Playwright test
+  // hitting /spring-sale + asserting the Wix mock saw exactly one
+  // call for the slug per request).
+  it.skip("dedupes the Wix fetch across generateMetadata + page render (React.cache contract — requires RSC scope, e2e follow-on)", async () => {
+    getLandingBySlug.mockResolvedValue({
+      _id: "x",
+      slug: "spring-sale",
+      title: "x",
+      headline: "Cached Headline",
+    });
+    await generateMetadata();
+    await SpringSalePage();
+    expect(getLandingBySlug).toHaveBeenCalledTimes(1);
   });
 });

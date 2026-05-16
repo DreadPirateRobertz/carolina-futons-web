@@ -9,26 +9,50 @@ import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 import { findCategory } from "@/lib/shop/categories";
 import { resolveDerivedProducts } from "@/lib/shop/derived-products";
 import { getLandingBySlug, type Landing } from "@/lib/wix/cf3qt";
+import { logWixFailure } from "@/lib/wix/errors";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
 import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
-// cf-yu2l.F1 v2 (self-CR fold): editor-saved empty strings ("") on a
-// Landing field should fall back to the hardcoded literal, not ship as
-// an empty h1 / empty description meta. Plain `??` doesn't coalesce
-// "" — only null / undefined. Helper does both.
+// cf-yu2l.F1 v3 (5-agent CR fold): coalesce rejects empty + whitespace-
+// only strings AND zero-width characters (​ / ‌ / ‍ /
+// ﻿) — Wix's CMS editor often leaves a stray zero-width artifact
+// when a marketer "clears" a RICH_TEXT field. JavaScript's String.trim()
+// strips standard WhiteSpace + LineTerminator categories (including
+// nbsp + BOM) but does NOT strip ​ (zero-width space). Without
+// this guard, a "cleared" headline ships as `<h1>​</h1>` —
+// invisible but layout-impacting + SEO-fatal. Plain `??` doesn't
+// coalesce ""; helper does both empty-trim AND zero-width-strip.
+const ZERO_WIDTH_RE = /[​‌‍﻿]/g;
 function coalesce(value: string | null | undefined, fallback: string): string {
   if (value === undefined || value === null) return fallback;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : fallback;
+  const cleaned = value.replace(ZERO_WIDTH_RE, "").trim();
+  return cleaned.length > 0 ? cleaned : fallback;
 }
 
 // cf-yu2l.F1 v2: dedupe the Landings fetch across page body +
 // generateMetadata. Next.js calls generateMetadata and the default
 // export independently — without React.cache they each round-trip to
 // Wix Stores. cache() memoizes per-request so the SDK fires once.
+//
+// cf-yu2l.F1 v3 (5-agent CR fold): narrow the catch so import-drift
+// (TypeError / ReferenceError from a misnamed import) is surfaced to
+// Sentry instead of silently masked. The Wix outage path still
+// degrades to fallback render — but a refactor that breaks the import
+// resolution no longer flies under the radar. Without this, marketing
+// could edit the CMS for days while the editor-wiring contract is
+// silently dead.
 const fetchSpringSaleLanding = cache(
-  async (): Promise<Landing | null> =>
-    getLandingBySlug("spring-sale").catch(() => null),
+  async (): Promise<Landing | null> => {
+    try {
+      return await getLandingBySlug("spring-sale");
+    } catch (err) {
+      // logWixFailure tags the operation + surfaces to Sentry. The
+      // resolved value is still null so the page degrades to fallback
+      // copy — but operators can now see the failure.
+      await logWixFailure("spring-sale", "getLandingBySlug", err);
+      return null;
+    }
+  },
 );
 
 // cf-3qt.5.2: /spring-sale marketing landing.
@@ -79,9 +103,17 @@ const LANDING_OG_DIMENSIONS = { width: 1200, height: 630 } as const;
 export async function generateMetadata(): Promise<Metadata> {
   const landing = await fetchSpringSaleLanding();
   const description = coalesce(landing?.seoDescription, SPRING_SALE_DESCRIPTION);
-  const landingOgUrl = coalesce(landing?.ogImageUrl, "");
-  const ogImage = landingOgUrl
-    ? { url: landingOgUrl, ...LANDING_OG_DIMENSIONS }
+  // cf-yu2l.F1 v3 (code-reviewer CR fold): direct presence check instead
+  // of `coalesce(value, "")` — coalesce's contract is "fallback for empty
+  // values," not "boolean presence." Using it with an empty-string
+  // fallback worked but muddled the helper's semantics. The trim+zero-
+  // width-strip mirror coalesce's hygiene without leaning on the
+  // fallback machinery for a different purpose.
+  const ogImageUrl = landing?.ogImageUrl
+    ?.replace(ZERO_WIDTH_RE, "")
+    .trim();
+  const ogImage = ogImageUrl
+    ? { url: ogImageUrl, ...LANDING_OG_DIMENSIONS }
     : DEFAULT_OG_IMAGE;
   const openGraph = {
     title: SPRING_SALE_TITLE,
