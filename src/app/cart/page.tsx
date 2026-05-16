@@ -9,6 +9,7 @@ import { trackBeginCheckout } from "@/lib/analytics/ga4-events";
 import { cn } from "@/lib/utils";
 import { EmptyCartIllustration } from "@/components/illustrations/EmptyCartIllustration";
 import { PackingBearIllustration } from "@/components/illustrations/PackingBearIllustration";
+import { logError } from "@/lib/log";
 
 export default function CartPage() {
   const { state, itemCount, subtotalCents, isCartPending, removeLine, setQuantity } = useCart();
@@ -206,7 +207,7 @@ export default function CartPage() {
                   subtotalCents / 100,
                 );
               } catch (e) {
-                console.error("[cart-page] trackBeginCheckout failed", e);
+                void logError("cart-page", "trackBeginCheckout", e);
               }
             }}
             className={cn(

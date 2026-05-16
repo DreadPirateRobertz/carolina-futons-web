@@ -14,6 +14,11 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/log", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 import { useCart } from "@/components/cart/CartProvider";
 import { trackBeginCheckout } from "@/lib/analytics/ga4-events";
 import CartPage from "@/app/cart/page";
@@ -196,5 +201,44 @@ describe("CartPage", () => {
       // 79900 × 2 = 159800 cents → 1598 dollars
       1598,
     );
+  });
+
+  // Logger migration (cfw-logger batch 14): the trackBeginCheckout catch
+  // forwards to logError so non-fatal analytics failures land in Sentry
+  // with source="cart-page". The catch is sync (onClick handler), so the
+  // call is `void logError(...)` — fire-and-forget, never blocks the
+  // checkout link navigation.
+  it("calls logError with source='cart-page' op='trackBeginCheckout' when tracking throws", () => {
+    mockCart([LINE]);
+    vi.mocked(trackBeginCheckout).mockImplementationOnce(() => {
+      throw new Error("analytics down");
+    });
+    mockLogError.mockClear();
+    render(<CartPage />);
+    fireEvent.click(screen.getByTestId("proceed-to-checkout"));
+    expect(mockLogError).toHaveBeenCalledTimes(1);
+    const [source, op] = mockLogError.mock.calls[0];
+    expect(source).toBe("cart-page");
+    expect(op).toBe("trackBeginCheckout");
+  });
+
+  it("passes the thrown analytics error to logError as err", () => {
+    mockCart([LINE]);
+    const analyticsErr = new Error("analytics down");
+    vi.mocked(trackBeginCheckout).mockImplementationOnce(() => {
+      throw analyticsErr;
+    });
+    mockLogError.mockClear();
+    render(<CartPage />);
+    fireEvent.click(screen.getByTestId("proceed-to-checkout"));
+    expect(mockLogError.mock.calls[0][2]).toBe(analyticsErr);
+  });
+
+  it("does NOT call logError when trackBeginCheckout succeeds (happy path)", () => {
+    mockCart([LINE]);
+    mockLogError.mockClear();
+    render(<CartPage />);
+    fireEvent.click(screen.getByTestId("proceed-to-checkout"));
+    expect(mockLogError).not.toHaveBeenCalled();
   });
 });
