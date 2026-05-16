@@ -2,6 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+// cfw-qeb6: submit-failure path routes through logError.
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 import { ForgotPasswordForm } from "@/components/account/ForgotPasswordForm";
 
 const fetchMock = vi.fn();
@@ -9,6 +15,7 @@ const fetchMock = vi.fn();
 beforeEach(() => {
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
+  mockLogError.mockReset();
 });
 
 describe("<ForgotPasswordForm />", () => {
@@ -67,9 +74,8 @@ describe("<ForgotPasswordForm />", () => {
     });
   });
 
-  it("shows a generic error when fetch throws", async () => {
+  it("shows a generic error + ships logError when fetch throws (cfw-qeb6)", async () => {
     fetchMock.mockRejectedValueOnce(new Error("network down"));
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const user = userEvent.setup();
     render(<ForgotPasswordForm />);
@@ -79,6 +85,13 @@ describe("<ForgotPasswordForm />", () => {
     await waitFor(() => {
       expect(screen.getByRole("alert")).toBeInTheDocument();
     });
-    consoleSpy.mockRestore();
+    // cfw-qeb6: client-component failure path now routes through
+    // logError. `void` semantics in the source — the form re-enables
+    // and shows its error WITHOUT awaiting the Sentry flush.
+    expect(mockLogError).toHaveBeenCalledWith(
+      "ForgotPasswordForm",
+      "submit",
+      expect.any(Error),
+    );
   });
 });
