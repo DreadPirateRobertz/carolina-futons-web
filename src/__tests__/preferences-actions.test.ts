@@ -19,8 +19,15 @@ vi.mock("@/lib/wix/velo-client", () => ({
   callVelo: veloMocks.callVelo,
 }));
 
+// cfw-logger migration: both catch branches route through logError.
+const logErrorMock = vi.fn();
+vi.mock("@/lib/logger", () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
+}));
+
 beforeEach(() => {
   veloMocks.callVelo.mockReset();
+  logErrorMock.mockReset();
 });
 
 describe("getMyPushPreferences", () => {
@@ -66,14 +73,14 @@ describe("getMyPushPreferences", () => {
 
   it("returns success:false on a thrown velo error without rethrowing", async () => {
     veloMocks.callVelo.mockRejectedValueOnce(new Error("rpc fail"));
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { getMyPushPreferences } = await import("@/app/actions/preferences");
     const result = await getMyPushPreferences();
     expect(result).toEqual({
       success: false,
       error: "Could not load preferences.",
     });
-    errSpy.mockRestore();
+    // Observability now routes through logError (cfw-logger migration).
+    expect(logErrorMock).toHaveBeenCalled();
   });
 });
 
@@ -135,7 +142,6 @@ describe("managePushPreferences", () => {
 
   it("returns success:false on a thrown velo error without rethrowing", async () => {
     veloMocks.callVelo.mockRejectedValueOnce(new Error("rpc fail"));
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { managePushPreferences } = await import(
       "@/app/actions/preferences"
     );
@@ -144,6 +150,47 @@ describe("managePushPreferences", () => {
       success: false,
       error: "Could not save preferences.",
     });
-    errSpy.mockRestore();
+    expect(logErrorMock).toHaveBeenCalled();
+  });
+});
+
+// cfw-logger migration: both catch branches route through logError
+// with scope='preferences' and a fn-named message. Pin the contract.
+describe("preferences actions — logError observability", () => {
+  it("getMyPushPreferences catch → logError('preferences', 'getMyPushPreferences failed', err)", async () => {
+    const err = new Error("rpc fail");
+    veloMocks.callVelo.mockRejectedValueOnce(err);
+    const { getMyPushPreferences } = await import("@/app/actions/preferences");
+    await getMyPushPreferences();
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "preferences",
+      "getMyPushPreferences failed",
+      err,
+    );
+  });
+
+  it("managePushPreferences catch → logError('preferences', 'managePushPreferences failed', err)", async () => {
+    const err = new Error("rpc fail");
+    veloMocks.callVelo.mockRejectedValueOnce(err);
+    const { managePushPreferences } = await import(
+      "@/app/actions/preferences"
+    );
+    await managePushPreferences({ marketing: false });
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "preferences",
+      "managePushPreferences failed",
+      err,
+    );
+  });
+
+  it("non-Error rejection still routes through logError (wrapped in { err })", async () => {
+    veloMocks.callVelo.mockRejectedValueOnce("string-error");
+    const { getMyPushPreferences } = await import("@/app/actions/preferences");
+    await getMyPushPreferences();
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "preferences",
+      "getMyPushPreferences failed",
+      { err: "string-error" },
+    );
   });
 });
