@@ -13,6 +13,7 @@ import { GalleryZoomLightbox } from "./GalleryZoomLightbox";
 import { PdpImageComparison } from "./PdpImageComparison";
 import { ProductSpinViewer } from "./ProductSpinViewer";
 import { wixImageUrl } from "@/lib/wix/wix-image";
+import { logError } from "@/lib/log";
 
 // cf-3qt.6.F.1 + cf-3qt.7.O.1: multi-image gallery for the PDP.
 //
@@ -133,8 +134,13 @@ export function PdpGallery({ images, productName, activeUrl, activeAlt, spinImag
   function markBroken(url: string, context: string) {
     if (brokenSrcs.has(url)) {
       // Already marked — means the fallback data URI itself also errored
-      // (e.g. CSP policy blocking data: scheme). Surface it at error level.
-      console.error(`[PdpGallery] fallback also failed for broken src (${context}):`, url);
+      // (e.g. CSP policy blocking data: scheme). Surface to Sentry —
+      // this is the "even the fallback broke" tripwire.
+      void logError(
+        "pdp-gallery",
+        `image-fallback-failed.${context}`,
+        new Error(`PdpGallery fallback also failed (${context}): ${url}`),
+      );
       return;
     }
     console.warn(`[PdpGallery] broken image src (${context}):`, url);
