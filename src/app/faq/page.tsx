@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { CfLink } from "@/components/ui/cf-link";
 
+import { FaqBrowser } from "@/components/faq/FaqBrowser";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { groupFaqsByCategory, listFaqs } from "@/lib/cms/faq";
 import { buildFaqPageSchema } from "@/lib/seo/json-ld";
@@ -66,53 +67,9 @@ export default async function FaqPage() {
             meantime.
           </p>
         ) : (
-          <div className="space-y-10">
-            {groups.map((group) => (
-              <section
-                key={group.category}
-                aria-labelledby={`faq-cat-${slugify(group.category)}`}
-                className="space-y-3"
-              >
-                <h2
-                  id={`faq-cat-${slugify(group.category)}`}
-                  className="font-playfair text-2xl font-semibold tracking-tight"
-                >
-                  {group.category}
-                </h2>
-                <ul className="space-y-2">
-                  {group.items.map((item, i) => (
-                    <li key={`${group.category}-${i}-${item.question}`}>
-                      <details className="group rounded-md border border-cf-divider bg-white dark:bg-cf-cream dark:border-cf-ink/30 px-4 py-3 transition-colors open:border-cf-cta/40 open:bg-cf-cream">
-                        <summary className="cursor-pointer list-none text-base font-medium text-cf-ink marker:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                          <span className="flex items-center justify-between gap-3">
-                            <span>{item.question}</span>
-                            <span
-                              aria-hidden="true"
-                              className="shrink-0 text-cf-muted transition-transform group-open:rotate-45"
-                            >
-                              +
-                            </span>
-                          </span>
-                        </summary>
-                        <p className="mt-3 text-base leading-relaxed text-cf-charcoal/85">
-                          {item.answer}
-                        </p>
-                      </details>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))}
-          </div>
+          <FaqBrowser groups={groups} />
         )}
       </article>
     </main>
   );
-}
-
-function slugify(input: string): string {
-  return input
-    .toLocaleLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)+/g, "");
 }
