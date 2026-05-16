@@ -44,6 +44,17 @@ vi.mock("@/lib/wix/errors", () => ({
   logWixFailure: (...args: unknown[]) => mockLogWixFailure(...args),
 }));
 
+// cfw-x7i0: the unexpected-login-fallback-state branch now routes
+// through logError → Sentry. Mock @sentry/nextjs so the runner
+// doesn't ship events AND the new logError-integration test below
+// can assert on the (scope, op) tag pair + loginState extra.
+const sentryCaptureException = vi.fn();
+const sentryFlush = vi.fn().mockResolvedValue(true);
+vi.mock("@sentry/nextjs", () => ({
+  captureException: (...args: unknown[]) => sentryCaptureException(...args),
+  flush: (timeoutMs?: number) => sentryFlush(timeoutMs),
+}));
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -531,6 +542,99 @@ describe("POST /api/auth/register", () => {
     const data = await res.json();
     expect(data.state).toBe("email_verification_required");
     expect(mockCookiesSet).not.toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+});
+
+// cfw-x7i0: pin logError integration on the unexpected-login-fallback-
+// state branch. Wix returning a LoginState we don't recognize from the
+// login() fallback is a contract drift — the surrounding catches all
+// go through logWixFailure, but this branch is NOT an err-throw, it's
+// "Wix gave us back a state we didn't enumerate". logError is the
+// right path so on-call can see the Wix-state-drift signal in Sentry.
+describe("POST /api/auth/register — logError integration on unexpected login fallback state", () => {
+  beforeEach(() => {
+    sentryCaptureException.mockReset();
+    sentryFlush.mockReset().mockResolvedValue(true);
+  });
+
+  it("login fallback returns FAILURE → captures scope='auth/register' + op='login fallback returned non-success state' + extra { loginState: FAILURE } + flush(2000)", async () => {
+    mockRegister.mockResolvedValueOnce({
+      loginState: LoginState.SUCCESS,
+      data: { sessionToken: "tok-register" },
+    });
+    mockGetMemberTokensForDirectLogin.mockRejectedValueOnce(
+      new Error("token exchange failed"),
+    );
+    mockLogin.mockResolvedValueOnce({
+      loginState: LoginState.FAILURE,
+      errorCode: "invalidPassword",
+    });
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await callRegister({
+      email: "a@b.com",
+      password: "password123",
+    });
+
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.state).toBe("email_verification_required");
+
+    // Find the Sentry call tagged with our op (other parts of the
+    // route can also emit Sentry events via logWixFailure mock, which
+    // bypasses sentryCaptureException — but defensively filter just
+    // in case the test environment changes).
+    const matching = sentryCaptureException.mock.calls.find(
+      ([, opts]) =>
+        (opts as { tags?: { op?: string } }).tags?.op ===
+        "login fallback returned non-success state",
+    );
+    expect(matching).toBeDefined();
+    const [reportedErr, opts] = matching!;
+    // No native err thrown → helper synthesizes one with the prefixed
+    // message.
+    expect(reportedErr).toBeInstanceOf(Error);
+    expect((reportedErr as Error).message).toContain(
+      "login fallback returned non-success state",
+    );
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "auth/register",
+      op: "login fallback returned non-success state",
+    });
+    expect((opts as { level: string }).level).toBe("error");
+    expect((opts as { extra: Record<string, unknown> }).extra).toEqual({
+      loginState: LoginState.FAILURE,
+    });
+    expect(sentryFlush).toHaveBeenCalledWith(2000);
+    consoleSpy.mockRestore();
+  });
+
+  it("happy register path does NOT call Sentry via logError (no unexpected fallback)", async () => {
+    mockRegister.mockResolvedValueOnce({
+      loginState: LoginState.SUCCESS,
+      data: { sessionToken: "tok-register" },
+    });
+    mockGetMemberTokensForDirectLogin.mockResolvedValueOnce({
+      accessToken: { value: "a" },
+      refreshToken: { value: "r", role: "member" },
+    });
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await callRegister({
+      email: "a@b.com",
+      password: "password123",
+    });
+
+    expect(res.status).toBe(200);
+    // Filter for the op so we don't accidentally catch some other
+    // route-level Sentry emit.
+    const matching = sentryCaptureException.mock.calls.find(
+      ([, opts]) =>
+        (opts as { tags?: { op?: string } }).tags?.op ===
+        "login fallback returned non-success state",
+    );
+    expect(matching).toBeUndefined();
     consoleSpy.mockRestore();
   });
 });
