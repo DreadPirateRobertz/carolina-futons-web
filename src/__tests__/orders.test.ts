@@ -110,3 +110,59 @@ describe("getOrdersForMember", () => {
     errSpy.mockRestore();
   });
 });
+
+describe("getOrdersForMember — logError migration", () => {
+  // Pin the new logError(scope, message, err, extra) shape so a future
+  // refactor that swaps the helper or drops the contextual extras gets
+  // caught at review time.
+
+  it("emits the bracketed '[orders] searchOrders failed' prefix on the catch path", async () => {
+    const thrown = new Error("rpc down");
+    wixMocks.searchOrders.mockRejectedValueOnce(thrown);
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { getOrdersForMember } = await import("@/lib/wix/orders");
+
+    await getOrdersForMember({ contactId: "C-1", tokens });
+
+    expect(errSpy).toHaveBeenCalledTimes(1);
+    const [prefix, errArg] = errSpy.mock.calls[0]!;
+    expect(prefix).toBe("[orders] searchOrders failed");
+    expect(errArg).toBe(thrown);
+    errSpy.mockRestore();
+  });
+
+  it("forwards non-Error throws (Wix SDK occasionally rejects with strings) as the same payload", async () => {
+    wixMocks.searchOrders.mockRejectedValueOnce("401 Unauthorized");
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { getOrdersForMember } = await import("@/lib/wix/orders");
+
+    const out = await getOrdersForMember({ contactId: "C-1", tokens });
+
+    expect(out).toEqual([]);
+    expect(errSpy).toHaveBeenCalledWith(
+      "[orders] searchOrders failed",
+      "401 Unauthorized",
+    );
+    errSpy.mockRestore();
+  });
+
+  it("still surfaces an empty list when the limit override path also throws (regression guard)", async () => {
+    // The migrated logError call captures `limit` in extra context.
+    // A future refactor that forgot to thread the override through
+    // the extras would still pass the empty-list contract but lose
+    // diagnostic value. This test pins the both-the-contract-and-the-
+    // log-line behaviour for the limit-override branch.
+    wixMocks.searchOrders.mockRejectedValueOnce(new Error("rpc down"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { getOrdersForMember } = await import("@/lib/wix/orders");
+
+    const out = await getOrdersForMember({ contactId: "C-1", tokens, limit: 5 });
+
+    expect(out).toEqual([]);
+    expect(errSpy).toHaveBeenCalledWith(
+      "[orders] searchOrders failed",
+      expect.any(Error),
+    );
+    errSpy.mockRestore();
+  });
+});

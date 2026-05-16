@@ -1,6 +1,7 @@
 import "server-only";
 import type { Tokens } from "@wix/sdk";
 import { getWixClient, getWixClientWithTokens } from "@/lib/wix-client";
+import { logError } from "@/lib/observability/log";
 
 // Synthetic order returned in fixture mode when orderId starts with "fixture-".
 // Shaped to satisfy every field OrderConfirmationPage reads (priceSummary,
@@ -117,7 +118,10 @@ export async function getOrdersForMember(args: {
       cursorPaging: { limit },
     });
   } catch (err) {
-    console.error("[orders] searchOrders failed:", err);
+    logError("orders", "searchOrders failed", err, {
+      contactId: args.contactId,
+      limit,
+    });
     return [];
   }
 
