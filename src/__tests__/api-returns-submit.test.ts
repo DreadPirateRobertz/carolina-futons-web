@@ -15,6 +15,11 @@ vi.mock("@/lib/returns/return-submission", () => ({
   submitGuestReturn: (...args: unknown[]) => mockSubmit(...args),
 }));
 
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/log", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 const VALID_BODY = {
   orderNumber: "10042",
   email: "buyer@example.com",
@@ -197,5 +202,42 @@ describe("POST /api/returns/submit — helper failure mapping", () => {
     const POST = await route();
     const res = await POST(makeRequest(VALID_BODY));
     expect(res.status).toBe(500);
+  });
+});
+
+// Logger migration (cfw-logger batch 25): the outer try/catch now forwards
+// unexpected throws to logError with source="returns/submit".
+describe("POST /api/returns/submit — logError migration", () => {
+  it("calls logError with source='returns/submit' op='POST' on throw", async () => {
+    mockLogError.mockClear();
+    const handlerErr = new Error("kaboom inside submitGuestReturn");
+    mockSubmit.mockRejectedValueOnce(handlerErr);
+    const POST = await route();
+    await POST(makeRequest(VALID_BODY));
+    expect(mockLogError).toHaveBeenCalledTimes(1);
+    const [source, op, err] = mockLogError.mock.calls[0];
+    expect(source).toBe("returns/submit");
+    expect(op).toBe("POST");
+    expect(err).toBe(handlerErr);
+  });
+
+  it("does NOT call logError on the 400 validation path", async () => {
+    mockLogError.mockClear();
+    const POST = await route();
+    const res = await POST(makeRequest({ ...VALID_BODY, orderNumber: "" }));
+    expect(res.status).toBe(400);
+    expect(mockLogError).not.toHaveBeenCalled();
+  });
+
+  it("does NOT call logError on the wix_error 502 mapping (handled inside the try)", async () => {
+    mockLogError.mockClear();
+    mockSubmit.mockResolvedValueOnce({
+      ok: false,
+      reason: "wix_error",
+      status: 502,
+    });
+    const POST = await route();
+    await POST(makeRequest(VALID_BODY));
+    expect(mockLogError).not.toHaveBeenCalled();
   });
 });
