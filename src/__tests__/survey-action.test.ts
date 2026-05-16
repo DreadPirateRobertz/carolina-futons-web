@@ -204,7 +204,10 @@ describe("submitSurvey — response handling", () => {
         status: "error",
         error: "Couldn't save your response — please try again shortly.",
       });
-      expect(consoleError).toHaveBeenCalledWith("[survey] Velo responded", status);
+      expect(consoleError).toHaveBeenCalledWith(
+        "[survey] Velo responded with non-2xx",
+        status,
+      );
     },
   );
 
@@ -218,8 +221,42 @@ describe("submitSurvey — response handling", () => {
       error: "Couldn't save your response — please try again shortly.",
     });
     expect(consoleError).toHaveBeenCalledWith(
-      "[survey] fetch failed:",
+      "[survey] fetch failed",
       expect.any(TypeError),
     );
+  });
+});
+
+// Pins the logError migration of the 3 survey action error paths.
+// Asserts on the console.error sink because logError forwards there in
+// every env; the Sentry forwarder is prod-only and unit-tested in
+// log.test.ts.
+describe("submitSurvey — logError migration", () => {
+  it("emits '[survey] WIX_VELO_SITE_URL not set' as a single-arg log when env is unset", async () => {
+    vi.stubEnv("WIX_VELO_SITE_URL", "");
+    await submitSurvey(IDLE, fd({ score: "8" }));
+    expect(consoleError.mock.calls[0]![0]).toBe(
+      "[survey] WIX_VELO_SITE_URL not set",
+    );
+    // logError with no err is called single-arg — guards against an
+    // accidental trailing undefined slot.
+    expect(consoleError.mock.calls[0]!.length).toBe(1);
+  });
+
+  it("emits '[survey] Velo responded with non-2xx' with the numeric status as the second arg on non-2xx", async () => {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 503 }));
+    await submitSurvey(IDLE, fd({ score: "8" }));
+    expect(consoleError.mock.calls[0]![0]).toBe(
+      "[survey] Velo responded with non-2xx",
+    );
+    expect(consoleError.mock.calls[0]![1]).toBe(503);
+  });
+
+  it("emits '[survey] fetch failed' with the thrown err as the second arg on fetch reject", async () => {
+    const thrown = new TypeError("fetch failed");
+    fetchMock.mockRejectedValueOnce(thrown);
+    await submitSurvey(IDLE, fd({ score: "8" }));
+    expect(consoleError.mock.calls[0]![0]).toBe("[survey] fetch failed");
+    expect(consoleError.mock.calls[0]![1]).toBe(thrown);
   });
 });
