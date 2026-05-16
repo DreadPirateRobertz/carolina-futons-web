@@ -8,6 +8,7 @@ import {
   getCollectionBySlug,
   listProductsByCollectionId,
 } from "@/lib/wix/products";
+import { loadFilterFirstHeroCopy } from "@/lib/cms/filter-first-content";
 
 // Theme D preview — Fontshare Minimal / filter-first browse experience.
 // The FilterFirst component is also embedded in the main / home page; this
@@ -29,21 +30,24 @@ const FILTER_CATEGORIES = [
 ] as const;
 
 export default async function ThemeDPage() {
-  const categories = await Promise.all(
-    FILTER_CATEGORIES.map(async (cat): Promise<ThemeDCategory> => {
-      const collection = await getCollectionBySlug(cat.collectionSlug);
-      const products = collection?._id
-        ? await listProductsByCollectionId(collection._id, 24)
-        : [];
-      return { slug: cat.slug, label: cat.label, products };
-    }),
-  );
+  const [categories, heroCopy] = await Promise.all([
+    Promise.all(
+      FILTER_CATEGORIES.map(async (cat): Promise<ThemeDCategory> => {
+        const collection = await getCollectionBySlug(cat.collectionSlug);
+        const products = collection?._id
+          ? await listProductsByCollectionId(collection._id, 24)
+          : [];
+        return { slug: cat.slug, label: cat.label, products };
+      }),
+    ),
+    loadFilterFirstHeroCopy(),
+  ]);
 
   return (
     <>
       <link rel="preconnect" href="https://api.fontshare.com" />
       <link rel="stylesheet" href={FONTSHARE_URL} />
-      <FilterFirst categories={categories} />
+      <FilterFirst categories={categories} heroCopy={heroCopy} />
     </>
   );
 }
