@@ -62,3 +62,24 @@ describe("ShippingPage — JSON-LD (cfw-r0i)", () => {
     expect(json.name.length).toBeGreaterThan(0);
   });
 });
+
+describe("ShippingPage — Once-it-arrives cross-link (cfw-kqry)", () => {
+  it("renders the 'Once it arrives' section", () => {
+    render(<ShippingPage />);
+    expect(
+      screen.getByRole("region", { name: /once it arrives/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("links to /guides (buying & care hub)", () => {
+    render(<ShippingPage />);
+    const link = screen.getByRole("link", { name: /buying.*care guides/i });
+    expect(link).toHaveAttribute("href", "/guides");
+  });
+
+  it("links to the specific /guides/warranty-and-care entry", () => {
+    render(<ShippingPage />);
+    const link = screen.getByRole("link", { name: /warranty.*care guide/i });
+    expect(link).toHaveAttribute("href", "/guides/warranty-and-care");
+  });
+});
