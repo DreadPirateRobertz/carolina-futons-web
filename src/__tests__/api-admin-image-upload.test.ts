@@ -24,6 +24,17 @@ vi.mock("@/lib/wix/errors", () => ({
   logWixFailure: (...args: unknown[]) => mockLogWixFailure(...args),
 }));
 
+// cfw-41ty: WIX_API_KEY-missing + lookup-non-fatal catches now route
+// through logError → Sentry. Mock @sentry/nextjs so the runner
+// doesn't ship events AND the new logError-integration tests below
+// can assert (scope, op) tags.
+const sentryCaptureException = vi.fn();
+const sentryFlush = vi.fn().mockResolvedValue(true);
+vi.mock("@sentry/nextjs", () => ({
+  captureException: (...args: unknown[]) => sentryCaptureException(...args),
+  flush: (timeoutMs?: number) => sentryFlush(timeoutMs),
+}));
+
 const mockRevalidateTag = vi.fn();
 vi.mock("next/cache", () => ({
   revalidateTag: (...args: unknown[]) => mockRevalidateTag(...args),
@@ -104,6 +115,23 @@ describe("POST /api/admin/image-upload (cfw-6qd.8)", () => {
     expect(res.status).toBe(503);
     const data = (await res.json()) as { error: string };
     expect(data.error).toMatch(/not configured/i);
+
+    // cfw-41ty: WIX_API_KEY-missing branch now routes through
+    // logError → Sentry. The env() helper throws, so the catch
+    // receives a real Error to pass through.
+    const matching = sentryCaptureException.mock.calls.find(
+      ([, opts]) =>
+        (opts as { tags?: { op?: string } }).tags?.op === "WIX_API_KEY not set",
+    );
+    expect(matching).toBeDefined();
+    const [reportedErr, opts] = matching!;
+    expect(reportedErr).toBeInstanceOf(Error);
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "admin/image-upload",
+      op: "WIX_API_KEY not set",
+    });
+    expect((opts as { level: string }).level).toBe("error");
+    expect(sentryFlush).toHaveBeenCalledWith(2000);
     consoleSpy.mockRestore();
   });
 
@@ -317,6 +345,25 @@ describe("POST /api/admin/image-upload (cfw-6qd.8)", () => {
       expect.objectContaining({ before: "client-saw-url" }),
       OWNER_SESSION.tokens,
     );
+
+    // cfw-41ty: lookup-non-fatal branch now routes through logError →
+    // Sentry. Filter for the op to avoid mistaking another logError
+    // emit (none expected here, but defensive).
+    const matching = sentryCaptureException.mock.calls.find(
+      ([, opts]) =>
+        (opts as { tags?: { op?: string } }).tags?.op ===
+        "lookupCollectionItemByKey failed (non-fatal)",
+    );
+    expect(matching).toBeDefined();
+    const [reportedErr, opts] = matching!;
+    expect((reportedErr as Error).message).toBe("wix outage");
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "admin/image-upload",
+      op: "lookupCollectionItemByKey failed (non-fatal)",
+    });
+    expect((opts as { extra: Record<string, unknown> }).extra).toEqual({
+      key: "hero.image",
+    });
     consoleSpy.mockRestore();
   });
 
