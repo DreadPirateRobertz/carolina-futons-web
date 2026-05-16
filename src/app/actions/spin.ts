@@ -6,6 +6,7 @@ import {
   type SpinActionState,
   type SpinPrize,
 } from "@/app/spin/spin-state";
+import { logError } from "@/lib/logger";
 
 const COOLDOWN_HOURS = 24;
 const COOLDOWN_MS = COOLDOWN_HOURS * 60 * 60 * 1000;
@@ -61,8 +62,12 @@ export async function spinWheel(
       body: JSON.stringify({ prizeId: prize.id }),
       cache: "no-store",
       signal: AbortSignal.timeout(5_000),
-    }).catch((err) => {
-      console.error("[spin] recordSpinGrant failed (non-fatal):", err);
+    }).catch((err: unknown) => {
+      logError(
+        "spin",
+        "recordSpinGrant failed (non-fatal)",
+        err instanceof Error ? err : { err },
+      );
     });
   }
 
