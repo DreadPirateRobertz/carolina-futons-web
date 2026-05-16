@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 import {
@@ -13,6 +14,34 @@ import {
   type ProductOptionInput,
   type VariantInput,
 } from "@/lib/product/variant-selection";
+
+// cf-pdv4 (cf-lc1c G-3): hydrate VariantPicker selection from URL
+// search params + keep the URL in sync as the shopper clicks choices.
+// Enables marketing email deep-links to specific variants and shareable
+// PDP URLs ("here's the Walnut Queen we discussed"). Param key is the
+// lowercased option name (Color → color, Size → size); param value is
+// the variant's choice value as-is (case-preserved).
+function hydrateFromSearch(
+  defaults: ChoiceSelection,
+  options: ReadonlyArray<ProductOptionInput>,
+  search: URLSearchParams,
+): ChoiceSelection {
+  const result = { ...defaults };
+  // Case-insensitive lookup so ?Size=Queen and ?size=Queen both work.
+  const lowerToValue = new Map<string, string>();
+  search.forEach((value, key) => lowerToValue.set(key.toLowerCase(), value));
+  for (const option of options) {
+    const name = option.name;
+    if (!name) continue;
+    const fromUrl = lowerToValue.get(name.toLowerCase());
+    if (!fromUrl) continue;
+    // Only apply if the URL value is one of the option's declared choices —
+    // an unknown value (typo, removed variant) falls back to the default.
+    const isValid = option.choices?.some((c) => c.value === fromUrl);
+    if (isValid) result[name] = fromUrl;
+  }
+  return result;
+}
 
 export type VariantPickerProps = {
   productOptions: ReadonlyArray<ProductOptionInput>;
@@ -27,8 +56,15 @@ export function VariantPicker({
   fallbackPrice,
   onSelectionChange,
 }: VariantPickerProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [selection, setSelection] = useState<ChoiceSelection>(() =>
-    initialSelection(productOptions, variants),
+    hydrateFromSearch(
+      initialSelection(productOptions, variants),
+      productOptions,
+      new URLSearchParams(searchParams?.toString() ?? ""),
+    ),
   );
 
   const currentVariant = useMemo(
@@ -47,10 +83,23 @@ export function VariantPicker({
         const next = { ...prev, [optionName]: value };
         const variant = findMatchingVariant(variants, next);
         onSelectionChange?.(next, variant);
+        // cf-pdv4: sync the URL so deep-links remain shareable.
+        // scroll:false preserves the shopper's scroll position on the PDP.
+        if (pathname) {
+          const params = new URLSearchParams(searchParams?.toString() ?? "");
+          // Remove any other-cased variants of the same key so we
+          // don't accumulate ?Size=Full&size=Queen duplicates.
+          const lowerKey = optionName.toLowerCase();
+          for (const k of Array.from(params.keys())) {
+            if (k.toLowerCase() === lowerKey) params.delete(k);
+          }
+          params.set(lowerKey, value);
+          router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+        }
         return next;
       });
     },
-    [variants, onSelectionChange],
+    [variants, onSelectionChange, pathname, router, searchParams],
   );
 
   if (productOptions.length === 0) {
