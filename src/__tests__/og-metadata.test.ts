@@ -52,6 +52,7 @@ vi.mock("@/lib/shop/derived-products", () => ({ resolveDerivedProducts: vi.fn() 
 vi.mock("@/lib/shop/plp-observability", () => ({ logOverPaginatedRender: vi.fn() }));
 vi.mock("@/lib/product/cross-sell", () => ({ getCrossSellProducts: vi.fn() }));
 vi.mock("next/navigation", () => ({ notFound: vi.fn(), redirect: vi.fn() }));
+vi.mock("next/headers", () => ({ cookies: vi.fn() }));
 
 import { metadata as layoutMetadata } from "@/app/layout";
 import { metadata as shopMetadata } from "@/app/shop/page";
@@ -681,5 +682,129 @@ describe("cf-2qxr — twitter:card mirror for /referral/share/[code]", () => {
     expect((m.twitter as { description?: string } | undefined)?.description).toBe(
       m.openGraph?.description,
     );
+  });
+});
+
+// ── cf-o5j5.1: wave32 cfw-x84 per-page OG snapshot backfill ────────────────
+//
+// PR #556 (cfw-x84) shipped openGraph metadata on 10 pages without locking
+// in test coverage. morgott's cf-o5j5 audit (PR #1339) categorized this as
+// the wave's one substantive gap. These tests pin the contract for each
+// touched page so a future edit can't silently regress og:title /
+// description / images.
+describe("cf-o5j5.1 wave32 cfw-x84 OG backfill", () => {
+  it("/community-gallery has openGraph + DEFAULT_OG_IMAGE", async () => {
+    const { metadata } = await import("@/app/community-gallery/page");
+    expect(metadata.openGraph?.title).toBeTruthy();
+    expect((metadata.openGraph?.description ?? "").length).toBeGreaterThan(0);
+    expect(ogImageUrls(metadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+
+  it("/community-gallery/submit has openGraph + DEFAULT_OG_IMAGE", async () => {
+    const { metadata } = await import("@/app/community-gallery/submit/page");
+    expect(metadata.openGraph?.title).toBeTruthy();
+    expect((metadata.openGraph?.description ?? "").length).toBeGreaterThan(0);
+    expect(ogImageUrls(metadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+
+  it("/contact has openGraph + canonical + DEFAULT_OG_IMAGE", async () => {
+    const { metadata } = await import("@/app/contact/page");
+    expect(metadata.openGraph?.title).toBeTruthy();
+    expect((metadata.openGraph?.description ?? "").length).toBeGreaterThan(0);
+    expect(metadata.alternates?.canonical).toBe("/contact");
+    expect(ogImageUrls(metadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+
+  it("/faq has openGraph + DEFAULT_OG_IMAGE", async () => {
+    const { metadata } = await import("@/app/faq/page");
+    expect(metadata.openGraph?.title).toBeTruthy();
+    expect((metadata.openGraph?.description ?? "").length).toBeGreaterThan(0);
+    expect(ogImageUrls(metadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+
+  it("/press has openGraph + DEFAULT_OG_IMAGE", async () => {
+    const { metadata } = await import("@/app/press/page");
+    expect(metadata.openGraph?.title).toBeTruthy();
+    expect((metadata.openGraph?.description ?? "").length).toBeGreaterThan(0);
+    expect(ogImageUrls(metadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+
+  it("/privacy has openGraph + DEFAULT_OG_IMAGE", async () => {
+    const { metadata } = await import("@/app/privacy/page");
+    expect(metadata.openGraph?.title).toBeTruthy();
+    expect((metadata.openGraph?.description ?? "").length).toBeGreaterThan(0);
+    expect(ogImageUrls(metadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+
+  it("/referral has openGraph + DEFAULT_OG_IMAGE", async () => {
+    const { metadata } = await import("@/app/referral/page");
+    expect(metadata.openGraph?.title).toBeTruthy();
+    expect((metadata.openGraph?.description ?? "").length).toBeGreaterThan(0);
+    expect(ogImageUrls(metadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+
+  it("/signup has openGraph + DEFAULT_OG_IMAGE", async () => {
+    const { metadata } = await import("@/app/signup/page");
+    expect(metadata.openGraph?.title).toBeTruthy();
+    expect((metadata.openGraph?.description ?? "").length).toBeGreaterThan(0);
+    expect(ogImageUrls(metadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+
+  it("/terms has openGraph + DEFAULT_OG_IMAGE", async () => {
+    const { metadata } = await import("@/app/terms/page");
+    expect(metadata.openGraph?.title).toBeTruthy();
+    expect((metadata.openGraph?.description ?? "").length).toBeGreaterThan(0);
+    expect(ogImageUrls(metadata.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+  });
+
+  describe("/referral/share/[code] generateMetadata", () => {
+    it("uses the inviter's name in the OG title on success", async () => {
+      const { generateMetadata } = await import(
+        "@/app/referral/share/[code]/page"
+      );
+      const { getReferralByCodeAction } = await import("@/app/actions/referral");
+      vi.mocked(getReferralByCodeAction).mockResolvedValue({
+        success: true,
+        referral: { referrerName: "Asha M." },
+      } as never);
+      const meta = await generateMetadata({
+        params: Promise.resolve({ code: "ASHA-1234" }),
+      });
+      expect(meta.openGraph?.title).toContain("Asha M.");
+      expect(ogImageUrls(meta.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+    });
+
+    it("falls back to a generic invite title when the code lookup fails", async () => {
+      const { generateMetadata } = await import(
+        "@/app/referral/share/[code]/page"
+      );
+      const { getReferralByCodeAction } = await import("@/app/actions/referral");
+      vi.mocked(getReferralByCodeAction).mockResolvedValue({
+        success: false,
+      } as never);
+      const meta = await generateMetadata({
+        params: Promise.resolve({ code: "BAD-CODE" }),
+      });
+      expect(meta.openGraph?.title).toBe("You're invited — 5% off at Carolina Futons");
+      expect(ogImageUrls(meta.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
+    });
+  });
+
+  it("all 10 backfilled pages emit distinct openGraph.description", async () => {
+    const staticModules = await Promise.all([
+      import("@/app/community-gallery/page"),
+      import("@/app/community-gallery/submit/page"),
+      import("@/app/contact/page"),
+      import("@/app/faq/page"),
+      import("@/app/press/page"),
+      import("@/app/privacy/page"),
+      import("@/app/referral/page"),
+      import("@/app/signup/page"),
+      import("@/app/terms/page"),
+    ]);
+    const descriptions = staticModules.map(
+      (m) => m.metadata.openGraph?.description,
+    );
+    expect(new Set(descriptions).size).toBe(descriptions.length);
   });
 });
