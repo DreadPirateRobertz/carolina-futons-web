@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { LoginState, type Tokens } from "@wix/sdk";
+
+import { logError } from "@/lib/observability/log";
 import { getWixClientWithTokens } from "@/lib/wix-client";
 import {
   SESSION_COOKIE_NAME,
@@ -93,8 +95,9 @@ async function exchangeOrLoginFallback(
   // message we can surface is "check your email" — better than the legacy
   // "Account created. Sign in to continue." which led the user into another
   // dead end. cfw-aik repro path lands here.
-  console.error(
-    "[auth/register] login fallback returned non-success state:",
+  logError(
+    "auth/register",
+    "login fallback returned non-success state",
     loginState.loginState,
   );
   return { state: "email_verification_required" };
