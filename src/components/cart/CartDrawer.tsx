@@ -11,6 +11,7 @@ import { CartIllustration } from "@/components/illustrations/CartIllustration";
 import { EmptyCartIllustration } from "@/components/illustrations/EmptyCartIllustration";
 import { formatCents } from "@/lib/cart/cart-state";
 import { trackBeginCheckout } from "@/lib/analytics/ga4-events";
+import { logError } from "@/lib/logging/log-error";
 import { cn } from "@/lib/utils";
 import { focusRingCta } from "@/lib/ui/focus-ring";
 
@@ -241,7 +242,11 @@ export function CartDrawer() {
                         subtotalCents / 100,
                       );
                     } catch (e) {
-                      console.error("[cart-drawer] trackBeginCheckout failed", e);
+                      // cfw-0uv0: GA4 trackBeginCheckout failure is
+                      // non-fatal — the user-visible checkout flow
+                      // continues. void so the drawer close + nav
+                      // aren't held up by Sentry.
+                      void logError("cart-drawer", "trackBeginCheckout", e);
                     }
                     setOpen(false);
                   }}
