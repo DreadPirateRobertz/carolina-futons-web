@@ -379,18 +379,20 @@ describe("cf-ceex per-page OG sweep", () => {
       import("@/app/design-a-room/page"),
       import("@/app/reviews/page"),
       import("@/app/guides/page"),
-      import("@/app/spring-sale/page"),
     ]);
     const { generateMetadata: compareGen } = await import("@/app/compare/page");
     const { generateMetadata: guideSlugGen } = await import("@/app/guides/[slug]/page");
+    const { generateMetadata: springSaleGen } = await import("@/app/spring-sale/page");
     const compareMeta = await compareGen({ searchParams: Promise.resolve({}) });
     const guideMeta = await guideSlugGen({
       params: Promise.resolve({ slug: "how-to-pick-a-futon-mattress" }),
     });
+    const springSaleMeta = await springSaleGen();
     const descriptions = [
       ...staticModules.map((m) => m.metadata.openGraph?.description),
       compareMeta.openGraph?.description,
       guideMeta.openGraph?.description,
+      springSaleMeta.openGraph?.description,
     ];
     expect(new Set(descriptions).size).toBe(descriptions.length);
   });
@@ -403,11 +405,13 @@ describe("cf-ceex per-page OG sweep", () => {
       import("@/app/design-a-room/page"),
       import("@/app/reviews/page"),
       import("@/app/guides/page"),
-      import("@/app/spring-sale/page"),
     ]);
-    const allImageUrls = staticModules.flatMap((m) =>
-      ogImageUrls(m.metadata.openGraph?.images),
-    );
+    const { generateMetadata: springSaleGen } = await import("@/app/spring-sale/page");
+    const springSaleMeta = await springSaleGen();
+    const allImageUrls = [
+      ...staticModules.flatMap((m) => ogImageUrls(m.metadata.openGraph?.images)),
+      ...ogImageUrls(springSaleMeta.openGraph?.images),
+    ];
     expect(allImageUrls.length).toBeGreaterThan(0);
     for (const url of allImageUrls) {
       expect(url).toMatch(/^https:\/\/static\.wixstatic\.com\//);
@@ -415,21 +419,26 @@ describe("cf-ceex per-page OG sweep", () => {
   });
 
   it("all sweep pages mirror openGraph → twitter via twitterFromOpenGraph", async () => {
-    const modules = await Promise.all([
+    const staticModules = await Promise.all([
       import("@/app/about/page"),
       import("@/app/visit/page"),
       import("@/app/getting-it-home/page"),
       import("@/app/design-a-room/page"),
       import("@/app/reviews/page"),
       import("@/app/guides/page"),
-      import("@/app/spring-sale/page"),
     ]);
-    for (const m of modules) {
+    const { generateMetadata: springSaleGen } = await import("@/app/spring-sale/page");
+    const springSaleMeta = await springSaleGen();
+    for (const m of staticModules) {
       expect((m.metadata.twitter as { card?: string })?.card).toBe("summary_large_image");
       expect((m.metadata.twitter as { title?: string })?.title).toBe(
         m.metadata.openGraph?.title,
       );
     }
+    expect((springSaleMeta.twitter as { card?: string })?.card).toBe("summary_large_image");
+    expect((springSaleMeta.twitter as { title?: string })?.title).toBe(
+      springSaleMeta.openGraph?.title,
+    );
   });
 });
 
