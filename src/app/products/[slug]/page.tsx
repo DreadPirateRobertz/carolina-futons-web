@@ -28,6 +28,7 @@ import { getGlbUrlByProductSlug } from "@/lib/models3d/catalog";
 import { PdpProductVideo } from "@/components/product/PdpProductVideo";
 import { getProductDimensions, getCareGuide } from "@/lib/product/size-guide";
 import { PdpSizeGuide } from "@/components/product/PdpSizeGuide";
+import { PdpWarrantyInfo } from "@/components/product/PdpWarrantyInfo";
 import { ProductInfoModal } from "@/components/product/ProductInfoModal";
 import type { SwatchItem } from "@/lib/swatch-request/swatch-request-schema";
 import { formatPlpPrice } from "@/lib/product/plp-price";
@@ -287,6 +288,11 @@ export default async function PdpPage(props: {
         productName={product.name ?? ""}
         dimensions={dimensions}
         careGuide={careGuide}
+      />
+
+      <PdpWarrantyInfo
+        productId={product._id ?? ""}
+        productName={product.name ?? ""}
       />
 
       <PdpMattressBundle mattresses={mattresses} />

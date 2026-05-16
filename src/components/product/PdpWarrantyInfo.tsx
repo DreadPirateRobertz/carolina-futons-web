@@ -1,0 +1,99 @@
+// cfw-avc: PDP warranty info section. Surfaces the 15-year frame
+// warranty per cfw's /warranty policy with a one-click registration
+// CTA pre-filled with product context. Closes the cf-9k5 P2 gap where
+// Wix Studio's WarrantyInfoWidget read per-product `warrantyYears` /
+// `warrantyType` custom fields on PDP — cfw's policy is uniform across
+// the catalog (every frame is 15 years; mattresses and covers carry
+// separate manufacturer terms documented on /warranty), so this widget
+// uses the BUSINESS.warrantyYears constant rather than provisioning
+// new Wix Stores custom fields.
+//
+// WHY a server component: no interactivity (just two links and static
+// copy). Server render avoids hydration cost on the PDP, which already
+// has heavy client islands (gallery, variant picker, reviews).
+
+import Link from "next/link";
+
+import { BUSINESS } from "@/lib/business/contact-info";
+
+const REGISTER_PATH = "/warranty/register";
+const POLICY_PATH = "/warranty";
+
+export type PdpWarrantyInfoProps = {
+  /** Wix Stores product id — drives the ?productId pre-fill. */
+  productId: string;
+  /** Display product name — drives the ?productName pre-fill. */
+  productName: string;
+};
+
+/**
+ * Build the /warranty/register pre-fill URL.
+ *
+ * @param productId Wix Stores product id.
+ * @param productName Display name (encoded for safe query transport).
+ * @returns `/warranty/register?productId=…&productName=…`.
+ *
+ * WHY URLSearchParams: encodes `&` / spaces / em-dashes so a product
+ * name like `"Cody — Loveseat & Mattress"` survives the round-trip into
+ * the form's `?productName` slot without breaking param parsing.
+ */
+function buildRegisterHref(productId: string, productName: string): string {
+  const params = new URLSearchParams();
+  params.set("productId", productId.trim());
+  params.set("productName", productName.trim());
+  return `${REGISTER_PATH}?${params.toString()}`;
+}
+
+/**
+ * PDP warranty info section.
+ *
+ * @param props {@link PdpWarrantyInfoProps}.
+ * @returns A `<section>` block with the warranty duration, coverage
+ *   copy, a 'Register warranty' CTA pre-filled with product context,
+ *   and a secondary link to the full /warranty policy page. Returns
+ *   `null` when either productId or productName is empty (defensive —
+ *   avoids broken pre-fill URLs).
+ */
+export function PdpWarrantyInfo(props: PdpWarrantyInfoProps) {
+  const productId = props.productId.trim();
+  const productName = props.productName.trim();
+  if (!productId || !productName) return null;
+
+  const registerHref = buildRegisterHref(productId, productName);
+
+  return (
+    <section
+      data-slot="pdp-warranty-info"
+      aria-labelledby="pdp-warranty-heading"
+      className="mt-12 rounded-md border border-cf-divider bg-cf-cream p-6 text-cf-ink"
+    >
+      <h2
+        id="pdp-warranty-heading"
+        className="font-playfair text-2xl font-semibold tracking-tight"
+      >
+        {BUSINESS.warrantyYears}-year warranty
+      </h2>
+      <p className="mt-2 text-sm leading-relaxed text-cf-charcoal/85">
+        Every Carolina Futons frame is backed by our{" "}
+        {BUSINESS.warrantyYears}-year manufacturer warranty against
+        defects in materials and workmanship under normal residential
+        use. Register your purchase so a future warranty claim moves
+        faster.
+      </p>
+      <div className="mt-4 flex flex-wrap items-center gap-4">
+        <Link
+          href={registerHref}
+          className="inline-flex h-10 items-center justify-center rounded-md bg-cf-cta px-5 text-sm font-medium text-white transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          Register warranty
+        </Link>
+        <Link
+          href={POLICY_PATH}
+          className="text-sm font-medium text-cf-cta underline decoration-cf-cta/40 underline-offset-4 hover:decoration-cf-cta"
+        >
+          Full warranty details
+        </Link>
+      </div>
+    </section>
+  );
+}
