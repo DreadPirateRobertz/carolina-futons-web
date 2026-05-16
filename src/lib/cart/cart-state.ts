@@ -144,7 +144,8 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
     }
     case "clearCoupon": {
       if (!state.appliedCoupon) return state;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // _ prefix satisfies eslint's no-unused-vars `Allowed unused vars
+      // must match /^_/u` rule — no disable directive needed.
       const { appliedCoupon: _, ...rest } = state;
       return rest;
     }
