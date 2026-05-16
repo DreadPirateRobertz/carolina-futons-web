@@ -533,4 +533,90 @@ describe("POST /api/auth/register", () => {
     expect(mockCookiesSet).not.toHaveBeenCalled();
     consoleSpy.mockRestore();
   });
+
+  // Pins the logError migration of the single direct console.error in
+  // exchangeOrLoginFallback — the "login fallback returned non-success
+  // state" diagnostic. Asserts on the console.error sink because logError
+  // forwards there in every env; the Sentry forwarder is prod-only and
+  // unit-tested in log.test.ts. (logWixFailure calls in this file are a
+  // separate helper with its own migration path.)
+  describe("logError migration — non-success state diagnostic", () => {
+    it("emits the bracketed '[auth/register] login fallback returned non-success state' prefix with the loginState as the second arg", async () => {
+      mockRegister.mockResolvedValueOnce({
+        loginState: LoginState.SUCCESS,
+        data: { sessionToken: "tok-register" },
+      });
+      mockGetMemberTokensForDirectLogin.mockRejectedValueOnce(
+        new Error("token exchange failed"),
+      );
+      mockLogin.mockResolvedValueOnce({
+        loginState: LoginState.FAILURE,
+        errorCode: "invalidPassword",
+      });
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      await callRegister({ email: "a@b.com", password: "password123" });
+
+      // logWixFailure also calls console.error internally — find OUR call
+      // by the exact bracketed prefix.
+      const ourCall = errSpy.mock.calls.find(
+        (c) => c[0] === "[auth/register] login fallback returned non-success state",
+      );
+      expect(ourCall).toBeDefined();
+      expect(ourCall![1]).toBe(LoginState.FAILURE);
+      errSpy.mockRestore();
+    });
+
+    it("does NOT emit the non-success-state log when the login fallback returns SUCCESS", async () => {
+      // Token exchange fails, login fallback succeeds, second token exchange
+      // succeeds → user gets tokens, the non-success-state log path is never
+      // hit.
+      mockRegister.mockResolvedValueOnce({
+        loginState: LoginState.SUCCESS,
+        data: { sessionToken: "tok-register" },
+      });
+      mockGetMemberTokensForDirectLogin
+        .mockRejectedValueOnce(new Error("first exchange failed"))
+        .mockResolvedValueOnce({
+          accessToken: { value: "a" },
+          refreshToken: { value: "r", role: "member" },
+        });
+      mockLogin.mockResolvedValueOnce({
+        loginState: LoginState.SUCCESS,
+        data: { sessionToken: "tok-login" },
+      });
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const res = await callRegister({
+        email: "a@b.com",
+        password: "password123",
+      });
+
+      expect(res.status).toBe(200);
+      const ourCalls = errSpy.mock.calls.filter(
+        (c) => c[0] === "[auth/register] login fallback returned non-success state",
+      );
+      expect(ourCalls).toHaveLength(0);
+      errSpy.mockRestore();
+    });
+
+    it("does NOT emit the non-success-state log when register itself returns EMAIL_VERIFICATION_REQUIRED (no fallback path)", async () => {
+      mockRegister.mockResolvedValueOnce({
+        loginState: LoginState.EMAIL_VERIFICATION_REQUIRED,
+      });
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const res = await callRegister({
+        email: "a@b.com",
+        password: "password123",
+      });
+
+      expect(res.status).toBe(200);
+      const ourCalls = errSpy.mock.calls.filter(
+        (c) => c[0] === "[auth/register] login fallback returned non-success state",
+      );
+      expect(ourCalls).toHaveLength(0);
+      errSpy.mockRestore();
+    });
+  });
 });
