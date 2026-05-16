@@ -16,6 +16,7 @@ import {
   flagSuspiciousMattressMembership,
   isStandaloneMattress,
 } from "@/lib/product/warranty-gate";
+import { resolveItemCategory } from "@/lib/product/item-category";
 import { PdpRecentlyViewed } from "@/components/product/PdpRecentlyViewed";
 import { ShowroomCta } from "@/components/product/ShowroomCta";
 import { PdpReviews, pickPdpReviews } from "@/components/product/PdpReviews";
@@ -24,7 +25,7 @@ import { getCustomerVideoReviewsByProductSlug } from "@/lib/discovery/customer-v
 import { PdpShareButtons } from "@/components/product/PdpShareButtons";
 import { PdpViewItemTracker } from "@/components/product/PdpViewItemTracker";
 import { loadReviews } from "@/lib/discovery/google-reviews";
-import { getProductBySlug } from "@/lib/wix/products";
+import { getCollectionBySlug, getProductBySlug } from "@/lib/wix/products";
 import { loadPdpCatalogSafely } from "@/lib/product/pdp-catalog-load";
 import { logWixFailure } from "@/lib/wix/errors";
 import { listFabricSwatches } from "@/lib/wix/fabrics";
@@ -138,17 +139,26 @@ export default async function PdpPage(props: {
   // the default render path so the LCP candidate doesn't change.
   const spinImages = extractSpinFrames(mediaItems);
   const stock = (product.stock ?? null) as StockBadgeInput | null;
-  // cf-8xw2 (cf-g640.fu2): loadPdpCatalogSafely wraps the four parallel
-  // Wix calls in Promise.allSettled so a rejection in any one (cross-
-  // sell, also-bought, badges, OR the cf-g640 mattresses-collection
-  // lookup) isolates. Today every underlying reader returns-null-on-
-  // throw so failure cascade is theoretical — but the contract is
-  // fragile and the helper gives every future caller-side refactor a
-  // safety net. Each rejection emits a Sentry breadcrumb naming the
-  // specific source. See src/__tests__/pdp-catalog-load.test.ts for the
-  // isolation pin.
+  // cf-8xw2 + cf-12u4: loadPdpCatalogSafely (Promise.allSettled isolation)
+  // runs alongside the 5 category-collection lookups for GA4 item_category
+  // resolution — all 6 network hops start concurrently.
+  const [
+    catalogResult,
+    futonFramesCollection,
+    murphyCollection,
+    platformCollection,
+    sofaCollection,
+    saleCollection,
+  ] = await Promise.all([
+    loadPdpCatalogSafely(product, slug),
+    getCollectionBySlug("futon-frames"),
+    getCollectionBySlug("murphy-cabinet-beds"),
+    getCollectionBySlug("platform-beds"),
+    getCollectionBySlug("sofa-beds"),
+    getCollectionBySlug("sale"),
+  ]);
   const { crossSell, alsoBought, productBadges, mattressesCollection } =
-    await loadPdpCatalogSafely(product, slug);
+    catalogResult;
   // cf-g640: PDP frame-warranty gate. isStandaloneMattress fail-closes
   // on indeterminate state (Wix outage, slug rename, orphan product)
   // so a mattress PDP never accidentally claims the 15-year frame
@@ -268,7 +278,19 @@ export default async function PdpPage(props: {
         item={{
           item_id: product._id ?? slug,
           item_name: product.name ?? "",
-          item_category: product.collectionIds?.[0],
+          // cf-12u4: priority-aware category resolver (set-membership,
+          // not collectionIds[0]) keeps GA4 item_category aligned with
+          // the warranty gate. Mattresses-on-sale now report as
+          // 'mattresses', not 'sale' — closes the marketing-dashboard
+          // under-count this bug was causing.
+          item_category: resolveItemCategory(product, {
+            mattresses: mattressesCollection,
+            "futon-frames": futonFramesCollection,
+            "murphy-cabinet-beds": murphyCollection,
+            "platform-beds": platformCollection,
+            "sofa-beds": sofaCollection,
+            sale: saleCollection,
+          }),
           price: product.priceData?.price ?? undefined,
         }}
       />
