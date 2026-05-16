@@ -15,6 +15,14 @@ vi.mock("@/lib/wix-client", () => ({
   }),
 }));
 
+// cfw-zrhq: searchOrders failure path now routes through the shared
+// logError helper. Mock here so the failure test asserts call shape
+// rather than parsing console output.
+const mockLogError = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 const tokens = { accessToken: { value: "a" }, refreshToken: { value: "r" } } as unknown as Tokens;
 
 beforeEach(() => {
@@ -100,13 +108,18 @@ describe("getOrdersForMember", () => {
     });
   });
 
-  it("returns [] and logs when searchOrders throws", async () => {
+  it("returns [] and ships failure to logError when searchOrders throws", async () => {
     wixMocks.searchOrders.mockRejectedValueOnce(new Error("rpc down"));
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockLogError.mockClear();
     const { getOrdersForMember } = await import("@/lib/wix/orders");
     const out = await getOrdersForMember({ contactId: "C-1", tokens });
     expect(out).toEqual([]);
-    expect(errSpy).toHaveBeenCalled();
-    errSpy.mockRestore();
+    // cfw-zrhq: logError("orders", "searchOrders", err, { contactId })
+    expect(mockLogError).toHaveBeenCalledWith(
+      "orders",
+      "searchOrders",
+      expect.any(Error),
+      expect.objectContaining({ contactId: "C-1" }),
+    );
   });
 });
