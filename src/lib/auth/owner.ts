@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { getMemberSession, type MemberSession } from "@/lib/auth/member";
 import { getWixClientWithTokens } from "@/lib/wix-client";
+import { logError } from "@/lib/logging/log-error";
 
 // cfw-wef (cfw-6qd.1): owner-mode auth gate for Brenda's inline-edit Path B.
 //
@@ -76,7 +77,10 @@ export async function getOwnerSession(): Promise<OwnerSession | null> {
     });
     email = result.member?.loginEmail ?? null;
   } catch (err) {
-    console.error("[auth/owner] getCurrentMember failed:", err);
+    // cfw-21uf: ship to Sentry via the shared logger. Returning null is
+    // the deliberate "fail closed" choice for the owner gate — a transient
+    // Wix outage must NEVER promote a member to owner, even briefly.
+    await logError("auth-owner", "getCurrentMember", err);
     return null;
   }
 
