@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import { createHmac, timingSafeEqual, randomUUID } from "node:crypto";
 
 import { SITE_CONTENT_CACHE_TAG } from "@/lib/cms/site-content";
+import { logError } from "@/lib/observability/log";
 
 export const dynamic = "force-dynamic";
 
@@ -52,9 +53,11 @@ export async function POST(req: NextRequest) {
 
   const secret = process.env.WIX_WEBHOOK_SECRET;
   if (!secret) {
-    console.error("[revalidate] misconfigured — WIX_WEBHOOK_SECRET missing", {
-      correlationId,
-    });
+    logError(
+      "revalidate",
+      "misconfigured — WIX_WEBHOOK_SECRET missing",
+      { correlationId },
+    );
     return NextResponse.json(
       {
         ok: false,

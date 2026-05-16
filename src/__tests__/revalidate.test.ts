@@ -211,3 +211,53 @@ describe("POST /api/revalidate — observability (F1)", () => {
     infoSpy.mockRestore();
   });
 });
+
+// Pins the logError migration so an accidental revert to a bare
+// console.error("[revalidate] …") (or to a string-interpolated prefix
+// that bypasses the helper) fails loudly. Asserts on the console.error
+// sink because logError forwards there in every env; the Sentry
+// forwarder is prod-only and unit-tested in log.test.ts.
+describe("POST /api/revalidate — logError migration", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.stubEnv("WIX_WEBHOOK_SECRET", SECRET);
+  });
+
+  it("emits the bracketed '[revalidate] misconfigured — WIX_WEBHOOK_SECRET missing' prefix with { correlationId } as the second arg", async () => {
+    vi.stubEnv("WIX_WEBHOOK_SECRET", "");
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    await post("{}", { "x-wix-signature": "sha256=deadbeef" });
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    expect(errorSpy.mock.calls[0]![0]).toBe(
+      "[revalidate] misconfigured — WIX_WEBHOOK_SECRET missing",
+    );
+    const ctx = errorSpy.mock.calls[0]![1] as { correlationId: unknown };
+    expect(typeof ctx).toBe("object");
+    expect(typeof ctx.correlationId).toBe("string");
+    errorSpy.mockRestore();
+  });
+
+  it("threads the request's x-correlation-id header through to the logged context", async () => {
+    vi.stubEnv("WIX_WEBHOOK_SECRET", "");
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    await post("{}", {
+      "x-wix-signature": "sha256=deadbeef",
+      "x-correlation-id": "trace-abc-123",
+    });
+    expect(errorSpy.mock.calls[0]![1]).toEqual({
+      correlationId: "trace-abc-123",
+    });
+    errorSpy.mockRestore();
+  });
+
+  it("does NOT log on a valid happy-path request (no console.error noise on 200)", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+    const body = JSON.stringify({ collectionId: "products" });
+    const res = await post(body, { "x-wix-signature": sign(body) });
+    expect(res.status).toBe(200);
+    expect(errorSpy).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
+    infoSpy.mockRestore();
+  });
+});
