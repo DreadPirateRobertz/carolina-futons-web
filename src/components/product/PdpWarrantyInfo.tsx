@@ -24,6 +24,22 @@ export type PdpWarrantyInfoProps = {
   productId: string;
   /** Display product name — drives the ?productName pre-fill. */
   productName: string;
+  /**
+   * cf-g640 (cfw-avc.fu1): category gate. The 15-year frame-warranty
+   * copy is wrong for mattress / cover / topper SKUs — those have
+   * manufacturer-specific terms documented separately on /warranty.
+   *
+   * Caller passes `isFrameProduct(product.slug)` from
+   * `@/lib/product/category-gate`. When `false`, this component
+   * renders `null` so non-frame PDPs ship no warranty section at all
+   * (the safest disposition until per-category copy ships in a
+   * future bead).
+   *
+   * Default `true` preserves pre-cf-g640 behavior on the existing
+   * frame PDP call sites — explicit prop is recommended for new
+   * callers so the gate is visible at the invocation.
+   */
+  isFrame?: boolean;
 };
 
 /**
@@ -58,6 +74,9 @@ export function PdpWarrantyInfo(props: PdpWarrantyInfoProps) {
   const productId = props.productId.trim();
   const productName = props.productName.trim();
   if (!productId || !productName) return null;
+  // cf-g640 category gate — mattress/cover/topper PDPs ship no
+  // warranty section until per-category copy lands.
+  if (props.isFrame === false) return null;
 
   const registerHref = buildRegisterHref(productId, productName);
 

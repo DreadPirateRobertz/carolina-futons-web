@@ -29,6 +29,7 @@ import { PdpProductVideo } from "@/components/product/PdpProductVideo";
 import { getProductDimensions, getCareGuide } from "@/lib/product/size-guide";
 import { PdpSizeGuide } from "@/components/product/PdpSizeGuide";
 import { PdpWarrantyInfo } from "@/components/product/PdpWarrantyInfo";
+import { isFrameProduct } from "@/lib/product/category-gate";
 import { ProductInfoModal } from "@/components/product/ProductInfoModal";
 import type { SwatchItem } from "@/lib/swatch-request/swatch-request-schema";
 import { formatPlpPrice } from "@/lib/product/plp-price";
@@ -293,6 +294,10 @@ export default async function PdpPage(props: {
       <PdpWarrantyInfo
         productId={product._id ?? ""}
         productName={product.name ?? ""}
+        // cf-g640: category gate — mattress/cover/topper SKUs render
+        // no warranty section (manufacturer-specific terms differ
+        // from the uniform 15-year frame guarantee).
+        isFrame={isFrameProduct(slug)}
       />
 
       <PdpMattressBundle mattresses={mattresses} />
