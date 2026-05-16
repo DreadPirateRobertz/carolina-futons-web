@@ -1,4 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
+
+import { logError } from "@/lib/observability/log";
 import { sendPasswordResetEmail } from "@/lib/wix/auth";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +24,7 @@ export async function POST(req: NextRequest) {
   try {
     await sendPasswordResetEmail(email, redirectUrl);
   } catch (err) {
-    console.error("[auth/forgot-password] sendRecoveryEmail failed:", err);
+    logError("auth/forgot-password", "sendRecoveryEmail failed", err);
   }
 
   return NextResponse.json({ ok: true });
