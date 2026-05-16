@@ -87,6 +87,21 @@ describe("cart server actions", () => {
       const result = await addItemAction({ productId: "p1", quantity: 1 });
       expect(result).toEqual({ ok: false, error: "Unknown cart error" });
     });
+
+    // cf-h78k: addItem was the load-bearing reference impl in cf-f9o1 but
+    // its catch never adopted logWixFailure — only the sibling
+    // remove/update did. cf-8ys6 left it alone; this is the cleanup.
+    it("Sentry-tags addToCart failure via logWixFailure", async () => {
+      const err = new Error("Wix add failed");
+      addToCart.mockRejectedValueOnce(err);
+      const { addItemAction } = await import("@/app/actions/cart");
+      await addItemAction({ productId: "p1", quantity: 1 });
+      expect(logWixFailure).toHaveBeenCalledWith(
+        "cart",
+        "addItemAction",
+        err,
+      );
+    });
   });
 
   describe("removeItemAction", () => {
@@ -209,6 +224,30 @@ describe("cart server actions", () => {
       const result = await applyCouponAction("ANY");
       expect(result).toEqual({ ok: false, error: "Unknown cart error" });
     });
+
+    // cf-h78k: catch was missing logWixFailure post-cf-8ys6. Coupon
+    // failures (invalid code, Wix outage, expired session) were
+    // surfaced to the user but left no Sentry breadcrumb to triage.
+    it("Sentry-tags applyCoupon failure via logWixFailure", async () => {
+      const err = new Error("Coupon service down");
+      applyCoupon.mockRejectedValueOnce(err);
+      const { applyCouponAction } = await import("@/app/actions/cart");
+      const result = await applyCouponAction("SUMMER15");
+      expect(result).toEqual({ ok: false, error: "Coupon service down" });
+      expect(logWixFailure).toHaveBeenCalledWith(
+        "cart",
+        "applyCouponAction",
+        err,
+      );
+    });
+
+    it("does NOT Sentry-tag empty-code input validation (not a Wix failure)", async () => {
+      const { applyCouponAction } = await import("@/app/actions/cart");
+      await applyCouponAction("");
+      // Local input rejection shouldn't pollute the Sentry stream — the
+      // user is correcting a typo, not hitting a backend outage.
+      expect(logWixFailure).not.toHaveBeenCalled();
+    });
   });
 
   describe("removeCouponAction", () => {
@@ -226,6 +265,19 @@ describe("cart server actions", () => {
       const { removeCouponAction } = await import("@/app/actions/cart");
       const result = await removeCouponAction();
       expect(result).toEqual({ ok: false, error: "network down" });
+    });
+
+    // cf-h78k: pair to the applyCouponAction Sentry tag — same rationale.
+    it("Sentry-tags removeCoupon failure via logWixFailure", async () => {
+      const err = new Error("network down");
+      removeCoupon.mockRejectedValueOnce(err);
+      const { removeCouponAction } = await import("@/app/actions/cart");
+      await removeCouponAction();
+      expect(logWixFailure).toHaveBeenCalledWith(
+        "cart",
+        "removeCouponAction",
+        err,
+      );
     });
   });
 

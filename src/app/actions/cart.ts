@@ -46,6 +46,12 @@ export async function addItemAction(
     revalidatePath("/cart");
     return { ok: true, cart };
   } catch (err) {
+    // cf-h78k (cf-8ys6.fu1): pair to remove/update — add-to-cart failure
+    // is the most-visible cart catch (every PDP add hits this path).
+    // Without the Sentry tag, an outage during a sale-driven burst looks
+    // like a "couldn't add" wave with no breadcrumb. cf-f9o1's reference
+    // impl was the original `void`-pattern source for the others.
+    void logWixFailure("cart", "addItemAction", err);
     return { ok: false, error: toMessage(err) };
   }
 }
@@ -102,6 +108,11 @@ export async function applyCouponAction(code: string): Promise<CartActionResult>
     revalidatePath("/cart");
     return { ok: true, cart };
   } catch (err) {
+    // cf-h78k: invalid-code rejections from Wix carry an "INVALID_ARGUMENT"
+    // shape; outages carry generic 5xx. Both are real backend failures
+    // worth a breadcrumb — without the tag, an email-campaign coupon
+    // glitch looks identical in Sentry to a Wix outage.
+    void logWixFailure("cart", "applyCouponAction", err);
     return { ok: false, error: toMessage(err) };
   }
 }
@@ -112,6 +123,8 @@ export async function removeCouponAction(): Promise<CartActionResult> {
     revalidatePath("/cart");
     return { ok: true, cart };
   } catch (err) {
+    // cf-h78k: paired tag to applyCoupon.
+    void logWixFailure("cart", "removeCouponAction", err);
     return { ok: false, error: toMessage(err) };
   }
 }
