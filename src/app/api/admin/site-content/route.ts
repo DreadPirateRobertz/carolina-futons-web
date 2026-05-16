@@ -6,6 +6,7 @@ import {
   lookupCollectionItemByKey,
   upsertCollectionItemByKey,
 } from "@/lib/wix/data";
+import { logError } from "@/lib/logging/log-error";
 import { logWixFailure } from "@/lib/wix/errors";
 import {
   AUTH_INPUT_ERROR_MESSAGES,
@@ -179,8 +180,19 @@ export async function POST(req: NextRequest) {
     actorEmail: owner.email,
   });
   if (!historyResult.ok) {
-    console.error(
-      `[admin/site-content] history write failed for ${key}: ${historyResult.reason}${historyResult.status ? ` (${historyResult.status})` : ""}`,
+    // cfw-s77v: writeSiteContentHistory returns a discriminated union
+    // on failure, not a throw. Synthesize an Error so Sentry has a
+    // stack to fingerprint on (same pattern as cfw-1r9n survey
+    // veloResponse) and ship reason + status as structured extras so
+    // alerting can group by failure mode. Save-path is intentionally
+    // not blocked on history — the primary write already succeeded.
+    await logError(
+      "admin/site-content",
+      "writeSiteContentHistory",
+      new Error(
+        `history write failed: ${historyResult.reason}${historyResult.status ? ` (${historyResult.status})` : ""}`,
+      ),
+      { key, reason: historyResult.reason, status: historyResult.status },
     );
   }
 

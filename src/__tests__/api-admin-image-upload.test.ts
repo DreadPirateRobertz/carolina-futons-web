@@ -24,6 +24,12 @@ vi.mock("@/lib/wix/errors", () => ({
   logWixFailure: (...args: unknown[]) => mockLogWixFailure(...args),
 }));
 
+// cfw-hctl: config + lookup failure paths route through logError.
+const mockLogError = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 const mockRevalidateTag = vi.fn();
 vi.mock("next/cache", () => ({
   revalidateTag: (...args: unknown[]) => mockRevalidateTag(...args),
@@ -90,10 +96,10 @@ beforeEach(() => {
 });
 
 describe("POST /api/admin/image-upload (cfw-6qd.8)", () => {
-  it("returns 503 when WIX_API_KEY is unset (deploy gate)", async () => {
+  it("returns 503 + ships logError op=config when WIX_API_KEY is unset (cfw-hctl)", async () => {
     mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
     vi.stubEnv("WIX_API_KEY", "");
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockLogError.mockClear();
 
     const fd = new FormData();
     fd.set("file", makeFile(new Uint8Array([0xff]), "image/jpeg", "x.jpg"));
@@ -104,7 +110,11 @@ describe("POST /api/admin/image-upload (cfw-6qd.8)", () => {
     expect(res.status).toBe(503);
     const data = (await res.json()) as { error: string };
     expect(data.error).toMatch(/not configured/i);
-    consoleSpy.mockRestore();
+    expect(mockLogError).toHaveBeenCalledWith(
+      "admin/image-upload",
+      "config",
+      expect.any(Error),
+    );
   });
 
   it("returns 401 when no owner session", async () => {
@@ -282,11 +292,11 @@ describe("POST /api/admin/image-upload (cfw-6qd.8)", () => {
     expect(mockRevalidateTag).toHaveBeenCalledWith("site-content", "default");
   });
 
-  it("falls back to ifMatch as audit 'before' when SiteContent lookup throws", async () => {
+  it("falls back to ifMatch + ships logError op=lookupBefore when SiteContent lookup throws (cfw-hctl)", async () => {
     mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
     mockLookup.mockRejectedValueOnce(new Error("wix outage"));
     mockUpsert.mockResolvedValueOnce({});
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockLogError.mockClear();
 
     vi.stubGlobal(
       "fetch",
@@ -317,7 +327,12 @@ describe("POST /api/admin/image-upload (cfw-6qd.8)", () => {
       expect.objectContaining({ before: "client-saw-url" }),
       OWNER_SESSION.tokens,
     );
-    consoleSpy.mockRestore();
+    expect(mockLogError).toHaveBeenCalledWith(
+      "admin/image-upload",
+      "lookupBefore",
+      expect.any(Error),
+      expect.objectContaining({ key: "hero.image" }),
+    );
   });
 
   it("returns 502 when generate-upload-url returns non-2xx", async () => {
