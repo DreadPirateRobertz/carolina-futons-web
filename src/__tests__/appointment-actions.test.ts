@@ -198,10 +198,56 @@ describe("bookAppointment — nodemailer transport", () => {
 
   it("returns transport error when sendMail throws", async () => {
     mailMocks.sendMail.mockRejectedValueOnce(new Error("ECONNREFUSED"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { bookAppointment } = await import("@/app/contact/actions");
     const result = await bookAppointment(null, fd(VALID));
     expect(result.status).toBe("error");
     if (result.status !== "error") return;
     expect(result.transportError).toBeTruthy();
+    errSpy.mockRestore();
+  });
+});
+
+// Pins the logError migration of the appointment-form error paths so an
+// accidental revert to bare console.error("[appointment-form] …") fails
+// loudly. Asserts on the console.error sink because logError forwards
+// there in every env; the Sentry forwarder is prod-only and unit-tested
+// in log.test.ts.
+describe("bookAppointment — logError migration", () => {
+  it("emits the bracketed '[appointment-form] SMTP env vars missing — cannot send' prefix when SMTP env is unset", async () => {
+    delete process.env.SMTP_HOST;
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { bookAppointment } = await import("@/app/contact/actions");
+    await bookAppointment(null, fd(VALID));
+    expect(errSpy).toHaveBeenCalledTimes(1);
+    expect(errSpy.mock.calls[0]![0]).toBe(
+      "[appointment-form] SMTP env vars missing — cannot send",
+    );
+    // logError with no err is called single-arg — guards against an
+    // accidental logError(scope, msg, undefined) that would emit a noisy
+    // trailing undefined.
+    expect(errSpy.mock.calls[0]!.length).toBe(1);
+    errSpy.mockRestore();
+  });
+
+  it("emits '[appointment-form] sendMail failed' with the thrown err as the second arg on sendMail reject", async () => {
+    const thrown = new Error("ECONNREFUSED");
+    mailMocks.sendMail.mockRejectedValueOnce(thrown);
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { bookAppointment } = await import("@/app/contact/actions");
+    await bookAppointment(null, fd(VALID));
+    expect(errSpy).toHaveBeenCalledTimes(1);
+    expect(errSpy.mock.calls[0]![0]).toBe("[appointment-form] sendMail failed");
+    expect(errSpy.mock.calls[0]![1]).toBe(thrown);
+    errSpy.mockRestore();
+  });
+
+  it("does NOT log on the happy path (sendMail resolves cleanly)", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { bookAppointment } = await import("@/app/contact/actions");
+    const result = await bookAppointment(null, fd(VALID));
+    expect(result.status).toBe("success");
+    expect(errSpy).not.toHaveBeenCalled();
+    errSpy.mockRestore();
   });
 });
