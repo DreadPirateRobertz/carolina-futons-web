@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
+import { logError } from "@/lib/logger";
 import { isValidZip } from "@/lib/product/shipping-estimate";
 import type {
   DeliveryZoneOk,
@@ -117,7 +118,11 @@ export function PdpWhiteGlove({
       // AbortError fires when the user resubmits or the component
       // unmounts mid-flight; that's not a failure to surface.
       if ((err as Error)?.name === "AbortError") return;
-      console.error("[PdpWhiteGlove] /api/delivery-zone failed:", err);
+      logError(
+        "PdpWhiteGlove",
+        "/api/delivery-zone failed",
+        err instanceof Error ? err : { err },
+      );
       setState({
         kind: "error",
         message: "We couldn't check that ZIP — please try again.",

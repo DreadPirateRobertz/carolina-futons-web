@@ -2,6 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+// cfw-logger migration: PdpWhiteGlove's fetch catch routes through logError.
+const logErrorMock = vi.fn();
+vi.mock("@/lib/logger", () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
+}));
+
 import { PdpWhiteGlove } from "@/components/product/PdpWhiteGlove";
 
 // cf-w2my follow-up: PdpWhiteGlove now wires its eligibility messaging to
@@ -14,6 +20,7 @@ let fetchMock: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   fetchMock = vi.fn();
   vi.stubGlobal("fetch", fetchMock);
+  logErrorMock.mockReset();
 });
 
 afterEach(() => {
@@ -250,16 +257,47 @@ describe("PdpWhiteGlove (zone-aware)", () => {
     );
   });
 
-  it("logs unexpected fetch failures via console.error so Sentry's global handler can pick them up", async () => {
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+  it("logs unexpected fetch failures via logError so Sentry's global handler can pick them up (cfw-logger)", async () => {
     fetchMock.mockRejectedValueOnce(new Error("ECONNRESET"));
     const user = userEvent.setup();
     render(<PdpWhiteGlove unitPriceCents={297_800} />);
     await user.type(screen.getByRole("textbox", { name: /zip/i }), "28739");
     await user.click(screen.getByRole("button", { name: /^check$/i }));
     await screen.findByRole("alert");
-    expect(errSpy).toHaveBeenCalled();
-    expect(errSpy.mock.calls[0]![0]).toMatch(/PdpWhiteGlove/);
-    errSpy.mockRestore();
+    expect(logErrorMock).toHaveBeenCalled();
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "PdpWhiteGlove",
+      "/api/delivery-zone failed",
+      expect.any(Error),
+    );
+  });
+
+  // cfw-logger migration: AbortError remains the no-log path; only
+  // unexpected errors route through logError.
+  it("does NOT call logError on an AbortError (intentional in-flight cancellation)", async () => {
+    const abort = new Error("aborted");
+    abort.name = "AbortError";
+    fetchMock.mockRejectedValueOnce(abort);
+    const user = userEvent.setup();
+    render(<PdpWhiteGlove unitPriceCents={297_800} />);
+    await user.type(screen.getByRole("textbox", { name: /zip/i }), "28739");
+    await user.click(screen.getByRole("button", { name: /^check$/i }));
+    // Let the microtask queue settle — the catch returns early on AbortError.
+    await new Promise((r) => setTimeout(r, 0));
+    expect(logErrorMock).not.toHaveBeenCalled();
+  });
+
+  it("wraps non-Error rejections under { err } in the logError payload", async () => {
+    fetchMock.mockRejectedValueOnce("string-error");
+    const user = userEvent.setup();
+    render(<PdpWhiteGlove unitPriceCents={297_800} />);
+    await user.type(screen.getByRole("textbox", { name: /zip/i }), "28739");
+    await user.click(screen.getByRole("button", { name: /^check$/i }));
+    await screen.findByRole("alert");
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "PdpWhiteGlove",
+      "/api/delivery-zone failed",
+      { err: "string-error" },
+    );
   });
 });
