@@ -2,6 +2,7 @@
 
 import { useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
+import Image from "next/image";
 import {
   m,
   useReducedMotion,
@@ -437,30 +438,43 @@ function ZoomMainImage({
 
   return (
     <div ref={containerRef} className="overflow-hidden rounded-lg">
-      <m.img
-        // Keying on the logical index (not resolved src) forces a fresh mount
-        // on thumb selection for the opacity fade, while keeping the element
-        // stable on error-fallback swaps so the DOM ref stays valid.
-        // In the VT path the browser handles the morph, no remount needed.
+      <m.div
+        // cf-h345.t3: framer animation surface — wraps the image element.
+        // Keying on the logical index (not resolved src) forces a fresh
+        // mount on thumb selection for the opacity fade, while keeping the
+        // element stable on error-fallback swaps so the DOM ref stays
+        // valid. In the VT path the browser handles the morph via
+        // view-transition-name on this wrapper (rectangle morph; same
+        // visual result as morphing the img directly since the image
+        // fills the wrapper).
         key={useFramerCrossfade ? crossfadeKey : "static"}
-        src={wixImageUrl(src, 600, 600)}
-        alt={alt}
-        data-testid="pdp-main-image"
-        // cfw-vxb: this is the PDP LCP candidate. Telling the browser to
-        // prioritize the fetch and decode async lets it start the request
-        // before the body's JS evaluates, which dominated PDP LCP cost.
-        fetchPriority="high"
-        loading="eager"
-        decoding="async"
         style={baseStyle}
-        onError={onImgError}
         {...crossfadeProps}
-        // cfw-l0m: contain (not cover) so the whole product is visible at the
-        // pre-lightbox view. Cover was cropping product photos that aren't
-        // exactly square, which read as "zoomed in" before the user clicked
-        // into the lightbox. Lightbox itself uses object-contain too.
-        className="aspect-square w-full object-contain"
-      />
+        className="aspect-square w-full"
+      >
+        <Image
+          // cf-h345.t3: next/image — Vercel image optimizer handles
+          // AVIF/WebP transcoding + responsive srcset variants. Pass the
+          // raw Wix URL (NOT wixImageUrl pre-resized) so Vercel can fetch
+          // the original and emit device-appropriate variants. `priority`
+          // sets fetchPriority=high + loading=eager + decoding=async — the
+          // LCP-candidate hint triple in one prop.
+          src={src}
+          alt={alt}
+          data-testid="pdp-main-image"
+          width={1200}
+          height={1200}
+          priority
+          sizes="(max-width: 768px) 100vw, 600px"
+          onError={onImgError}
+          // cfw-l0m: contain (not cover) so the whole product is visible
+          // at the pre-lightbox view. Cover was cropping product photos
+          // that aren't exactly square, which read as "zoomed in" before
+          // the user clicked into the lightbox. Lightbox itself uses
+          // object-contain too.
+          className="aspect-square w-full object-contain"
+        />
+      </m.div>
     </div>
   );
 }
