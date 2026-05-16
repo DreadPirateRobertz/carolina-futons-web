@@ -2,6 +2,7 @@ import "server-only";
 
 import type { Tokens } from "@wix/sdk";
 
+import { logError } from "@/lib/observability/log";
 import { getWixClient, getWixClientWithTokens } from "@/lib/wix-client";
 
 // cfw-6qd.11: lightweight audit trail for owner-mode edits.
@@ -75,9 +76,10 @@ export async function recordOwnerEdit(
     return { ok: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error(
-      `[audit-log] failed to record ${entry.action} on ${entry.target}: ${message}`,
-    );
+    await logError("audit-log", "failed to record entry", err, {
+      action: entry.action,
+      target: entry.target,
+    });
     return { ok: false, reason: "wix_outage", error: message };
   }
 }
