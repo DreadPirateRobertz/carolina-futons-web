@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import { cleanup, render } from "@testing-library/react";
 
 // cf-os1r (cf-mu05.F3): HomeSaleStrip was broadcasting priority={i < 4}
