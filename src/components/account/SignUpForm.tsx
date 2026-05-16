@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 
+import { logError } from "@/lib/logging/log-error";
+
 export function SignUpForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -72,7 +74,13 @@ export function SignUpForm() {
       }
       throw new Error("unexpected_response");
     } catch (err) {
-      console.error("[SignUpForm] register failed", err);
+      // cfw-km75: parallel to cfw-qeb6 / cfw-amfn client-component
+      // migrations — void logError so the form re-enables and
+      // surfaces the inline error without waiting for Sentry. The
+      // synthesized `unexpected_response` Error from a malformed
+      // Velo response also flows through this catch and is now
+      // alertable instead of console-only.
+      void logError("SignUpForm", "register", err);
       setError("Sign-up failed. Please try again.");
       setLoading(false);
     }
