@@ -24,7 +24,7 @@ export default defineConfig({
         "e2e/**",
       ],
       thresholds: {
-        statements: 79,
+        statements: 80,
         branches: 72,
         functions: 78,
         lines: 81,
