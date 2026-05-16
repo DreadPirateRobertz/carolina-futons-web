@@ -2,7 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
 
 // cf-if28 (cf-zmsq.followup wave 5): focus-visible pins on member/*
-// post-login surfaces. Pattern matches the 4 prior waves' cf-cta ring
+// post-login surfaces and data-testid="search-total-count" assertion on
+// /search count header. Pattern matches the 4 prior waves' cf-cta ring
 // convention.
 
 // ── Next.js / hooks stubs ─────────────────────────────────────────────
