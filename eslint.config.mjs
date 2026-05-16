@@ -34,6 +34,40 @@ const eslintConfig = defineConfig([
       "jsx-a11y/alt-text": "off",
     },
   },
+  // logError migration guard-rail. Direct `console.error(...)` is the
+  // legacy pattern; the canonical path is `logError(scope, message, err)`
+  // from `@/lib/observability/log` so failures fan out to Sentry in
+  // production via the helper's forwarder. The helper itself is
+  // unavoidably exempt (it's the call site that writes to console.error
+  // on purpose); tests are also exempt because they spy on console.error
+  // by design.
+  //
+  // Surfaced as a `warn` (not `error`) while the chain of in-flight
+  // migration PRs is still landing — the lint-typecheck-test job runs
+  // `eslint --quiet` which only fails on errors, so this warns without
+  // blocking CI. Flip to `error` once every remaining `console.error`
+  // has migrated.
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: [
+      "src/lib/observability/log.ts",
+      "src/lib/wix/errors.ts",
+      "src/**/__tests__/**/*.{ts,tsx}",
+      "src/**/*.test.{ts,tsx}",
+      "src/**/*.spec.{ts,tsx}",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "warn",
+        {
+          selector:
+            "CallExpression[callee.object.name='console'][callee.property.name='error']",
+          message:
+            "Prefer logError(scope, message, err) from @/lib/observability/log over direct console.error — keeps prod failures wired to Sentry via the helper's forwarder.",
+        },
+      ],
+    },
+  },
   globalIgnores([
     ".next/**",
     "out/**",
