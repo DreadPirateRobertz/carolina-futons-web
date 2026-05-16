@@ -1,5 +1,7 @@
 "use server";
 
+import { logError } from "@/lib/logging/log-error";
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const FETCH_TIMEOUT_MS = 8_000;
 const GENERIC_ERROR = "Could not save — please try again shortly.";
@@ -24,7 +26,14 @@ export async function submitNotifyMe(
 
   const base = process.env.WIX_VELO_SITE_URL;
   if (!base) {
-    console.error("[notify-me] WIX_VELO_SITE_URL not set");
+    // cfw-hd8t: misconfig case ships as a real Error so Sentry has a
+    // stack to fingerprint on; otherwise multiple unrelated misconfigs
+    // would collapse into the same generic event group.
+    await logError(
+      "notify-me",
+      "config",
+      new Error("WIX_VELO_SITE_URL not set"),
+    );
     return { status: "error", error: GENERIC_ERROR };
   }
 
@@ -40,12 +49,21 @@ export async function submitNotifyMe(
       },
     );
     if (!res.ok) {
-      console.error("[notify-me] Velo responded", res.status);
+      // cfw-hd8t: HTTP non-ok ships with the status in extras so Sentry
+      // groups by-status (a sustained 5xx from Velo is a different
+      // incident than sporadic 429s).
+      await logError(
+        "notify-me",
+        "veloResponse",
+        new Error(`Velo responded HTTP ${res.status}`),
+        { httpStatus: res.status },
+      );
       return { status: "error", error: GENERIC_ERROR };
     }
     return { status: "success" };
   } catch (err) {
-    console.error("[notify-me] fetch failed:", err);
+    // cfw-hd8t: fetch throw — network failure, AbortSignal timeout, etc.
+    await logError("notify-me", "fetch", err);
     return { status: "error", error: GENERIC_ERROR };
   }
 }

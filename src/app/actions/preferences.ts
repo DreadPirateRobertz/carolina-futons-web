@@ -1,6 +1,7 @@
 "use server";
 
 import { withMember } from "@/lib/auth/member";
+import { logError } from "@/lib/logging/log-error";
 import { callVelo } from "@/lib/wix/velo-client";
 import {
   DEFAULT_PREFERENCES,
@@ -38,7 +39,9 @@ export async function getMyPushPreferences(): Promise<PreferencesResult> {
         prefs: { ...DEFAULT_PREFERENCES, ...(result.prefs ?? {}) },
       } satisfies PreferencesResult;
     } catch (err) {
-      console.error("[preferences] getMyPushPreferences failed:", err);
+      // cfw-dhxv: Velo unreachable / threw — dashboard surfaces the
+      // generic "Could not load" message; Sentry sees the upstream.
+      await logError("preferences", "getMyPushPreferences", err);
       return { success: false, error: "Could not load preferences." };
     }
   });
@@ -73,7 +76,11 @@ export async function managePushPreferences(
         prefs: { ...DEFAULT_PREFERENCES, ...(result.prefs ?? cleaned) },
       };
     } catch (err) {
-      console.error("[preferences] managePushPreferences failed:", err);
+      // cfw-dhxv: save-path failure — same generic surface; Sentry tags
+      // it as a distinct op from getMyPushPreferences so alerting can
+      // distinguish "reads down" from "writes down" (typically different
+      // Velo regressions).
+      await logError("preferences", "managePushPreferences", err);
       return { success: false, error: "Could not save preferences." };
     }
   });
