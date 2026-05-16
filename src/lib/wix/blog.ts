@@ -118,27 +118,38 @@ export async function listAllPostSlugs(limit = 100): Promise<string[]> {
   }
 }
 
-// cf-3qt.5.4: case-insensitive title prefix match for /search. Empty/whitespace
-// q returns []; page renders the guided empty state. Wix Blog queryPosts()
-// builder supports startsWith on `title` only — substring `contains` is not
-// in the SDK, so search is prefix-only for now.
+// cf-1lf (cf-ruhm.3): case-insensitive title SUBSTRING match for /search.
+// Empty/whitespace q returns []; page renders the guided empty state.
+//
+// WHY this is an in-memory scan, not an SDK query: Wix Blog queryPosts()
+// builder only exposes startsWith("title", q) — substring `contains` is not
+// in the SDK. The previous impl (cf-3qt.5.4) used startsWith so
+// "Best mattress for a futon" failed to match "futon". This impl mirrors
+// searchProducts: fetch up to BLOG_SEARCH_CAP posts, filter by
+// title.toLowerCase().includes(lower), then slice to `limit`. The cap
+// bounds the worst-case fetch (Wix blogs rarely exceed a few hundred
+// posts; raise BLOG_SEARCH_CAP if cf-3qt content scales past it).
+const BLOG_SEARCH_CAP = 200;
+
 export async function searchPosts(
   q: string,
   limit = 12,
 ): Promise<BlogPostSummary[]> {
   const trimmed = q.trim();
   if (!trimmed) return [];
+  const lower = trimmed.toLowerCase();
   try {
     const client = getWixClient();
     const result = await client.posts
       .queryPosts()
-      .startsWith("title", trimmed)
-      .limit(limit)
+      .limit(BLOG_SEARCH_CAP)
       .find();
     const items = (result.items ?? []) as RawPost[];
     return items
       .map(toSummary)
-      .filter((p): p is BlogPostSummary => p !== null);
+      .filter((p): p is BlogPostSummary => p !== null)
+      .filter((p) => p.title.toLowerCase().includes(lower))
+      .slice(0, limit);
   } catch (err) {
     await logWixFailure("wix", `searchPosts(${trimmed})`, err);
     return [];
