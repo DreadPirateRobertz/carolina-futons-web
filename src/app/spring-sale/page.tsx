@@ -6,10 +6,17 @@ import { VintageSunRays } from "@/components/mascot/VintageSunRays";
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 import { findCategory } from "@/lib/shop/categories";
 import { resolveDerivedProducts } from "@/lib/shop/derived-products";
+import { getLandingBySlug } from "@/lib/wix/cf3qt";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
 import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
 // cf-3qt.5.2: /spring-sale marketing landing.
+// cf-yu2l.F1: hero copy + CTAs read from the `Landings` Wix-Data collection
+// (slug="spring-sale") so marketing can edit without a deploy.
+// Per-field fallback to the hardcoded literals below — until blaidd seeds
+// the Landings collection, getLandingBySlug returns null and the render is
+// byte-identical to the pre-cf-yu2l.F1 page. A Wix outage / parse error is
+// swallowed so a data-layer failure cannot 500 the promo.
 //
 // Composes the existing primitives — derived "mattresses-sale" PLP source,
 // FeaturedProducts strip, NewsletterSignup, VintageSunRays band — into a hero +
@@ -20,6 +27,16 @@ import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 // On a Wix outage the resolver returns {items: [], error: "…"} — we render
 // the page with no strip rather than a misleading "no items on sale" copy
 // (the {items, error?} contract documented in derived-products.ts).
+
+const SPRING_SALE_FALLBACK = {
+  headline: "Spring Sale on mattresses",
+  subheadline:
+    "Hendersonville, NC. American-made mattresses we actually sleep on, picked for the season and priced to move. Free local delivery on orders over $1,500.",
+  ctaPrimaryLabel: "Shop the sale",
+  ctaPrimaryHref: "/shop/mattresses-sale",
+  ctaSecondaryLabel: "Browse all mattresses",
+  ctaSecondaryHref: "/shop/mattresses",
+} as const;
 
 const SPRING_SALE_TITLE = "Spring Sale — Carolina Futons";
 const SPRING_SALE_DESCRIPTION =
@@ -43,15 +60,23 @@ export const metadata: Metadata = {
 
 export default async function SpringSalePage() {
   const saleCategory = findCategory("mattresses-sale");
-  const result = saleCategory
-    ? await resolveDerivedProducts(saleCategory)
-    : undefined;
+  const [result, landing] = await Promise.all([
+    saleCategory ? resolveDerivedProducts(saleCategory) : Promise.resolve(undefined),
+    getLandingBySlug("spring-sale").catch(() => null),
+  ]);
   const products = result?.items ?? [];
   // Distinguish a clean empty state from a Wix outage. We hide the strip in
   // either case (no carrying value to surface), but the outage path also
   // suppresses the "see all" link to /shop/mattresses-sale since that PLP
   // would render the same outage copy.
   const sourceOk = result ? !result.error : false;
+
+  const headline = landing?.headline ?? SPRING_SALE_FALLBACK.headline;
+  const subheadline = landing?.subheadline ?? SPRING_SALE_FALLBACK.subheadline;
+  const ctaPrimaryLabel = landing?.ctaPrimaryLabel ?? SPRING_SALE_FALLBACK.ctaPrimaryLabel;
+  const ctaPrimaryHref = landing?.ctaPrimaryHref ?? SPRING_SALE_FALLBACK.ctaPrimaryHref;
+  const ctaSecondaryLabel = landing?.ctaSecondaryLabel ?? SPRING_SALE_FALLBACK.ctaSecondaryLabel;
+  const ctaSecondaryHref = landing?.ctaSecondaryHref ?? SPRING_SALE_FALLBACK.ctaSecondaryHref;
 
   return (
     <main className="w-full">
@@ -68,18 +93,14 @@ export default async function SpringSalePage() {
               id="spring-sale-hero"
               className="mt-4 font-heading text-4xl font-bold uppercase leading-[1.05] tracking-tight text-cf-navy sm:text-5xl md:text-6xl"
             >
-              Spring Sale on mattresses
+              {headline}
             </h1>
             <p className="mt-5 max-w-xl text-lg text-cf-charcoal/80">
-              Hendersonville, NC. American-made mattresses we actually sleep on,
-              picked for the season and priced to move. Free local delivery on
-              orders over $1,500.
+              {subheadline}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <CtaButton href="/shop/mattresses-sale">Shop the sale</CtaButton>
-              <CtaButton href="/shop/mattresses" variant="outline">
-                Browse all mattresses
-              </CtaButton>
+              <CtaButton href={ctaPrimaryHref}>{ctaPrimaryLabel}</CtaButton>
+              <CtaButton href={ctaSecondaryHref} variant="outline">{ctaSecondaryLabel}</CtaButton>
             </div>
           </div>
           <div data-slot="spring-sale-aside" className="hidden md:block">
