@@ -12,8 +12,15 @@ vi.mock("@/lib/wix/velo-client", async () => {
   return { ...actual, callVelo: veloMocks.callVelo };
 });
 
+// cfw-logger migration: style-quiz catch branches route through logError.
+const logErrorMock = vi.fn();
+vi.mock("@/lib/logger", () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
+}));
+
 beforeEach(() => {
   veloMocks.callVelo.mockReset();
+  logErrorMock.mockReset();
 });
 
 describe("getQuizOptions", () => {
@@ -95,12 +102,11 @@ describe("captureQuizLead", () => {
     veloMocks.callVelo.mockRejectedValueOnce(
       new VeloRpcError("styleQuiz/captureQuizLead", 429, "rate limited"),
     );
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { captureQuizLead } = await import("@/lib/wix/style-quiz");
     const result = await captureQuizLead("bad@example.com", {});
     expect(result).toEqual({ success: false });
-    expect(errSpy).toHaveBeenCalled();
-    errSpy.mockRestore();
+    // Observability now routes through logError (cfw-logger migration).
+    expect(logErrorMock).toHaveBeenCalled();
   });
 });
 
@@ -122,5 +128,47 @@ describe("getPersonalizedCopy", () => {
     const { getPersonalizedCopy } = await import("@/lib/wix/style-quiz");
     const result = await getPersonalizedCopy({});
     expect(result).toEqual({ copy: "", profileType: "style" });
+  });
+});
+
+// cfw-logger migration: each style-quiz call's catch routes through
+// logError("styleQuiz", "<call> failed", err). captureQuizLead has two
+// branches — VeloRpcError → captureMessage with {status}, other Error →
+// captureException — both still flow through logError.
+describe("style-quiz — logError observability", () => {
+  it("calls logError when getQuizRecommendations throws", async () => {
+    veloMocks.callVelo.mockRejectedValueOnce(new Error("network"));
+    const { getQuizRecommendations } = await import("@/lib/wix/style-quiz");
+    await getQuizRecommendations({});
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "styleQuiz",
+      "getQuizRecommendations failed",
+      expect.anything(),
+    );
+  });
+
+  it("calls logError with a {status} payload when captureQuizLead hits a VeloRpcError", async () => {
+    const { VeloRpcError } = await import("@/lib/wix/velo-client");
+    veloMocks.callVelo.mockRejectedValueOnce(
+      new VeloRpcError("captureQuizLead", 502, ""),
+    );
+    const { captureQuizLead } = await import("@/lib/wix/style-quiz");
+    await captureQuizLead("x@x.com", {});
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "styleQuiz",
+      "captureQuizLead rpc failed",
+      { status: 502 },
+    );
+  });
+
+  it("calls logError when getPersonalizedCopy throws", async () => {
+    veloMocks.callVelo.mockRejectedValueOnce(new Error("network"));
+    const { getPersonalizedCopy } = await import("@/lib/wix/style-quiz");
+    await getPersonalizedCopy({});
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "styleQuiz",
+      "getPersonalizedCopy failed",
+      expect.anything(),
+    );
   });
 });
