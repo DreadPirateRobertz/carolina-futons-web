@@ -1,11 +1,24 @@
 import type { Metadata } from "next";
 
 import { BUSINESS } from "@/lib/business/contact-info";
+import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
+
+const TITLE = "Returns — Carolina Futons";
+const DESCRIPTION =
+  "Carolina Futons' return policy: the window, what's refundable, and how restocking works on furniture and mattresses.";
+
+const OPEN_GRAPH = {
+  title: TITLE,
+  description: DESCRIPTION,
+  images: [DEFAULT_OG_IMAGE],
+};
 
 export const metadata: Metadata = {
-  title: "Returns — Carolina Futons",
-  description:
-    "Carolina Futons' return policy: the window, what's refundable, and how restocking works on furniture and mattresses.",
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: OPEN_GRAPH,
+  twitter: twitterFromOpenGraph(OPEN_GRAPH),
 };
 
 const RETURNS_FAQS = [
