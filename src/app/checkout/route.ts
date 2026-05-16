@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { initCheckout } from "@/lib/wix/checkout";
+import { logError } from "@/lib/log";
 
 // GET /checkout — creates a Wix checkout from the current cart and redirects
 // the browser to the Wix-hosted payment page. On failure, bounces back to
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest) {
     });
     return NextResponse.redirect(fullUrl, { status: 307 });
   } catch (err) {
-    console.error("[checkout] initCheckout failed:", err);
+    await logError("checkout", "initCheckout", err);
     return NextResponse.redirect(
       new URL("/cart?checkout_error=1", req.url),
       { status: 307 },
