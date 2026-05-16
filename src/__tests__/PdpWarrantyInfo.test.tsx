@@ -49,17 +49,20 @@ describe("PdpWarrantyInfo — render", () => {
   });
 
   it("URL-encodes special characters in productName", () => {
+    // Exercise the reserved/display chars (ampersand, em-dash, spaces)
+    // that broke prior implementations. Product-name string is purely
+    // a fixture for the encoding contract; not tied to a live SKU.
     render(
       <PdpWarrantyInfo
         productId="p-1"
-        productName="Cody — Loveseat & Mattress"
+        productName="Test — Frame & Mattress Combo"
       />,
     );
     const cta = screen.getByRole("link", { name: /register warranty/i });
     const href = cta.getAttribute("href") ?? "";
     // URLSearchParams encodes & + em-dash + spaces safely.
-    expect(href).not.toContain("Cody — Loveseat & Mattress");
-    expect(href).toMatch(/productName=Cody.*Loveseat.*Mattress/);
+    expect(href).not.toContain("Test — Frame & Mattress Combo");
+    expect(href).toMatch(/productName=Test.*Frame.*Mattress/);
   });
 
   it("also links to the /warranty policy page for full coverage details", () => {
@@ -74,12 +77,14 @@ describe("PdpWarrantyInfo — render", () => {
 // cf-g640 hot-patch: mattress PDPs (standalone-mattress SKUs in the
 // `mattresses` Wix collection) carry separate manufacturer warranty
 // terms, NOT the 15-year frame warranty. Surfacing this section on a
-// mattress PDP misrepresents the warranty contract to the customer
-// (legal exposure on NC implied-warranty law). Frames-with-bundled-
-// mattress SKUs (e.g. "Cody — Loveseat & Mattress" futon bundle) are
-// NOT in the mattresses collection — they keep the frame warranty.
-// Gate uses an explicit isMattress boolean rather than a productName
-// regex because the bundle case rules out name-based heuristics.
+// mattress PDP is an express-warranty misrepresentation under NC GS
+// 25-2-313 (UCC § 2-313 adoption). Frame-with-mattress bundle SKUs (a
+// futon whose SKU bundles a mattress) live in `futon-frames`, NOT
+// `mattresses`, and keep the frame-warranty section. Gate uses an
+// explicit isMattress boolean rather than a productName regex because
+// the bundle case rules out name-based heuristics. The collection-
+// membership decision is unit-tested in
+// `src/lib/product/__tests__/warranty-gate.test.ts`.
 describe("PdpWarrantyInfo — cf-g640 mattress gate", () => {
   it("renders nothing when isMattress is true (standalone mattress SKU)", () => {
     const { container } = render(
@@ -107,30 +112,15 @@ describe("PdpWarrantyInfo — cf-g640 mattress gate", () => {
     ).toBeInTheDocument();
   });
 
-  it("defaults to rendering when isMattress is omitted (back-compat)", () => {
-    render(
-      <PdpWarrantyInfo
-        productId="f-1"
-        productName="Kingston Futon Frame"
-      />,
-    );
-    expect(
-      screen.getByRole("heading", {
-        name: new RegExp(`${BUSINESS.warrantyYears}-year warranty`, "i"),
-      }),
-    ).toBeInTheDocument();
-  });
-
   it("renders for a futon-with-mattress bundle (frame-bearing — keeps frame warranty)", () => {
-    // Pinning the bundle case: "Cody — Loveseat & Mattress" is a futon
-    // frame product whose SKU bundles a mattress. The mattress portion
-    // of the bundle carries its own manufacturer warranty BUT the frame
-    // portion is what this section advertises — render it, since
-    // isMattress (the collection-membership signal) is false.
+    // Pinning the bundle case: a futon SKU that bundles a mattress is
+    // a FRAME product (frame portion is what's warranted as 15-year).
+    // Must NOT be suppressed since isMattress (the collection-
+    // membership signal at the call site) is false.
     render(
       <PdpWarrantyInfo
         productId="b-1"
-        productName="Cody — Loveseat & Mattress"
+        productName="Generic Futon Loveseat & Mattress Bundle"
         isMattress={false}
       />,
     );

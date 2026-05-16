@@ -12,6 +12,7 @@ import {
   getMesaMattresses,
   isFutonFrame,
 } from "@/lib/product/mattress-bundle";
+import { isStandaloneMattress } from "@/lib/product/warranty-gate";
 import { PdpRecentlyViewed } from "@/components/product/PdpRecentlyViewed";
 import { ShowroomCta } from "@/components/product/ShowroomCta";
 import { PdpReviews, pickPdpReviews } from "@/components/product/PdpReviews";
@@ -144,11 +145,14 @@ export default async function PdpPage(props: {
       // misrepresents coverage to the customer).
       getCollectionBySlug("mattresses"),
     ]);
-  const mattressesCollectionId = mattressesCollection?._id ?? null;
-  const isMattressProduct = Boolean(
-    mattressesCollectionId &&
-      product.collectionIds?.includes(mattressesCollectionId),
-  );
+  // cf-g640: PDP frame-warranty gate. isStandaloneMattress fail-closes
+  // on indeterminate state (Wix outage, slug rename, orphan product)
+  // so a mattress PDP never accidentally claims the 15-year frame
+  // warranty during a degraded window — express-warranty
+  // misrepresentation under NC GS 25-2-313 is the legal cost being
+  // hedged. See warranty-gate.ts module docstring + the
+  // FAIL-CLOSED describe block in its tests for the full rationale.
+  const isMattressProduct = isStandaloneMattress(product, mattressesCollection);
   const mattresses = isFutonFrame(slug) ? await getMesaMattresses() : [];
   let fabricSwatches: SwatchItem[] = [];
   let fabricSwatchError = false;
