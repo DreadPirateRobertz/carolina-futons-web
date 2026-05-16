@@ -99,7 +99,7 @@ function RecentTile({ item }: { item: RecentlyViewedItem }) {
     <li className="w-40 shrink-0 snap-start sm:w-44">
       <Link
         href={`/products/${item.slug}`}
-        className="group block rounded-lg border border-transparent transition hover:border-cf-sand"
+        className="group block rounded-lg border border-transparent transition hover:border-cf-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
       >
         {item.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element

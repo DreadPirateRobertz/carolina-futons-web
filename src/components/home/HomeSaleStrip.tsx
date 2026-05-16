@@ -36,7 +36,7 @@ export async function HomeSaleStrip() {
           </div>
           <Link
             href="/shop/sale"
-            className="shrink-0 text-sm font-medium text-cf-espresso underline underline-offset-2 hover:text-cf-espresso/70"
+            className="shrink-0 rounded-sm text-sm font-medium text-cf-espresso underline underline-offset-2 hover:text-cf-espresso/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cf-cta focus-visible:ring-offset-2"
           >
             View all →
           </Link>
