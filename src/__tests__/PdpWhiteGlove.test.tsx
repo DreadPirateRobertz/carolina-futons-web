@@ -2,6 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+// cfw-7z8a: fetch-failure path now routes through logError.
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 import { PdpWhiteGlove } from "@/components/product/PdpWhiteGlove";
 
 // cf-w2my follow-up: PdpWhiteGlove now wires its eligibility messaging to
@@ -14,6 +20,7 @@ let fetchMock: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   fetchMock = vi.fn();
   vi.stubGlobal("fetch", fetchMock);
+  mockLogError.mockReset();
 });
 
 afterEach(() => {
@@ -250,16 +257,17 @@ describe("PdpWhiteGlove (zone-aware)", () => {
     );
   });
 
-  it("logs unexpected fetch failures via console.error so Sentry's global handler can pick them up", async () => {
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+  it("ships fetch failures via logError so Sentry picks them up (cfw-7z8a)", async () => {
     fetchMock.mockRejectedValueOnce(new Error("ECONNRESET"));
     const user = userEvent.setup();
     render(<PdpWhiteGlove unitPriceCents={297_800} />);
     await user.type(screen.getByRole("textbox", { name: /zip/i }), "28739");
     await user.click(screen.getByRole("button", { name: /^check$/i }));
     await screen.findByRole("alert");
-    expect(errSpy).toHaveBeenCalled();
-    expect(errSpy.mock.calls[0]![0]).toMatch(/PdpWhiteGlove/);
-    errSpy.mockRestore();
+    expect(mockLogError).toHaveBeenCalledWith(
+      "PdpWhiteGlove",
+      "deliveryZone",
+      expect.any(Error),
+    );
   });
 });

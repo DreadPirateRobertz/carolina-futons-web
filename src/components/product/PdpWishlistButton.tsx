@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { addToWishlistFromPdp } from "@/app/actions/wishlist";
+import { logError } from "@/lib/logging/log-error";
 
 export type PdpWishlistButtonProps = {
   productId: string;
@@ -113,7 +114,10 @@ async function redirectToSignIn(returnTo: string): Promise<void> {
     }
     window.location.href = data.authUrl;
   } catch (err) {
-    console.error("[PdpWishlistButton] sign-in init failed", err);
+    // cfw-7z8a: ship to Sentry — sign-in init failure here means the
+    // OAuth round-trip endpoint is unreachable. The fallback hard-nav
+    // keeps the user moving; on-call gets paged on sustained failures.
+    void logError("PdpWishlistButton", "signInInit", err);
     // Fallback: hard-navigate to the in-app sign-in page so the user can
     // click through manually.
     window.location.href = `/account?return_to=${encodeURIComponent(returnTo)}`;

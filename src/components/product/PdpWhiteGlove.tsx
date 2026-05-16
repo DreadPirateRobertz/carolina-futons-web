@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 
 import { isValidZip } from "@/lib/product/shipping-estimate";
+import { logError } from "@/lib/logging/log-error";
 import type {
   DeliveryZoneOk,
   DeliveryZoneResponse,
@@ -117,7 +118,9 @@ export function PdpWhiteGlove({
       // AbortError fires when the user resubmits or the component
       // unmounts mid-flight; that's not a failure to surface.
       if ((err as Error)?.name === "AbortError") return;
-      console.error("[PdpWhiteGlove] /api/delivery-zone failed:", err);
+      // cfw-7z8a: real fetch failure — Sentry breadcrumb so on-call
+      // sees /api/delivery-zone outages, not just stuck in console.
+      void logError("PdpWhiteGlove", "deliveryZone", err);
       setState({
         kind: "error",
         message: "We couldn't check that ZIP — please try again.",
