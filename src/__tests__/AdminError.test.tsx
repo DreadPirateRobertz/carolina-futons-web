@@ -1,7 +1,16 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/log", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 import AdminError from "@/app/admin/error";
+
+beforeEach(() => {
+  mockLogError.mockClear();
+});
 
 // cfw-1rb: route-group error boundary for /admin/*. Tests pin the
 // admin-themed CTAs (Try Again uses reset, Owner home links to /admin),
@@ -63,10 +72,28 @@ describe("/admin/error", () => {
     expect(screen.queryByRole("link", { name: /shop/i })).toBeNull();
   });
 
-  it("logs the error to console.error inside useEffect (Sentry capture)", () => {
+  // Logger migration (cfw-logger batch 3): the boundary now forwards to
+  // logError so the error lands in Sentry with the "admin-error-boundary"
+  // source tag. Three tests pin: source/op shape, error pass-through, and
+  // that the previous bare console.error path is gone.
+  it("calls logError on mount with source='admin-error-boundary'", () => {
+    render(<AdminError error={new Error("boom")} reset={vi.fn()} />);
+    expect(mockLogError).toHaveBeenCalledTimes(1);
+    expect(mockLogError.mock.calls[0][0]).toBe("admin-error-boundary");
+  });
+
+  it("passes op='client-render' and the error object through to logError", () => {
+    const error = Object.assign(new Error("kaboom"), { digest: "d-7" });
+    render(<AdminError error={error} reset={vi.fn()} />);
+    const [, op, err] = mockLogError.mock.calls[0];
+    expect(op).toBe("client-render");
+    expect(err).toBe(error);
+  });
+
+  it("does NOT call console.error directly (Sentry path is logError)", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     render(<AdminError error={new Error("boom")} reset={vi.fn()} />);
-    expect(spy).toHaveBeenCalledWith(
+    expect(spy).not.toHaveBeenCalledWith(
       "[admin error boundary]",
       expect.any(Error),
     );
