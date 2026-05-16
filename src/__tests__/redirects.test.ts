@@ -43,11 +43,12 @@ describe("next.config redirects (cf-3qt.7.1) — Wix Studio → cfw", () => {
       ["/refund-policy", "/returns"],
       ["/terms-and-conditions", "/terms"],
       ["/accessibility-statement", "/accessibility"],
-      // Member surfaces.
-      ["/members-area", "/account"],
-      ["/members", "/account"],
-      ["/paywall", "/account"],
-      ["/plans-pricing", "/account"],
+      // Member surfaces (cf-9eh flipped destinations to /dashboard
+      // post cf-3qt.3 dashboard-split; old /account destinations 404'd).
+      ["/members-area", "/dashboard"],
+      ["/members", "/dashboard"],
+      ["/paywall", "/dashboard"],
+      ["/plans-pricing", "/dashboard"],
       // Order confirmation.
       ["/thank-you", "/order-confirmation"],
       ["/thank-you-page", "/order-confirmation"],
@@ -142,6 +143,48 @@ describe("next.config redirects (cf-3qt.8.6) — pre-cutover redirect map gaps",
     const redirects = await nextConfig.redirects!();
     redirects.forEach(({ source, permanent }) => {
       expect(permanent, `${source} should be permanent`).toBe(true);
+    });
+  });
+});
+
+describe("next.config redirects (cf-9eh / cf-ruhm-w3.1) — member-dashboard URL space", () => {
+  it("redirects every Wix /account/* sub-route to the cfw /dashboard/* equivalent", async () => {
+    const redirects = await nextConfig.redirects!();
+    const bySource = Object.fromEntries(redirects.map((r) => [r.source, r]));
+
+    const expected = [
+      ["/account", "/dashboard"],
+      ["/account/my-orders", "/dashboard/orders"],
+      ["/account/my-addresses", "/dashboard/addresses"],
+      ["/account/profile", "/dashboard/profile"],
+      // cf-ruhm-w3.3: Wix surfaces profile at both /account/profile AND
+      // /account/my-account; cfw collapses to a single /dashboard/profile.
+      ["/account/my-account", "/dashboard/profile"],
+      ["/account/notifications", "/dashboard/preferences"],
+    ] as const;
+
+    expected.forEach(([source, destination]) => {
+      expect(bySource[source], `redirect for ${source}`).toBeDefined();
+      expect(bySource[source].destination, `destination for ${source}`).toBe(destination);
+      expect(bySource[source].permanent, `permanent for ${source}`).toBe(true);
+    });
+  });
+
+  it("flips cf-3qt.7.1 destinations from /account (404 on cfw) to /dashboard", async () => {
+    const redirects = await nextConfig.redirects!();
+    const bySource = Object.fromEntries(redirects.map((r) => [r.source, r]));
+    const stale = [
+      "/members-area",
+      "/members",
+      "/paywall",
+      "/plans-pricing",
+    ] as const;
+    stale.forEach((source) => {
+      expect(bySource[source], `redirect for ${source}`).toBeDefined();
+      expect(
+        bySource[source].destination,
+        `${source} must NOT land at /account (404 on cfw); should be /dashboard`,
+      ).toBe("/dashboard");
     });
   });
 });

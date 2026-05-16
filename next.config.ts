@@ -107,22 +107,32 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
 
-      // Member surfaces collapse onto /account until cf-3qt.3 lands the full
-      // dashboard split.
-      { source: "/members-area", destination: "/account", permanent: true },
-      { source: "/members", destination: "/account", permanent: true },
-      { source: "/paywall", destination: "/account", permanent: true },
-      { source: "/plans-pricing", destination: "/account", permanent: true },
+      // cf-9eh (cf-ruhm-w3.1): cf-3qt.3 landed the full dashboard split —
+      // member surfaces now live at /dashboard, not /account (which doesn't
+      // exist on cfw). The original cf-3qt.7.1 destinations are corrected
+      // here. /account/* ingress redirects follow in the next block.
+      { source: "/members-area", destination: "/dashboard", permanent: true },
+      { source: "/members", destination: "/dashboard", permanent: true },
+      { source: "/paywall", destination: "/dashboard", permanent: true },
+      { source: "/plans-pricing", destination: "/dashboard", permanent: true },
 
-      // cf-09r (cf-ruhm-w2.1): Wix Studio wishlist nested under /account;
-      // cfw promotes it to a top-level /wishlist route. Old marketing
-      // emails + bookmarks pointing at /account/my-wishlist would 404 on
-      // cfw without this redirect. 308 preserves method + path tail.
+      // cf-09r (cf-ruhm-w2.1) + cf-9eh (cf-ruhm-w3.1): Wix Studio /account/*
+      // sub-routes → cfw /dashboard/* tabs (or /wishlist for the cf-09r
+      // promotion). Closes ingress 404s from old Wix marketing emails +
+      // bookmarks. /account/my-account is the dual-URL collapse — Wix
+      // surfaces profile at both /account/profile AND /account/my-account;
+      // cfw collapses to /dashboard/profile. See cf-ruhm-w3 audit §P1.1.
+      { source: "/account", destination: "/dashboard", permanent: true },
       {
         source: "/account/my-wishlist",
         destination: "/wishlist",
         permanent: true,
       },
+      { source: "/account/my-orders", destination: "/dashboard/orders", permanent: true },
+      { source: "/account/my-addresses", destination: "/dashboard/addresses", permanent: true },
+      { source: "/account/profile", destination: "/dashboard/profile", permanent: true },
+      { source: "/account/my-account", destination: "/dashboard/profile", permanent: true },
+      { source: "/account/notifications", destination: "/dashboard/preferences", permanent: true },
 
       // Order confirmation aliases.
       {
