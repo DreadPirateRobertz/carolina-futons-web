@@ -1,4 +1,16 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+// cfw-w4qr: google-reviews migrated to logError, which captures to
+// Sentry + awaits flush. Mock the @sentry/nextjs surface so tests
+// don't try to ship real events from the test runner AND so the
+// new logError-integration describe block below can assert on the
+// Sentry tag/level contract directly.
+const sentryCaptureException = vi.fn();
+const sentryFlush = vi.fn().mockResolvedValue(true);
+vi.mock("@sentry/nextjs", () => ({
+  captureException: (...args: unknown[]) => sentryCaptureException(...args),
+  flush: (timeoutMs?: number) => sentryFlush(timeoutMs),
+}));
 
 import {
   fetchGoogleReviews,
@@ -8,6 +20,11 @@ import {
   type GbpReviewsResponse,
 } from "@/lib/discovery/google-reviews";
 import { REVIEWS } from "@/lib/discovery/reviews";
+
+beforeEach(() => {
+  sentryCaptureException.mockReset();
+  sentryFlush.mockReset().mockResolvedValue(true);
+});
 
 function gbpReview(overrides: Partial<GbpReview> = {}): GbpReview {
   return {
@@ -242,5 +259,87 @@ describe("loadReviews", () => {
     expect(result.source).toBe("empty");
     expect(result.reviews).toEqual([]);
     errorSpy.mockRestore();
+  });
+});
+
+// cfw-w4qr: pins the logError integration after migrating away from
+// the prior `console.error("[google-reviews] load failed:", err)`
+// hand-rolled log line. A regression that drops the logError call
+// would silently lose Sentry visibility on production GBP outages.
+describe("loadReviews — logError integration on GBP fetch outage", () => {
+  it("captures the thrown error to Sentry via logError with scope='google-reviews' + op='load failed'", async () => {
+    const consoleSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const err = new Error("network down");
+    const fetchImpl = vi.fn(async () => {
+      throw err;
+    }) as unknown as typeof fetch;
+
+    await loadReviews({
+      fetchImpl,
+      env: {
+        NODE_ENV: "production",
+        GBP_ACCESS_TOKEN: "tok",
+        GBP_ACCOUNT_ID: "acct",
+        GBP_LOCATION_ID: "loc",
+      },
+    });
+
+    expect(sentryCaptureException).toHaveBeenCalledTimes(1);
+    const [reportedErr, opts] = sentryCaptureException.mock.calls[0]!;
+    expect(reportedErr).toBe(err);
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "google-reviews",
+      op: "load failed",
+    });
+    expect((opts as { level: string }).level).toBe("error");
+    consoleSpy.mockRestore();
+  });
+
+  it("awaits Sentry.flush at the 2000ms ceiling (Vercel serverless guarantee)", async () => {
+    const consoleSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const fetchImpl = vi.fn(async () => {
+      throw new Error("network down");
+    }) as unknown as typeof fetch;
+
+    await loadReviews({
+      fetchImpl,
+      env: {
+        NODE_ENV: "production",
+        GBP_ACCESS_TOKEN: "tok",
+        GBP_ACCOUNT_ID: "acct",
+        GBP_LOCATION_ID: "loc",
+      },
+    });
+
+    expect(sentryFlush).toHaveBeenCalledTimes(1);
+    expect(sentryFlush).toHaveBeenCalledWith(2000);
+    consoleSpy.mockRestore();
+  });
+
+  it("does NOT call Sentry on the happy path (only on fetch failure)", async () => {
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ reviews: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+    ) as unknown as typeof fetch;
+
+    await loadReviews({
+      fetchImpl,
+      env: {
+        NODE_ENV: "production",
+        GBP_ACCESS_TOKEN: "tok",
+        GBP_ACCOUNT_ID: "acct",
+        GBP_LOCATION_ID: "loc",
+      },
+    });
+
+    expect(sentryCaptureException).not.toHaveBeenCalled();
+    expect(sentryFlush).not.toHaveBeenCalled();
   });
 });

@@ -1,3 +1,4 @@
+import { logError } from "@/lib/observability/log";
 import {
   REVIEWS,
   type Review,
@@ -177,7 +178,7 @@ export async function loadReviews(
     });
     return { ...result, source: "google", ok: true };
   } catch (err) {
-    console.error("[google-reviews] load failed:", err);
+    await logError("google-reviews", "load failed", err);
     return {
       reviews: [],
       averageRating: null,
