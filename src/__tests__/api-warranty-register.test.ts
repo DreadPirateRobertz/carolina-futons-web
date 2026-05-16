@@ -20,6 +20,11 @@ vi.mock("@/lib/warranty/warranty-registration", () => ({
   registerWarrantyForMember: (...args: unknown[]) => mockRegister(...args),
 }));
 
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/log", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 const VALID_SESSION = {
   tokens: {
     accessToken: { value: "a", expiresAt: 0 },
@@ -53,6 +58,7 @@ async function route() {
 beforeEach(() => {
   mockGetMemberSession.mockReset();
   mockRegister.mockReset();
+  mockLogError.mockClear();
 });
 
 describe("POST /api/warranty/register — auth", () => {
@@ -200,5 +206,45 @@ describe("POST /api/warranty/register — helper failure mapping", () => {
     const POST = await route();
     const res = await POST(makeRequest(VALID_BODY));
     expect(res.status).toBe(500);
+  });
+});
+
+// Logger migration (cfw-logger batch 18): the outer try/catch now
+// forwards unexpected throws to logError so 500-class failures land in
+// Sentry with source="warranty/register".
+describe("POST /api/warranty/register — logError migration", () => {
+  beforeEach(() => mockGetMemberSession.mockResolvedValue(VALID_SESSION));
+
+  it("calls logError with source='warranty/register' op='POST' when the handler throws", async () => {
+    const handlerErr = new Error("kaboom inside registerWarrantyForMember");
+    mockRegister.mockRejectedValueOnce(handlerErr);
+
+    const POST = await route();
+    await POST(makeRequest(VALID_BODY));
+
+    expect(mockLogError).toHaveBeenCalledTimes(1);
+    const [source, op, err] = mockLogError.mock.calls[0];
+    expect(source).toBe("warranty/register");
+    expect(op).toBe("POST");
+    expect(err).toBe(handlerErr);
+  });
+
+  it("returns the user-facing 500 body even though logError fires", async () => {
+    mockRegister.mockRejectedValueOnce(new Error("boom"));
+    const POST = await route();
+    const res = await POST(makeRequest(VALID_BODY));
+    expect(res.status).toBe(500);
+    const data = (await res.json()) as { ok: boolean; error: string };
+    expect(data.ok).toBe(false);
+    expect(data.error).toMatch(/unexpected/i);
+  });
+
+  it("does NOT call logError on the 400 validation path (handled, not Sentry-worthy)", async () => {
+    const POST = await route();
+    const res = await POST(
+      makeRequest({ ...VALID_BODY, productId: undefined }),
+    );
+    expect(res.status).toBe(400);
+    expect(mockLogError).not.toHaveBeenCalled();
   });
 });
