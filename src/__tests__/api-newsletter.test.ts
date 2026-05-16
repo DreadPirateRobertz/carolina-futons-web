@@ -166,12 +166,19 @@ describe("POST /api/newsletter — PII redaction in logs (cfw-t22e)", () => {
     const res = await POST(makePost({ email: "leak-me@example.com" }));
 
     expect(res.status).toBe(429);
-    const warned = warn.mock.calls
+    // cfw-d2vn: migrated to logWarn — shape is now
+    // console.warn("[api/newsletter] rate-limited", err, { emailHash }).
+    const serialized = JSON.stringify(
+      warn.mock.calls.flat().map((arg) =>
+        arg instanceof Error ? arg.message : arg,
+      ),
+    );
+    expect(serialized).not.toContain("leak-me@example.com");
+    expect(serialized).toMatch(/[0-9a-f]{12}/);
+    const stringArgs = warn.mock.calls
       .flat()
-      .filter((arg): arg is string => typeof arg === "string")
-      .join(" ");
-    expect(warned).not.toContain("leak-me@example.com");
-    expect(warned).toMatch(/\[api\/newsletter\] rate-limited:.*[0-9a-f]{12}/);
+      .filter((arg): arg is string => typeof arg === "string");
+    expect(stringArgs[0]).toBe("[api/newsletter] rate-limited");
     warn.mockRestore();
   });
 });
@@ -238,16 +245,25 @@ describe("POST /api/newsletter — logError integration", () => {
     errSpy.mockRestore();
   });
 
-  it("rate-limit (NewsletterRateLimitError) does NOT call Sentry — user-induced traffic", async () => {
+  it("rate-limit (NewsletterRateLimitError) → captures Sentry at level='warning' (NOT 'error') — keeps trend signal without paging on-call", async () => {
     mockUpsert.mockRejectedValue(new NewsletterRateLimitError());
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     const res = await POST(makePost({ email: "user@example.com" }));
 
     expect(res.status).toBe(429);
-    // Rate limit floods would drown the dashboard if every spammer's
-    // hammering surfaced as a Sentry event.
-    expect(sentryCaptureException).not.toHaveBeenCalled();
+    // cfw-d2vn: migrated console.warn → logWarn. Rate limits now
+    // surface to Sentry at level='warning' so the trend is visible
+    // on the dashboard, but Sentry alert routing filters on
+    // level='error' so on-call doesn't get paged on user-induced
+    // traffic.
+    expect(sentryCaptureException).toHaveBeenCalledTimes(1);
+    const [, opts] = sentryCaptureException.mock.calls[0]!;
+    expect((opts as { level: string }).level).toBe("warning");
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "api/newsletter",
+      op: "rate-limited",
+    });
     warn.mockRestore();
   });
 
