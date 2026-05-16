@@ -107,8 +107,9 @@ describe("SpringSalePage", () => {
 });
 
 describe("SpringSalePage — metadata", () => {
-  it("exports a Spring-Sale-specific title + description", async () => {
-    const { metadata } = await import("@/app/spring-sale/page");
+  it("generateMetadata returns a Spring-Sale-specific title + description", async () => {
+    const { generateMetadata } = await import("@/app/spring-sale/page");
+    const metadata = await generateMetadata();
     expect(metadata.title as string).toMatch(/spring sale/i);
     expect((metadata.description as string).length).toBeGreaterThan(40);
   });
