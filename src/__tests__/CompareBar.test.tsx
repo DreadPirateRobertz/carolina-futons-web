@@ -1,14 +1,24 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { CompareBar } from "@/components/compare/CompareBar";
 import * as compareState from "@/lib/product/compare-state";
 
+// cf-369: CompareBar reads usePathname() to hide on /compare. Default mock
+// returns a non-/compare path; tests that exercise the /compare-hide path
+// override the mock per-test.
+const mockPathname = vi.fn(() => "/shop/futon-frames");
+vi.mock("next/navigation", () => ({
+  usePathname: () => mockPathname(),
+}));
+
 beforeEach(() => {
   localStorage.clear();
+  mockPathname.mockReturnValue("/shop/futon-frames");
 });
 
 afterEach(() => {
   localStorage.clear();
+  vi.clearAllMocks();
 });
 
 describe("CompareBar", () => {
@@ -55,6 +65,60 @@ describe("CompareBar", () => {
       "href",
       "/compare?slugs=kingston-futon-frame,sedona-futon-frame",
     );
+  });
+
+  // cf-369 (cf-ruhm.6): COMPARE_MIN gate + hide-on-/compare
+  describe("cf-369: COMPARE_MIN gate", () => {
+    it("disables the Compare CTA when only 1 slug is selected (< COMPARE_MIN)", () => {
+      compareState.setCompareSlugs(["kingston-futon-frame"]);
+      render(<CompareBar />);
+      // Disabled state has no <a> link; it's a span with aria-disabled.
+      expect(screen.queryByRole("link", { name: /compare/i })).toBeNull();
+      const disabled = screen.getByTestId("compare-bar-compare-disabled");
+      expect(disabled.getAttribute("aria-disabled")).toBe("true");
+    });
+
+    it("shows the 'add N more' hint when below COMPARE_MIN", () => {
+      compareState.setCompareSlugs(["kingston-futon-frame"]);
+      render(<CompareBar />);
+      const hint = screen.getByTestId("compare-bar-hint");
+      expect(hint.textContent).toMatch(/add 1 more/i);
+    });
+
+    it("enables the Compare CTA at COMPARE_MIN (2 slugs)", () => {
+      compareState.setCompareSlugs(["a", "b"]);
+      render(<CompareBar />);
+      expect(screen.getByRole("link", { name: /compare/i })).toBeInTheDocument();
+      expect(screen.queryByTestId("compare-bar-compare-disabled")).toBeNull();
+      expect(screen.queryByTestId("compare-bar-hint")).toBeNull();
+    });
+
+    it("data-enough-to-compare reflects the gate state for styling/tests", () => {
+      compareState.setCompareSlugs(["kingston-futon-frame"]);
+      const { rerender } = render(<CompareBar />);
+      expect(screen.getByTestId("compare-bar").getAttribute("data-enough-to-compare")).toBe("false");
+      act(() => {
+        compareState.setCompareSlugs(["a", "b"]);
+      });
+      rerender(<CompareBar />);
+      expect(screen.getByTestId("compare-bar").getAttribute("data-enough-to-compare")).toBe("true");
+    });
+  });
+
+  describe("cf-369: hide on /compare", () => {
+    it("renders nothing when pathname is /compare (redundant with the page itself)", () => {
+      mockPathname.mockReturnValue("/compare");
+      compareState.setCompareSlugs(["a", "b"]);
+      const { container } = render(<CompareBar />);
+      expect(container.firstChild).toBeNull();
+    });
+
+    it("still renders on /compare-adjacent paths (e.g. /compare-noindex would be a real route)", () => {
+      mockPathname.mockReturnValue("/shop/futon-frames");
+      compareState.setCompareSlugs(["a", "b"]);
+      render(<CompareBar />);
+      expect(screen.getByTestId("compare-bar")).toBeInTheDocument();
+    });
   });
 
   it("clear button resets localStorage and hides bar", () => {
