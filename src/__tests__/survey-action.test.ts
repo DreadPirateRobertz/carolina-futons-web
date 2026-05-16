@@ -15,6 +15,14 @@ import {
   vi,
 } from "vitest";
 
+// cfw-logger migration: submitSurvey's three console.error sites
+// route through logError. Mock it so the contract tests can assert
+// without firing real Sentry events.
+const logErrorMock = vi.fn();
+vi.mock("@/lib/logger", () => ({
+  logError: (...args: unknown[]) => logErrorMock(...args),
+}));
+
 import { submitSurvey } from "@/app/actions/survey";
 import { initialSurveyActionState } from "@/app/survey/survey-state";
 
@@ -25,6 +33,7 @@ beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   fetchMock.mockReset();
   consoleError.mockClear();
+  logErrorMock.mockReset();
   vi.stubEnv("WIX_VELO_SITE_URL", "https://www.carolinafutons.com");
 });
 
@@ -102,8 +111,10 @@ describe("submitSurvey — WIX_VELO_SITE_URL handling", () => {
       error: "Couldn't save your response — please try again shortly.",
     });
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(consoleError).toHaveBeenCalledWith(
-      "[survey] WIX_VELO_SITE_URL not set",
+    // Observability now routes through logError (cfw-logger migration).
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "survey",
+      "WIX_VELO_SITE_URL not set",
     );
   });
 
@@ -204,7 +215,11 @@ describe("submitSurvey — response handling", () => {
         status: "error",
         error: "Couldn't save your response — please try again shortly.",
       });
-      expect(consoleError).toHaveBeenCalledWith("[survey] Velo responded", status);
+      expect(logErrorMock).toHaveBeenCalledWith(
+        "survey",
+        "Velo responded with non-ok status",
+        { status },
+      );
     },
   );
 
@@ -217,9 +232,41 @@ describe("submitSurvey — response handling", () => {
       status: "error",
       error: "Couldn't save your response — please try again shortly.",
     });
-    expect(consoleError).toHaveBeenCalledWith(
-      "[survey] fetch failed:",
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "survey",
+      "fetch failed",
       expect.any(TypeError),
     );
+  });
+});
+
+// cfw-logger migration: 3 dedicated contract tests pinning the
+// logError shape per call site (config-missing / non-ok status /
+// caught Error). Complements the migrated existing tests above.
+describe("submitSurvey — logError observability", () => {
+  it("config-missing branch tags scope='survey' with no payload", async () => {
+    vi.stubEnv("WIX_VELO_SITE_URL", "");
+    await submitSurvey(IDLE, fd({ score: "8" }));
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "survey",
+      "WIX_VELO_SITE_URL not set",
+    );
+  });
+
+  it("non-ok-status branch sends a { status } payload", async () => {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 502 }));
+    await submitSurvey(IDLE, fd({ score: "8" }));
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "survey",
+      "Velo responded with non-ok status",
+      { status: 502 },
+    );
+  });
+
+  it("fetch-throw branch passes the Error instance directly", async () => {
+    const err = new TypeError("fetch failed");
+    fetchMock.mockRejectedValueOnce(err);
+    await submitSurvey(IDLE, fd({ score: "8" }));
+    expect(logErrorMock).toHaveBeenCalledWith("survey", "fetch failed", err);
   });
 });
