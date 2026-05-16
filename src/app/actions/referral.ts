@@ -1,6 +1,7 @@
 "use server";
 
 import { getMemberSession, withMember } from "@/lib/auth/member";
+import { logError } from "@/lib/observability/log";
 import { callVelo } from "@/lib/wix/velo-client";
 
 const r = (method: string) => `referralService/${method}`;
@@ -33,7 +34,7 @@ export async function getMyReferralCodeAction(): Promise<
     }
     return { success: true, code: res.code };
   } catch (err) {
-    console.error("[referral] getMyReferralCodeAction failed:", err);
+    await logError("referral", "getMyReferralCodeAction failed", err);
     return { success: false, error: "Could not load referral code. Please try again." };
   }
 }
@@ -54,7 +55,7 @@ export async function getMyReferralStatsAction(): Promise<
     }
     return { success: true, stats: res.stats };
   } catch (err) {
-    console.error("[referral] getMyReferralStatsAction failed:", err);
+    await logError("referral", "getMyReferralStatsAction failed", err);
     return { success: false, error: "Could not load stats. Please try again." };
   }
 }
@@ -72,7 +73,7 @@ export async function getReferralByCodeAction(code: string): Promise<
     }
     return { success: true, referral: res.referral };
   } catch (err) {
-    console.error("[referral] getReferralByCodeAction failed:", err);
+    await logError("referral", "getReferralByCodeAction failed", err);
     return { success: false, error: "Could not validate referral link." };
   }
 }
@@ -86,8 +87,8 @@ export async function claimReferralAction(
       args: [code],
       accessToken: m.accessToken,
     }),
-  ).catch((err) => {
-    console.error("[referral] claimReferralAction failed:", err);
+  ).catch(async (err) => {
+    await logError("referral", "claimReferralAction failed", err);
     return { success: false, error: "Could not apply referral. Please try again." };
   });
 }

@@ -16,9 +16,24 @@ vi.mock("@/lib/newsletter/newsletter-store", async (importOriginal) => {
   return { ...actual, upsertSubscriber: storeMocks.upsertSubscriber };
 });
 
+// cfw-2nqq: upsertSubscriber catch now routes through logError →
+// Sentry. Mock @sentry/nextjs so the runner doesn't ship events AND
+// the new logError-integration tests can assert on (scope, op) tags +
+// the emailHash extra (cfw-coc PII-redaction pattern preserved).
+const sentryMocks = vi.hoisted(() => ({
+  captureException: vi.fn(),
+  flush: vi.fn().mockResolvedValue(true),
+}));
+vi.mock("@sentry/nextjs", () => ({
+  captureException: sentryMocks.captureException,
+  flush: sentryMocks.flush,
+}));
+
 beforeEach(() => {
   storeMocks.upsertSubscriber.mockReset();
   storeMocks.upsertSubscriber.mockResolvedValue({ created: true });
+  sentryMocks.captureException.mockReset();
+  sentryMocks.flush.mockReset().mockResolvedValue(true);
 });
 
 function fd(fields: Record<string, string>): FormData {
@@ -141,5 +156,86 @@ describe("subscribeToNewsletter — PII redaction in logs (cfw-coc)", () => {
   afterEach(() => {
     if (ORIGINAL_SALT === undefined) delete process.env.LOG_PII_SALT;
     else process.env.LOG_PII_SALT = ORIGINAL_SALT;
+  });
+});
+
+// cfw-2nqq: pin logError integration on the upsertSubscriber catch.
+// PII redaction is part of the contract — the email itself MUST NOT
+// flow to Sentry; only its hash. This is the cfw-coc compliance
+// pattern that was previously in console.error; the migration must
+// preserve it.
+describe("subscribeToNewsletter — logError integration on upsertSubscriber throw", () => {
+  it("captures with scope='newsletter' + op='upsertSubscriber failed' + emailHash (NOT raw email) in extra", async () => {
+    const thrown = new Error("store write 500");
+    storeMocks.upsertSubscriber.mockRejectedValueOnce(thrown);
+    const { subscribeToNewsletter } = await import(
+      "@/app/newsletter/actions"
+    );
+
+    const result = await subscribeToNewsletter(
+      null,
+      fd({ email: "brenda@carolinafutons.com" }),
+    );
+
+    // User-visible error preserved.
+    expect(result.status).toBe("error");
+
+    expect(sentryMocks.captureException).toHaveBeenCalledTimes(1);
+    const [reportedErr, opts] = sentryMocks.captureException.mock.calls[0]!;
+    expect(reportedErr).toBe(thrown);
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "newsletter",
+      op: "upsertSubscriber failed",
+    });
+
+    // PII: raw email MUST NOT appear in extra. The hash MUST be a
+    // non-empty string distinct from the email.
+    const extra = (
+      opts as { extra: { emailHash?: string } }
+    ).extra;
+    expect(extra?.emailHash).toBeDefined();
+    expect(extra?.emailHash).not.toContain("brenda@carolinafutons.com");
+    expect(typeof extra?.emailHash).toBe("string");
+    expect((extra?.emailHash ?? "").length).toBeGreaterThan(0);
+
+    expect(sentryMocks.flush).toHaveBeenCalledWith(2000);
+  });
+
+  it("rate-limit error (NewsletterRateLimitError) does NOT call Sentry — it's user-induced traffic", async () => {
+    // Import the class so we can construct it.
+    const { NewsletterRateLimitError } = await import(
+      "@/lib/newsletter/newsletter-store"
+    );
+    storeMocks.upsertSubscriber.mockRejectedValueOnce(
+      new NewsletterRateLimitError(),
+    );
+    const { subscribeToNewsletter } = await import(
+      "@/app/newsletter/actions"
+    );
+
+    const result = await subscribeToNewsletter(
+      null,
+      fd({ email: "brenda@carolinafutons.com" }),
+    );
+
+    expect(result.status).toBe("error");
+    // Rate limits are a user-induced state; would drown the dashboard
+    // if every spammer's hammering surfaced as a Sentry event.
+    expect(sentryMocks.captureException).not.toHaveBeenCalled();
+  });
+
+  it("happy path does NOT call Sentry", async () => {
+    storeMocks.upsertSubscriber.mockResolvedValueOnce({ created: true });
+    const { subscribeToNewsletter } = await import(
+      "@/app/newsletter/actions"
+    );
+
+    const result = await subscribeToNewsletter(
+      null,
+      fd({ email: "brenda@carolinafutons.com" }),
+    );
+
+    expect(result.status).toBe("success");
+    expect(sentryMocks.captureException).not.toHaveBeenCalled();
   });
 });

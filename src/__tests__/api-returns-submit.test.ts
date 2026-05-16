@@ -10,6 +10,16 @@ import { NextRequest } from "next/server";
 
 vi.mock("server-only", () => ({}));
 
+// cfw-yidm: route catch now routes through logError → Sentry. Mock
+// @sentry/nextjs so the runner doesn't ship events AND the new
+// logError-integration describe below can assert (scope, op) tags.
+const sentryCaptureException = vi.fn();
+const sentryFlush = vi.fn().mockResolvedValue(true);
+vi.mock("@sentry/nextjs", () => ({
+  captureException: (...args: unknown[]) => sentryCaptureException(...args),
+  flush: (timeoutMs?: number) => sentryFlush(timeoutMs),
+}));
+
 const mockSubmit = vi.fn();
 vi.mock("@/lib/returns/return-submission", () => ({
   submitGuestReturn: (...args: unknown[]) => mockSubmit(...args),
@@ -38,6 +48,8 @@ async function route() {
 
 beforeEach(() => {
   mockSubmit.mockReset();
+  sentryCaptureException.mockReset();
+  sentryFlush.mockReset().mockResolvedValue(true);
 });
 
 describe("POST /api/returns/submit — body validation (no helper call)", () => {
@@ -194,8 +206,84 @@ describe("POST /api/returns/submit — helper failure mapping", () => {
 
   it("returns 500 when the helper throws unexpectedly", async () => {
     mockSubmit.mockRejectedValueOnce(new Error("boom"));
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const POST = await route();
     const res = await POST(makeRequest(VALID_BODY));
     expect(res.status).toBe(500);
+    consoleSpy.mockRestore();
+  });
+});
+
+// cfw-yidm: pin logError integration on the route's catch. A guest
+// returns submission silently 500'ing was previously invisible to ops
+// — the buyer sees "Unexpected error" and walks away. Sentry now
+// captures it so customer-success can reach out before the buyer
+// churns.
+describe("POST /api/returns/submit — logError integration on unexpected helper throw", () => {
+  it("captures with scope='/api/returns/submit' + op='unexpected error' + flush(2000)", async () => {
+    const thrown = new Error("downstream helper boom");
+    mockSubmit.mockRejectedValueOnce(thrown);
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const POST = await route();
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(500);
+    const json = (await res.json()) as { ok: boolean; error: string };
+    expect(json.ok).toBe(false);
+    expect(json.error).toMatch(/unexpected/i);
+
+    expect(sentryCaptureException).toHaveBeenCalledTimes(1);
+    const [reportedErr, opts] = sentryCaptureException.mock.calls[0]!;
+    expect(reportedErr).toBe(thrown);
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "/api/returns/submit",
+      op: "unexpected error",
+    });
+    expect((opts as { level: string }).level).toBe("error");
+    expect(sentryFlush).toHaveBeenCalledWith(2000);
+    consoleSpy.mockRestore();
+  });
+
+  it("happy-path (helper resolves ok:true) does NOT call Sentry", async () => {
+    mockSubmit.mockResolvedValueOnce({
+      ok: true,
+      rmaNumber: "RMA-1",
+      returnId: "RET-1",
+    });
+
+    const POST = await route();
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(200);
+    expect(sentryCaptureException).not.toHaveBeenCalled();
+    expect(sentryFlush).not.toHaveBeenCalled();
+  });
+
+  it("ok:false soft-fail (helper returns wix_error → 502) does NOT call Sentry — that's the documented graceful-fail path, not a throw", async () => {
+    mockSubmit.mockResolvedValueOnce({
+      ok: false,
+      reason: "wix_error",
+      status: 502,
+    });
+
+    const POST = await route();
+    const res = await POST(makeRequest(VALID_BODY));
+
+    expect(res.status).toBe(502);
+    // The route surfaces 502 to the client but does NOT log to Sentry
+    // for the soft-fail return — the helper has its own internal
+    // Sentry capture for the Wix call. Double-logging would
+    // double-count outages.
+    expect(sentryCaptureException).not.toHaveBeenCalled();
+  });
+
+  it("validation 400 (no helper call) does NOT call Sentry — user input, not an outage", async () => {
+    const POST = await route();
+    const res = await POST(makeRequest({ ...VALID_BODY, email: "" }));
+
+    expect(res.status).toBe(400);
+    expect(mockSubmit).not.toHaveBeenCalled();
+    expect(sentryCaptureException).not.toHaveBeenCalled();
   });
 });

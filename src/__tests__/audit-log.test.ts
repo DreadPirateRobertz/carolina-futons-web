@@ -9,6 +9,17 @@ import type { Tokens } from "@wix/sdk";
 
 vi.mock("server-only", () => ({}));
 
+// cfw-e1pl: recordOwnerEdit's Wix-outage catch path now routes through
+// logError → Sentry. Mock the @sentry/nextjs surface so the test runner
+// doesn't ship real events AND the new logError-integration cases below
+// can assert on the (scope, op, extra) tags.
+const sentryCaptureException = vi.fn();
+const sentryFlush = vi.fn().mockResolvedValue(true);
+vi.mock("@sentry/nextjs", () => ({
+  captureException: (...args: unknown[]) => sentryCaptureException(...args),
+  flush: (timeoutMs?: number) => sentryFlush(timeoutMs),
+}));
+
 const itemsSave = vi.fn();
 const itemsFind = vi.fn();
 const itemsLimit = vi.fn(() => ({ find: itemsFind }));
@@ -132,8 +143,16 @@ describe("recordOwnerEdit — best-effort contract", () => {
       reason: "wix_outage",
       error: "Wix down",
     });
+    // cfw-e1pl: the log line moved from a single console.error string to
+    // logError("[audit-log] ... failed to record entry", err, { action, target }).
+    // logError still calls console.error under the hood with the "[scope]
+    // message" prefix; the action/target context that USED to be in that
+    // string now flows through Sentry `extra` instead. Assertion narrowed
+    // to the new prefix shape.
     expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining("[audit-log] failed to record edit on k"),
+      expect.stringContaining("[audit-log] failed to record entry"),
+      expect.anything(),
+      expect.objectContaining({ action: "edit", target: "k" }),
     );
     consoleSpy.mockRestore();
   });
@@ -205,5 +224,91 @@ describe("readOwnerAuditLog — cfw-xlv", () => {
     const result = await readOwnerAuditLog();
     expect(result.ok).toBe(false);
     if (result.ok === false) expect(result.error).toBe("string error");
+  });
+});
+
+// cfw-e1pl: pin the logError integration on recordOwnerEdit's
+// best-effort catch. Wix's items.save can fail (network blip,
+// collection unprovisioned, permission denied) — the audit write
+// must NOT throw to the caller (it's best-effort), but it MUST
+// surface to Sentry so a silent audit-trail outage is visible to
+// ops. Pre-migration, this lived in `console.error("[audit-log]
+// failed to record ${action} on ${target}: ${message}")` — stdout
+// only, no Sentry. The migration moves action+target into Sentry
+// `extra` so dashboards can filter by either.
+describe("recordOwnerEdit — logError integration on Wix outage", () => {
+  it("captures with scope='audit-log' + op='failed to record entry' + extra={action, target}", async () => {
+    const err = new Error("wix items.save 502");
+    itemsSave.mockRejectedValueOnce(err);
+
+    const result = await recordOwnerEdit(
+      {
+        actorEmail: "brenda@x.com",
+        action: "edit",
+        target: "footer.tagline",
+        before: "old",
+        after: "new",
+      },
+      tokens,
+    );
+
+    expect(result.ok).toBe(false);
+    if (result.ok === false) {
+      expect(result.reason).toBe("wix_outage");
+      expect(result.error).toBe("wix items.save 502");
+    }
+
+    expect(sentryCaptureException).toHaveBeenCalledTimes(1);
+    const [reportedErr, opts] = sentryCaptureException.mock.calls[0]!;
+    expect(reportedErr).toBe(err);
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "audit-log",
+      op: "failed to record entry",
+    });
+    expect((opts as { extra: { action: string; target: string } }).extra).toEqual({
+      action: "edit",
+      target: "footer.tagline",
+    });
+    expect(sentryFlush).toHaveBeenCalledWith(2000);
+  });
+
+  it("happy path (Wix save succeeds) does NOT call Sentry", async () => {
+    await recordOwnerEdit(
+      {
+        actorEmail: "brenda@x.com",
+        action: "edit",
+        target: "footer.tagline",
+        before: "old",
+        after: "new",
+      },
+      tokens,
+    );
+
+    expect(sentryCaptureException).not.toHaveBeenCalled();
+    expect(sentryFlush).not.toHaveBeenCalled();
+  });
+
+  it("preserves the per-action context in Sentry — 'upload' and 'swap' surface separately from 'edit'", async () => {
+    const err = new Error("wix down");
+    // 'upload' action
+    itemsSave.mockRejectedValueOnce(err);
+    await recordOwnerEdit(
+      {
+        actorEmail: "brenda@x.com",
+        action: "upload",
+        target: "p-kingston",
+        before: "",
+        after: "wix:image://v1/abc/hero.jpg",
+      },
+      tokens,
+    );
+    const uploadCall = sentryCaptureException.mock.calls.find(
+      ([, opts]) =>
+        (opts as { extra?: { action?: string } }).extra?.action === "upload",
+    );
+    expect(uploadCall).toBeDefined();
+    expect(
+      (uploadCall![1] as { extra: { target: string } }).extra.target,
+    ).toBe("p-kingston");
   });
 });
