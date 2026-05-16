@@ -1,6 +1,7 @@
 "use server";
 
 import type { SurveyActionState } from "@/app/survey/survey-state";
+import { logError } from "@/lib/log";
 
 const FETCH_TIMEOUT_MS = 8_000;
 const GENERIC_ERROR = "Couldn't save your response — please try again shortly.";
@@ -19,7 +20,11 @@ export async function submitSurvey(
 
   const base = process.env.WIX_VELO_SITE_URL;
   if (!base) {
-    console.error("[survey] WIX_VELO_SITE_URL not set");
+    await logError(
+      "survey",
+      "config",
+      new Error("WIX_VELO_SITE_URL env not set"),
+    );
     return { status: "error", error: GENERIC_ERROR };
   }
 
@@ -35,12 +40,16 @@ export async function submitSurvey(
       },
     );
     if (!res.ok) {
-      console.error("[survey] Velo responded", res.status);
+      await logError(
+        "survey",
+        "submitSurvey.non-ok",
+        new Error(`Velo responded HTTP ${res.status}`),
+      );
       return { status: "error", error: GENERIC_ERROR };
     }
     return { status: "success" };
   } catch (err) {
-    console.error("[survey] fetch failed:", err);
+    await logError("survey", "submitSurvey.fetch", err);
     return { status: "error", error: GENERIC_ERROR };
   }
 }
