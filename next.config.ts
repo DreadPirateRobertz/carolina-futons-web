@@ -133,6 +133,13 @@ const nextConfig: NextConfig = {
       { source: "/account/profile", destination: "/dashboard/profile", permanent: true },
       { source: "/account/my-account", destination: "/dashboard/profile", permanent: true },
       { source: "/account/notifications", destination: "/dashboard/preferences", permanent: true },
+      // cf-ajvr (cf-ruhm-w3.4): /account/my-subscriptions returns 200 on
+      // Wix prod (Wix Members default surface). cfw has no equivalent route,
+      // so without this redirect old bookmarks + marketing emails 404.
+      // Lands at /dashboard since cfw doesn't surface a subscriptions tab —
+      // cf-sub1 tracks the product-alignment decision about whether to
+      // build the feature.
+      { source: "/account/my-subscriptions", destination: "/dashboard", permanent: true },
 
       // Order confirmation aliases.
       {

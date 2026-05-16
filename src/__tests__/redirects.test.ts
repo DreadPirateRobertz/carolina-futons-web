@@ -170,6 +170,18 @@ describe("next.config redirects (cf-9eh / cf-ruhm-w3.1) — member-dashboard URL
     });
   });
 
+  it("cf-ajvr (cf-ruhm-w3.4): /account/my-subscriptions → /dashboard (308 permanent)", async () => {
+    const redirects = await nextConfig.redirects!();
+    const bySource = Object.fromEntries(redirects.map((r) => [r.source, r]));
+    const rule = bySource["/account/my-subscriptions"];
+    expect(
+      rule,
+      "/account/my-subscriptions must redirect (Wix prod surface; cfw 404s without this rule)",
+    ).toBeDefined();
+    expect(rule.destination).toBe("/dashboard");
+    expect(rule.permanent).toBe(true);
+  });
+
   it("flips cf-3qt.7.1 destinations from /account (404 on cfw) to /dashboard", async () => {
     const redirects = await nextConfig.redirects!();
     const bySource = Object.fromEntries(redirects.map((r) => [r.source, r]));
