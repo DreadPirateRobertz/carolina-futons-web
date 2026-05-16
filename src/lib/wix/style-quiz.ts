@@ -1,4 +1,5 @@
 import { callVelo, VeloRpcError } from "@/lib/wix/velo-client";
+import { logError } from "@/lib/log";
 
 export type QuizOption = {
   value: string;
@@ -88,7 +89,7 @@ export async function getQuizRecommendations(
       args: [answers],
     });
   } catch (err) {
-    console.error("[styleQuiz] getQuizRecommendations failed:", err);
+    await logError("style-quiz", "getQuizRecommendations", err);
     return [];
   }
 }
@@ -103,13 +104,12 @@ export async function captureQuizLead(
       args: [email, partialAnswers],
     });
   } catch (err) {
-    if (err instanceof VeloRpcError) {
-      console.error(
-        `[styleQuiz] captureQuizLead rpc failed: HTTP ${err.status}`,
-      );
-    } else {
-      console.error("[styleQuiz] captureQuizLead failed:", err);
-    }
+    // Preserve the existing VeloRpcError split — the HTTP status is the
+    // useful field, the rest of the error body would just be noise.
+    // logError captures both branches; the err.message keeps the HTTP
+    // status visible in the Sentry payload for the rpc-error branch.
+    const op = err instanceof VeloRpcError ? "captureQuizLead.rpc" : "captureQuizLead";
+    await logError("style-quiz", op, err);
     return { success: false };
   }
 }
@@ -123,7 +123,7 @@ export async function getPersonalizedCopy(
       args: [answers],
     });
   } catch (err) {
-    console.error("[styleQuiz] getPersonalizedCopy failed:", err);
+    await logError("style-quiz", "getPersonalizedCopy", err);
     return { copy: "", profileType: "style" };
   }
 }

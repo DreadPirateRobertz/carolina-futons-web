@@ -12,8 +12,14 @@ vi.mock("@/lib/wix/velo-client", async () => {
   return { ...actual, callVelo: veloMocks.callVelo };
 });
 
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/log", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 beforeEach(() => {
   veloMocks.callVelo.mockReset();
+  mockLogError.mockClear();
 });
 
 describe("getQuizOptions", () => {
@@ -95,12 +101,42 @@ describe("captureQuizLead", () => {
     veloMocks.callVelo.mockRejectedValueOnce(
       new VeloRpcError("styleQuiz/captureQuizLead", 429, "rate limited"),
     );
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { captureQuizLead } = await import("@/lib/wix/style-quiz");
     const result = await captureQuizLead("bad@example.com", {});
     expect(result).toEqual({ success: false });
-    expect(errSpy).toHaveBeenCalled();
-    errSpy.mockRestore();
+  });
+
+  // Logger migration (cfw-logger batch 11): the captureQuizLead catch
+  // forwards to logError with the source="style-quiz" tag. The op is
+  // split per branch — "captureQuizLead.rpc" for VeloRpcError (HTTP
+  // status was the useful field in the old log), "captureQuizLead" for
+  // everything else — so Sentry can group rpc-level failures.
+  it("calls logError with source='style-quiz' op='captureQuizLead.rpc' on VeloRpcError", async () => {
+    const { VeloRpcError } = await import("@/lib/wix/velo-client");
+    veloMocks.callVelo.mockRejectedValueOnce(
+      new VeloRpcError("styleQuiz/captureQuizLead", 429, "rate limited"),
+    );
+    const { captureQuizLead } = await import("@/lib/wix/style-quiz");
+    await captureQuizLead("bad@example.com", {});
+    expect(mockLogError).toHaveBeenCalledTimes(1);
+    const [source, op] = mockLogError.mock.calls[0];
+    expect(source).toBe("style-quiz");
+    expect(op).toBe("captureQuizLead.rpc");
+  });
+
+  it("calls logError with op='captureQuizLead' on generic (non-Velo) throw", async () => {
+    veloMocks.callVelo.mockRejectedValueOnce(new Error("network down"));
+    const { captureQuizLead } = await import("@/lib/wix/style-quiz");
+    await captureQuizLead("user@example.com", {});
+    expect(mockLogError).toHaveBeenCalledTimes(1);
+    expect(mockLogError.mock.calls[0][1]).toBe("captureQuizLead");
+  });
+
+  it("does NOT call logError on the success path", async () => {
+    veloMocks.callVelo.mockResolvedValueOnce({ success: true });
+    const { captureQuizLead } = await import("@/lib/wix/style-quiz");
+    await captureQuizLead("user@example.com", {});
+    expect(mockLogError).not.toHaveBeenCalled();
   });
 });
 
