@@ -47,3 +47,18 @@ describe("ShippingPage — rendering", () => {
     expect(container.querySelector("article")?.className).toMatch(/max-w-\[65ch\]/);
   });
 });
+
+describe("ShippingPage — JSON-LD (cfw-r0i)", () => {
+  it("emits a LocalBusiness JSON-LD <script> tag (mirrors Wix injectShippingSchema)", () => {
+    const { container } = render(<ShippingPage />);
+    const script = container.querySelector(
+      'script[type="application/ld+json"]#jsonld-shipping-localbusiness',
+    );
+    expect(script).not.toBeNull();
+    const json = JSON.parse(script!.textContent ?? "{}");
+    expect(json["@type"]).toBe("LocalBusiness");
+    expect(json["@context"]).toBe("https://schema.org");
+    expect(typeof json.name).toBe("string");
+    expect(json.name.length).toBeGreaterThan(0);
+  });
+});

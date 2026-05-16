@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 
 import { BUSINESS } from "@/lib/business/contact-info";
+import { JsonLd } from "@/components/seo/JsonLd";
+import {
+  buildLocalBusinessSchema,
+  resolveSiteUrl,
+} from "@/lib/seo/json-ld";
 
 export const metadata: Metadata = {
   title: "Shipping — Carolina Futons",
@@ -40,8 +45,17 @@ const SHIPPING_FAQS = [
 ];
 
 export default function ShippingPage() {
+  // cfw-r0i: emit LocalBusiness JSON-LD so Google's structured-data
+  // checker sees a business entity attached to the policy page (mirrors
+  // Wix Shipping Policy.js → injectShippingSchema → getBusinessSchema).
+  // Uses the same helper /visit emits, since both pages describe the
+  // same physical business.
+  const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+  const schema = buildLocalBusinessSchema(siteUrl);
+
   return (
     <main className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
+      <JsonLd id="jsonld-shipping-localbusiness" schema={schema} />
       <article className="mx-auto max-w-[65ch] space-y-8 font-source-sans text-cf-ink">
         <header className="space-y-3">
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
