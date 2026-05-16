@@ -6,6 +6,7 @@ import {
   type SpinActionState,
   type SpinPrize,
 } from "@/app/spin/spin-state";
+import { logError } from "@/lib/log";
 
 const COOLDOWN_HOURS = 24;
 const COOLDOWN_MS = COOLDOWN_HOURS * 60 * 60 * 1000;
@@ -62,7 +63,11 @@ export async function spinWheel(
       cache: "no-store",
       signal: AbortSignal.timeout(5_000),
     }).catch((err) => {
-      console.error("[spin] recordSpinGrant failed (non-fatal):", err);
+      // Fire-and-forget — recordSpinGrant is non-fatal observability.
+      // logError handles the Sentry capture + flush; the outer `void`
+      // discards the returned promise so the spin action doesn't await
+      // Sentry flush on the happy path.
+      void logError("spin", "recordSpinGrant", err);
     });
   }
 
