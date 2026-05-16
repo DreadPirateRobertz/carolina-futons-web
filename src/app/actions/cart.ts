@@ -16,12 +16,24 @@ import {
 import { syncCartSession } from "@/lib/wix/cart-session-dual-write";
 import { logWixFailure } from "@/lib/wix/errors";
 
+// cfw-cja4: appliedCoupon is the cart-state.AppliedCoupon shape the CartProvider
+// reducer expects on hydrate / apply. Producers currently return undefined —
+// follow-up work (cf-5qv7.fu1?) will extract it from Wix cart.coupons[0] +
+// cart.couponDiscount totals. Marking optional now so the type matches the
+// reducer's hydrate-action shape and consumers (CartCouponEntry, CartHydrator)
+// can `if (result.appliedCoupon)` safely instead of typecheck-failing.
+type AppliedCouponShape = { code: string; discountCents: number };
+
 export type CartActionResult =
-  | { ok: true; cart: WixCart | null }
+  | { ok: true; cart: WixCart | null; appliedCoupon?: AppliedCouponShape }
   | { ok: false; error: string };
 
 export type HydrateCartResult =
-  | { ok: true; lines: CartLineItem[] }
+  | {
+      ok: true;
+      lines: CartLineItem[];
+      appliedCoupon?: AppliedCouponShape;
+    }
   | { ok: false; error: string };
 
 export async function addItemAction(
