@@ -90,6 +90,8 @@ These are **complete** and require no further work. Included for reference and t
 | `sustainability.trade-in.heading` | `"Trade-in program"` | `src/app/sustainability/page.tsx` | TRADE_IN_STEPS step content is structural repeater — excluded per §3 |
 | `sustainability.trade-in.subhead` | `"Give your old futon a second life…"` | `src/app/sustainability/page.tsx` | |
 | `sustainability.trade-in.cta-label` | `"Ask about trade-in"` | `src/app/sustainability/page.tsx` | |
+| `survey.heading` | `"How did we do?"` | `src/app/survey/page.tsx` | Both keys loaded in one `Promise.all` (cfw-wv1); `orderId` line is dynamic — excluded per §3 |
+| `survey.intro.body` | `"Your honest feedback helps us serve the next customer better. It takes less than a minute."` | `src/app/survey/page.tsx` | Static intro copy — `orderId` line is dynamic, excluded per §3 |
 | `social.url.facebook` | `"https://www.facebook.com/carolinafutons"` | `src/app/layout.tsx:136` | Key is `social.url.*` — NOT `footer.social.*-href` as proposed in §2f; cfw-66o.7 used the shorter namespace |
 | `social.url.instagram` | `"https://www.instagram.com/carolinafutons"` | `src/app/layout.tsx:137` | |
 | `social.url.tiktok` | `"https://www.tiktok.com/@carolinafutons"` | `src/app/layout.tsx:138` | |

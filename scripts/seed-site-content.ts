@@ -143,6 +143,10 @@ export const SEED_ROWS: SeedRow[] = [
   { key: "sustainability.trade-in.heading", value: "Trade-in program" },
   { key: "sustainability.trade-in.subhead", value: "Give your old futon a second life. Trade in your used furniture for store credit toward a new piece — we'll handle the pickup and responsible recycling." },
   { key: "sustainability.trade-in.cta-label", value: "Ask about trade-in" },
+
+  // ── cfw-wv1: Survey page copy (P2) ───────────────────────────────
+  { key: "survey.heading",    value: "How did we do?" },
+  { key: "survey.intro.body", value: "Your honest feedback helps us serve the next customer better. It takes less than a minute." },
 ];
 
 // ── Config ────────────────────────────────────────────────────────────
