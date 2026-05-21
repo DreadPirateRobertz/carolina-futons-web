@@ -11,7 +11,7 @@ import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 
 const STORAGE_KEY = "cf-promo-dismissed";
 const DELAY_MS = 3_000;
-const SALE_END_DATE = new Date("2026-05-12T00:00:00");
+const SALE_END_DATE = new Date("2026-12-31T00:00:00");
 const CTA_HREF = "/spring-sale";
 const PROMO_CODE = "SPRING25";
 
