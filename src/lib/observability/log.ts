@@ -73,6 +73,65 @@ export function logError(
   }
 }
 
+/**
+ * Log a non-fatal warning with a standard shape and forward to Sentry in
+ * production at `level: "warning"`. Drop-in replacement for
+ * `console.warn("[scope] msg", err)`.
+ *
+ * WHY a separate helper instead of a `level` param on logError: alert
+ * routing in Sentry filters on `level`. Errors page on-call; warnings
+ * surface to the dashboard for trend review only. Forcing the caller to
+ * choose the right helper avoids accidental escalation of expected signals
+ * (rate-limits, content-editor drift) into pager noise.
+ */
+export function logWarn(
+  scope: string,
+  message: string,
+  err?: unknown,
+  extra?: LogContext,
+): void {
+  const prefix = `[${scope}] ${message}`;
+  if (err !== undefined && extra !== undefined) {
+    console.warn(prefix, err, extra);
+  } else if (err !== undefined) {
+    console.warn(prefix, err);
+  } else if (extra !== undefined) {
+    console.warn(prefix, extra);
+  } else {
+    console.warn(prefix);
+  }
+  if (process.env.NODE_ENV === "production") {
+    forwardWarnToSentry(scope, message, prefix, err, extra);
+  }
+}
+
+async function forwardWarnToSentry(
+  scope: string,
+  op: string,
+  prefix: string,
+  err: unknown,
+  extra: LogContext | undefined,
+): Promise<void> {
+  try {
+    const sentry = await import("@sentry/nextjs");
+    const errorToCapture =
+      err instanceof Error
+        ? err
+        : new Error(
+            err === undefined
+              ? prefix
+              : `${prefix}: ${typeof err === "string" ? err : JSON.stringify(err)}`,
+          );
+    sentry.captureException(errorToCapture, {
+      level: "warning",
+      tags: { scope, op },
+      extra: extra ? { ...extra } : undefined,
+    });
+  } catch {
+    // Intentionally swallowed — see logError header comment.
+  }
+}
+
 async function forwardToSentry(
   prefix: string,
   err: unknown,

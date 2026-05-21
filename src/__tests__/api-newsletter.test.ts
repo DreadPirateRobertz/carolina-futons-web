@@ -153,12 +153,11 @@ describe("POST /api/newsletter — PII redaction in logs (cfw-t22e)", () => {
     const res = await POST(makePost({ email: "leak-me@example.com" }));
 
     expect(res.status).toBe(429);
-    const warned = warn.mock.calls
-      .flat()
-      .filter((arg): arg is string => typeof arg === "string")
-      .join(" ");
-    expect(warned).not.toContain("leak-me@example.com");
-    expect(warned).toMatch(/\[api\/newsletter\] rate-limited:.*[0-9a-f]{12}/);
+    // logWarn emits console.warn("[api/newsletter] rate-limited", { emailHash })
+    const serialized = JSON.stringify(warn.mock.calls.flat());
+    expect(serialized).not.toContain("leak-me@example.com");
+    expect(serialized).toMatch(/[0-9a-f]{12}/);
+    expect(warn.mock.calls[0]![0]).toBe("[api/newsletter] rate-limited");
     warn.mockRestore();
   });
 });
