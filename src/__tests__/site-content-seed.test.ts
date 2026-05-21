@@ -144,6 +144,19 @@ describe("provision-site-content seed-data.json", () => {
       "registry.heading",
       "registry.unauthenticated.body",
       "registry.intro.subhead",
+      // cfw-5yg: returns page copy
+      "returns.eyebrow",
+      "returns.intro.heading",
+      "returns.intro.body",
+      "returns.window.heading",
+      "returns.window.body",
+      "returns.restocking.heading",
+      "returns.restocking.body-1",
+      "returns.restocking.body-2",
+      "returns.custom.heading",
+      "returns.damaged.heading",
+      "returns.faq.heading",
+      "returns.start.heading",
     ];
     const seed = loadSeed();
     const keys = new Set(seed.rows.map((r) => r.key));
