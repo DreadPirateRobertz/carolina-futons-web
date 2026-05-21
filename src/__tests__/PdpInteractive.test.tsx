@@ -856,3 +856,77 @@ describe("PdpInteractive (cf-3qt.2.1 + 2.2 integration)", () => {
     });
   });
 });
+
+// cfw-o1g: PDP gallery hero enlarged to 7/12 cols, thumbnails below hero.
+describe("PdpInteractive — gallery layout (cfw-o1g)", () => {
+  it("outer grid uses 12 columns at lg+ so gallery can take 7/12", () => {
+    const { container } = render(
+      <PdpInteractive
+        {...baseProps}
+        productName="Kingston"
+        productOptions={[]}
+        variants={[]}
+        fallbackImageUrl="https://img/a.jpg"
+        fallbackPrice="$619"
+      />,
+    );
+    const grid = container.firstElementChild as HTMLElement;
+    expect(grid.className).toContain("lg:grid-cols-12");
+  });
+
+  it("media slot spans 7 of 12 columns at lg+", () => {
+    const { container } = render(
+      <PdpInteractive
+        {...baseProps}
+        productName="Kingston"
+        productOptions={[]}
+        variants={[]}
+        fallbackImageUrl="https://img/a.jpg"
+        fallbackPrice="$619"
+      />,
+    );
+    const media = container.querySelector('[data-slot="pdp-media"]') as HTMLElement;
+    expect(media.className).toContain("lg:col-span-7");
+  });
+
+  it("details slot spans 5 of 12 columns at lg+", () => {
+    const { container } = render(
+      <PdpInteractive
+        {...baseProps}
+        productName="Kingston"
+        productOptions={[]}
+        variants={[]}
+        fallbackImageUrl="https://img/a.jpg"
+        fallbackPrice="$619"
+      />,
+    );
+    const details = container.querySelector('[data-slot="pdp-details"]') as HTMLElement;
+    expect(details.className).toContain("lg:col-span-5");
+  });
+
+  it("gallery thumbnails appear below the main image in DOM order", () => {
+    const galleryImages = [
+      { url: "https://img/a.jpg", alt: "Front" },
+      { url: "https://img/b.jpg", alt: "Side" },
+    ];
+    const { container } = render(
+      <PdpInteractive
+        {...baseProps}
+        productName="Kingston"
+        productOptions={[]}
+        variants={[]}
+        fallbackImageUrl="https://img/a.jpg"
+        fallbackPrice="$619"
+        galleryImages={galleryImages}
+      />,
+    );
+    const gallery = container.querySelector('[data-slot="pdp-gallery"]')!;
+    const mainImage = gallery.querySelector('[data-testid="pdp-main-image"]')!;
+    const thumblist = gallery.querySelector('[role="tablist"]')!;
+    expect(mainImage).not.toBeNull();
+    expect(thumblist).not.toBeNull();
+    // Thumblist must follow the main image in the DOM (below, not to the left).
+    const pos = mainImage.compareDocumentPosition(thumblist);
+    expect(pos & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});

@@ -219,8 +219,8 @@ export function PdpInteractive({
   };
 
   return (
-    <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-      <div data-slot="pdp-media">
+    <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
+      <div data-slot="pdp-media" className="lg:col-span-7">
         {galleryImages && galleryImages.length > 0 ? (
           <PdpGallery
             images={galleryImages}
@@ -256,7 +256,7 @@ export function PdpInteractive({
           <div className="aspect-square w-full rounded-lg bg-cf-sand" />
         )}
       </div>
-      <div data-slot="pdp-details" className="space-y-6">
+      <div data-slot="pdp-details" className="lg:col-span-5 space-y-6">
         <h1 className="font-heading text-3xl font-semibold tracking-tight text-cf-espresso">
           {productName}
         </h1>
