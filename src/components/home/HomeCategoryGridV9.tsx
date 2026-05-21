@@ -98,7 +98,7 @@ export function HomeCategoryGridV9() {
 
         {/* 4-column card grid */}
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {CARDS.map((card) => (
+          {CARDS.map((card, i) => (
             <li key={card.num}>
               <Link
                 href={card.href}
@@ -113,6 +113,8 @@ export function HomeCategoryGridV9() {
                   fill
                   sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
                   className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+                  priority={i < 2}
+                  data-slot="card-bg-image"
                 />
 
                 {/* Dark gradient overlay */}
