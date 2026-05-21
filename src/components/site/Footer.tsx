@@ -107,11 +107,28 @@ function SocialIcon({ path, label }: { path: string; label: string }) {
 // copyright string (year placeholder included) instead of just the
 // "Carolina Futons..." trailer. {year} is substituted with the current
 // year at render so a single Wix CMS edit covers the whole line.
+type SocialUrls = {
+  facebook?: string;
+  instagram?: string;
+  tiktok?: string;
+  pinterest?: string;
+};
+
 type FooterProps = {
   tagline?: string;
   showroomHoursLabel?: string;
   copyrightLine?: string;
+  socialUrls?: SocialUrls;
 };
+
+function isSafeUrl(url: string): boolean {
+  try {
+    const { protocol } = new URL(url);
+    return protocol === "https:" || protocol === "http:";
+  } catch {
+    return false;
+  }
+}
 
 const DEFAULT_TAGLINE = "Quality futons since 1991";
 const DEFAULT_SHOWROOM_HOURS = "Showroom hours: Sun–Tue, 10am–5pm";
@@ -121,6 +138,7 @@ export function Footer({
   tagline = DEFAULT_TAGLINE,
   showroomHoursLabel = DEFAULT_SHOWROOM_HOURS,
   copyrightLine = DEFAULT_COPYRIGHT_LINE,
+  socialUrls = {},
 }: FooterProps = {}) {
   const prefersReducedMotion = useReducedMotion() ?? false;
 
@@ -174,10 +192,14 @@ export function Footer({
             </Link>
             <p className="max-w-xs text-sm text-cf-cream/80">{tagline}</p>
             <ul className="mt-2 flex items-center gap-3 text-cf-cream/80">
-              {FOOTER_SOCIALS.map((social) => (
+              {FOOTER_SOCIALS.map((social) => {
+                const key = social.name.toLowerCase() as keyof SocialUrls;
+                const candidate = socialUrls[key];
+                const href = (candidate && isSafeUrl(candidate)) ? candidate : social.href;
+                return (
                 <li key={social.name}>
                   <a
-                    href={social.href}
+                    href={href}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-cf-cream/20 transition-colors hover:border-cf-cream hover:text-cf-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-cf-footer-bg"
@@ -185,7 +207,8 @@ export function Footer({
                     <SocialIcon path={social.path} label={social.name} />
                   </a>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           </div>
 

@@ -105,6 +105,10 @@ export default async function RootLayout({
     footerTagline,
     footerShowroomHours,
     footerCopyrightLine,
+    socialFacebook,
+    socialInstagram,
+    socialTiktok,
+    socialPinterest,
     rotationMessage0,
     rotationMessage1,
     rotationMessage2,
@@ -128,6 +132,11 @@ export default async function RootLayout({
       "footer.copyright-line",
       "© {year} Carolina Futons. Hendersonville, NC.",
     ),
+    // cfw-66o.7: social link URLs — Brenda can update handles without a deploy.
+    getSiteContent("social.url.facebook", "https://www.facebook.com/carolinafutons"),
+    getSiteContent("social.url.instagram", "https://www.instagram.com/carolinafutons"),
+    getSiteContent("social.url.tiktok", "https://www.tiktok.com/@carolinafutons"),
+    getSiteContent("social.url.pinterest", "https://www.pinterest.com/carolinafutons"),
     // cf-xqc0: ROTATION_MESSAGES_DEFAULT / ROTATION_CTAS_DEFAULT are
     // value exports from a NON-"use client" module (announcement-
     // defaults.ts), so they're available to Server Components at SSR
@@ -235,6 +244,12 @@ export default async function RootLayout({
               tagline={footerTagline}
               showroomHoursLabel={footerShowroomHours}
               copyrightLine={footerCopyrightLine}
+              socialUrls={{
+                facebook: socialFacebook,
+                instagram: socialInstagram,
+                tiktok: socialTiktok,
+                pinterest: socialPinterest,
+              }}
             />
             <CartDrawer />
             <BackToTop />
