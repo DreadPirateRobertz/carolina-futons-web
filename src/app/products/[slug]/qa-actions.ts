@@ -10,7 +10,7 @@ import {
   maskName,
   validateQaInput,
 } from "@/lib/qa/qa-schema";
-import { insertProductQuestion, PRODUCT_QA_CACHE_TAG } from "@/lib/wix/product-qa";
+import { insertProductQuestion, getQaCacheTags } from "@/lib/wix/product-qa";
 import type { QaActionState } from "@/components/product/qa-state";
 
 const TRANSPORT_ERROR = "We couldn't save that — please try again.";
@@ -50,10 +50,7 @@ export async function submitQuestion(
   }
 
   try {
-    // Invalidate slug-specific cache first, then the generic tag so bulk
-    // admin invalidation via PRODUCT_QA_CACHE_TAG is also exercised.
-    revalidateTag(`product-qa:${productSlug}`);
-    revalidateTag(PRODUCT_QA_CACHE_TAG);
+    for (const tag of getQaCacheTags(productSlug)) revalidateTag(tag, "default");
   } catch (err) {
     logError("product-qa", QA_REVALIDATE_FAILED, err);
   }

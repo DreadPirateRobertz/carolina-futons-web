@@ -9,7 +9,7 @@ import {
   maskName,
   validateQaInput,
 } from "@/lib/qa/qa-schema";
-import { insertProductQuestion, PRODUCT_QA_CACHE_TAG } from "@/lib/wix/product-qa";
+import { insertProductQuestion, getQaCacheTags } from "@/lib/wix/product-qa";
 
 export async function POST(request: Request): Promise<NextResponse> {
   let body: unknown;
@@ -51,8 +51,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   try {
-    revalidateTag(`product-qa:${productSlug}`);
-    revalidateTag(PRODUCT_QA_CACHE_TAG);
+    for (const tag of getQaCacheTags(productSlug)) revalidateTag(tag, "default");
   } catch (err) {
     logError("product-qa", QA_REVALIDATE_FAILED, err);
   }

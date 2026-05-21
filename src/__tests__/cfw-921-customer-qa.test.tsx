@@ -21,11 +21,14 @@ vi.mock("@/lib/observability/log", () => ({
 // can control what listProductQa / insertProductQuestion return.
 const mockListProductQa = vi.fn();
 const mockInsertProductQuestion = vi.fn();
-vi.mock("@/lib/wix/product-qa", () => ({
-  listProductQa: (...args: unknown[]) => mockListProductQa(...args),
-  insertProductQuestion: (...args: unknown[]) => mockInsertProductQuestion(...args),
-  PRODUCT_QA_CACHE_TAG: "product-qa",
-}));
+vi.mock("@/lib/wix/product-qa", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/wix/product-qa")>();
+  return {
+    ...actual,
+    listProductQa: (...args: unknown[]) => mockListProductQa(...args),
+    insertProductQuestion: (...args: unknown[]) => mockInsertProductQuestion(...args),
+  };
+});
 
 vi.mock("@/components/product/CustomerQaForm", () => ({
   CustomerQaForm: ({ productSlug }: { productSlug: string }) =>
@@ -85,7 +88,7 @@ describe("submitQuestion (cfw-921)", () => {
       initialQaState,
       makeFormData({ question: "Q?" }),
     );
-    expect(mockRevalidateTag).toHaveBeenCalledWith("product-qa:futon-frames");
+    expect(mockRevalidateTag).toHaveBeenCalledWith("product-qa:futon-frames", "default");
   });
 
   it("calls revalidateTag with PRODUCT_QA_CACHE_TAG on success", async () => {
@@ -94,7 +97,7 @@ describe("submitQuestion (cfw-921)", () => {
       initialQaState,
       makeFormData({ question: "Q?" }),
     );
-    expect(mockRevalidateTag).toHaveBeenCalledWith("product-qa");
+    expect(mockRevalidateTag).toHaveBeenCalledWith("product-qa", "default");
   });
 
   it("dedup contract — slug tag and generic tag are distinct, no duplicate calls", async () => {
@@ -207,12 +210,12 @@ describe("POST /api/product-qa (cfw-921)", () => {
 
   it("calls revalidateTag with slug-specific tag after successful insert", async () => {
     await callPost({ productSlug: "futon-frames", question: "Q?" });
-    expect(mockRevalidateTag).toHaveBeenCalledWith("product-qa:futon-frames");
+    expect(mockRevalidateTag).toHaveBeenCalledWith("product-qa:futon-frames", "default");
   });
 
   it("calls revalidateTag with PRODUCT_QA_CACHE_TAG after successful insert", async () => {
     await callPost({ productSlug: "futon-frames", question: "Q?" });
-    expect(mockRevalidateTag).toHaveBeenCalledWith("product-qa");
+    expect(mockRevalidateTag).toHaveBeenCalledWith("product-qa", "default");
   });
 
   it("does not call revalidateTag when insert fails", async () => {
@@ -288,5 +291,24 @@ describe("CustomerQa component (cfw-921)", () => {
       (await CustomerQa({ productSlug: "futon-frames" })) as ReactElement,
     );
     expect(html).toContain('data-slot="customer-qa"');
+  });
+});
+
+// ── getQaCacheTags helper — unstable_cache tags contract ──────────────────────
+
+import { getQaCacheTags, PRODUCT_QA_CACHE_TAG } from "@/lib/wix/product-qa";
+
+describe("getQaCacheTags (cfw-921 follow-on, cf-kkvl)", () => {
+  it("returns [slug-specific tag, global tag] in order", () => {
+    expect(getQaCacheTags("futon-frames")).toEqual([
+      "product-qa:futon-frames",
+      PRODUCT_QA_CACHE_TAG,
+    ]);
+  });
+
+  it("encodes the productSlug exactly", () => {
+    const tags = getQaCacheTags("murphy-cabinet-beds");
+    expect(tags[0]).toBe("product-qa:murphy-cabinet-beds");
+    expect(tags[1]).toBe(PRODUCT_QA_CACHE_TAG);
   });
 });

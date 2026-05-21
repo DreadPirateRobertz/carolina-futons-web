@@ -10,6 +10,13 @@ import type { QaItem } from "@/lib/qa/qa-schema";
 
 export const PRODUCT_QA_CACHE_TAG = "product-qa";
 
+// Returns the full revalidateTag set for a product's Q&A cache:
+//   [slug-specific tag, global product-qa tag]
+// Centralised here so qa-actions.ts + api/product-qa/route.ts stay in sync.
+export function getQaCacheTags(productSlug: string): [string, string] {
+  return [`product-qa:${productSlug}`, PRODUCT_QA_CACHE_TAG];
+}
+
 const COLLECTION = "ProductQandA";
 
 type RawQaItem = WixDataItem & {
@@ -55,8 +62,8 @@ export async function listProductQa(productSlug: string): Promise<QaItem[]> {
         throw err;
       }
     },
-    [`product-qa:${productSlug}-v1`],
-    { revalidate: 300, tags: [`product-qa:${productSlug}`, PRODUCT_QA_CACHE_TAG] },
+    [`product-qa:${productSlug}-v1`], // -v1 suffix: cache busting if QaItem shape changes
+    { revalidate: 300, tags: getQaCacheTags(productSlug) },
   );
   return cached();
 }
