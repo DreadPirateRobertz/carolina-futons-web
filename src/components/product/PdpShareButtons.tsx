@@ -63,7 +63,7 @@ export function PdpShareButtons({
   return (
     <section
       aria-label="Share this product"
-      className="mt-16 border-t border-cf-divider pt-10 flex flex-wrap items-center gap-3"
+      className="mt-16 border-t border-cf-divider pt-4 flex flex-wrap items-center gap-3"
       data-slot="pdp-share-buttons"
     >
       <span className="text-sm font-medium text-cf-espresso/70">Share</span>
