@@ -5,6 +5,7 @@ import { getMemberSession } from "@/lib/auth/member";
 import { getMyRegistriesAction } from "@/app/actions/registry";
 import { RegistryDashboard } from "@/components/registry/RegistryDashboard";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { getSiteContent } from "@/lib/cms/site-content";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +21,19 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
+const REGISTRY_COPY_FALLBACKS = {
+  heading: "Gift Registry",
+  unauthenticatedBody: "Sign in to create and manage your gift registries.",
+  introSubhead: "Create a shareable wish list for any occasion — weddings, housewarmings, and more.",
+} as const;
+
 export default async function RegistryPage() {
-  const session = await getMemberSession();
+  const [session, heading, unauthenticatedBody, introSubhead] = await Promise.all([
+    getMemberSession(),
+    getSiteContent("registry.heading", REGISTRY_COPY_FALLBACKS.heading),
+    getSiteContent("registry.unauthenticated.body", REGISTRY_COPY_FALLBACKS.unauthenticatedBody),
+    getSiteContent("registry.intro.subhead", REGISTRY_COPY_FALLBACKS.introSubhead),
+  ]);
 
   if (!session) {
     return (
@@ -30,11 +42,9 @@ export default async function RegistryPage() {
           <Gift className="h-6 w-6" />
         </span>
         <h1 className="mt-4 font-heading text-2xl font-semibold text-cf-espresso">
-          Gift Registry
+          {heading}
         </h1>
-        <p className="mt-3 text-cf-charcoal/70">
-          Sign in to create and manage your gift registries.
-        </p>
+        <p className="mt-3 text-cf-charcoal/70">{unauthenticatedBody}</p>
         <Link
           href="/account"
           className="mt-6 inline-flex h-11 items-center justify-center rounded-md bg-cf-cta px-6 text-sm font-semibold text-white hover:bg-cf-cta/90"
@@ -56,11 +66,9 @@ export default async function RegistryPage() {
         </span>
         <div>
           <h1 className="font-heading text-3xl font-semibold tracking-tight text-cf-espresso">
-            Gift Registry
+            {heading}
           </h1>
-          <p className="mt-2 text-cf-charcoal/70">
-            Create a shareable wish list for any occasion — weddings, housewarmings, and more.
-          </p>
+          <p className="mt-2 text-cf-charcoal/70">{introSubhead}</p>
         </div>
       </div>
 

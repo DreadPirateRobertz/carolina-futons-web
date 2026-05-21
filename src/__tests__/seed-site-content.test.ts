@@ -15,8 +15,8 @@ describe("seed-site-content SEED_ROWS", () => {
     expect(SEED_ROWS.length).toBeGreaterThan(0);
   });
 
-  it("contains exactly 53 rows (29 §1 live + 24 §2 proposed)", () => {
-    expect(SEED_ROWS).toHaveLength(53);
+  it("contains exactly 56 rows (29 §1 live + 24 §2 proposed + 3 cfw-dag registry.* keys)", () => {
+    expect(SEED_ROWS).toHaveLength(56);
   });
 
   it("every row has a non-empty string key and value", () => {

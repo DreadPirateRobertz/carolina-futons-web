@@ -74,6 +74,9 @@ These are **complete** and require no further work. Included for reference and t
 | `contact.appointment.heading` | `"Schedule a showroom visit"` | `src/app/contact/page.tsx:79–82` | |
 | `contact.appointment.body-suffix` | `" Request a slot and we'll confirm by email within one business day."` | `src/app/contact/page.tsx:83–86` | |
 | `contact.form.heading` | `"Send a message"` | `src/app/contact/page.tsx:87` | |
+| `registry.heading` | `"Gift Registry"` | `src/app/registry/page.tsx` | Shared across both auth views; loaded in one `Promise.all` (cfw-dag) |
+| `registry.unauthenticated.body` | `"Sign in to create and manage your gift registries."` | `src/app/registry/page.tsx` | Unauthenticated gate copy |
+| `registry.intro.subhead` | `"Create a shareable wish list for any occasion…"` | `src/app/registry/page.tsx` | Authenticated view subhead |
 | `social.url.facebook` | `"https://www.facebook.com/carolinafutons"` | `src/app/layout.tsx:136` | Key is `social.url.*` — NOT `footer.social.*-href` as proposed in §2f; cfw-66o.7 used the shorter namespace |
 | `social.url.instagram` | `"https://www.instagram.com/carolinafutons"` | `src/app/layout.tsx:137` | |
 | `social.url.tiktok` | `"https://www.tiktok.com/@carolinafutons"` | `src/app/layout.tsx:138` | |
