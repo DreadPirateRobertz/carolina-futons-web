@@ -3,7 +3,7 @@ import { revalidateTag } from "next/cache";
 import { createHmac, timingSafeEqual, randomUUID } from "node:crypto";
 
 import { SITE_CONTENT_CACHE_TAG } from "@/lib/cms/site-content";
-import { logError } from "@/lib/observability/log";
+import { logError, logWarn } from "@/lib/observability/log";
 
 export const dynamic = "force-dynamic";
 
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     req.headers.get("x-wix-signature") ??
     req.headers.get("x-hub-signature-256");
   if (!verifySignature(rawBody, signature, secret)) {
-    console.warn("[revalidate] signature rejected", { correlationId });
+    logWarn("revalidate", "signature rejected", undefined, { correlationId });
     return NextResponse.json(
       { ok: false, error: "invalid signature", errorId: correlationId },
       { status: 401 },
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
   try {
     body = rawBody.length > 0 ? (JSON.parse(rawBody) as WixWebhookBody) : {};
   } catch {
-    console.warn("[revalidate] invalid JSON body", { correlationId });
+    logWarn("revalidate", "invalid JSON body", undefined, { correlationId });
     return NextResponse.json(
       { ok: false, error: "invalid json", errorId: correlationId },
       { status: 400 },
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
   // Webhooks without ts are still accepted for backward compatibility.
   if (body.ts !== undefined) {
     if (!Number.isFinite(body.ts)) {
-      console.warn("[revalidate] non-finite ts rejected", { correlationId });
+      logWarn("revalidate", "non-finite ts rejected", undefined, { correlationId });
       return NextResponse.json(
         { ok: false, error: "invalid timestamp", errorId: correlationId },
         { status: 400 },
@@ -103,10 +103,7 @@ export async function POST(req: NextRequest) {
     }
     const age = Math.abs(Date.now() - body.ts);
     if (age > REPLAY_WINDOW_MS) {
-      console.warn("[revalidate] timestamp outside window", {
-        correlationId,
-        ageMs: age,
-      });
+      logWarn("revalidate", "timestamp outside window", undefined, { correlationId, ageMs: age });
       return NextResponse.json(
         { ok: false, error: "timestamp out of window", errorId: correlationId },
         { status: 401 },

@@ -2,6 +2,7 @@ import "server-only";
 
 import { listCollectionItems, queryCollectionWhere } from "@/lib/wix/data";
 import { logWixFailure } from "@/lib/wix/errors";
+import { logWarn } from "@/lib/observability/log";
 
 // CMS contract — the TypeScript types below don't capture the Wix collection
 // shape, so it lives here:
@@ -26,11 +27,10 @@ function parseSwatch(raw: unknown): ProductSwatch | null {
   if (!name || !HEX_RE.test(hex)) {
     // Visible signal so a content editor entering "blue" instead of "#0000ff"
     // doesn't silently disappear from the grid.
-    if (typeof console !== "undefined") {
-      console.warn(
-        `[product-swatches] dropping malformed swatch row: name=${JSON.stringify(r.name)} hex=${JSON.stringify(r.hex)}`,
-      );
-    }
+    logWarn("product-swatches", "dropping malformed swatch row", undefined, {
+      name: r.name,
+      hex: r.hex,
+    });
     return null;
   }
   return { name, hex };

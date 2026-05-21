@@ -2,6 +2,7 @@ import "server-only";
 
 import { listCollectionItems, type WixDataItem } from "@/lib/wix/data";
 import { isWixSdkError, logWixFailure } from "@/lib/wix/errors";
+import { logWarn } from "@/lib/observability/log";
 
 export type CommunityPhoto = {
   _id: string;
@@ -53,9 +54,11 @@ export async function listCommunityPhotos(limit = 60): Promise<GalleryResult> {
         .filter((item) => !toPhoto(item))
         .map((item) => item._id ?? "(no _id)")
         .slice(0, 5);
-      console.warn(
-        `[wix] listCommunityPhotos: dropped ${dropped}/${items.length} items (missing _id or non-HTTPS image). Sample IDs: ${sampleIds.join(", ")}`,
-      );
+      logWarn("wix", "listCommunityPhotos: dropped malformed items", undefined, {
+        dropped,
+        total: items.length,
+        sampleIds,
+      });
     }
 
     return { photos };
