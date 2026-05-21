@@ -1,3 +1,4 @@
+import { logError } from "@/lib/observability/log";
 import { DashboardShell } from "@/components/member/DashboardShell";
 import { WishlistList } from "@/components/member/WishlistList";
 import { WishlistShareButton } from "@/components/member/WishlistShareButton";
@@ -34,7 +35,7 @@ export default async function DashboardWishlistPage() {
       initialItems = result?.items ?? [];
     }
   } catch (err) {
-    console.error("[wishlist] getWishlist failed:", err);
+    logError("wishlist", "getWishlist failed", err);
     wishlistLoadFailed = true;
   }
 

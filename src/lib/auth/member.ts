@@ -7,6 +7,7 @@
 import "server-only";
 
 import { cookies } from "next/headers";
+import { logError } from "@/lib/observability/log";
 import { redirect } from "next/navigation";
 import type { Tokens } from "@wix/sdk";
 import { SESSION_COOKIE_NAME, parseSessionCookie } from "./session";
@@ -47,7 +48,7 @@ export async function getMemberSession(): Promise<MemberSession | null> {
     const memberId = await resolveMemberId(tokens);
     return { tokens, accessToken: tokens.accessToken.value, memberId };
   } catch (err) {
-    console.error("[auth] getMemberSession: resolveMemberId failed:", err);
+    logError("auth", "getMemberSession: resolveMemberId failed", err);
     return null;
   }
 }
