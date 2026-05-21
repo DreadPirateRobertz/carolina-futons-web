@@ -372,6 +372,16 @@
       "key": "sustainability.trade-in.cta-label",
       "value": "Ask about trade-in",
       "_source": "src/app/sustainability/page.tsx SUSTAINABILITY_COPY_FALLBACKS.tradeinCtaLabel (cfw-p3j)"
+    },
+    {
+      "key": "survey.heading",
+      "value": "How did we do?",
+      "_source": "src/app/survey/page.tsx SURVEY_COPY_FALLBACKS.heading (cfw-wv1)"
+    },
+    {
+      "key": "survey.intro.body",
+      "value": "Your honest feedback helps us serve the next customer better. It takes less than a minute.",
+      "_source": "src/app/survey/page.tsx SURVEY_COPY_FALLBACKS.introBody (cfw-wv1)"
     }
   ]
 }
