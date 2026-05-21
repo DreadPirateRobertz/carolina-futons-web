@@ -67,9 +67,9 @@ function buildCompactStars(): StarDef[] {
 
 function CompactBear({ t = 0 }: { t?: number }) {
   const c = SKY;
-  // Subtle breathing — chest rises ~3% over a slow cycle so the bear feels
-  // alive without animating to motion-sickness levels.
-  const breath = 1 + 0.03 * Math.sin(t * 0.7);
+  // Breathing — chest rises ~6% over a slow cycle so the bear reads as alive
+  // on iPhone Safari where subtle 3% was imperceptible (cfw-svi).
+  const breath = 1 + 0.06 * Math.sin(t * 0.7);
   const lookUp = -0.15 * Math.sin(t * 0.5);
   return (
     <g transform={`translate(960 ${210 + lookUp}) scale(1.3 ${1.3 * breath})`}>
@@ -214,7 +214,7 @@ export function StargazingHero({
               cy={s.y}
               r={s.r}
               fill={SKY.star}
-              opacity={0.6 + 0.4 * Math.sin(t * 1.2 + s.tw)}
+              opacity={0.6 + 0.4 * Math.sin(t * 2.0 + s.tw)}
             />
           ))}
           {/* Prominent stars with glow — kept inside the mobile-visible band */}
@@ -253,8 +253,8 @@ export function StargazingHero({
         {/* Exactly 2 fireflies hovering near the bear */}
         <g data-slot="stargazing-fireflies-compact">
           {fireflies.map((f, i) => {
-            const fx = f.cx + Math.sin(t * f.sp + f.ph) * 18;
-            const fy = f.cy + Math.cos(t * f.sp * 0.8 + f.ph) * 10;
+            const fx = f.cx + Math.sin(t * f.sp + f.ph) * 28;
+            const fy = f.cy + Math.cos(t * f.sp * 0.8 + f.ph) * 14;
             const a = 0.5 + 0.5 * Math.sin(t * 3 + f.ph);
             return (
               <g key={i} transform={`translate(${fx} ${fy})`} data-slot="firefly">
@@ -318,7 +318,7 @@ export function StargazingHero({
             cy={s.y}
             r={s.r}
             fill={SKY.star}
-            opacity={0.6 + 0.4 * Math.sin(t * 1.2 + s.tw)}
+            opacity={0.6 + 0.4 * Math.sin(t * 2.0 + s.tw)}
           />
         ))}
         {/* Prominent stars with glow */}
@@ -386,8 +386,8 @@ export function StargazingHero({
 
       {/* Fireflies */}
       {fireflies.map((f, i) => {
-        const fx = f.cx + Math.sin(t * f.sp + f.ph) * 22;
-        const fy = f.cy + Math.cos(t * f.sp * 0.8 + f.ph) * 14;
+        const fx = f.cx + Math.sin(t * f.sp + f.ph) * 32;
+        const fy = f.cy + Math.cos(t * f.sp * 0.8 + f.ph) * 18;
         const a = 0.5 + 0.5 * Math.sin(t * 3 + f.ph);
         return (
           <g key={i} transform={`translate(${fx} ${fy})`}>
