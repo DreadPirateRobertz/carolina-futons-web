@@ -221,6 +221,35 @@ describe("Footer — Phase 3 rebrand", () => {
     );
   });
 
+  it("falls back to hardcoded defaults for unset socialUrls keys (partial override)", () => {
+    render(<Footer socialUrls={{ facebook: "https://www.facebook.com/cf-override" }} />);
+    expect(screen.getByRole("link", { name: /facebook/i })).toHaveAttribute(
+      "href",
+      "https://www.facebook.com/cf-override",
+    );
+    // The other three should fall back to FOOTER_SOCIALS defaults
+    expect(screen.getByRole("link", { name: /instagram/i })).toHaveAttribute(
+      "href",
+      "https://www.instagram.com/carolinafutons",
+    );
+    expect(screen.getByRole("link", { name: /tiktok/i })).toHaveAttribute(
+      "href",
+      "https://www.tiktok.com/@carolinafutons",
+    );
+    expect(screen.getByRole("link", { name: /pinterest/i })).toHaveAttribute(
+      "href",
+      "https://www.pinterest.com/carolinafutons",
+    );
+  });
+
+  it("ignores unsafe javascript: scheme in socialUrls and falls back to default", () => {
+    render(<Footer socialUrls={{ facebook: "javascript:alert(1)" }} />);
+    expect(screen.getByRole("link", { name: /facebook/i })).toHaveAttribute(
+      "href",
+      "https://www.facebook.com/carolinafutons",
+    );
+  });
+
   it("mounts the newsletter signup form (cf-newsletter-footer)", () => {
     render(<Footer />);
     expect(

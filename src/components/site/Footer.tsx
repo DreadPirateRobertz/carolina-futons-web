@@ -121,6 +121,15 @@ type FooterProps = {
   socialUrls?: SocialUrls;
 };
 
+function isSafeUrl(url: string): boolean {
+  try {
+    const { protocol } = new URL(url);
+    return protocol === "https:" || protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
 const DEFAULT_TAGLINE = "Quality futons since 1991";
 const DEFAULT_SHOWROOM_HOURS = "Showroom hours: Sun–Tue, 10am–5pm";
 const DEFAULT_COPYRIGHT_LINE = "© {year} Carolina Futons. Hendersonville, NC.";
@@ -185,7 +194,8 @@ export function Footer({
             <ul className="mt-2 flex items-center gap-3 text-cf-cream/80">
               {FOOTER_SOCIALS.map((social) => {
                 const key = social.name.toLowerCase() as keyof SocialUrls;
-                const href = socialUrls[key] || social.href;
+                const candidate = socialUrls[key];
+                const href = (candidate && isSafeUrl(candidate)) ? candidate : social.href;
                 return (
                 <li key={social.name}>
                   <a
