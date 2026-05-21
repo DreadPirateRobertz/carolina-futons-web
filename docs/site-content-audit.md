@@ -98,6 +98,9 @@ These are **complete** and require no further work. Included for reference and t
 | `shop.futon-frames.featured.eyebrow` | `"Editor's picks"` | `src/lib/shop/categories.ts:96` | cfw-66o.5; template key `shop.${slug}.featured.*` |
 | `shop.futon-frames.featured.heading` | `"Where most people start"` | `src/lib/shop/categories.ts:97` | |
 | `shop.futon-frames.featured.body` | `"Three frames that cover the common questions…"` | `src/lib/shop/categories.ts:98–101` | |
+| `guides.index.eyebrow` | `"Buying guides"` | `src/app/guides/page.tsx:54` | cfw-mr7 |
+| `guides.index.heading` | `"Figure out what you actually need"` | `src/app/guides/page.tsx:57` | |
+| `guides.index.subhead` | `"35 years of answering the same questions at the showroom…"` | `src/app/guides/page.tsx:60` | |
 
 ---
 
