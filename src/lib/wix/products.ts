@@ -87,6 +87,41 @@ export function mergeVariantPriceData<T extends WixProduct>(
   } as T;
 }
 
+// cf-6qqa: queryStoreVariants returns per-variant media (StoreVariant.media.image.url)
+// that getProduct and queryProductVariants both omit. Merge it into the product's
+// variants so getSelectedImageUrl's back-compat path (variant.media.mainMedia.image.url)
+// can fire when the admin hasn't attached per-choice swatch media.
+export function mergeVariantMedia<T extends WixProduct>(
+  product: T,
+  storeVariants: ReadonlyArray<{ choices?: Record<string, string> | null; media?: { image?: { url?: string | null } | null } | null }> | null,
+): T {
+  if (!storeVariants || storeVariants.length === 0) return product;
+  if (!product.variants || product.variants.length === 0) return product;
+  // Key: JSON.stringify of sorted entries so {"Color":"Cherry","Size":"Full"}
+  // and {"Size":"Full","Color":"Cherry"} map to the same bucket.
+  const mediaByChoicesKey = new Map<string, string>();
+  for (const sv of storeVariants) {
+    const url = sv?.media?.image?.url;
+    if (!url || !sv.choices) continue;
+    const key = JSON.stringify(Object.entries(sv.choices).sort());
+    mediaByChoicesKey.set(key, url);
+  }
+  if (mediaByChoicesKey.size === 0) return product;
+  return {
+    ...product,
+    variants: product.variants.map((v: { choices?: Record<string, string> | null; media?: unknown }) => {
+      if (!v?.choices) return v;
+      const key = JSON.stringify(Object.entries(v.choices).sort());
+      const url = mediaByChoicesKey.get(key);
+      if (!url) return v;
+      return {
+        ...v,
+        media: { mainMedia: { image: { url } } },
+      };
+    }),
+  } as T;
+}
+
 // cfw-3l9: pick the longer media.items[] across the two-step Wix fetch.
 // queryProducts and getProduct don't return identical shapes — getProduct
 // occasionally drops items[] entirely. Merging keeps mainMedia + per-choice
@@ -154,9 +189,31 @@ export async function getProductBySlug(slug: string): Promise<WixProduct | null>
         return null;
       }
     };
-    const [full, variantPriceResp] = await Promise.all([
+    // cf-6qqa: queryStoreVariants returns per-variant media that getProduct
+    // omits. Falls through to null on failure — missing media degrades to
+    // productOptions choice-media path (if configured) or gallery alt-text
+    // matching, not a broken PDP.
+    const queryStoreVariantMedia = async () => {
+      try {
+        const queryFn = (
+          client.products as {
+            queryStoreVariants?: (query: object) => Promise<{ variants?: ReadonlyArray<{ choices?: Record<string, string> | null; media?: { image?: { url?: string | null } | null } | null }> }>
+          }
+        ).queryStoreVariants;
+        if (typeof queryFn !== "function") return null;
+        return await queryFn({
+          filter: { productId: { $eq: productId } },
+          paging: { limit: 100 },
+        });
+      } catch (err) {
+        await logWixFailure("wix", `queryStoreVariants(${productId})`, err);
+        return null;
+      }
+    };
+    const [full, variantPriceResp, storeVariantResp] = await Promise.all([
       client.products.getProduct(productId),
       queryVariantPriceData(),
+      queryStoreVariantMedia(),
     ]);
     if (!full.product) {
       await logWixFailure(
@@ -174,10 +231,11 @@ export async function getProductBySlug(slug: string): Promise<WixProduct | null>
     // every Wix-uploaded photo. Use queryProducts' mainMedia too when the
     // full response is missing it.
     const merged = mergeProductMedia(full.product, stub);
-    return mergeVariantPriceData(
+    const withPrices = mergeVariantPriceData(
       merged,
       variantPriceResp?.variants ?? null,
     );
+    return mergeVariantMedia(withPrices, storeVariantResp?.variants ?? null);
   } catch (err) {
     await logWixFailure("wix", `getProductBySlug(${slug})`, err);
     return null;
