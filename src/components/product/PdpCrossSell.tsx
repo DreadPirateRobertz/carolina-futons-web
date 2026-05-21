@@ -14,8 +14,12 @@ export type PdpCrossSellProps = {
 
 const HEADING_ID = "pdp-cross-sell-heading";
 
+const MAX_CROSS_SELL = 4;
+
 export function PdpCrossSell({ products, error }: PdpCrossSellProps) {
   if (error || products.length === 0) return null;
+
+  const visible = products.slice(0, MAX_CROSS_SELL);
 
   return (
     <section
@@ -30,7 +34,7 @@ export function PdpCrossSell({ products, error }: PdpCrossSellProps) {
         You might also like
       </h2>
       <ul className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        {products.map((product) => (
+        {visible.map((product) => (
           <CrossSellTile key={product._id ?? product.slug ?? product.name} product={product} />
         ))}
       </ul>
