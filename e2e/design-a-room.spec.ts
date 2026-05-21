@@ -62,7 +62,11 @@ test.describe("/design-a-room — page smoke", () => {
   test("page loads with no console errors", async ({ page }) => {
     const consoleErrors: string[] = [];
     page.on("console", (msg) => {
-      if (msg.type() === "error") consoleErrors.push(msg.text());
+      if (msg.type() !== "error") return;
+      const text = msg.text();
+      // CSP report-only headers emit this browser-level warning on every page — not app code.
+      if (text.includes("upgrade-insecure-requests")) return;
+      consoleErrors.push(text);
     });
 
     await page.goto("/design-a-room");
