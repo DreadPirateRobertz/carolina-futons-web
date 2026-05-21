@@ -77,6 +77,18 @@ These are **complete** and require no further work. Included for reference and t
 | `registry.heading` | `"Gift Registry"` | `src/app/registry/page.tsx` | Shared across both auth views; loaded in one `Promise.all` (cfw-dag) |
 | `registry.unauthenticated.body` | `"Sign in to create and manage your gift registries."` | `src/app/registry/page.tsx` | Unauthenticated gate copy |
 | `registry.intro.subhead` | `"Create a shareable wish list for any occasion…"` | `src/app/registry/page.tsx` | Authenticated view subhead |
+| `returns.eyebrow` | `"Policies"` | `src/app/returns/page.tsx` | All 12 returns keys loaded in one `Promise.all` (cfw-5yg) |
+| `returns.intro.heading` | `"Returns"` | `src/app/returns/page.tsx` | |
+| `returns.intro.body` | `"We stand behind what we sell…"` | `src/app/returns/page.tsx` | |
+| `returns.window.heading` | `"The return window"` | `src/app/returns/page.tsx` | |
+| `returns.window.body` | `"Most items are returnable within 30 days…"` | `src/app/returns/page.tsx` | |
+| `returns.restocking.heading` | `"Restocking and return shipping"` | `src/app/returns/page.tsx` | |
+| `returns.restocking.body-1` | `"Frames and accessories incur a 15% restocking fee…"` | `src/app/returns/page.tsx` | |
+| `returns.restocking.body-2` | `"You are responsible for return shipping costs…"` | `src/app/returns/page.tsx` | |
+| `returns.custom.heading` | `"Custom and made-to-order items"` | `src/app/returns/page.tsx` | Body has embedded JSX links — heading only |
+| `returns.damaged.heading` | `"Damaged on arrival"` | `src/app/returns/page.tsx` | Body has embedded JSX links — heading only |
+| `returns.faq.heading` | `"Common returns questions"` | `src/app/returns/page.tsx` | FAQ Q&A pairs are structured data — heading only |
+| `returns.start.heading` | `"Start a return"` | `src/app/returns/page.tsx` | Body has embedded JSX links — heading only |
 | `sustainability.eyebrow` | `"Our promise"` | `src/app/sustainability/page.tsx` | All 13 sustainability keys loaded in one `Promise.all` (cfw-p3j) |
 | `sustainability.intro.heading` | `"Furniture that cares for the planet"` | `src/app/sustainability/page.tsx` | |
 | `sustainability.intro.body` | `"At Carolina Futons, sustainability isn't a buzzword…"` | `src/app/sustainability/page.tsx` | |

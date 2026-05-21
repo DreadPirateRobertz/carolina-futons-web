@@ -279,6 +279,66 @@
       "_source": "src/lib/shop/categories.ts SHOP_CATEGORIES[mattresses-sale].description (cfw-66o.3)"
     },
     {
+      "key": "returns.eyebrow",
+      "value": "Policies",
+      "_source": "src/app/returns/page.tsx RETURNS_COPY_FALLBACKS.eyebrow (cfw-5yg)"
+    },
+    {
+      "key": "returns.intro.heading",
+      "value": "Returns",
+      "_source": "src/app/returns/page.tsx RETURNS_COPY_FALLBACKS.introHeading (cfw-5yg)"
+    },
+    {
+      "key": "returns.intro.body",
+      "value": "We stand behind what we sell. If something isn't right, here's how to make it right.",
+      "_source": "src/app/returns/page.tsx RETURNS_COPY_FALLBACKS.introBody (cfw-5yg)"
+    },
+    {
+      "key": "returns.window.heading",
+      "value": "The return window",
+      "_source": "src/app/returns/page.tsx RETURNS_COPY_FALLBACKS.windowHeading (cfw-5yg)"
+    },
+    {
+      "key": "returns.window.body",
+      "value": "Most items are returnable within 30 days of delivery in like-new condition. \"Like-new\" means unused, undamaged, and in the original packaging. Before you ship anything back, contact us — we'll confirm the return is eligible and issue a return authorization. Unauthorized returns may be refused at our discretion.",
+      "_source": "src/app/returns/page.tsx RETURNS_COPY_FALLBACKS.windowBody (cfw-5yg)"
+    },
+    {
+      "key": "returns.restocking.heading",
+      "value": "Restocking and return shipping",
+      "_source": "src/app/returns/page.tsx RETURNS_COPY_FALLBACKS.restockingHeading (cfw-5yg)"
+    },
+    {
+      "key": "returns.restocking.body-1",
+      "value": "Frames and accessories incur a 15% restocking fee. Mattresses incur a 25% restocking fee because we cannot resell them as new once they've left our facility.",
+      "_source": "src/app/returns/page.tsx RETURNS_COPY_FALLBACKS.restockingBody1 (cfw-5yg)"
+    },
+    {
+      "key": "returns.restocking.body-2",
+      "value": "You are responsible for return shipping costs unless the return is due to our error (wrong item sent, manufacturing defect) or a confirmed shipping-damage claim. Return freight for a full-size futon frame typically runs $80–$180 depending on your location.",
+      "_source": "src/app/returns/page.tsx RETURNS_COPY_FALLBACKS.restockingBody2 (cfw-5yg)"
+    },
+    {
+      "key": "returns.custom.heading",
+      "value": "Custom and made-to-order items",
+      "_source": "src/app/returns/page.tsx RETURNS_COPY_FALLBACKS.customHeading (cfw-5yg)"
+    },
+    {
+      "key": "returns.damaged.heading",
+      "value": "Damaged on arrival",
+      "_source": "src/app/returns/page.tsx RETURNS_COPY_FALLBACKS.damagedHeading (cfw-5yg)"
+    },
+    {
+      "key": "returns.faq.heading",
+      "value": "Common returns questions",
+      "_source": "src/app/returns/page.tsx RETURNS_COPY_FALLBACKS.faqHeading (cfw-5yg)"
+    },
+    {
+      "key": "returns.start.heading",
+      "value": "Start a return",
+      "_source": "src/app/returns/page.tsx RETURNS_COPY_FALLBACKS.startHeading (cfw-5yg)"
+    },
+    {
       "key": "guides.index.eyebrow",
       "value": "Buying guides",
       "_source": "src/app/guides/page.tsx GUIDES_COPY_FALLBACKS.eyebrow (cfw-mr7)"
