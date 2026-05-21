@@ -199,7 +199,7 @@ describe("CategoryPills (cfw-dv5)", () => {
 // ── PlpPage integration ──────────────────────────────────────────────────────
 
 import PlpPage from "@/app/shop/[category]/page";
-import { findCategory } from "@/lib/shop/categories";
+import { findCategory, type ShopCategory } from "@/lib/shop/categories";
 import { getCollectionBySlug, listProductsOnSale } from "@/lib/wix/products";
 import { getCollectionPlp } from "@/lib/wix/plp";
 
@@ -241,7 +241,7 @@ const MIXED_PRODUCTS_PLP = {
 
 describe("PlpPage — CategoryPills rendering (cfw-dv5)", () => {
   beforeEach(() => {
-    vi.mocked(findCategory).mockReturnValue(CATEGORY_WITH_SUBS as any);
+    vi.mocked(findCategory).mockReturnValue(CATEGORY_WITH_SUBS as ShopCategory);
     vi.mocked(getCollectionBySlug).mockResolvedValue({
       _id: "futons-col-id",
     } as never);
@@ -279,7 +279,7 @@ describe("PlpPage — CategoryPills rendering (cfw-dv5)", () => {
       name: "Mattresses",
       description: "Futon mattresses.",
       collectionSlug: "mattresses",
-    } as any);
+    } as ShopCategory);
     vi.mocked(getCollectionBySlug).mockResolvedValue({
       _id: "mattresses-col-id",
     } as never);
@@ -296,7 +296,7 @@ describe("PlpPage — CategoryPills rendering (cfw-dv5)", () => {
 
 describe("PlpPage — sub-category filtering (cfw-dv5)", () => {
   beforeEach(() => {
-    vi.mocked(findCategory).mockReturnValue(CATEGORY_WITH_SUBS as any);
+    vi.mocked(findCategory).mockReturnValue(CATEGORY_WITH_SUBS as ShopCategory);
     vi.mocked(getCollectionBySlug).mockResolvedValue({
       _id: "futons-col-id",
     } as never);
