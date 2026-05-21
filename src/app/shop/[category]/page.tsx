@@ -60,10 +60,11 @@ export async function generateMetadata(props: {
     // we ship the base canonical for v1; revisit if Search Console reports
     // wasted crawl on paginated PLPs.
     const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
-    const description = await getSiteContent(
-      `shop.${category.slug}.description`,
-      category.description,
-    );
+    const description =
+      (await getSiteContent(
+        `shop.${category.slug}.description`,
+        category.description,
+      )) || category.description;
     const openGraph = {
       title: `${category.name} — Carolina Futons`,
       description,
@@ -200,7 +201,7 @@ export default async function PlpPage(props: {
           },
         };
 
-  const [badgeMap, categoryDescription, featuredCopy] = await Promise.all([
+  const [badgeMap, rawDescription, featuredCopy] = await Promise.all([
     listAllProductBadges(),
     getSiteContent(`shop.${category.slug}.description`, category.description),
     shouldShowFeaturedRow && category.featured
@@ -211,6 +212,7 @@ export default async function PlpPage(props: {
         ]).then(([eyebrow, heading, body]) => ({ ...category.featured!, eyebrow, heading, body }))
       : Promise.resolve(undefined),
   ]);
+  const categoryDescription = rawDescription || category.description;
 
   // cfw-66o.6: owner-editable empty-state copy for derived sale categories.
   // Only fetches for categories that declare emptyStateCopy; others stay undefined
