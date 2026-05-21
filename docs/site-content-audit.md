@@ -1,6 +1,6 @@
 # cfw Site Content Audit — Hardcoded Copy → SiteContent Keys
 
-**Bead:** cfw-66o.1 (cfw-66o.A) — updated post-cfw-66o.4/.5/.6/.7 merges  
+**Bead:** cfw-66o.1 (cfw-66o.A) — updated post-cfw-66o.3/.4/.5/.6/.7 merges  
 **Author:** morgott · 2026-05-21  
 **Audience:** Brenda, Stilgar, PM (melania), implementing engineers  
 **Epic:** cfw-66o — Owner-friendly admin UI (Brenda edits content without a deploy)
@@ -67,28 +67,19 @@ These are **complete** and require no further work. Included for reference and t
 | `social.url.instagram` | `"https://www.instagram.com/carolinafutons"` | `layout.tsx:137` | cfw-66o.7 (#904) |
 | `social.url.tiktok` | `"https://www.tiktok.com/@carolinafutons"` | `layout.tsx:138` | cfw-66o.7 (#904) |
 | `social.url.pinterest` | `"https://www.pinterest.com/carolinafutons"` | `layout.tsx:139` | cfw-66o.7 (#904) |
+| `shop.futon-frames.description` | `"Choose from twin, full, or queen hardwood frames…"` | `shop/[category]/page.tsx` | cfw-66o.3 (#896) — template key `shop.${slug}.description`; `categories.ts` value is fallback |
+| `shop.murphy-cabinet-beds.description` | `"Cabinet beds that fold away without hardware in the wall."` | `shop/[category]/page.tsx` | cfw-66o.3 (#896) |
+| `shop.platform-beds.description` | `"Low-profile solid-wood platform beds."` | `shop/[category]/page.tsx` | cfw-66o.3 (#896) |
+| `shop.mattresses.description` | `"Futon mattresses and bed mattresses."` | `shop/[category]/page.tsx` | cfw-66o.3 (#896) |
+| `shop.sofa-beds.description` | `"Convertible sofa beds — seat by day, guest bed by night."` | `shop/[category]/page.tsx` | cfw-66o.3 (#896) |
+| `shop.sale.description` | `"Discounted futons, beds, and mattresses — while supplies last."` | `shop/[category]/page.tsx` | cfw-66o.3 (#896) |
+| `shop.mattresses-sale.description` | `"Current mattress promotions."` | `shop/[category]/page.tsx` | cfw-66o.3 (#896) |
 
 ---
 
 ## 2. Hardcoded copy — remaining (not yet wired)
 
-### 2a. Category descriptions (P1) — PR #896 open, pending merge
-
-Rendered as the `<p>` subtitle below every PLP `<h1>` and as the OG `description` meta tag. Brenda will want to tune these for SEO and seasonal messaging.
-
-> **Status:** `feat(cfw-66o.3)` PR #896 is open with CI running. Once merged, move all 7 rows to §1. Fallback implementation note below still applies until then.
-
-| Key | Current hardcoded value | File : line |
-|---|---|---|
-| `shop.futon-frames.description` | `"Choose from twin, full, or queen hardwood frames, with varying seat heights, finishes, and conversion mechanisms. Some models offer chair, full, and queen chairs with ottoman options."` | `src/lib/shop/categories.ts:81–85` |
-| `shop.murphy-cabinet-beds.description` | `"Cabinet beds that fold away without hardware in the wall."` | `src/lib/shop/categories.ts:109` |
-| `shop.platform-beds.description` | `"Low-profile solid-wood platform beds."` | `src/lib/shop/categories.ts:116` |
-| `shop.mattresses.description` | `"Futon mattresses and bed mattresses."` | `src/lib/shop/categories.ts:123` |
-| `shop.sofa-beds.description` | `"Convertible sofa beds — seat by day, guest bed by night."` | `src/lib/shop/categories.ts:136` |
-| `shop.sale.description` | `"Discounted futons, beds, and mattresses — while supplies last."` | `src/lib/shop/categories.ts:143` |
-| `shop.mattresses-sale.description` | `"Current mattress promotions."` | `src/lib/shop/categories.ts:153` |
-
-**Implementation note:** `categories.ts` is `as const` — descriptions feed `generateMetadata()` (OG meta) and the PLP `<p>` directly. Migration reads via `getSiteContent()` server-side in `[category]/page.tsx` and passes the resolved string to both render sites; `categories.ts` values become fallbacks.
+All identified P1/P2/P3 groups have been wired to `getSiteContent()` as of cfw-66o.3 (#896). No remaining HARDCODED rows.
 
 ---
 
@@ -131,7 +122,7 @@ Examples:
 
 | Priority | Group | Keys | Status |
 |---|---|---|---|
-| P1 | Category descriptions | 7 keys (§2a) | **PR #896 open** — pending merge |
+| P1 | Category descriptions | 7 keys (§2a) | ✅ **DONE** — cfw-66o.3 PR #896 |
 | P1 | Sale empty-state | 2 keys (§2b) | ✅ **DONE** — cfw-66o.6 PR #899 |
 | P2 | Shop index subhead + ShopTheRoom labels | 3 keys (§2d) | ✅ **DONE** — cfw-66o.4 PR #902 |
 | P2 | Category card subtitles | 5 keys (§2c) | ✅ **DONE** — cfw-66o.4 PR #902 |
