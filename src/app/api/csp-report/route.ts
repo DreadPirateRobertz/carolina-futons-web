@@ -20,6 +20,8 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 
+import { logWarn } from "@/lib/observability/log";
+
 export const dynamic = "force-dynamic";
 
 type CspReport = {
@@ -53,22 +55,27 @@ type ReportingApiEntry = {
  *   report (`legacy` vs `reporting-api`) — useful when triaging which
  *   browsers are reporting which violations.
  */
-function logViolation(
+async function logViolation(
   report: CspReport,
   source: "legacy" | "reporting-api",
-): void {
+): Promise<void> {
   const directive =
     report["effective-directive"] ??
     report["violated-directive"] ??
     "(unknown)";
   const blocked = report["blocked-uri"] ?? "(inline)";
   const docUri = report["document-uri"] ?? "(unknown)";
-  // Single-line structured-ish log so Vercel log search can grep for
-  // `[csp]` to find every violation, and for a directive to find every
-  // resource that tripped that directive.
-  console.warn(
-    `[csp] source=${source} directive=${directive} blocked=${blocked} doc=${docUri}`,
-  );
+  // cfw-1p2r: route through logWarn so CSP violations land in Sentry
+  // at level='warning' alongside the console output. Vercel log
+  // search can still grep `[csp]` for the prefix, but ops also gets
+  // a dashboard trend view of violation rate and per-directive
+  // breakdown without scraping logs.
+  await logWarn("csp", "violation", undefined, {
+    source,
+    directive,
+    blocked,
+    docUri,
+  });
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -91,7 +98,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Reporting API: array of report entries, each with a typed body.
     for (const entry of parsed as ReportingApiEntry[]) {
       if (entry && entry.type === "csp-violation" && entry.body) {
-        logViolation(entry.body, "reporting-api");
+        await logViolation(entry.body, "reporting-api");
       }
     }
   } else if (
@@ -102,7 +109,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Legacy CSP 1.1: { "csp-report": { ... } }
     const envelope = parsed as LegacyEnvelope;
     if (envelope["csp-report"]) {
-      logViolation(envelope["csp-report"], "legacy");
+      await logViolation(envelope["csp-report"], "legacy");
     }
   }
   // Always 204 — the browser doesn't care about the response body.
