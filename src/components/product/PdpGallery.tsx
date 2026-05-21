@@ -10,6 +10,7 @@ import {
   useTransform,
   type MotionStyle,
 } from "framer-motion";
+import * as Sentry from "@sentry/nextjs";
 import { GalleryZoomLightbox } from "./GalleryZoomLightbox";
 import { PdpImageComparison } from "./PdpImageComparison";
 import { ProductSpinViewer } from "./ProductSpinViewer";
@@ -50,6 +51,54 @@ const VT_NAME = "pdp-gallery";
 // Prevents the "torn image" icon and keeps VT transitions completing cleanly.
 const FALLBACK_PRODUCT_IMG =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
+// cf-qnn5 Track B: classify image load failures for Sentry.
+// For /_next/image URLs (same-origin): HEAD-probe the optimizer to distinguish:
+//   404  → image_404         (Wix returned 404 — asset deleted/renamed in catalog)
+//   5xx  → image_optimizer.source_5xx (Vercel couldn't reach Wix or transcode failed)
+// Distinguishing source_5xx from transcode_fail requires server-side analysis;
+// both return 5xx from the optimizer. Once cf-h345 Track 2 ships (next/image
+// swap), /_next/image becomes the live path and these tags become operational.
+// For direct wixstatic URLs (current m.img path): tagged image_load_error.
+function captureImageError(resolvedSrc: string, originalUrl: string): void {
+  let pathname: string;
+  try {
+    pathname = new URL(resolvedSrc).pathname;
+  } catch {
+    pathname = resolvedSrc;
+  }
+
+  if (pathname.startsWith("/_next/image")) {
+    void fetch(resolvedSrc, { method: "HEAD" })
+      .then((res) => {
+        const tag =
+          res.status === 404
+            ? "image_404"
+            : "image_optimizer.source_5xx";
+        Sentry.captureMessage(`[PdpGallery] image optimizer failure: ${tag}`, {
+          level: "warning",
+          tags: { "image.failure": tag },
+          extra: { resolvedSrc, originalUrl },
+        });
+      })
+      .catch(() => {
+        Sentry.captureMessage(
+          "[PdpGallery] image optimizer failure: network_error",
+          {
+            level: "warning",
+            tags: { "image.failure": "image_optimizer.source_5xx" },
+            extra: { resolvedSrc, originalUrl },
+          }
+        );
+      });
+  } else {
+    Sentry.captureMessage("[PdpGallery] image load failure: image_load_error", {
+      level: "warning",
+      tags: { "image.failure": "image_load_error" },
+      extra: { resolvedSrc, originalUrl },
+    });
+  }
+}
 
 export type GalleryImage = {
   url: string;
@@ -467,7 +516,11 @@ function ZoomMainImage({
           height={1200}
           priority
           sizes="(max-width: 768px) 100vw, 600px"
-          onError={onImgError}
+          onError={(e) => {
+            const failedSrc = (e.currentTarget as HTMLImageElement).src;
+            onImgError();
+            captureImageError(failedSrc, src);
+          }}
           // cfw-l0m: contain (not cover) so the whole product is visible
           // at the pre-lightbox view. Cover was cropping product photos
           // that aren't exactly square, which read as "zoomed in" before
