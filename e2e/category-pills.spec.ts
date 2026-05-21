@@ -32,7 +32,7 @@ test.describe("/shop/futon-frames — CategoryPills sub-filter", () => {
     const nav = page.getByRole("navigation", { name: /sub-category filter/i });
     await expect(nav).toBeVisible();
 
-    const allPill = nav.getByRole("link", { name: "All" });
+    const allPill = nav.getByRole("link", { name: "All", exact: true });
     await expect(allPill).toBeVisible();
     await expect(allPill).toHaveAttribute("aria-current", "page");
   });
@@ -45,7 +45,7 @@ test.describe("/shop/futon-frames — CategoryPills sub-filter", () => {
     const wallHuggersPill = nav.getByRole("link", { name: "Wall Huggers" });
     await expect(wallHuggersPill).toHaveAttribute("aria-current", "page");
 
-    const allPill = nav.getByRole("link", { name: "All" });
+    const allPill = nav.getByRole("link", { name: "All", exact: true });
     await expect(allPill).not.toHaveAttribute("aria-current", "page");
   });
 
@@ -66,7 +66,7 @@ test.describe("/shop/futon-frames — CategoryPills sub-filter", () => {
     await waitForPlpControls(page);
 
     const nav = page.getByRole("navigation", { name: /sub-category filter/i });
-    const allPill = nav.getByRole("link", { name: "All" });
+    const allPill = nav.getByRole("link", { name: "All", exact: true });
     await expect(allPill).toHaveAttribute("aria-current", "page");
 
     // All 2 fixture frames should be visible (no sub-filter applied)
