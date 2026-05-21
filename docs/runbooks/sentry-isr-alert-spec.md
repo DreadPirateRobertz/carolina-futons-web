@@ -187,5 +187,41 @@ The doc is operationally complete; the remaining steps are Stilgar Sentry config
 - cf-h345.t1 PR #706 (wrapper that emits the tag, merged 2026-05-16)
 - cf-h345 bead (parent — ISR follow-ups)
 - cf-0klm (blocks ISR activation — see PR #705 design)
+- cf-m32m bead (drift guard — `scripts/verify-sentry-alerts.sh`)
 - Next.js `onRequestError` docs: https://nextjs.org/docs/app/api-reference/file-conventions/instrumentation#onrequesterror-optional
 - Sentry tag-based alert configuration: https://docs.sentry.io/product/alerts/create-alerts/
+
+---
+
+## Appendix A: alert-rule drift guard (cf-czdw.fu2)
+
+**Script:** `scripts/verify-sentry-alerts.sh`  
+**CI:** `.github/workflows/verify-sentry-alerts.yml` (weekly cron, Monday 09:00 UTC)
+
+The script reads the 4 rules defined in §6 and fetches the live Sentry alert-rule list via the Sentry API. It checks each rule for:
+
+- query matching the expected tag value (`stale` / `on-demand`)
+- trigger label (`warning` / `critical`)
+- alert threshold (integer)
+- time window (5 minutes)
+
+If any rule is missing or a threshold has drifted, the script exits 1 and prints a remediation URL pointing to the Sentry Alerts page.
+
+**Chosen approach:** lightweight read-back script (Option 2 from cf-m32m spec). Sentry-as-code via Terraform (Option 1) is the principled path if the Sentry config grows beyond these 4 rules — revisit at that point.
+
+**Required GitHub secrets** (set by Stilgar / repo admin):
+
+| Secret | Description |
+|---|---|
+| `SENTRY_AUTH_TOKEN` | Org-level auth token from Sentry Settings → Auth Tokens |
+| `SENTRY_ORG` | Sentry organization slug |
+| `SENTRY_PROJECT` | cfw project slug |
+
+**Pre-configuration state:** until Stilgar configures the 4 rules in §6, the weekly cron will report 4 FAIL lines. This is expected and is not a CI failure on the main branch — the workflow runs as a standalone job. Once the rules are configured, the cron validates weekly that no one has edited them in the Sentry UI.
+
+**Manual smoke test:** after Stilgar configures the rules, run:
+```bash
+SENTRY_AUTH_TOKEN=<token> SENTRY_ORG=<org> SENTRY_PROJECT=<project> \
+  bash scripts/verify-sentry-alerts.sh
+```
+Expected output: 4 `✓ PASS` lines and exit 0.
