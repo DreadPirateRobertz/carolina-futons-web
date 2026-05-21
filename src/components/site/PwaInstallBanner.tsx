@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { logWarn } from "@/lib/observability/log";
+
 // BeforeInstallPromptEvent is not in lib.dom — Chromium-only API. Declare the
 // minimal shape we use so the rest of the file is strongly typed.
 interface BeforeInstallPromptEvent extends Event {
@@ -39,7 +41,7 @@ function markDismissed(): void {
     // Storage blocked — banner will re-appear next session. Log so we can spot
     // a persistently-broken session in production rather than guessing from
     // support tickets.
-    console.warn("[PwaInstallBanner] markDismissed: localStorage write failed", err);
+    logWarn("PwaInstallBanner", "markDismissed: localStorage write failed", err);
   }
 }
 
