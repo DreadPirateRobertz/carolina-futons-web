@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import dynamicImport from "next/dynamic";
+import { Layers, Store, Truck } from "lucide-react";
 
 import { VideoShowcaseStrip } from "@/components/home/VideoShowcaseStrip";
 import {
@@ -176,19 +177,23 @@ export default async function HomePage() {
       {/* ── Value props ── */}
       <section className="border-t border-cf-divider bg-cf-sand/40">
         <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-14 sm:grid-cols-3 sm:px-6 lg:px-8">
-          {valueProps.map((prop) => (
-            <div
-              key={prop.title}
-              className="rounded-lg border border-cf-divider bg-cf-cream p-6 shadow-sm"
-            >
-              <h3 className="font-heading text-base font-semibold text-cf-navy">
-                {prop.title}
-              </h3>
-              <p className="mt-2 text-sm text-cf-charcoal/80">
-                {prop.body}
-              </p>
-            </div>
-          ))}
+          {valueProps.map((prop, i) => {
+            const Icon = VALUE_PROP_ICONS[i];
+            return (
+              <div
+                key={prop.title}
+                className="rounded-lg border border-cf-divider bg-cf-cream p-6 shadow-sm"
+              >
+                {Icon && <Icon className="mb-3 h-8 w-8 text-cf-cta" aria-hidden="true" />}
+                <h3 className="font-heading text-base font-semibold text-cf-navy">
+                  {prop.title}
+                </h3>
+                <p className="mt-2 text-sm text-cf-charcoal/80">
+                  {prop.body}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -228,6 +233,8 @@ const VALUE_PROP_DEFAULTS = [
     body: "Regional delivery teams set it up where you want it. Not on a curb in a box.",
   },
 ] as const;
+
+const VALUE_PROP_ICONS = [Layers, Store, Truck] as const;
 
 // cfw-sbl: keys conform to SITE_CONTENT_KEY_PATTERN (lowercase + hyphenated
 // segments) so the cfw-6qd.12 endpoint validator accepts Brenda's edits.
