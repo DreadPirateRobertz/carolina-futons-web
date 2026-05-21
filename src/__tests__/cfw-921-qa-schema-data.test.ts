@@ -33,20 +33,18 @@ import {
 } from "@/lib/qa/qa-schema";
 
 describe("coerceQaInput (cfw-921)", () => {
-  it("trims whitespace from all string fields", () => {
+  it("trims whitespace from string fields", () => {
     const result = coerceQaInput(
-      { question: "  Is this easy to convert?  ", name: " Jane Doe ", email: " j@x.com " },
+      { question: "  Is this easy to convert?  ", name: " Jane Doe " },
       "futon-frames",
     );
     expect(result.question).toBe("Is this easy to convert?");
     expect(result.name).toBe("Jane Doe");
-    expect(result.email).toBe("j@x.com");
   });
 
-  it("coerces missing optional fields to undefined", () => {
+  it("coerces missing name to undefined", () => {
     const result = coerceQaInput({ question: "Hello?" }, "futon-frames");
     expect(result.name).toBeUndefined();
-    expect(result.email).toBeUndefined();
   });
 
   it("empty name string becomes undefined", () => {
@@ -77,14 +75,6 @@ describe("validateQaInput (cfw-921)", () => {
 
   it("accepts question exactly 500 characters", () => {
     expect(hasQaErrors(validateQaInput({ ...base, question: "x".repeat(500) }))).toBe(false);
-  });
-
-  it("rejects malformed email when provided", () => {
-    expect(validateQaInput({ ...base, email: "not-an-email" }).email).toBeTruthy();
-  });
-
-  it("accepts valid optional email", () => {
-    expect(hasQaErrors(validateQaInput({ ...base, email: "hello@example.com" }))).toBe(false);
   });
 
   it("rejects name over 80 characters", () => {

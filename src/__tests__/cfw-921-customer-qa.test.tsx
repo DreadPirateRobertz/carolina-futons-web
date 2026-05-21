@@ -6,7 +6,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { ReactElement } from "react";
 
 vi.mock("server-only", () => ({}));
-vi.mock("next/cache", () => ({ revalidateTag: vi.fn() }));
+const mockRevalidateTag = vi.fn();
+vi.mock("next/cache", () => ({ revalidateTag: (...args: unknown[]) => mockRevalidateTag(...args) }));
 
 vi.mock("@/lib/observability/log", () => ({
   logError: vi.fn(),
@@ -68,11 +69,22 @@ describe("submitQuestion (cfw-921)", () => {
     const result = await submitQuestion(
       "futon-frames",
       initialQaState,
-      makeFormData({ question: "", name: "Jane", email: "j@x.com" }),
+      makeFormData({ question: "", name: "Jane" }),
     );
     if (result.status !== "error") throw new Error("expected error");
     expect(result.values.name).toBe("Jane");
-    expect(result.values.email).toBe("j@x.com");
+  });
+
+  it("calls revalidateTag with 'default' type on success", async () => {
+    await submitQuestion(
+      "futon-frames",
+      initialQaState,
+      makeFormData({ question: "Q?" }),
+    );
+    expect(mockRevalidateTag).toHaveBeenCalledWith(
+      "product-qa:futon-frames",
+      "default",
+    );
   });
 
   it("masks name to initials before storing", async () => {

@@ -10,7 +10,7 @@ export type QaActionState =
   | {
       status: "error";
       errors: QaErrors;
-      values: Omit<SubmitQaInput, "productSlug">;
+      values: { question: string; name?: string };
       transportError?: string;
     }
   | { status: "success" };

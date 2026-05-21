@@ -1,7 +1,6 @@
 // cfw-921: Q&A types + validation. Shared between the server action,
 // API route, and client form — one source of truth for field rules.
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_QUESTION = 500;
 const MAX_NAME = 80;
 
@@ -22,12 +21,9 @@ export type SubmitQaInput = {
   productSlug: string;
   question: string;
   name?: string;
-  email?: string;
 };
 
-export type QaErrors = Partial<
-  Record<keyof Omit<SubmitQaInput, "productSlug">, string>
->;
+export type QaErrors = Partial<Record<"question" | "name", string>>;
 
 function str(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -42,7 +38,6 @@ export function coerceQaInput(
     productSlug,
     question: str(obj.question),
     name: str(obj.name) || undefined,
-    email: str(obj.email) || undefined,
   };
 }
 
@@ -53,8 +48,6 @@ export function validateQaInput(input: SubmitQaInput): QaErrors {
     errors.question = `Question must be under ${MAX_QUESTION} characters.`;
   if (input.name && input.name.length > MAX_NAME)
     errors.name = "Name is too long.";
-  if (input.email && !EMAIL_RE.test(input.email))
-    errors.email = "That email doesn't look right.";
   return errors;
 }
 

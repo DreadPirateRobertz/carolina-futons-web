@@ -1,5 +1,6 @@
 import { listProductQa } from "@/lib/wix/product-qa";
 import type { QaItem } from "@/lib/qa/qa-schema";
+import { logWarn } from "@/lib/observability/log";
 import { CustomerQaForm } from "@/components/product/CustomerQaForm";
 
 function QaEntry({ item }: { item: QaItem }) {
@@ -39,8 +40,8 @@ export async function CustomerQa({ productSlug }: Props) {
   let items: QaItem[] = [];
   try {
     items = await listProductQa(productSlug);
-  } catch {
-    // Q&A is non-critical; a Wix error should not break the PDP
+  } catch (err) {
+    logWarn("customer-qa", "listProductQa failed — showing empty state", err);
   }
 
   return (

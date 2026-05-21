@@ -27,11 +27,7 @@ export async function submitQuestion(
     return {
       status: "error",
       errors,
-      values: {
-        question: input.question,
-        name: input.name,
-        email: input.email,
-      },
+      values: { question: input.question, name: input.name },
     };
   }
 
@@ -42,18 +38,14 @@ export async function submitQuestion(
       askedBy: maskName(input.name),
       askedAt: new Date().toISOString(),
     });
-    revalidateTag(`product-qa:${productSlug}`);
+    revalidateTag(`product-qa:${productSlug}`, "default");
     return { status: "success" };
   } catch (err) {
     logError("qa-actions", "insertProductQuestion failed", err);
     return {
       status: "error",
       errors: {},
-      values: {
-        question: input.question,
-        name: input.name,
-        email: input.email,
-      },
+      values: { question: input.question, name: input.name },
       transportError: TRANSPORT_ERROR,
     };
   }

@@ -26,7 +26,7 @@ function errorsFrom(state: QaActionState) {
 function valuesFrom(state: QaActionState) {
   return state.status === "error"
     ? state.values
-    : { question: "", name: undefined, email: undefined };
+    : { question: "", name: undefined };
 }
 
 export type CustomerQaFormProps = { productSlug: string };
@@ -37,7 +37,6 @@ export function CustomerQaForm({ productSlug }: CustomerQaFormProps) {
 
   const questionId = useId();
   const nameId = useId();
-  const emailId = useId();
 
   if (state.status === "success") {
     return (
@@ -94,49 +93,26 @@ export function CustomerQaForm({ productSlug }: CustomerQaFormProps) {
         ) : null}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor={nameId} className={labelClass}>
-            Name{" "}
-            <span className="text-xs font-normal text-cf-muted">(optional)</span>
-          </label>
-          <input
-            id={nameId}
-            name="name"
-            type="text"
-            autoComplete="name"
-            defaultValue={values.name ?? ""}
-            className={inputClass}
-            aria-invalid={errors.name ? true : undefined}
-            aria-describedby={errors.name ? `${nameId}-error` : undefined}
-          />
-          {errors.name ? (
-            <p id={`${nameId}-error`} className={errorClass} role="alert">
-              {errors.name}
-            </p>
-          ) : null}
-        </div>
-        <div>
-          <label htmlFor={emailId} className={labelClass}>
-            Email{" "}
-            <span className="text-xs font-normal text-cf-muted">(optional, not shown)</span>
-          </label>
-          <input
-            id={emailId}
-            name="email"
-            type="email"
-            autoComplete="email"
-            defaultValue={values.email ?? ""}
-            className={inputClass}
-            aria-invalid={errors.email ? true : undefined}
-            aria-describedby={errors.email ? `${emailId}-error` : undefined}
-          />
-          {errors.email ? (
-            <p id={`${emailId}-error`} className={errorClass} role="alert">
-              {errors.email}
-            </p>
-          ) : null}
-        </div>
+      <div>
+        <label htmlFor={nameId} className={labelClass}>
+          Name{" "}
+          <span className="text-xs font-normal text-cf-muted">(optional — shown as initials only)</span>
+        </label>
+        <input
+          id={nameId}
+          name="name"
+          type="text"
+          autoComplete="name"
+          defaultValue={values.name ?? ""}
+          className={inputClass}
+          aria-invalid={errors.name ? true : undefined}
+          aria-describedby={errors.name ? `${nameId}-error` : undefined}
+        />
+        {errors.name ? (
+          <p id={`${nameId}-error`} className={errorClass} role="alert">
+            {errors.name}
+          </p>
+        ) : null}
       </div>
 
       {transportError ? (
