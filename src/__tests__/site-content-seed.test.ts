@@ -43,9 +43,9 @@ describe("provision-site-content seed-data.json", () => {
     expect(seed.rows.length).toBeGreaterThan(0);
   });
 
-  it("contains exactly 26 seed rows (cfw-roi + cfw-34q value-props expansion)", () => {
+  it("contains exactly 37 seed rows (cfw-roi + cfw-34q value-props + cfw-66o.11 about copy)", () => {
     const seed = loadSeed();
-    expect(seed.rows).toHaveLength(26);
+    expect(seed.rows).toHaveLength(37);
   });
 
   it("every row has a non-empty string key and value", () => {
@@ -102,6 +102,19 @@ describe("provision-site-content seed-data.json", () => {
       "home.value-props.1.body",
       "home.value-props.2.title",
       "home.value-props.2.body",
+      // cfw-66o.11: about page copy — cf-7pk0 F1 wired 11 keys; seed rows
+      // close the loop so Brenda can edit the About page from the CMS dashboard.
+      "about.intro.eyebrow",
+      "about.intro.heading",
+      "about.intro.subheading",
+      "about.intro.lede",
+      "about.beliefs.heading",
+      "about.beliefs.body-1",
+      "about.beliefs.body-2",
+      "about.location.heading",
+      "about.location.body-1",
+      "about.team.heading",
+      "about.team.body",
     ];
     const seed = loadSeed();
     const keys = new Set(seed.rows.map((r) => r.key));

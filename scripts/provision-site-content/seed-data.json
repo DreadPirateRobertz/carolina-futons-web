@@ -1,6 +1,6 @@
 {
   "$schema": "./seed-schema.json",
-  "_about": "cfw-roi (cf-atze) — initial seed for the SiteContent Wix CMS collection. 26 owner-editable copy strings keyed by dotted-path. Row count grew from 20 → 26 in cfw-34q to cover the home.value-props.* keys cfw-9uw introduced. Provisioning script lives in ./index.mjs. Production reader: src/lib/cms/site-content.ts.",
+  "_about": "cfw-roi (cf-atze) — initial seed for the SiteContent Wix CMS collection. Row count: 20 (initial) → 26 (cfw-34q home value-props) → 37 (cfw-66o.11 about page copy). Provisioning script lives in ./index.mjs. Production reader: src/lib/cms/site-content.ts.",
   "_naming": "lowercase, dotted-path, hyphenated segments. e.g. 'footer.tagline', 'announcement.rotation.0.message'. See docs/design/cfw-66o-footer-announce-specs.md §2.",
   "rows": [
     {
@@ -132,6 +132,61 @@
       "key": "home.value-props.2.body",
       "value": "Regional delivery teams set it up where you want it. Not on a curb in a box.",
       "_source": "src/app/page.tsx VALUE_PROP_DEFAULTS[2].body (cfw-9uw)"
+    },
+    {
+      "key": "about.intro.eyebrow",
+      "value": "Our story",
+      "_source": "src/app/about/page.tsx ABOUT_COPY_FALLBACKS.introEyebrow (cfw-66o.11)"
+    },
+    {
+      "key": "about.intro.heading",
+      "value": "About Carolina Futons",
+      "_source": "src/app/about/page.tsx ABOUT_COPY_FALLBACKS.introHeading (cfw-66o.11)"
+    },
+    {
+      "key": "about.intro.subheading",
+      "value": "Family-owned and independently operated in Hendersonville, North Carolina since 1991.",
+      "_source": "src/app/about/page.tsx ABOUT_COPY_FALLBACKS.introSubheading (cfw-66o.11)"
+    },
+    {
+      "key": "about.intro.lede",
+      "value": "Carolina Futons opened its doors in 1991 with a simple idea: sell furniture that is built to last, made by people who take the work seriously, and stand behind it personally. Three decades later, that is still the job.",
+      "_source": "src/app/about/page.tsx ABOUT_COPY_FALLBACKS.introLede (cfw-66o.11)"
+    },
+    {
+      "key": "about.beliefs.heading",
+      "value": "What we believe",
+      "_source": "src/app/about/page.tsx ABOUT_COPY_FALLBACKS.beliefsHeading (cfw-66o.11)"
+    },
+    {
+      "key": "about.beliefs.body-1",
+      "value": "Furniture should be durable, repairable, and honest about what it is. We favor solid hardwood frames and mattresses made in the United States, we tell you where each piece comes from, and we price our catalog so you can compare without decoding a sale.",
+      "_source": "src/app/about/page.tsx ABOUT_COPY_FALLBACKS.beliefsBody1 (cfw-66o.11)"
+    },
+    {
+      "key": "about.beliefs.body-2",
+      "value": "A futon is a bed that also earns its keep as a sofa, so the decision should feel as considered as any other major purchase. We'd rather help one customer choose the right frame than ship two of the wrong one.",
+      "_source": "src/app/about/page.tsx ABOUT_COPY_FALLBACKS.beliefsBody2 (cfw-66o.11)"
+    },
+    {
+      "key": "about.location.heading",
+      "value": "Where to find us",
+      "_source": "src/app/about/page.tsx ABOUT_COPY_FALLBACKS.locationHeading (cfw-66o.11)"
+    },
+    {
+      "key": "about.location.body-1",
+      "value": "Our showroom is at 824 Locust Street, Suite 200, Hendersonville, NC 28792. Stop in to sit on the frames, feel the mattresses, and meet the people who will answer the phone if anything ever goes sideways.",
+      "_source": "src/app/about/page.tsx ABOUT_COPY_FALLBACKS.locationBody1 (cfw-66o.11)"
+    },
+    {
+      "key": "about.team.heading",
+      "value": "The team",
+      "_source": "src/app/about/page.tsx ABOUT_COPY_FALLBACKS.teamHeading (cfw-66o.11)"
+    },
+    {
+      "key": "about.team.body",
+      "value": "A short roster of the people who build, deliver, and stand behind every order is coming soon. In the meantime, the fastest way to reach any of us is the contact details above — we answer our own email.",
+      "_source": "src/app/about/page.tsx ABOUT_COPY_FALLBACKS.teamBody (cfw-66o.11)"
     }
   ]
 }
