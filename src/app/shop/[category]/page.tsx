@@ -21,6 +21,7 @@ import { listAllProductBadges } from "@/lib/wix/product-badges";
 import { HeroReveal } from "@/components/motion/HeroReveal";
 import { PLPControls } from "@/components/plp/PLPControls";
 import { PLPPagination, buildPageUrl } from "@/components/plp/PLPPagination";
+import { CategoryPills } from "@/components/shop/CategoryPills";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { buildBreadcrumbSchema, resolveSiteUrl } from "@/lib/seo/json-ld";
 import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
@@ -104,8 +105,9 @@ export function parseSearchParams(
   const priceMin = parsePrice(raw("priceMin"));
   const priceMax = parsePrice(raw("priceMax"));
   const inStockOnly = raw("inStock") === "1";
+  const sub = raw("sub");
 
-  return { pageNum, sort, priceMin, priceMax, inStockOnly };
+  return { pageNum, sort, priceMin, priceMax, inStockOnly, sub };
 }
 
 export default async function PlpPage(props: {
@@ -139,7 +141,7 @@ export default async function PlpPage(props: {
     pageReaderError = toReaderError(err);
   }
 
-  const { pageNum, sort, priceMin, priceMax, inStockOnly } =
+  const { pageNum, sort, priceMin, priceMax, inStockOnly, sub } =
     parseSearchParams(searchParams);
 
   // Use collection ID when available; fall back to "" for derived categories
@@ -171,6 +173,19 @@ export default async function PlpPage(props: {
         };
 
   const badgeMap = await listAllProductBadges();
+
+  // cfw-dv5: sub-category pill filter. When a known sub slug is in searchParams,
+  // narrow the product list by case-insensitive name substring. Unknown slugs
+  // fall through (matchingSub=undefined → displayItems=page.items) so a stale
+  // or mistyped ?sub= param never shows a blank grid.
+  const matchingSub = sub
+    ? (category.subcategories ?? []).find((s) => s.slug === sub)
+    : undefined;
+  const displayItems = matchingSub
+    ? page.items.filter((p) =>
+        (p.name ?? "").toLowerCase().includes(matchingSub.nameContains.toLowerCase()),
+      )
+    : page.items;
 
   // cf-3qt.6.B silent-failure fix (blaidd PR #35): an errored scan returns
   // items=[] but it is NOT an empty collection. We MUST render distinct outage
@@ -244,6 +259,16 @@ export default async function PlpPage(props: {
         </Suspense>
       </div>
 
+      {/* cfw-dv5: sub-category pill filters — rendered only when the category
+          defines subcategories (currently futon-frames only). */}
+      {(category.subcategories?.length ?? 0) > 0 && (
+        <CategoryPills
+          subcategories={category.subcategories!}
+          activeSub={matchingSub?.slug}
+          categorySlug={categorySlug}
+        />
+      )}
+
       {/*
         Empty-state ladder — order matters:
           1. readerFailed      outage banner must pre-empt every other empty
@@ -251,7 +276,7 @@ export default async function PlpPage(props: {
                                empty collection — bounce-trap otherwise)
           2. overPaginated     page>1 with page.total>0 but items=[] is NOT
                                "no matches" — offer back-to-page-1
-          3. page.items.empty  genuine empty-collection / filter-eliminated /
+          3. displayItems.empty genuine empty-collection / filter-eliminated /
                                mattresses-sale empty-sale copy
           4. grid              render products
         Re-ordering breaks branch-precedence assertions in
@@ -277,7 +302,7 @@ export default async function PlpPage(props: {
             Back to page 1
           </Link>
         </p>
-      ) : page.items.length === 0 ? (
+      ) : displayItems.length === 0 ? (
         <p className="mt-10 rounded-md border border-zinc-100 bg-zinc-50 p-6 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
           {facets.total === 0
             ? (category.emptyStateCopy ??
@@ -286,7 +311,7 @@ export default async function PlpPage(props: {
         </p>
       ) : (
         <ul className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {page.items.map((product, i) => (
+          {displayItems.map((product, i) => (
             // cf-plp-card-stagger: per-card fade+slide-up reveal with index-
             // based delay (60ms step). HeroReveal handles reduced-motion
             // internally — static render under prefers-reduced-motion, no

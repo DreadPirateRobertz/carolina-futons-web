@@ -11,6 +11,15 @@
 // a branch in derived-products.ts to register a new derived category.
 export type CategoryFilter = "on-sale";
 
+// cfw-dv5: sub-category pill filter entry. `nameContains` is a case-insensitive
+// substring checked against product.name to determine membership. Kept simple
+// (no regex, no tag system) so the store owner can tune by editing this file.
+export type Subcategory = {
+  slug: string;
+  name: string;
+  nameContains: string;
+};
+
 export type ShopCategory = {
   slug: string;
   name: string;
@@ -32,6 +41,8 @@ export type ShopCategory = {
   emptyStateCopy?: string;
   // Wix CDN image URL for the category card thumbnail.
   image?: string;
+  // cfw-dv5: optional pill-filter sub-categories rendered above the PLP grid.
+  subcategories?: readonly Subcategory[];
 };
 
 export const SHOP_CATEGORIES: readonly ShopCategory[] = [
@@ -42,6 +53,12 @@ export const SHOP_CATEGORIES: readonly ShopCategory[] = [
       "Choose from twin, full, or queen hardwood frames, with varying seat heights, finishes, and conversion mechanisms. Some models offer chair, full, and queen chairs with ottoman options.",
     collectionSlug: "futon-frames",
     image: "https://static.wixstatic.com/media/e04e89_4bea49a709a3470a8315b5acd7309b0f~mv2.jpg/v1/fill/w_600,h_400,q_90/file.jpg",
+    subcategories: [
+      { slug: "front-loading-nesting", name: "Front Loading & Nesting", nameContains: "Front Load" },
+      { slug: "wall-huggers", name: "Wall Huggers", nameContains: "Wall Hugger" },
+      { slug: "unfinished-wood", name: "Unfinished Wood", nameContains: "Unfinished" },
+      { slug: "rustic-log", name: "Rustic Log", nameContains: "Rustic Log" },
+    ],
   },
   {
     slug: "murphy-cabinet-beds",
