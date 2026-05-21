@@ -51,7 +51,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   try {
-    for (const tag of getQaCacheTags(productSlug)) revalidateTag(tag);
+    for (const tag of getQaCacheTags(productSlug)) revalidateTag(tag, "default");
   } catch (err) {
     logError("product-qa", QA_REVALIDATE_FAILED, err);
   }

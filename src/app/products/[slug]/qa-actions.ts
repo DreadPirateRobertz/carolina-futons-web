@@ -50,7 +50,7 @@ export async function submitQuestion(
   }
 
   try {
-    for (const tag of getQaCacheTags(productSlug)) revalidateTag(tag);
+    for (const tag of getQaCacheTags(productSlug)) revalidateTag(tag, "default");
   } catch (err) {
     logError("product-qa", QA_REVALIDATE_FAILED, err);
   }
