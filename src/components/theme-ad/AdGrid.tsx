@@ -44,7 +44,7 @@ export function AdGrid({ categories }: { categories: AdCategory[] }) {
           return true;
         });
     }
-    return categories.find((c) => c.slug === activeCat)?.products ?? [];
+    return (categories.find((c) => c.slug === activeCat)?.products ?? []).filter((p) => !!p._id);
   }, [categories, activeCat]);
 
   const filtered = useMemo(() => {
@@ -152,7 +152,7 @@ export function AdGrid({ categories }: { categories: AdCategory[] }) {
             role="list"
           >
             {filtered.map((product, i) => (
-              <li key={product._id}>
+              <li key={product._id ?? product.slug}>
                 <div className="group relative">
                   <ProductCard product={product} priority={i < 4} />
                   {/* Mr Pops sunrise — warm cf-cta tint rises from card bottom on hover */}
