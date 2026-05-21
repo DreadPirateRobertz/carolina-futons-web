@@ -16,11 +16,10 @@ const isFixtureMode = process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1";
 const PLP_TIMEOUT = 15_000;
 
 async function waitForPlpControls(page: Page) {
-  await expect(page.locator("select#plp-sort")).toBeVisible({
-    timeout: PLP_TIMEOUT,
-    message:
-      "PLP sort control (#plp-sort) not visible — PLPControls may not have hydrated; CategoryPills will not be mounted",
-  });
+  await expect(
+    page.locator("select#plp-sort"),
+    "PLP sort control (#plp-sort) not visible — PLPControls may not have hydrated; CategoryPills will not be mounted",
+  ).toBeVisible({ timeout: PLP_TIMEOUT });
 }
 
 test.describe("/shop/futon-frames — CategoryPills sub-filter", () => {
