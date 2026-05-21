@@ -64,6 +64,24 @@ test.describe("/api/email/trigger — email dispatch gateway", () => {
     });
     expect(res.status()).toBe(400);
   });
+
+  test("invalid JSON body returns 400 invalid-json (cf-w1u1)", async ({ request }) => {
+    const res = await request.post("/api/email/trigger", {
+      data: "not-json",
+      headers: { "content-type": "application/json" },
+    });
+    expect(res.status()).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toMatch(/invalid.json/i);
+  });
+
+  test("null JSON body returns 400 (cf-w1u1)", async ({ request }) => {
+    const res = await request.post("/api/email/trigger", {
+      data: "null",
+      headers: { "content-type": "application/json" },
+    });
+    expect(res.status()).toBe(400);
+  });
 });
 
 // ── /api/auth/register — welcome email fires on sign-up ───────────────────────
