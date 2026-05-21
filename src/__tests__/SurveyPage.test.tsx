@@ -23,7 +23,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
 });
 
 async function renderPage(params: Record<string, string> = {}) {
@@ -108,6 +108,7 @@ describe("SurveyPage — owner-editable copy (cfw-wv1)", () => {
   it("queries the 2 expected survey.* SiteContent keys", async () => {
     await renderPage();
     const keys = mockGetSiteContent.mock.calls.map(([key]) => key);
+    expect(keys).toHaveLength(2);
     expect(keys).toEqual(
       expect.arrayContaining(["survey.heading", "survey.intro.body"]),
     );
