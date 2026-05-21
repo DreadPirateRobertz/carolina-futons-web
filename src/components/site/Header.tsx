@@ -25,8 +25,8 @@ import { ThemeToggle } from "@/components/site/ThemeToggle";
 import { MegaMenuItem } from "@/components/site/MegaMenu";
 
 const PRIMARY_NAV = [
-  { label: "Futons", href: "/shop/futon-frames" },
-  { label: "Murphy Beds", href: "/shop/murphy-cabinet-beds" },
+  { label: "Futon Frames", href: "/shop/futon-frames" },
+  { label: "Murphy Cabinet Beds", href: "/shop/murphy-cabinet-beds" },
   { label: "Platform Beds", href: "/shop/platform-beds" },
   { label: "Mattresses", href: "/shop/mattresses" },
   { label: "Sale", href: "/shop/mattresses-sale" },
