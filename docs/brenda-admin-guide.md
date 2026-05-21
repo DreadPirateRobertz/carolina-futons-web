@@ -89,6 +89,8 @@ Customer photos appear in the gallery section on the site. They live in a collec
 
 The photo appears in the gallery on the site within a few minutes.
 
+> **If the upload fails:** the most common reason is the file is too large. Save a smaller copy from your phone or computer (under 5 MB) and try again.
+
 > **To remove a photo:** find it in the CommunityPhotos list, open it, and uncheck **Approved**. It disappears from the site without deleting the record.
 
 ---
@@ -107,8 +109,8 @@ Some things are outside the dashboard (new page layouts, new features, site outa
 
 | Situation | What to do |
 |---|---|
-| Owner mode pencils not appearing | Email Chris directly |
-| Product change saved but not showing after 10 min | Email Chris — likely a cache issue |
+| Owner mode pencils not appearing | Email Chris (chrisdealglass@gmail.com) |
+| Product change saved but not showing after 10 min | Email Chris (chrisdealglass@gmail.com) — likely a cache issue |
 | Wix Dashboard itself is broken or showing errors | [Wix Support](https://support.wix.com/) first; if it seems site-specific, email Chris |
 | A customer can't check out | Email Chris immediately — this is urgent |
 | You want a new section, new page, or new feature | File a GitHub issue (see below) |
