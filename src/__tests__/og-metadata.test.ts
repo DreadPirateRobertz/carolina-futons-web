@@ -1,7 +1,7 @@
 // TDD tests for Open Graph + Twitter Card metadata across all pages.
 // Tests the metadata export/function directly — not the rendered page markup.
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // next/font/google performs filesystem ops at module init — stub it so layout
 // can be imported in jsdom without a Next.js build pipeline.
@@ -888,11 +888,16 @@ describe("generateMetadata — category description via getSiteContent (cfw-66o.
     mockGetSiteContent.mockReset();
   });
 
+  // E469: restore module-level default so tests added after this block don't receive undefined.
+  afterEach(() => {
+    mockGetSiteContent.mockImplementation((_key: string, fallback = "") =>
+      Promise.resolve(fallback),
+    );
+  });
+
   it("uses the CMS override when getSiteContent returns a non-fallback value", async () => {
     const cmsOverride = "Browse our handcrafted hardwood futon frames — CMS copy.";
-    mockGetSiteContent.mockImplementation(async (_key: string, _fallback = "") =>
-      cmsOverride,
-    );
+    mockGetSiteContent.mockResolvedValue(cmsOverride);
     const meta = await categoryGenerateMeta({
       params: Promise.resolve({ category: "futon-frames" }),
     });
@@ -917,5 +922,14 @@ describe("generateMetadata — category description via getSiteContent (cfw-66o.
       "shop.futon-frames.description",
       category.description,
     );
+  });
+
+  it("falls back to category.description when getSiteContent returns empty string", async () => {
+    mockGetSiteContent.mockResolvedValue("");
+    const meta = await categoryGenerateMeta({
+      params: Promise.resolve({ category: "futon-frames" }),
+    });
+    expect(meta.description).toBe(category.description);
+    expect(meta.openGraph?.description).toBe(category.description);
   });
 });
