@@ -16,10 +16,9 @@ const isFixtureMode = process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1";
 const PLP_TIMEOUT = 15_000;
 
 async function waitForPlpControls(page: Page) {
+  // PLPControls must hydrate before CategoryPills mounts.
   await expect(page.locator("select#plp-sort")).toBeVisible({
     timeout: PLP_TIMEOUT,
-    message:
-      "PLP sort control (#plp-sort) not visible — PLPControls may not have hydrated; CategoryPills will not be mounted",
   });
 }
 
