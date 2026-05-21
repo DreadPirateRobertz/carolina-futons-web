@@ -97,9 +97,32 @@ The photo appears in the gallery on the site within a few minutes.
 
 ## 5 · Change the announcement bar message
 
-> **Note:** This section is coming soon. The engineering team (Chris) is finishing the wiring that lets you edit the announcement bar text from the dashboard. Once it's ready, the steps will appear here — likely as a single field in a **SiteContent** collection under CMS → Content Manager.
->
-> For now, to change the announcement bar text, send Chris a message with the new wording and he can update it in a few minutes.
+The announcement bar at the top of every page rotates through up to 5 messages. You can edit any of them from the Wix Dashboard — no code deploy needed.
+
+1. Left sidebar → **CMS** → **Content Manager**.
+2. Click **SiteContent** in the collection list.
+3. In the search/filter bar at the top of the collection, type **`announcement.`** — this filters the list down to just the announcement bar rows.
+4. Find the row you want to change (e.g. `announcement.rotation.0.message` is the first message in the rotation).
+5. Click the row to open it, then edit the **value** field with your new wording.
+6. Click **Save**.
+
+**The change goes live within 30 seconds.** Refresh the site to confirm.
+
+**Rows in this section:**
+
+| Key | What it controls |
+|---|---|
+| `announcement.rotation.0.message` | First rotating message |
+| `announcement.rotation.1.message` | Second rotating message |
+| `announcement.rotation.2.message` | Third rotating message |
+| `announcement.rotation.3.message` | Fourth rotating message (paired with a button link below) |
+| `announcement.rotation.3.cta-label` | Button label for the fourth message (e.g. "Order free swatches") |
+| `announcement.rotation.3.cta-href` | Button destination URL for the fourth message (e.g. `/swatch-request`) |
+| `announcement.rotation.4.message` | Fifth rotating message |
+
+> **Tip:** Leave a row's **value** blank (or delete the row) to fall back to the original shipped wording. You don't have to keep every slot filled — the bar still works with fewer messages.
+
+> **To remove the CTA button on message 4:** clear both the `cta-label` and `cta-href` values. When either is blank, no button renders.
 
 ---
 
@@ -136,7 +159,7 @@ Chris monitors the issue tracker and will reply with a timeline.
 | Hide or show a product | Wix Dashboard → Store → Products → product → Visibility |
 | Edit a Guide article | Wix Dashboard → CMS → Content Manager → Guides |
 | Add a community photo | Wix Dashboard → CMS → Content Manager → CommunityPhotos |
-| Change the announcement bar | Email Chris (dashboard editing coming soon) |
+| Change the announcement bar | Wix Dashboard → CMS → Content Manager → SiteContent → filter `announcement.` |
 | Report a bug or request a feature | GitHub Issues (see Section 6) |
 | Edit homepage text or photos | Owner mode on carolinafutons.com — add `?cf-edit=1` to the URL |
 
