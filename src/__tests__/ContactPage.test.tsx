@@ -208,6 +208,22 @@ describe("ContactPage — owner-editable copy (cf-bbu5)", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders the contact.eyebrow fallback when SiteContent is empty", async () => {
+    await renderPage();
+    // Eyebrow is a <p> above the h1. The fallback is the literal "Contact" label.
+    expect(screen.getByText("Contact")).toBeInTheDocument();
+  });
+
+  it("renders contact.appointment.body-suffix CMS override when getSiteContent returns a non-fallback value", async () => {
+    mockGetSiteContent.mockImplementation(async (key, fallback) => {
+      if (key === "contact.appointment.body-suffix")
+        return " Slots fill up fast — book early.";
+      return fallback;
+    });
+    await renderPage();
+    expect(screen.getByText(/ Slots fill up fast — book early\./)).toBeInTheDocument();
+  });
+
   it("queries the 7 expected contact.* SiteContent keys", async () => {
     await renderPage();
     const keys = mockGetSiteContent.mock.calls.map(([key]) => key);
