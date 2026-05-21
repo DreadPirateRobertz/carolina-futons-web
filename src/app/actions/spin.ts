@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { logError } from "@/lib/observability/log";
 import {
   SPIN_PRIZES,
   type SpinActionState,
@@ -62,7 +63,7 @@ export async function spinWheel(
       cache: "no-store",
       signal: AbortSignal.timeout(5_000),
     }).catch((err) => {
-      console.error("[spin] recordSpinGrant failed (non-fatal):", err);
+      logError("spin", "recordSpinGrant failed (non-fatal)", err);
     });
   }
 
