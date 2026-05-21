@@ -41,24 +41,19 @@ const eslintConfig = defineConfig([
   // unavoidably exempt (it's the call site that writes to console.error
   // on purpose); tests are also exempt because they spy on console.error
   // by design.
-  //
-  // Surfaced as a `warn` (not `error`) while the chain of in-flight
-  // migration PRs is still landing — the lint-typecheck-test job runs
-  // `eslint --quiet` which only fails on errors, so this warns without
-  // blocking CI. Flip to `error` once every remaining `console.error`
-  // has migrated.
   {
     files: ["src/**/*.{ts,tsx}"],
     ignores: [
       "src/lib/observability/log.ts",
       "src/lib/wix/errors.ts",
+      "src/lib/logging/log-error.ts",
       "src/**/__tests__/**/*.{ts,tsx}",
       "src/**/*.test.{ts,tsx}",
       "src/**/*.spec.{ts,tsx}",
     ],
     rules: {
       "no-restricted-syntax": [
-        "warn",
+        "error",
         {
           selector:
             "CallExpression[callee.object.name='console'][callee.property.name='error']",
