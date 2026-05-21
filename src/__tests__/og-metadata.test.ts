@@ -53,6 +53,7 @@ vi.mock("@/lib/shop/plp-observability", () => ({ logOverPaginatedRender: vi.fn()
 vi.mock("@/lib/product/cross-sell", () => ({ getCrossSellProducts: vi.fn() }));
 vi.mock("next/navigation", () => ({ notFound: vi.fn(), redirect: vi.fn() }));
 vi.mock("next/headers", () => ({ cookies: vi.fn() }));
+vi.mock("@/lib/observability/log", () => ({ logError: vi.fn(), logWarn: vi.fn() }));
 
 import { metadata as layoutMetadata } from "@/app/layout";
 import { metadata as shopMetadata } from "@/app/shop/page";
@@ -74,6 +75,7 @@ import { findCategory } from "@/lib/shop/categories";
 import { getProductBySlug } from "@/lib/wix/products";
 import { getReferralByCodeAction } from "@/app/actions/referral";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
+import { logError } from "@/lib/observability/log";
 
 const mockFindCategory = vi.mocked(findCategory);
 const mockGetProductBySlug = vi.mocked(getProductBySlug);
@@ -258,15 +260,15 @@ describe("PDP generateMetadata", () => {
   });
 
   it("falls back to DEFAULT_OG_IMAGE for non-HTTPS image URL", async () => {
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const mockLogError = vi.mocked(logError);
+    mockLogError.mockClear();
     mockGetProductBySlug.mockResolvedValue({
       ...product,
       media: { mainMedia: { image: { url: "wix:image://v1/abc.jpg" } } },
     } as never);
     const meta = await pdpGenerateMeta({ params: Promise.resolve({ slug: "monterey-futon" }) });
     expect(ogImageUrls(meta.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
-    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining("non-HTTPS"), expect.any(String));
-    errSpy.mockRestore();
+    expect(mockLogError).toHaveBeenCalledWith("PDP", expect.stringContaining("non-HTTPS"), undefined, expect.any(Object));
   });
 
   it("returns fallback title 'Product — Carolina Futons' when product is not found", async () => {
