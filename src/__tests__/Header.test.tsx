@@ -106,7 +106,7 @@ describe("Header (cf-3qt.1 Phase 1)", () => {
       // cfw-3ty: hamburger label changed per Brenda's PDF; mobile drawer is
       // what RTL queries see (desktop nav is rendered as buttons, not links).
       ["Futon Frames", "/shop/futon-frames"],
-      ["Murphy Beds", "/shop/murphy-cabinet-beds"],
+      ["Murphy Cabinet Beds", "/shop/murphy-cabinet-beds"],
       ["Platform Beds", "/shop/platform-beds"],
       ["Mattresses", "/shop/mattresses"],
       ["Sale", "/shop/mattresses-sale"],

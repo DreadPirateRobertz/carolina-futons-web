@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 
-// cf-mobile-hamburger-portal (Stilgar P0, third flag): the drawer
+// cf-mobile-hamburger-portal: the drawer
 // render originally lived inline next to the trigger button, which
 // meant the Header's stacking context (sticky + transform on scroll-
 // shrink + the gradient backdrop) was clipping or under-layering the
@@ -17,7 +17,7 @@ import { Menu, X } from "lucide-react";
 
 const PRIMARY_NAV = [
   { label: "Futon Frames", href: "/shop/futon-frames" },
-  { label: "Murphy Beds", href: "/shop/murphy-cabinet-beds" },
+  { label: "Murphy Cabinet Beds", href: "/shop/murphy-cabinet-beds" },
   { label: "Platform Beds", href: "/shop/platform-beds" },
   { label: "Mattresses", href: "/shop/mattresses" },
   { label: "Sale", href: "/shop/mattresses-sale" },

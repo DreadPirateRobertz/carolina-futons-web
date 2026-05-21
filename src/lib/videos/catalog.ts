@@ -62,7 +62,7 @@ const WIX_SEEDS: readonly WixSeed[] = [
   { id: "vid-mountainnaire", title: "Mountainnaire", description: "The Mountainnaire futon frame — mountain-inspired elegance.", category: "futon", videoUri: "e04e89_b6c0b062855d432a91698f3460b74552", productSlug: "mountainnaire-futon-frame", sortOrder: 5 },
   { id: "vid-maricopa", title: "Maricopa", description: "The Maricopa futon frame — versatile and built to last.", category: "futon", videoUri: "e04e89_b10b923982664fa39409244ac93dadcf", productSlug: "maricopa-futon-frame", sortOrder: 6 },
   { id: "vid-flagstaff", title: "Flagstaff", description: "The Flagstaff futon frame — timeless style, durable construction.", category: "futon", videoUri: "e04e89_973ed5df7eb34c1d9ad7c1697e8d0f72", productSlug: "flagstaff-futon-frame", sortOrder: 7 },
-  { id: "vid-studio-conversion", title: "Studio Conversion", description: "See the easy and simple conversation of the Studio frame from sofa to bed.", category: "conversion", videoUri: "e04e89_d9ffa580eb5a4fa784bc6bb6a6105257", sortOrder: 8 },
+  { id: "vid-studio-conversion", title: "Studio Conversion", description: "See the easy and simple conversion of the Studio frame from sofa to bed.", category: "conversion", videoUri: "e04e89_d9ffa580eb5a4fa784bc6bb6a6105257", sortOrder: 8 },
   { id: "vid-wallhugger-conversion", title: "WallHugger Conversion", description: "The WallHugger frame converts without pulling away from the wall.", category: "conversion", videoUri: "e04e89_d49b6de8f0b4471bb132c612497fd53c", sortOrder: 9 },
   { id: "vid-moonglider-conversion", title: "MoonGlider Conversion", description: "Watch the MoonGlider glide smoothly from sofa to sleeper.", category: "conversion", videoUri: "e04e89_b8d2371453a0487abf8224d6256bdfe0", sortOrder: 10 },
 ];
