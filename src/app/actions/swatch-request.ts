@@ -186,9 +186,10 @@ export async function submitSwatchRequestAction(
   } catch (parseErr) {
     logError("swatch-request", "failed to parse Velo error body", parseErr);
   }
-  logError("swatch-request", "Velo endpoint rejected submission", undefined, {
-    status: res.status,
-    veloError: veloErrorForLog,
-  });
+  logError(
+    "swatch-request",
+    `Velo endpoint rejected: ${res.status}`,
+    new Error(`Velo ${res.status}: ${veloErrorForLog ?? "(no body)"}`),
+  );
   return transportFailure(contactInfo, selectedIds, TRANSPORT_ERROR_GENERIC);
 }

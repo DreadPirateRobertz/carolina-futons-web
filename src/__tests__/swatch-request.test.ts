@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
-vi.mock("@sentry/nextjs", () => ({
-  captureException: vi.fn(),
-  flush: vi.fn().mockResolvedValue(true),
+vi.mock("@/lib/observability/log", () => ({
+  logError: vi.fn(),
+  logWarn: vi.fn(),
 }));
 
 // ── Mocks ─────────────────────────────────────────────────────────────────
@@ -178,21 +178,23 @@ describe("listSwatchesAction", () => {
     expect(mockListCollectionItems).toHaveBeenCalledWith("FabricSwatches", 100);
   });
 
-  it("calls Sentry.captureException on CMS failure", async () => {
-    const { captureException } = await import("@sentry/nextjs");
-    const captureSpy = vi.mocked(captureException);
+  it("calls logError on CMS failure", async () => {
+    const { logError } = await import("@/lib/observability/log");
+    const logErrorSpy = vi.mocked(logError);
     mockListCollectionItems.mockRejectedValueOnce(new Error("wix down"));
     const { listSwatchesAction } = await import("@/app/actions/swatch-request");
     await listSwatchesAction();
-    expect(captureSpy).toHaveBeenCalledOnce();
-    const [, opts] = captureSpy.mock.calls[0];
-    expect((opts as { extra: { errorId: string } }).extra.errorId).toMatch(
-      /^[0-9a-f-]{36}$/,
+    expect(logErrorSpy).toHaveBeenCalledOnce();
+    expect(logErrorSpy).toHaveBeenCalledWith(
+      "swatch-request",
+      "listSwatchesAction failed",
+      expect.any(Error),
     );
   });
 
   it("returns error:true on CMS failure", async () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { logError } = await import("@/lib/observability/log");
+    const logErrorSpy = vi.mocked(logError);
     mockListCollectionItems.mockRejectedValueOnce(new Error("wix down"));
     const { listSwatchesAction } = await import(
       "@/app/actions/swatch-request"
@@ -200,8 +202,7 @@ describe("listSwatchesAction", () => {
     const result = await listSwatchesAction();
     expect(result.items).toEqual([]);
     expect(result.error).toBe(true);
-    expect(errorSpy).toHaveBeenCalled();
-    errorSpy.mockRestore();
+    expect(logErrorSpy).toHaveBeenCalled();
   });
 
   it("sorts items without sortOrder using 0 as default", async () => {
@@ -348,8 +349,8 @@ describe("submitSwatchRequestAction", () => {
   });
 
   it("returns generic transport error on 500", async () => {
-    const { captureException } = await import("@sentry/nextjs");
-    const captureSpy = vi.mocked(captureException);
+    const { logError } = await import("@/lib/observability/log");
+    const logErrorSpy = vi.mocked(logError);
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
@@ -363,12 +364,12 @@ describe("submitSwatchRequestAction", () => {
     if (result.status === "error") {
       expect(result.transportError).toBeTruthy();
     }
-    expect(captureSpy).toHaveBeenCalledOnce();
+    expect(logErrorSpy).toHaveBeenCalledOnce();
   });
 
   it("returns generic error on fetch throw", async () => {
-    const { captureException } = await import("@sentry/nextjs");
-    const captureSpy = vi.mocked(captureException);
+    const { logError } = await import("@/lib/observability/log");
+    const logErrorSpy = vi.mocked(logError);
     mockFetch.mockRejectedValueOnce(new Error("network down"));
     const { submitSwatchRequestAction } = await import(
       "@/app/actions/swatch-request"
@@ -378,7 +379,7 @@ describe("submitSwatchRequestAction", () => {
     if (result.status === "error") {
       expect(result.transportError).toBeTruthy();
     }
-    expect(captureSpy).toHaveBeenCalledOnce();
+    expect(logErrorSpy).toHaveBeenCalledOnce();
   });
 
   it("returns generic error on 400 (Velo error not echoed to user)", async () => {
@@ -440,8 +441,8 @@ describe("submitSwatchRequestAction", () => {
   });
 
   it("returns network-error copy when Turnstile verify fetch throws", async () => {
-    const { captureException } = await import("@sentry/nextjs");
-    const captureSpy = vi.mocked(captureException);
+    const { logError } = await import("@/lib/observability/log");
+    const logErrorSpy = vi.mocked(logError);
     process.env.TURNSTILE_SECRET_KEY = "secret-key";
     mockFetch.mockRejectedValueOnce(new Error("network down"));
     const fd = makeFormData();
@@ -454,12 +455,12 @@ describe("submitSwatchRequestAction", () => {
     if (result.status === "error") {
       expect(result.transportError).toMatch(/couldn't verify/i);
     }
-    expect(captureSpy).toHaveBeenCalledOnce();
+    expect(logErrorSpy).toHaveBeenCalledOnce();
   });
 
   it("hard-fails in production when TURNSTILE_SECRET_KEY is missing", async () => {
-    const { captureException } = await import("@sentry/nextjs");
-    const captureSpy = vi.mocked(captureException);
+    const { logError } = await import("@/lib/observability/log");
+    const logErrorSpy = vi.mocked(logError);
     vi.stubEnv("NODE_ENV", "production");
     const { submitSwatchRequestAction } = await import(
       "@/app/actions/swatch-request"
@@ -467,7 +468,7 @@ describe("submitSwatchRequestAction", () => {
     const result = await submitSwatchRequestAction(null, makeFormData());
     expect(result.status).toBe("error");
     expect(mockFetch).not.toHaveBeenCalled();
-    expect(captureSpy).toHaveBeenCalledOnce();
+    expect(logErrorSpy).toHaveBeenCalledOnce();
     vi.unstubAllEnvs();
   });
 
@@ -507,8 +508,8 @@ describe("submitSwatchRequestAction", () => {
   });
 
   it("falls back to generic error when Velo error body is not JSON", async () => {
-    const { captureException } = await import("@sentry/nextjs");
-    const captureSpy = vi.mocked(captureException);
+    const { logError } = await import("@/lib/observability/log");
+    const logErrorSpy = vi.mocked(logError);
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
@@ -522,8 +523,8 @@ describe("submitSwatchRequestAction", () => {
     if (result.status === "error") {
       expect(result.transportError).toMatch(/couldn't submit/i);
     }
-    // parseVeloError + veloRejected each call captureWithId
-    expect(captureSpy).toHaveBeenCalledTimes(2);
+    // parseVeloError + veloRejected each call logError
+    expect(logErrorSpy).toHaveBeenCalledTimes(2);
   });
 
   it("includes productSlug in payload when provided", async () => {
