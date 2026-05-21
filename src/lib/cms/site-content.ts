@@ -4,6 +4,7 @@ import { cache } from "react";
 import { unstable_cache } from "next/cache";
 
 import { listCollectionItems } from "@/lib/wix/data";
+import { logError } from "@/lib/logging/log-error";
 
 // cf-4mol (cfw-66o.2): site-owner-editable copy reader.
 //
@@ -91,6 +92,7 @@ const loadSerializedSiteContent = unstable_cache(
         err && typeof err === "object" && "code" in err
           ? "wix_sdk"
           : "unexpected";
+      await logError("site-content", "loadSerializedSiteContent", err, { tag });
       return { entries: [], error: tag };
     }
   },
