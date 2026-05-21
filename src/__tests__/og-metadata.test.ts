@@ -265,7 +265,7 @@ describe("PDP generateMetadata", () => {
     } as never);
     const meta = await pdpGenerateMeta({ params: Promise.resolve({ slug: "monterey-futon" }) });
     expect(ogImageUrls(meta.openGraph?.images)).toContain(DEFAULT_OG_IMAGE.url);
-    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining("non-HTTPS"), expect.any(String));
+    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining("non-HTTPS"));
     errSpy.mockRestore();
   });
 

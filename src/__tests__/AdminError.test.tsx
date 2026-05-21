@@ -63,11 +63,11 @@ describe("/admin/error", () => {
     expect(screen.queryByRole("link", { name: /shop/i })).toBeNull();
   });
 
-  it("logs the error to console.error inside useEffect (Sentry capture)", () => {
+  it("logs the error via logError inside useEffect", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     render(<AdminError error={new Error("boom")} reset={vi.fn()} />);
     expect(spy).toHaveBeenCalledWith(
-      "[admin error boundary]",
+      "[error-boundary] admin render error",
       expect.any(Error),
     );
     spy.mockRestore();
