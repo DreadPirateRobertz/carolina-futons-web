@@ -976,3 +976,63 @@ describe("PlpPage — featured-row getSiteContent (cfw-66o.5)", () => {
     expect(featuredCalls).toHaveLength(0);
   });
 });
+
+// ── PlpPage: cfw-66o.3 getSiteContent description override ─────────────────
+
+describe("PlpPage — getSiteContent description (cfw-66o.3)", () => {
+  beforeEach(() => {
+    mockGetSiteContent.mockImplementation((_key: string, fallback = "") =>
+      Promise.resolve(fallback),
+    );
+    vi.mocked(findCategory).mockReturnValue({
+      slug: "futon-frames",
+      name: "Futon Frames",
+      description: "Hardcoded fallback.",
+      collectionSlug: "futon-frames",
+    });
+    vi.mocked(getCollectionBySlug).mockResolvedValue({ _id: "col-1" } as never);
+    vi.mocked(listProductsOnSale).mockResolvedValue([]);
+    vi.mocked(getCollectionPlp).mockResolvedValue(EMPTY_PLP);
+  });
+
+  it("renders the CMS description when getSiteContent returns an override", async () => {
+    mockGetSiteContent.mockImplementation((key: string, fallback = "") =>
+      Promise.resolve(
+        key === "shop.futon-frames.description"
+          ? "CMS override copy."
+          : fallback,
+      ),
+    );
+
+    const tree = (await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({}),
+    })) as ReactElement;
+    const html = renderToStaticMarkup(tree);
+
+    expect(html).toContain("CMS override copy.");
+    expect(html).not.toContain("Hardcoded fallback.");
+  });
+
+  it("renders the fallback description when getSiteContent returns the fallback", async () => {
+    const tree = (await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({}),
+    })) as ReactElement;
+    const html = renderToStaticMarkup(tree);
+
+    expect(html).toContain("Hardcoded fallback.");
+  });
+
+  it("calls getSiteContent with the correct key for the category slug", async () => {
+    await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({}),
+    });
+
+    expect(mockGetSiteContent).toHaveBeenCalledWith(
+      "shop.futon-frames.description",
+      "Hardcoded fallback.",
+    );
+  });
+});

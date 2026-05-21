@@ -1,6 +1,6 @@
 {
   "$schema": "./seed-schema.json",
-  "_about": "cfw-roi (cf-atze) — initial seed for the SiteContent Wix CMS collection. Row count: 20 (initial) → 26 (cfw-34q home value-props) → 34 (cfw-66o.4 shop copy) → 45 (cfw-66o.11 about page copy) → 48 (cfw-66o.5 featured-row copy). Provisioning script lives in ./index.mjs. Production reader: src/lib/cms/site-content.ts.",
+  "_about": "cfw-roi (cf-atze) — initial seed for the SiteContent Wix CMS collection. Row count: 20 (initial) → 26 (cfw-34q home value-props) → 34 (cfw-66o.4 shop copy) → 45 (cfw-66o.11 about page copy) → 48 (cfw-66o.5 featured-row copy) → 55 (cfw-66o.3 shop.*.description). Provisioning script lives in ./index.mjs. Production reader: src/lib/cms/site-content.ts.",
   "_naming": "lowercase, dotted-path, hyphenated segments. e.g. 'footer.tagline', 'announcement.rotation.0.message'. See docs/design/cfw-66o-footer-announce-specs.md §2.",
   "rows": [
     {
@@ -242,6 +242,41 @@
       "key": "shop.futon-frames.featured.body",
       "value": "Three frames that cover the common questions — daily-use durability, conversion mechanism, and finish. Sit on them in the showroom or order with our 100-night guarantee.",
       "_source": "src/lib/shop/categories.ts SHOP_CATEGORIES[futon-frames].featured.body (cfw-66o.5)"
+    },
+    {
+      "key": "shop.futon-frames.description",
+      "value": "Choose from twin, full, or queen hardwood frames, with varying seat heights, finishes, and conversion mechanisms. Some models offer chair, full, and queen chairs with ottoman options.",
+      "_source": "src/lib/shop/categories.ts SHOP_CATEGORIES[futon-frames].description (cfw-66o.3)"
+    },
+    {
+      "key": "shop.murphy-cabinet-beds.description",
+      "value": "Cabinet beds that fold away without hardware in the wall.",
+      "_source": "src/lib/shop/categories.ts SHOP_CATEGORIES[murphy-cabinet-beds].description (cfw-66o.3)"
+    },
+    {
+      "key": "shop.platform-beds.description",
+      "value": "Low-profile solid-wood platform beds.",
+      "_source": "src/lib/shop/categories.ts SHOP_CATEGORIES[platform-beds].description (cfw-66o.3)"
+    },
+    {
+      "key": "shop.mattresses.description",
+      "value": "Futon mattresses and bed mattresses.",
+      "_source": "src/lib/shop/categories.ts SHOP_CATEGORIES[mattresses].description (cfw-66o.3)"
+    },
+    {
+      "key": "shop.sofa-beds.description",
+      "value": "Convertible sofa beds — seat by day, guest bed by night.",
+      "_source": "src/lib/shop/categories.ts SHOP_CATEGORIES[sofa-beds].description (cfw-66o.3)"
+    },
+    {
+      "key": "shop.sale.description",
+      "value": "Discounted futons, beds, and mattresses — while supplies last.",
+      "_source": "src/lib/shop/categories.ts SHOP_CATEGORIES[sale].description (cfw-66o.3)"
+    },
+    {
+      "key": "shop.mattresses-sale.description",
+      "value": "Current mattress promotions.",
+      "_source": "src/lib/shop/categories.ts SHOP_CATEGORIES[mattresses-sale].description (cfw-66o.3)"
     }
   ]
 }

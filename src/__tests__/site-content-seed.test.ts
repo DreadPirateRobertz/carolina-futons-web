@@ -43,9 +43,9 @@ describe("provision-site-content seed-data.json", () => {
     expect(seed.rows.length).toBeGreaterThan(0);
   });
 
-  it("contains exactly 48 seed rows (cfw-roi + cfw-34q value-props + cfw-66o.4 shop copy + cfw-66o.11 about copy + cfw-66o.5 featured-row)", () => {
+  it("contains exactly 55 seed rows (cfw-roi + cfw-34q value-props + cfw-66o.4 shop copy + cfw-66o.11 about copy + cfw-66o.5 featured-row + cfw-66o.3 descriptions)", () => {
     const seed = loadSeed();
-    expect(seed.rows).toHaveLength(48);
+    expect(seed.rows).toHaveLength(55);
   });
 
   it("every row has a non-empty string key and value", () => {
@@ -128,6 +128,14 @@ describe("provision-site-content seed-data.json", () => {
       "shop.futon-frames.featured.eyebrow",
       "shop.futon-frames.featured.heading",
       "shop.futon-frames.featured.body",
+      // cfw-66o.3: PLP category descriptions wired to getSiteContent
+      "shop.futon-frames.description",
+      "shop.murphy-cabinet-beds.description",
+      "shop.platform-beds.description",
+      "shop.mattresses.description",
+      "shop.sofa-beds.description",
+      "shop.sale.description",
+      "shop.mattresses-sale.description",
     ];
     const seed = loadSeed();
     const keys = new Set(seed.rows.map((r) => r.key));
