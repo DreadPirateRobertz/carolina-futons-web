@@ -855,6 +855,107 @@ describe("PdpInteractive (cf-3qt.2.1 + 2.2 integration)", () => {
       expect(img.className).not.toContain("object-cover");
     });
   });
+
+  // cf-rrhj: gallery-path image swap — pins the two data bugs that survived the
+  // cf-6qqa merge. All previous variant-swap tests use the no-gallery <img> path;
+  // production uses PdpGallery. This block exercises the gallery path so a
+  // regression in activeUrl propagation trips a test instead of Playwright audit.
+  describe("cf-rrhj: gallery-path image swap on swatch click", () => {
+    it("updates hero when a finish swatch is clicked — variant-level media, gallery path", () => {
+      const finishOptions: ProductOptionInput[] = [
+        {
+          name: "Finish",
+          choices: [
+            { value: "Cherry", description: "Cherry" }, // no choice media
+            { value: "Walnut", description: "Walnut" }, // no choice media
+          ],
+        },
+      ];
+      const finishVariants: VariantInput[] = [
+        {
+          _id: "v-cherry",
+          choices: { Finish: "Cherry" },
+          variant: { priceData: { formatted: { price: "$619" } } },
+          stock: { inStock: true },
+          media: { mainMedia: { image: { url: "https://img/cherry-frame.jpg" } } },
+        },
+        {
+          _id: "v-walnut",
+          choices: { Finish: "Walnut" },
+          variant: { priceData: { formatted: { price: "$619" } } },
+          stock: { inStock: true },
+          media: { mainMedia: { image: { url: "https://img/walnut-frame.jpg" } } },
+        },
+      ];
+      const galleryImages = [
+        { url: "https://img/gallery-front.jpg", alt: "Front view" },
+        { url: "https://img/gallery-side.jpg", alt: "Side view" },
+      ];
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Kingston Futon Frame"
+          productOptions={finishOptions}
+          variants={finishVariants}
+          galleryImages={galleryImages}
+          fallbackImageUrl="https://img/fallback.jpg"
+          fallbackPrice="$619"
+        />,
+      );
+      expect(
+        screen.getByTestId("pdp-main-image").getAttribute("src"),
+      ).toContain("cherry-frame");
+      fireEvent.click(screen.getByRole("radio", { name: /finish: walnut/i }));
+      expect(
+        screen.getByTestId("pdp-main-image").getAttribute("src"),
+      ).toContain("walnut-frame");
+    });
+
+    it("updates hero via mediaItems alt-text match when no choice or variant media exists", () => {
+      const finishOptions: ProductOptionInput[] = [
+        {
+          name: "Finish",
+          choices: [
+            { value: "Cherry", description: "Cherry" },
+            { value: "Walnut", description: "Walnut" },
+          ],
+        },
+      ];
+      const finishVariants: VariantInput[] = [
+        { _id: "v-cherry", choices: { Finish: "Cherry" }, stock: { inStock: true } },
+        { _id: "v-walnut", choices: { Finish: "Walnut" }, stock: { inStock: true } },
+      ];
+      const galleryImages = [{ url: "https://img/gallery-front.jpg", alt: "Front" }];
+      const mediaItems = [
+        {
+          image: { url: "https://img/walnut-photo.jpg", altText: "walnut finish" },
+          title: "",
+          mediaType: "image" as const,
+        },
+        {
+          image: { url: "https://img/cherry-photo.jpg", altText: "cherry finish" },
+          title: "",
+          mediaType: "image" as const,
+        },
+      ];
+      render(
+        <PdpInteractive
+          {...baseProps}
+          productName="Rennala Futon Frame"
+          productOptions={finishOptions}
+          variants={finishVariants}
+          galleryImages={galleryImages}
+          mediaItems={mediaItems}
+          fallbackImageUrl="https://img/fallback.jpg"
+          fallbackPrice="$619"
+        />,
+      );
+      fireEvent.click(screen.getByRole("radio", { name: /finish: walnut/i }));
+      expect(
+        screen.getByTestId("pdp-main-image").getAttribute("src"),
+      ).toContain("walnut-photo");
+    });
+  });
 });
 
 // cfw-o1g: PDP gallery hero enlarged to 7/12 cols, thumbnails below hero.

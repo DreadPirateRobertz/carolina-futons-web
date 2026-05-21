@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import {
   findMatchingVariant,
   getSelectedPrice,
+  hydrateFromSearch,
   initialSelection,
   isChoiceAvailable,
   isVariantInStock,
@@ -14,34 +15,6 @@ import {
   type ProductOptionInput,
   type VariantInput,
 } from "@/lib/product/variant-selection";
-
-// cf-pdv4 (cf-lc1c G-3): hydrate VariantPicker selection from URL
-// search params + keep the URL in sync as the shopper clicks choices.
-// Enables marketing email deep-links to specific variants and shareable
-// PDP URLs ("here's the Walnut Queen we discussed"). Param key is the
-// lowercased option name (Color → color, Size → size); param value is
-// the variant's choice value as-is (case-preserved).
-function hydrateFromSearch(
-  defaults: ChoiceSelection,
-  options: ReadonlyArray<ProductOptionInput>,
-  search: URLSearchParams,
-): ChoiceSelection {
-  const result = { ...defaults };
-  // Case-insensitive lookup so ?Size=Queen and ?size=Queen both work.
-  const lowerToValue = new Map<string, string>();
-  search.forEach((value, key) => lowerToValue.set(key.toLowerCase(), value));
-  for (const option of options) {
-    const name = option.name;
-    if (!name) continue;
-    const fromUrl = lowerToValue.get(name.toLowerCase());
-    if (!fromUrl) continue;
-    // Only apply if the URL value is one of the option's declared choices —
-    // an unknown value (typo, removed variant) falls back to the default.
-    const isValid = option.choices?.some((c) => c.value === fromUrl);
-    if (isValid) result[name] = fromUrl;
-  }
-  return result;
-}
 
 export type VariantPickerProps = {
   productOptions: ReadonlyArray<ProductOptionInput>;

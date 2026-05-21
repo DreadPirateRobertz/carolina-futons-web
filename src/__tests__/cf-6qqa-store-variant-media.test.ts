@@ -109,6 +109,50 @@ describe("mergeVariantMedia", () => {
     expect(variantAt(result, 0)?.media).toBeUndefined();
   });
 
+  // cf-rrhj: actual Wix StoreVariant API returns media.mainMedia.image.url (nested),
+  // not media.image.url (flat). mergeVariantMedia must accept both shapes so
+  // pre-fix test fixtures (flat) and post-fix real API responses (nested) both work.
+  it("reads media.mainMedia.image.url (nested Wix API shape)", () => {
+    const product = makeProduct([
+      { choices: { Color: "Cherry", Size: "Full" } },
+      { choices: { Color: "Walnut", Size: "Full" } },
+    ]);
+    const sv = [
+      {
+        choices: { Color: "Cherry", Size: "Full" },
+        media: { mainMedia: { image: { url: "https://img.wix.com/cherry-nested.jpg" } } },
+      },
+      {
+        choices: { Color: "Walnut", Size: "Full" },
+        media: { mainMedia: { image: { url: "https://img.wix.com/walnut-nested.jpg" } } },
+      },
+    ];
+    const result = mergeVariantMedia(product, sv);
+    expect(variantAt(result, 0)?.media?.mainMedia?.image?.url).toBe(
+      "https://img.wix.com/cherry-nested.jpg",
+    );
+    expect(variantAt(result, 1)?.media?.mainMedia?.image?.url).toBe(
+      "https://img.wix.com/walnut-nested.jpg",
+    );
+  });
+
+  it("prefers mainMedia over flat image when both are present", () => {
+    const product = makeProduct([{ choices: { Color: "Cherry", Size: "Full" } }]);
+    const sv = [
+      {
+        choices: { Color: "Cherry", Size: "Full" },
+        media: {
+          mainMedia: { image: { url: "https://img.wix.com/cherry-nested.jpg" } },
+          image: { url: "https://img.wix.com/cherry-flat.jpg" },
+        },
+      },
+    ];
+    const result = mergeVariantMedia(product, sv);
+    expect(variantAt(result, 0)?.media?.mainMedia?.image?.url).toBe(
+      "https://img.wix.com/cherry-nested.jpg",
+    );
+  });
+
   it("replaces existing variant media when StoreVariant has a URL", () => {
     const existingMedia = { mainMedia: { image: { url: "https://img.wix.com/existing.jpg" } } };
     const product = makeProduct([

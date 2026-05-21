@@ -222,6 +222,29 @@ function formatVariantCurrency(amount: number, currency: string): string {
   }
 }
 
+// cf-rrhj: shared URL-param hydration so both VariantPicker and PdpInteractive
+// seed from the same initial selection. Without this, PdpInteractive starts at
+// the catalog default while VariantPicker hydrates from ?finish=walnut — the
+// hero image shows the wrong variant until the first swatch click.
+export function hydrateFromSearch(
+  defaults: ChoiceSelection,
+  options: ReadonlyArray<ProductOptionInput>,
+  search: URLSearchParams,
+): ChoiceSelection {
+  const result = { ...defaults };
+  const lowerToValue = new Map<string, string>();
+  search.forEach((value, key) => lowerToValue.set(key.toLowerCase(), value));
+  for (const option of options) {
+    const name = option.name;
+    if (!name) continue;
+    const fromUrl = lowerToValue.get(name.toLowerCase());
+    if (!fromUrl) continue;
+    const isValid = option.choices?.some((c) => c.value === fromUrl);
+    if (isValid) result[name] = fromUrl;
+  }
+  return result;
+}
+
 export function initialSelection(
   options: ReadonlyArray<ProductOptionInput>,
   variants: ReadonlyArray<VariantInput>,
