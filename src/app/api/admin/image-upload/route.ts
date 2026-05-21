@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { revalidateTag } from "next/cache";
 
 import { getOwnerSession } from "@/lib/auth/owner";
 import {
@@ -8,10 +7,10 @@ import {
 } from "@/lib/wix/data";
 import { logError } from "@/lib/observability/log";
 import { logWixFailure } from "@/lib/wix/errors";
-import { SITE_CONTENT_CACHE_TAG } from "@/lib/cms/site-content";
 import { validateOwnerEditKey } from "@/lib/cms/owner-edit-validation";
 import { recordOwnerEdit } from "@/lib/admin/audit-log";
 import { env } from "@/lib/env";
+import { invalidateSiteContent } from "@/lib/admin/revalidate";
 
 export const dynamic = "force-dynamic";
 
@@ -306,7 +305,7 @@ export async function POST(req: NextRequest) {
 
   // 9. Bust the site-content cache so getSiteContent() sees the new URL
   // on the next render (otherwise the 5-min unstable_cache window applies).
-  revalidateTag(SITE_CONTENT_CACHE_TAG, "default");
+  invalidateSiteContent();
 
   return NextResponse.json({
     ok: true,

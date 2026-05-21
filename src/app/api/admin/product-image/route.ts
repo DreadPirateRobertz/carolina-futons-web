@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { revalidatePath } from "next/cache";
 
 import { getOwnerSession } from "@/lib/auth/owner";
 import { logWixFailure } from "@/lib/wix/errors";
 import { updateProductMainImage } from "@/lib/wix/product-image-write";
+import { invalidateImage } from "@/lib/admin/revalidate";
 
 // cfw-6qd.7: server endpoint behind the PDP "swap product image" affordance.
 // Owner-only; takes { productId, imageUrl } and updates the product's main
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
   // Best-effort PDP cache bust. The PDP path uses the slug, not the
   // productId, so we revalidate the broader /products tree to cover both
   // the slug page and any listing surface that holds a stale image.
-  revalidatePath("/products", "page");
+  invalidateImage(productId);
 
   return NextResponse.json({
     ok: true,

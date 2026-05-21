@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { revalidateTag } from "next/cache";
 
 import { getOwnerSession } from "@/lib/auth/owner";
 import {
@@ -12,7 +11,6 @@ import {
   AUTH_INPUT_ERROR_MESSAGES,
   classifyAuthInputError,
 } from "@/lib/auth/sdk-error";
-import { SITE_CONTENT_CACHE_TAG } from "@/lib/cms/site-content";
 import {
   sanitizeOwnerEditValue,
   validateOwnerEditKey,
@@ -20,6 +18,7 @@ import {
 import { sanitizeOwnerHtml } from "@/lib/cms/owner-edit-sanitize";
 import { recordOwnerEdit } from "@/lib/admin/audit-log";
 import { writeSiteContentHistory } from "@/lib/cms/site-content-history";
+import { invalidateSiteContent } from "@/lib/admin/revalidate";
 
 export const dynamic = "force-dynamic";
 
@@ -30,10 +29,9 @@ export const dynamic = "force-dynamic";
 //
 // Body shape: { key: string, value: string }. The key is the dotted-path
 // SiteContent identifier (e.g. "footer.tagline") and the value is the new
-// string. We upsert via Wix Data items.save() keyed by `key`, then
-// revalidateTag("site-content") so getSiteContent() sees the new value on
-// the next read instead of waiting out the 5-minute revalidate window
-// (cfw-vxb cache).
+// string. We upsert via Wix Data items.save() keyed by `key`, then call
+// invalidateSiteContent() so getSiteContent() sees the new value on the next
+// read instead of waiting out the 5-minute revalidate window (cfw-vxb cache).
 //
 // cfw-6qd.11: every successful save also appends an audit row to the
 // OwnerAuditLog collection ({ actorEmail, action: "edit", target: key,
@@ -190,7 +188,7 @@ export async function POST(req: NextRequest) {
   // on the next read. The reader's per-request React.cache layer is
   // session-scoped and rebuilds on the next request, so we only need the
   // tag-level invalidation.
-  revalidateTag(SITE_CONTENT_CACHE_TAG, "default");
+  invalidateSiteContent();
 
   return NextResponse.json({ ok: true, key, value });
 }

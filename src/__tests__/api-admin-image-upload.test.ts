@@ -24,13 +24,10 @@ vi.mock("@/lib/wix/errors", () => ({
   logWixFailure: (...args: unknown[]) => mockLogWixFailure(...args),
 }));
 
-const mockRevalidateTag = vi.fn();
-vi.mock("next/cache", () => ({
-  revalidateTag: (...args: unknown[]) => mockRevalidateTag(...args),
-}));
-
-vi.mock("@/lib/cms/site-content", () => ({
-  SITE_CONTENT_CACHE_TAG: "site-content",
+// cfw-sej: route delegates cache invalidation to @/lib/admin/revalidate.
+const mockInvalidateSiteContent = vi.fn();
+vi.mock("@/lib/admin/revalidate", () => ({
+  invalidateSiteContent: (...args: unknown[]) => mockInvalidateSiteContent(...args),
 }));
 
 const mockRecordOwnerEdit = vi.fn().mockResolvedValue({ ok: true });
@@ -279,7 +276,7 @@ describe("POST /api/admin/image-upload (cfw-6qd.8)", () => {
     );
 
     // Cache busted
-    expect(mockRevalidateTag).toHaveBeenCalledWith("site-content", "default");
+    expect(mockInvalidateSiteContent).toHaveBeenCalledTimes(1);
   });
 
   it("falls back to ifMatch as audit 'before' when SiteContent lookup throws", async () => {
@@ -343,7 +340,7 @@ describe("POST /api/admin/image-upload (cfw-6qd.8)", () => {
       expect.anything(),
     );
     expect(mockUpsert).not.toHaveBeenCalled();
-    expect(mockRevalidateTag).not.toHaveBeenCalled();
+    expect(mockInvalidateSiteContent).not.toHaveBeenCalled();
   });
 
   it("returns 502 when generate-upload-url returns 200 but no uploadUrl", async () => {
@@ -433,7 +430,7 @@ describe("POST /api/admin/image-upload (cfw-6qd.8)", () => {
       expect.anything(),
     );
     expect(mockRecordOwnerEdit).not.toHaveBeenCalled();
-    expect(mockRevalidateTag).not.toHaveBeenCalled();
+    expect(mockInvalidateSiteContent).not.toHaveBeenCalled();
   });
 
   it("does NOT fail the request when audit append fails (best-effort)", async () => {
@@ -471,7 +468,7 @@ describe("POST /api/admin/image-upload (cfw-6qd.8)", () => {
 
     expect(res.status).toBe(200);
     expect(mockRecordOwnerEdit).toHaveBeenCalledTimes(1);
-    expect(mockRevalidateTag).toHaveBeenCalledWith("site-content", "default");
+    expect(mockInvalidateSiteContent).toHaveBeenCalledTimes(1);
   });
 
   it("treats a flat (non-nested) Wix file descriptor as success", async () => {
