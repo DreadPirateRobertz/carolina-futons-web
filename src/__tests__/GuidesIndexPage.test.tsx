@@ -6,6 +6,13 @@ vi.mock("@sentry/nextjs", () => ({
   flush: vi.fn().mockResolvedValue(true),
 }));
 
+// cfw-mr7: guides/page.tsx now calls getSiteContent — stub to avoid
+// unstable_cache "incrementalCache missing" invariant in jsdom.
+const mockGetSiteContent = vi.fn();
+vi.mock("@/lib/cms/site-content", () => ({
+  getSiteContent: (...args: unknown[]) => mockGetSiteContent(...args),
+}));
+
 const listGuidesMock = vi.fn();
 vi.mock("@/lib/discovery/guides", async (importOriginal) => {
   const original = await importOriginal<typeof import("@/lib/discovery/guides")>();
@@ -16,6 +23,8 @@ import GuidesIndexPage, { metadata } from "@/app/guides/page";
 import { GUIDES } from "@/lib/discovery/guides";
 
 beforeEach(() => {
+  mockGetSiteContent.mockReset();
+  mockGetSiteContent.mockImplementation(async (_key: string, fallback: string) => fallback);
   listGuidesMock.mockReset();
   listGuidesMock.mockResolvedValue(GUIDES);
 });
