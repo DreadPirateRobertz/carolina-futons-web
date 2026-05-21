@@ -145,7 +145,23 @@ export function mergeProductMedia<T extends WixProduct>(full: T, stub: WixProduc
   };
 }
 
-export async function getProductBySlug(slug: string): Promise<WixProduct | null> {
+/**
+ * Resolve a full Wix Stores product (with `productOptions`/`variants`/merged
+ * media) by its URL slug.
+ *
+ * Wrapped in React `cache()` for request-scoped memoization: a single PDP
+ * request resolves the slug through `generateMetadata`, the
+ * `products/[slug]/layout.tsx` JSON-LD layout, and the page component — three
+ * consumers that would otherwise each fire the same two-step Wix SDK
+ * roundtrip. `cache()` keys by `slug` within one RSC render, so distinct
+ * slugs stay independent and the cache clears between requests.
+ *
+ * @param slug - The product URL slug (e.g. `solstice-futon-frame`).
+ * @returns The merged {@link WixProduct}, or `null` when the slug is unknown
+ *   or the Wix fetch fails (failures are logged via `logWixFailure`).
+ */
+export const getProductBySlug = cache(
+  async (slug: string): Promise<WixProduct | null> => {
   if (USE_FIXTURES) return getFixtureProductBySlug(slug) as unknown as WixProduct | null;
   try {
     const client = getWixClient();
@@ -240,7 +256,8 @@ export async function getProductBySlug(slug: string): Promise<WixProduct | null>
     await logWixFailure("wix", `getProductBySlug(${slug})`, err);
     return null;
   }
-}
+  },
+);
 
 export async function listProductsByCollectionId(
   collectionId: string,

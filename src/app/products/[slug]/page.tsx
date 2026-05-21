@@ -19,7 +19,7 @@ import {
 import { resolveItemCategory } from "@/lib/product/item-category";
 import { PdpRecentlyViewed } from "@/components/product/PdpRecentlyViewed";
 import { ShowroomCta } from "@/components/product/ShowroomCta";
-import { PdpReviews, pickPdpReviews } from "@/components/product/PdpReviews";
+import { PdpReviews } from "@/components/product/PdpReviews";
 import { CustomerVideoReviewGrid } from "@/components/product/CustomerVideoReviewGrid";
 import { getCustomerVideoReviewsByProductSlug } from "@/lib/discovery/customer-video-reviews";
 import { PdpShareButtons } from "@/components/product/PdpShareButtons";
@@ -46,12 +46,8 @@ import { formatPlpPrice } from "@/lib/product/plp-price";
 // loadPdpCatalogSafely (the Promise.allSettled isolation wrapper); they're
 // not invoked directly from this file anymore.
 import { PdpAlsoBought } from "@/components/product/PdpAlsoBought";
-import { JsonLd } from "@/components/seo/JsonLd";
-import {
-  buildBreadcrumbSchema,
-  buildProductSchema,
-  resolveSiteUrl,
-} from "@/lib/seo/json-ld";
+import { resolveSiteUrl } from "@/lib/seo/json-ld";
+import { stripHtml } from "@/lib/text/strip-html";
 import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 import { AppDownloadBanner } from "@/components/site/AppDownloadBanner";
 import { ArModelViewer } from "@/components/product/ArModelViewer";
@@ -238,47 +234,17 @@ export default async function PdpPage(props: {
 
   const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
   const canonicalUrl = `${siteUrl}/products/${slug}`;
-  // cf-xe54: surface the same review data the PdpReviews component renders
-  // so on-page UI and JSON-LD stay in sync (Search Console flags mismatched
-  // aggregateRating). Only honest stats + matching reviews are emitted —
-  // pickPdpReviews returns [] when neither exact name nor category matches.
-  const productNameForSchema = product.name ?? "";
+  // cfw-yyay: the Product + BreadcrumbList JSON-LD that previously consumed
+  // this review data moved to products/[slug]/layout.tsx. Rendered from this
+  // page it was trapped behind loading.tsx's <Suspense> boundary and never
+  // reached the server HTML; the layout sits outside that boundary so its
+  // JSON-LD is part of the prerendered static shell. loadReviews() stays here
+  // because PdpReviews (below) still renders the same data as visible cards.
   const loadedReviews = await loadReviews();
-  const pdpReviews = pickPdpReviews(productNameForSchema, loadedReviews.reviews);
   const locationStats =
     loadedReviews.averageRating !== null && loadedReviews.totalReviewCount !== null
       ? { rating: loadedReviews.averageRating, count: loadedReviews.totalReviewCount }
       : null;
-  const productSchema = buildProductSchema({
-    name: productNameForSchema,
-    description: descriptionText,
-    imageUrl: mainUrl ?? undefined,
-    priceUSD: product.priceData?.price ?? 0,
-    inStock: stock?.inStock !== false,
-    canonicalUrl,
-    // Aggregate is the location-wide GBP rating (per-product GBP data does not
-    // exist). Emitted only when matching reviews are also rendered on the page,
-    // so JSON-LD never advertises a count without supporting cards.
-    aggregateRating:
-      locationStats && pdpReviews.length > 0
-        ? { ratingValue: locationStats.rating, reviewCount: locationStats.count }
-        : undefined,
-    reviews:
-      pdpReviews.length > 0
-        ? pdpReviews.map((r) => ({
-            author: r.author,
-            rating: r.rating,
-            title: r.title,
-            body: r.body,
-            date: r.date,
-          }))
-        : undefined,
-  });
-  const breadcrumbSchema = buildBreadcrumbSchema([
-    { name: "Home", url: `${siteUrl}/` },
-    { name: "Shop", url: `${siteUrl}/shop` },
-    { name: product.name ?? "", url: canonicalUrl },
-  ]);
 
   // cfw-vxb: preload the LCP candidate so the browser starts the fetch
   // alongside HTML parse instead of after PdpGallery's client chunk
@@ -299,8 +265,6 @@ export default async function PdpPage(props: {
         />
       ) : null}
       <AppDownloadBanner />
-      <JsonLd id="jsonld-product" schema={productSchema} />
-      <JsonLd id="jsonld-breadcrumb" schema={breadcrumbSchema} />
       <Breadcrumbs
         items={[
           { label: "Home", href: "/" },
@@ -428,19 +392,4 @@ export default async function PdpPage(props: {
 function toCents(price: number | null | undefined): number {
   if (typeof price !== "number" || !Number.isFinite(price)) return 0;
   return Math.round(price * 100);
-}
-
-// Wix Stores `product.description` is HTML. Phase 2 placeholder: strip tags and
-// render as plain text. Rich-HTML rendering with a sanitizer (DOMPurify or
-// server-side sanitize-html) lands in a later slice alongside the PDP polish.
-function stripHtml(input: string): string {
-  return input
-    .replace(/<[^>]*>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .trim();
 }
