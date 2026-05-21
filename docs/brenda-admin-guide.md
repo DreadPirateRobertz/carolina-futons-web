@@ -83,7 +83,9 @@ The three cards below the main hero ("Hardwood, not plywood", "Sleep on it first
 4. Find the row you want to change and click it to open it.
 5. Edit the **value** field with your new wording, then click **Save**.
 
-**The change goes live within 30 seconds.**
+**Changes appear within 5 minutes.** With Wix webhook configured, updates may appear within 30 seconds.
+
+> **If the CMS is unreachable:** the site automatically shows the original built-in text — nothing goes blank.
 
 **Rows in this section:**
 
@@ -110,7 +112,9 @@ The entire About page — the intro, the beliefs section, the location blurb, an
 4. Find the row you want to change and click it.
 5. Edit the **value** field, then click **Save**.
 
-**The change goes live within 30 seconds.**
+**Changes appear within 5 minutes.** With Wix webhook configured, updates may appear within 30 seconds.
+
+> **If the CMS is unreachable:** the site automatically shows the original built-in text — nothing goes blank.
 
 **Rows in this section:**
 
@@ -140,7 +144,9 @@ The section headings on the Contact page are CMS-editable. Use this when you wan
 4. Find the row you want to change and click it.
 5. Edit the **value** field, then click **Save**.
 
-**The change goes live within 30 seconds.**
+**Changes appear within 5 minutes.** With Wix webhook configured, updates may appear within 30 seconds.
+
+> **If the CMS is unreachable:** the site automatically shows the original built-in text — nothing goes blank.
 
 **Rows in this section:**
 
