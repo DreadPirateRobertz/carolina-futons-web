@@ -14,7 +14,7 @@ import * as Sentry from "@sentry/nextjs";
 import { GalleryZoomLightbox } from "./GalleryZoomLightbox";
 import { PdpImageComparison } from "./PdpImageComparison";
 import { ProductSpinViewer } from "./ProductSpinViewer";
-import { logError } from "@/lib/observability/log";
+import { logError, logWarn } from "@/lib/observability/log";
 import { wixImageUrl } from "@/lib/wix/wix-image";
 
 // cf-3qt.6.F.1 + cf-3qt.7.O.1: multi-image gallery for the PDP.
@@ -188,7 +188,7 @@ export function PdpGallery({ images, productName, activeUrl, activeAlt, spinImag
       logError("PdpGallery", `fallback also failed for broken src (${context})`, url);
       return;
     }
-    console.warn(`[PdpGallery] broken image src (${context}):`, url);
+    logWarn("PdpGallery", `broken image src (${context})`, url);
     setBrokenSrcs((prev) => new Set(prev).add(url));
   }
 

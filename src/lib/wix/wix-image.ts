@@ -1,3 +1,5 @@
+import { logWarn } from "@/lib/observability/log";
+
 // Wix media URLs include a `/v1/<mode>/<params>/file.<ext>` slot where the
 // transformation is requested. The catalog can store the source at any size
 // (3000×2000 originals are common), so rendering `media.mainMedia.image.url`
@@ -77,7 +79,7 @@ export function wixImageUrl(
   // each unique shape logs once per session at most.
   if (typeof console !== "undefined" && !loggedUnrecognized.has(base)) {
     loggedUnrecognized.add(base);
-    console.warn("[wix-image] unrecognized Wix URL shape, passing through:", url);
+    logWarn("wix-image", "unrecognized Wix URL shape, passing through", url);
   }
   return url;
 }

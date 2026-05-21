@@ -1,3 +1,4 @@
+import { logWarn } from "@/lib/observability/log";
 import {
   getStockBadgeState,
   type StockBadgeInput,
@@ -11,9 +12,7 @@ export function PdpStockBadge({ stock }: PdpStockBadgeProps) {
   // Canary: trackInventory=true with a missing inStock field reads as OOS
   // (conservative). Log so Wix-schema drift surfaces instead of rotting.
   if (stock?.trackInventory === true && stock.inStock == null) {
-    console.warn(
-      "[PdpStockBadge] trackInventory=true with missing inStock — conservative fallback to out_of_stock. Check Wix product.stock schema.",
-    );
+    logWarn("PdpStockBadge", "trackInventory=true with missing inStock — conservative fallback to out_of_stock. Check Wix product.stock schema.");
   }
 
   const state = getStockBadgeState(stock);

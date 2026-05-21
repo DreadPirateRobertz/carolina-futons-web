@@ -15,6 +15,8 @@
 
 import { createHmac } from "node:crypto";
 
+import { logWarn } from "@/lib/observability/log";
+
 const HASH_PREFIX_LENGTH = 12;
 const FALLBACK_TOKEN = "<unsalted>";
 
@@ -34,9 +36,7 @@ export function hashPii(value: string): string {
   const salt = process.env.LOG_PII_SALT;
   if (!salt) {
     if (!warnedNoSalt) {
-      console.warn(
-        "[log/hash-pii] LOG_PII_SALT not set — PII redaction emitting <unsalted> placeholder",
-      );
+      logWarn("log/hash-pii", "LOG_PII_SALT not set — PII redaction emitting <unsalted> placeholder");
       warnedNoSalt = true;
     }
     return FALLBACK_TOKEN;

@@ -33,6 +33,7 @@ import {
   SESSION_COOKIE_NAME,
   SESSION_COOKIE_OPTIONS,
 } from "@/lib/auth/session";
+import { logWarn } from "@/lib/observability/log";
 import { getWixClientWithTokens } from "@/lib/wix-client";
 import { logWixFailure } from "@/lib/wix/errors";
 
@@ -51,7 +52,7 @@ export async function getVisitorCartClient() {
   const rawCookie = jar.get(SESSION_COOKIE_NAME)?.value;
   const existing = parseSessionCookie(rawCookie);
   if (rawCookie && !existing) {
-    console.warn("[wix-visitor-client] session cookie present but unparseable — generating fresh visitor identity");
+    logWarn("wix-visitor-client", "session cookie present but unparseable — generating fresh visitor identity");
   }
   if (existing) return getWixClientWithTokens(existing);
 

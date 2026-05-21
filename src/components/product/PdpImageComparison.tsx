@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { GalleryImage } from "./PdpGallery";
+import { logWarn } from "@/lib/observability/log";
 import { wixImageUrl } from "@/lib/wix/wix-image";
 
 export type PdpImageComparisonProps = {
@@ -82,7 +83,7 @@ export function PdpImageComparison({
         alt={after.alt ?? `${productName} — angle 2`}
         className="absolute inset-0 h-full w-full object-cover"
         draggable={false}
-        onError={(e) => console.warn("[PdpImageComparison] after image failed:", (e.target as HTMLImageElement).src)}
+        onError={(e) => logWarn("PdpImageComparison", "after image failed", (e.target as HTMLImageElement).src)}
       />
 
       {/* "before" image — clipped to the left portion */}
@@ -97,7 +98,7 @@ export function PdpImageComparison({
           alt={before.alt ?? `${productName} — angle 1`}
           className="h-full w-full object-cover"
           draggable={false}
-          onError={(e) => console.warn("[PdpImageComparison] before image failed:", (e.target as HTMLImageElement).src)}
+          onError={(e) => logWarn("PdpImageComparison", "before image failed", (e.target as HTMLImageElement).src)}
         />
       </div>
 
