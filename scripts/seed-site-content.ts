@@ -143,6 +143,11 @@ export const SEED_ROWS: SeedRow[] = [
   { key: "sustainability.trade-in.heading", value: "Trade-in program" },
   { key: "sustainability.trade-in.subhead", value: "Give your old futon a second life. Trade in your used furniture for store credit toward a new piece — we'll handle the pickup and responsible recycling." },
   { key: "sustainability.trade-in.cta-label", value: "Ask about trade-in" },
+
+  // ── cfw-z6n: Swatch-request page copy (P2) ───────────────────────
+  { key: "swatch.eyebrow",    value: "Free samples" },
+  { key: "swatch.heading",    value: "Request fabric swatches." },
+  { key: "swatch.intro.body", value: "Not sure which fabric is right for your space? We'll mail up to five physical swatches so you can feel the texture and see the color in your own lighting — completely free." },
 ];
 
 // ── Config ────────────────────────────────────────────────────────────

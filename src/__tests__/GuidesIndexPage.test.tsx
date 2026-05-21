@@ -6,6 +6,11 @@ vi.mock("@sentry/nextjs", () => ({
   flush: vi.fn().mockResolvedValue(true),
 }));
 
+const mockGetSiteContent = vi.fn();
+vi.mock("@/lib/cms/site-content", () => ({
+  getSiteContent: (...args: unknown[]) => mockGetSiteContent(...args),
+}));
+
 const listGuidesMock = vi.fn();
 vi.mock("@/lib/discovery/guides", async (importOriginal) => {
   const original = await importOriginal<typeof import("@/lib/discovery/guides")>();
@@ -18,6 +23,8 @@ import { GUIDES } from "@/lib/discovery/guides";
 beforeEach(() => {
   listGuidesMock.mockReset();
   listGuidesMock.mockResolvedValue(GUIDES);
+  mockGetSiteContent.mockReset();
+  mockGetSiteContent.mockImplementation(async (_key: string, fallback: string) => fallback);
 });
 
 describe("GuidesIndexPage", () => {

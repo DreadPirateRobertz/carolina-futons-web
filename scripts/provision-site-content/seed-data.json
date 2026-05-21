@@ -372,6 +372,21 @@
       "key": "sustainability.trade-in.cta-label",
       "value": "Ask about trade-in",
       "_source": "src/app/sustainability/page.tsx SUSTAINABILITY_COPY_FALLBACKS.tradeinCtaLabel (cfw-p3j)"
+    },
+    {
+      "key": "swatch.eyebrow",
+      "value": "Free samples",
+      "_source": "src/app/swatch-request/page.tsx SWATCH_COPY_FALLBACKS.eyebrow (cfw-z6n)"
+    },
+    {
+      "key": "swatch.heading",
+      "value": "Request fabric swatches.",
+      "_source": "src/app/swatch-request/page.tsx SWATCH_COPY_FALLBACKS.heading (cfw-z6n)"
+    },
+    {
+      "key": "swatch.intro.body",
+      "value": "Not sure which fabric is right for your space? We'll mail up to five physical swatches so you can feel the texture and see the color in your own lighting — completely free.",
+      "_source": "src/app/swatch-request/page.tsx SWATCH_COPY_FALLBACKS.introBody (cfw-z6n)"
     }
   ]
 }
