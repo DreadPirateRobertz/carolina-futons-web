@@ -140,10 +140,6 @@ describe("provision-site-content seed-data.json", () => {
       "guides.index.eyebrow",
       "guides.index.heading",
       "guides.index.subhead",
-      // cfw-udr: videos page copy
-      "videos.eyebrow",
-      "videos.heading",
-      "videos.intro",
       // cfw-dag: registry page copy
       "registry.heading",
       "registry.unauthenticated.body",
