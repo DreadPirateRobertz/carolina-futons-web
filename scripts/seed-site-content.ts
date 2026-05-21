@@ -143,6 +143,11 @@ export const SEED_ROWS: SeedRow[] = [
   { key: "sustainability.trade-in.heading", value: "Trade-in program" },
   { key: "sustainability.trade-in.subhead", value: "Give your old futon a second life. Trade in your used furniture for store credit toward a new piece — we'll handle the pickup and responsible recycling." },
   { key: "sustainability.trade-in.cta-label", value: "Ask about trade-in" },
+
+  // ── cfw-udr: Videos page copy ──────────────────────────────────────
+  { key: "videos.eyebrow", value: "Watch" },
+  { key: "videos.heading", value: "Product Videos" },
+  { key: "videos.intro",   value: "Watch our futon frames, Murphy beds, and conversion mechanisms in action — short demos straight from the showroom plus full assembly walkthroughs from our manufacturers." },
 ];
 
 // ── Config ────────────────────────────────────────────────────────────
