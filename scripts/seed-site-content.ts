@@ -4,8 +4,10 @@
  * fallback values for all owner-editable copy keys.
  *
  * Covers:
- *   §1 — 26 already-live keys (from provision-site-content/seed-data.json)
+ *   §1 — 29 already-live keys (26 from provision-site-content/seed-data.json
+ *          + 3 home.filter-first.* keys wired separately)
  *   §2 — 24 proposed keys from docs/site-content-audit.md §2a-§2f
+ *   Total: 53 rows
  *
  * Semantics: UPSERT. Unlike provision-site-content (which inserts-only and
  * preserves Brenda's edits), this script overwrites existing values with the
@@ -23,6 +25,8 @@
  * exactly the state declared below.
  */
 
+import { fileURLToPath } from "node:url";
+
 import { createClient, ApiKeyStrategy } from "@wix/sdk";
 import * as items from "@wix/wix-data-items-sdk";
 
@@ -36,13 +40,14 @@ type SeedRow = {
 // ── Seed data ─────────────────────────────────────────────────────────
 //
 // §1: Already-live keys wired to getSiteContent() across the codebase.
-//     Source: scripts/provision-site-content/seed-data.json
+//     26 sourced from scripts/provision-site-content/seed-data.json;
+//     3 home.filter-first.* keys added here (wired via filter-first-content.ts).
 //
 // §2: Proposed keys from docs/site-content-audit.md §2a-§2f.
 //     Values are the current hardcoded fallbacks. Once each call site is
 //     migrated to getSiteContent(), the CMS row takes effect immediately.
 
-const SEED_ROWS: SeedRow[] = [
+export const SEED_ROWS: SeedRow[] = [
   // ── §1: Footer ─────────────────────────────────────────────────────
   { key: "footer.tagline",            value: "Quality futons since 1991" },
   { key: "footer.showroom-hours.label", value: "Showroom hours: Sun–Tue, 10am–5pm" },
@@ -96,6 +101,7 @@ const SEED_ROWS: SeedRow[] = [
   { key: "shop.mattresses-sale.empty-state", value: "No mattresses are on sale right now. Check back soon." },
 
   // ── §2c: Category card subtitles on /shop (P2) ────────────────────
+  // sofa-beds and sale have no card on /shop — no subtitle needed.
   { key: "shop.futon-frames.subtitle",       value: "Solid hardwood" },
   { key: "shop.murphy-cabinet-beds.subtitle", value: "Space-saving" },
   { key: "shop.platform-beds.subtitle",      value: "Low & modern" },
@@ -200,11 +206,13 @@ async function main(): Promise<void> {
     seen.add(row.key);
   }
 
-  log(`${SEED_ROWS.length} rows declared (§1 live + §2 proposed).`);
+  log(`${SEED_ROWS.length} rows declared (§1 live: 29, §2 proposed: 24).`);
 
   if (DRY_RUN) {
     for (const row of SEED_ROWS) {
-      log(`DRY-RUN: would upsert key=${JSON.stringify(row.key)} value=${JSON.stringify(row.value).slice(0, 60)}…`);
+      const preview = JSON.stringify(row.value);
+      const truncated = preview.length > 62 ? `${preview.slice(0, 60)}…` : preview;
+      log(`DRY-RUN: would upsert key=${JSON.stringify(row.key)} value=${truncated}`);
     }
     log(`DRY-RUN complete. ${SEED_ROWS.length} rows would be upserted.`);
     return;
@@ -239,7 +247,9 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((e: unknown) => {
-  logErr((e instanceof Error ? e.stack : null) ?? String(e));
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((e: unknown) => {
+    logErr((e instanceof Error ? e.stack : null) ?? String(e));
+    process.exit(1);
+  });
+}
