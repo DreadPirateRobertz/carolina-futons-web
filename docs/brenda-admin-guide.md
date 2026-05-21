@@ -91,6 +91,7 @@ The photo appears in the gallery on the site within a few minutes.
 
 > **If the upload fails:** the most common reason is the file is too large. Save a smaller copy from your phone or computer (under 5 MB) and try again.
 
+
 > **To remove a photo:** find it in the CommunityPhotos list, open it, and uncheck **Approved**. It disappears from the site without deleting the record.
 
 ---
