@@ -123,6 +123,20 @@ export const SEED_ROWS: SeedRow[] = [
   { key: "footer.social.instagram-href", value: "https://www.instagram.com/carolinafutons" },
   { key: "footer.social.tiktok-href",    value: "https://www.tiktok.com/@carolinafutons" },
   { key: "footer.social.pinterest-href", value: "https://www.pinterest.com/carolinafutons" },
+
+  // ── cfw-5yg: Returns page copy (P2) ──────────────────────────────
+  { key: "returns.eyebrow",           value: "Policies" },
+  { key: "returns.intro.heading",     value: "Returns" },
+  { key: "returns.intro.body",        value: "We stand behind what we sell. If something isn't right, here's how to make it right." },
+  { key: "returns.window.heading",    value: "The return window" },
+  { key: "returns.window.body",       value: 'Most items are returnable within 30 days of delivery in like-new condition. "Like-new" means unused, undamaged, and in the original packaging. Before you ship anything back, contact us — we\'ll confirm the return is eligible and issue a return authorization. Unauthorized returns may be refused at our discretion.' },
+  { key: "returns.restocking.heading",  value: "Restocking and return shipping" },
+  { key: "returns.restocking.body-1",   value: "Frames and accessories incur a 15% restocking fee. Mattresses incur a 25% restocking fee because we cannot resell them as new once they've left our facility." },
+  { key: "returns.restocking.body-2",   value: "You are responsible for return shipping costs unless the return is due to our error (wrong item sent, manufacturing defect) or a confirmed shipping-damage claim. Return freight for a full-size futon frame typically runs $80–$180 depending on your location." },
+  { key: "returns.custom.heading",    value: "Custom and made-to-order items" },
+  { key: "returns.damaged.heading",   value: "Damaged on arrival" },
+  { key: "returns.faq.heading",       value: "Common returns questions" },
+  { key: "returns.start.heading",     value: "Start a return" },
 ];
 
 // ── Config ────────────────────────────────────────────────────────────

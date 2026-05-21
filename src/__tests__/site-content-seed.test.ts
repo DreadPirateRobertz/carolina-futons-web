@@ -43,9 +43,9 @@ describe("provision-site-content seed-data.json", () => {
     expect(seed.rows.length).toBeGreaterThan(0);
   });
 
-  it("contains exactly 55 seed rows (cfw-roi + cfw-34q value-props + cfw-66o.4 shop copy + cfw-66o.11 about copy + cfw-66o.5 featured-row + cfw-66o.3 descriptions)", () => {
+  it("contains exactly 67 seed rows (cfw-roi + cfw-34q value-props + cfw-66o.4 shop copy + cfw-66o.11 about copy + cfw-66o.5 featured-row + cfw-66o.3 descriptions + cfw-5yg returns.* keys)", () => {
     const seed = loadSeed();
-    expect(seed.rows).toHaveLength(55);
+    expect(seed.rows).toHaveLength(67);
   });
 
   it("every row has a non-empty string key and value", () => {
