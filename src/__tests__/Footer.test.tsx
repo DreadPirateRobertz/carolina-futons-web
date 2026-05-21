@@ -192,6 +192,35 @@ describe("Footer — Phase 3 rebrand", () => {
     }
   });
 
+  it("overrides social hrefs when socialUrls prop is provided (cfw-66o.7)", () => {
+    render(
+      <Footer
+        socialUrls={{
+          facebook: "https://www.facebook.com/cf-override",
+          instagram: "https://www.instagram.com/cf-override",
+          tiktok: "https://www.tiktok.com/@cf-override",
+          pinterest: "https://www.pinterest.com/cf-override",
+        }}
+      />,
+    );
+    expect(screen.getByRole("link", { name: /facebook/i })).toHaveAttribute(
+      "href",
+      "https://www.facebook.com/cf-override",
+    );
+    expect(screen.getByRole("link", { name: /instagram/i })).toHaveAttribute(
+      "href",
+      "https://www.instagram.com/cf-override",
+    );
+    expect(screen.getByRole("link", { name: /tiktok/i })).toHaveAttribute(
+      "href",
+      "https://www.tiktok.com/@cf-override",
+    );
+    expect(screen.getByRole("link", { name: /pinterest/i })).toHaveAttribute(
+      "href",
+      "https://www.pinterest.com/cf-override",
+    );
+  });
+
   it("mounts the newsletter signup form (cf-newsletter-footer)", () => {
     render(<Footer />);
     expect(
