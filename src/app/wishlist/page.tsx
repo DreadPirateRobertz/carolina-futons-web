@@ -15,6 +15,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { logError } from "@/lib/observability/log";
 import { getWishlist } from "@/app/actions/wishlist";
 import { WishlistView } from "@/components/wishlist/WishlistView";
 import { getMemberSession } from "@/lib/auth/member";
@@ -43,7 +44,7 @@ export default async function WishlistPage() {
       initialItems = result?.items ?? [];
     }
   } catch (err) {
-    console.error("[wishlist] page load failed:", err);
+    logError("wishlist", "page load failed", err);
   }
 
   return <WishlistView initialItems={initialItems} />;

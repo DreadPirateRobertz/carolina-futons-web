@@ -11,6 +11,7 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 
+import { logError } from "@/lib/observability/log";
 import { getMemberSession } from "@/lib/auth/member";
 import { registerWarrantyForMember } from "@/lib/warranty/warranty-registration";
 
@@ -139,7 +140,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       502,
     );
   } catch (err) {
-    console.error("[/api/warranty/register] unexpected error:", err);
+    logError("/api/warranty/register", "unexpected error", err);
     return bad("Unexpected error. Please try again shortly.", 500);
   }
 }
