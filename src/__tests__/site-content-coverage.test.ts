@@ -119,6 +119,6 @@ describe("site-content seed ↔ src/ getSiteContent coverage (cfw-66o.14)", () =
   });
 
   it(`seed has exactly ${rows.length} rows (guard against accidental seed edits)`, () => {
-    expect(rows).toHaveLength(58);
+    expect(rows).toHaveLength(71);
   });
 });
