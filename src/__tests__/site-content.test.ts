@@ -8,8 +8,17 @@ vi.mock("server-only", () => ({}));
 // cfw-vxb: site-content now wraps the Wix fetch in next/cache.unstable_cache.
 // Its production behaviour requires a Next request/work-store context that
 // vitest doesn't provide, so mock it as an identity wrapper for tests.
+// cfw-eer: hoisted spy so the module-level unstable_cache() registration call
+// is captured and the cache-tag opt-in (cfw-sej prereq) can be asserted.
+const { unstableCacheSpy } = vi.hoisted(() => {
+  const unstableCacheSpy = vi.fn(
+    <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
+  );
+  return { unstableCacheSpy };
+});
+
 vi.mock("next/cache", () => ({
-  unstable_cache: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
+  unstable_cache: unstableCacheSpy,
   revalidateTag: vi.fn(),
 }));
 
@@ -179,5 +188,18 @@ describe("getSiteContent", () => {
     const getSiteContent = await freshGetSiteContent();
 
     expect(await getSiteContent("real.key", "fb")).toBe("kept");
+  });
+
+  it("registers unstable_cache with tags: ['site-content'] (cfw-sej prereq)", async () => {
+    mockListCollectionItems.mockResolvedValue([]);
+    // freshGetSiteContent() resets modules + re-imports, which re-runs the
+    // module-level unstable_cache() registration and captures it on the spy.
+    await freshGetSiteContent();
+
+    expect(unstableCacheSpy).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.any(Array),
+      expect.objectContaining({ tags: ["site-content"] }),
+    );
   });
 });
