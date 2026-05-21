@@ -186,9 +186,10 @@
     {
       "key": "about.team.body",
       "value": "A short roster of the people who build, deliver, and stand behind every order is coming soon. In the meantime, the fastest way to reach any of us is the contact details above — we answer our own email.",
-      "_source": "src/app/about/page.tsx ABOUT_COPY_FALLBACKS.teamBody (cfw-66o.11)",
+      "_source": "src/app/about/page.tsx ABOUT_COPY_FALLBACKS.teamBody (cfw-66o.11)"
+    },
     {
-"key": "shop.index.subhead",
+      "key": "shop.index.subhead",
       "value": "Pick a category to browse.",
       "_source": "src/app/shop/page.tsx subhead (cfw-66o.4)"
     },
