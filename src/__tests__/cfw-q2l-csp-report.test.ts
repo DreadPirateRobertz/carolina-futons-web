@@ -50,12 +50,13 @@ describe("POST /api/csp-report — legacy envelope", () => {
     );
     expect(res.status).toBe(204);
     expect(warnSpy).toHaveBeenCalledOnce();
-    const logged = warnSpy.mock.calls[0][0] as string;
-    expect(logged).toContain("[csp]");
-    expect(logged).toContain("source=legacy");
-    expect(logged).toContain("directive=script-src");
-    expect(logged).toContain("blocked=https://evil.example.com/x.js");
-    expect(logged).toContain("doc=https://carolinafutons.com/");
+    // logWarn emits: console.warn("[csp] violation", { source, directive, blocked, docUri })
+    expect(warnSpy.mock.calls[0][0]).toBe("[csp] violation");
+    const extra = warnSpy.mock.calls[0][1] as Record<string, unknown>;
+    expect(extra.source).toBe("legacy");
+    expect(extra.directive).toBe("script-src");
+    expect(extra.blocked).toBe("https://evil.example.com/x.js");
+    expect(extra.docUri).toBe("https://carolinafutons.com/");
   });
 
   it("falls back to violated-directive when effective-directive is absent", async () => {
@@ -72,7 +73,8 @@ describe("POST /api/csp-report — legacy envelope", () => {
     );
     expect(res.status).toBe(204);
     expect(warnSpy).toHaveBeenCalledOnce();
-    expect(warnSpy.mock.calls[0][0]).toContain("directive=style-src");
+    const extra = warnSpy.mock.calls[0][1] as Record<string, unknown>;
+    expect(extra.directive).toBe("style-src");
   });
 
   it("renders (unknown) when both directives missing", async () => {
@@ -83,7 +85,8 @@ describe("POST /api/csp-report — legacy envelope", () => {
       ),
     );
     expect(res.status).toBe(204);
-    expect(warnSpy.mock.calls[0][0]).toContain("directive=(unknown)");
+    const extra = warnSpy.mock.calls[0][1] as Record<string, unknown>;
+    expect(extra.directive).toBe("(unknown)");
   });
 
   it("returns 204 without logging when the legacy envelope is empty", async () => {
@@ -121,9 +124,11 @@ describe("POST /api/csp-report — Reporting API envelope", () => {
     );
     expect(res.status).toBe(204);
     expect(warnSpy).toHaveBeenCalledTimes(2);
-    expect(warnSpy.mock.calls[0][0]).toContain("source=reporting-api");
-    expect(warnSpy.mock.calls[0][0]).toContain("directive=img-src");
-    expect(warnSpy.mock.calls[1][0]).toContain("directive=connect-src");
+    const extra0 = warnSpy.mock.calls[0][1] as Record<string, unknown>;
+    const extra1 = warnSpy.mock.calls[1][1] as Record<string, unknown>;
+    expect(extra0.source).toBe("reporting-api");
+    expect(extra0.directive).toBe("img-src");
+    expect(extra1.directive).toBe("connect-src");
   });
 
   it("skips non-csp-violation entries in a Reporting API batch", async () => {
@@ -144,7 +149,8 @@ describe("POST /api/csp-report — Reporting API envelope", () => {
     );
     expect(res.status).toBe(204);
     expect(warnSpy).toHaveBeenCalledOnce();
-    expect(warnSpy.mock.calls[0][0]).toContain("directive=font-src");
+    const extra = warnSpy.mock.calls[0][1] as Record<string, unknown>;
+    expect(extra.directive).toBe("font-src");
   });
 
   it("returns 204 without logging when reports+json array is empty", async () => {

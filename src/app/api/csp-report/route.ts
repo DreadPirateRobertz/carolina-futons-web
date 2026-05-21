@@ -20,6 +20,8 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 
+import { logWarn } from "@/lib/observability/log";
+
 export const dynamic = "force-dynamic";
 
 type CspReport = {
@@ -63,12 +65,7 @@ function logViolation(
     "(unknown)";
   const blocked = report["blocked-uri"] ?? "(inline)";
   const docUri = report["document-uri"] ?? "(unknown)";
-  // Single-line structured-ish log so Vercel log search can grep for
-  // `[csp]` to find every violation, and for a directive to find every
-  // resource that tripped that directive.
-  console.warn(
-    `[csp] source=${source} directive=${directive} blocked=${blocked} doc=${docUri}`,
-  );
+  logWarn("csp", "violation", undefined, { source, directive, blocked, docUri });
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
