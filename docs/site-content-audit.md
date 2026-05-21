@@ -1,6 +1,6 @@
 # cfw Site Content Audit — Hardcoded Copy → SiteContent Keys
 
-**Bead:** cfw-66o.1 (cfw-66o.A)  
+**Bead:** cfw-66o.1 (cfw-66o.A) — updated post-cfw-66o.4/.5/.6/.7 merges  
 **Author:** morgott · 2026-05-21  
 **Audience:** Brenda, Stilgar, PM (melania), implementing engineers  
 **Epic:** cfw-66o — Owner-friendly admin UI (Brenda edits content without a deploy)
@@ -50,14 +50,33 @@ These are **complete** and require no further work. Included for reference and t
 | `visit.cta.heading` | `"Ready to shop?"` | `visit/page.tsx:63` | |
 | `visit.cta.body` | `"Browse online first, then come in and try everything."` | `visit/page.tsx:64` | |
 | `visit.cta.button-label` | `"Browse all products"` | `visit/page.tsx:65` | |
+| `shop.sale.empty-state` | `"No items are on sale right now. Check back soon."` | `shop/[category]/page.tsx:215` | cfw-66o.6 (#899) — resolved at render; `categories.ts` value is fallback |
+| `shop.mattresses-sale.empty-state` | `"No mattresses are on sale right now. Check back soon."` | `shop/[category]/page.tsx:215` | cfw-66o.6 (#899) |
+| `shop.index.subhead` | `"Pick a category to browse."` | `shop/page.tsx:55` | cfw-66o.4 (#902) |
+| `shop.shop-the-room.eyebrow` | `"Shop the room"` | `shop/page.tsx:56` | cfw-66o.4 (#902) |
+| `shop.shop-the-room.heading` | `"Or jump straight in"` | `shop/page.tsx:57` | cfw-66o.4 (#902) |
+| `shop.futon-frames.subtitle` | `"Solid hardwood"` | `shop/page.tsx:58` | cfw-66o.4 (#902) |
+| `shop.murphy-cabinet-beds.subtitle` | `"Space-saving"` | `shop/page.tsx:59` | cfw-66o.4 (#902) |
+| `shop.platform-beds.subtitle` | `"Low & modern"` | `shop/page.tsx:60` | cfw-66o.4 (#902) |
+| `shop.mattresses.subtitle` | `"Made in USA"` | `shop/page.tsx:61` | cfw-66o.4 (#902) |
+| `shop.mattresses-sale.subtitle` | `"On sale now"` | `shop/page.tsx:62` | cfw-66o.4 (#902) |
+| `shop.futon-frames.featured.eyebrow` | `"Editor's picks"` | `shop/[category]/page.tsx:203` | cfw-66o.5 (#900) — template key `shop.${slug}.featured.*` |
+| `shop.futon-frames.featured.heading` | `"Where most people start"` | `shop/[category]/page.tsx:204` | cfw-66o.5 (#900) |
+| `shop.futon-frames.featured.body` | `"Three frames that cover the common questions…"` | `shop/[category]/page.tsx:205` | cfw-66o.5 (#900) |
+| `social.url.facebook` | `"https://www.facebook.com/carolinafutons"` | `layout.tsx:136` | cfw-66o.7 (#904) — key renamed from audit's `footer.social.facebook-href` |
+| `social.url.instagram` | `"https://www.instagram.com/carolinafutons"` | `layout.tsx:137` | cfw-66o.7 (#904) |
+| `social.url.tiktok` | `"https://www.tiktok.com/@carolinafutons"` | `layout.tsx:138` | cfw-66o.7 (#904) |
+| `social.url.pinterest` | `"https://www.pinterest.com/carolinafutons"` | `layout.tsx:139` | cfw-66o.7 (#904) |
 
 ---
 
-## 2. Hardcoded copy — proposed SiteContent keys
+## 2. Hardcoded copy — remaining (not yet wired)
 
-### 2a. Category descriptions (P1)
+### 2a. Category descriptions (P1) — PR #896 open, pending merge
 
-Rendered as the `<p>` subtitle below every PLP `<h1>`. Brenda will want to tune these for SEO and seasonal messaging.
+Rendered as the `<p>` subtitle below every PLP `<h1>` and as the OG `description` meta tag. Brenda will want to tune these for SEO and seasonal messaging.
+
+> **Status:** `feat(cfw-66o.3)` PR #896 is open with CI running. Once merged, move all 7 rows to §1. Fallback implementation note below still applies until then.
 
 | Key | Current hardcoded value | File : line |
 |---|---|---|
@@ -69,71 +88,7 @@ Rendered as the `<p>` subtitle below every PLP `<h1>`. Brenda will want to tune 
 | `shop.sale.description` | `"Discounted futons, beds, and mattresses — while supplies last."` | `src/lib/shop/categories.ts:143` |
 | `shop.mattresses-sale.description` | `"Current mattress promotions."` | `src/lib/shop/categories.ts:153` |
 
-**Implementation note:** `categories.ts` is `as const` — descriptions feed `generateMetadata()` (OG meta) and the PLP `<p>` directly. Migration requires reading via `getSiteContent()` server-side in `[category]/page.tsx` and passing the resolved string down, or making the categories file a lazy loader rather than a static constant. Discuss approach with Stilgar before implementing.
-
----
-
-### 2b. Category empty-state copy (P1)
-
-Shown when a sale category has zero matching products. Brenda edits these for seasonal sale windows.
-
-| Key | Current hardcoded value | File : line |
-|---|---|---|
-| `shop.sale.empty-state` | `"No items are on sale right now. Check back soon."` | `src/lib/shop/categories.ts:147` |
-| `shop.mattresses-sale.empty-state` | `"No mattresses are on sale right now. Check back soon."` | `src/lib/shop/categories.ts:157` |
-
----
-
-### 2c. Category card subtitles on the shop index (P2)
-
-Short one-liners shown on the `MascotCategoryCard` tiles at `/shop`. Branding copy — not changed often, but should be owner-accessible.
-
-| Key | Current hardcoded value | File : line |
-|---|---|---|
-| `shop.futon-frames.subtitle` | `"Solid hardwood"` | `src/app/shop/page.tsx:21` |
-| `shop.murphy-cabinet-beds.subtitle` | `"Space-saving"` | `src/app/shop/page.tsx:22` |
-| `shop.platform-beds.subtitle` | `"Low & modern"` | `src/app/shop/page.tsx:23` |
-| `shop.mattresses.subtitle` | `"Made in USA"` | `src/app/shop/page.tsx:24` |
-| `shop.mattresses-sale.subtitle` | `"On sale now"` | `src/app/shop/page.tsx:25` |
-
----
-
-### 2d. Shop index page copy (P2)
-
-Text on the `/shop` landing page above the category grid.
-
-| Key | Current hardcoded value | File : line |
-|---|---|---|
-| `shop.index.subhead` | `"Pick a category to browse."` | `src/app/shop/page.tsx:48` |
-| `shop.shop-the-room.eyebrow` | `"Shop the room"` | `src/app/shop/page.tsx:73` |
-| `shop.shop-the-room.heading` | `"Or jump straight in"` | `src/app/shop/page.tsx:74` |
-
----
-
-### 2e. Futon frames featured-row copy (P2)
-
-The curated editorial strip at the top of `/shop/futon-frames` (cfw-75v). Currently only futon-frames has a `featured` config.
-
-| Key | Current hardcoded value | File : line |
-|---|---|---|
-| `shop.futon-frames.featured.eyebrow` | `"Editor's picks"` | `src/lib/shop/categories.ts:96` |
-| `shop.futon-frames.featured.heading` | `"Where most people start"` | `src/lib/shop/categories.ts:97` |
-| `shop.futon-frames.featured.body` | `"Three frames that cover the common questions — daily-use durability, conversion mechanism, and finish. Sit on them in the showroom or order with our 100-night guarantee."` | `src/lib/shop/categories.ts:98–101` |
-
----
-
-### 2f. Social media URLs (P3)
-
-The footer social links. Currently duplicated between `Footer.tsx:FOOTER_SOCIALS` and `contact-info.ts:SOCIALS`. If migrated to SiteContent, consolidate to one source first.
-
-| Key | Current hardcoded value | File : line |
-|---|---|---|
-| `footer.social.facebook-href` | `"https://www.facebook.com/carolinafutons"` | `src/components/site/Footer.tsx:35` |
-| `footer.social.instagram-href` | `"https://www.instagram.com/carolinafutons"` | `src/components/site/Footer.tsx:39` |
-| `footer.social.tiktok-href` | `"https://www.tiktok.com/@carolinafutons"` | `src/components/site/Footer.tsx:44` |
-| `footer.social.pinterest-href` | `"https://www.pinterest.com/carolinafutons"` | `src/components/site/Footer.tsx:49` |
-
-**Note:** Social handles rarely change — a deploy-time edit is acceptable. Migrate only if Brenda needs to update a handle between releases.
+**Implementation note:** `categories.ts` is `as const` — descriptions feed `generateMetadata()` (OG meta) and the PLP `<p>` directly. Migration reads via `getSiteContent()` server-side in `[category]/page.tsx` and passes the resolved string to both render sites; `categories.ts` values become fallbacks.
 
 ---
 
@@ -161,7 +116,7 @@ These strings are hardcoded but intentionally excluded from SiteContent because 
 All proposed keys follow `SITE_CONTENT_KEY_PATTERN` enforced by `cfw-6qd.12`:
 - Lowercase + hyphenated within each segment
 - Minimum 2 dot-separated segments
-- Segment 1: surface (`shop`, `footer`, `announcement`, `home`, `visit`)
+- Segment 1: surface (`shop`, `footer`, `announcement`, `home`, `visit`, `social`)
 - Segment 2: component or slug (`futon-frames`, `index`, `shop-the-room`, etc.)
 - Segment 3+: field within that component (`description`, `subtitle`, `eyebrow`, etc.)
 
@@ -172,16 +127,16 @@ Examples:
 
 ---
 
-## 5. Suggested implementation order
+## 5. Implementation status
 
-| Priority | Group | Keys | Impl note |
+| Priority | Group | Keys | Status |
 |---|---|---|---|
-| P1 | Category descriptions | 7 keys (§2a) | Requires `[category]/page.tsx` to call `getSiteContent()` per-category and pass resolved string to `<p>` and `generateMetadata()`; `categories.ts` becomes the fallback source |
-| P1 | Sale empty-state | 2 keys (§2b) | Same refactor as descriptions — `emptyStateCopy` read from SiteContent |
-| P2 | Shop index subhead + ShopTheRoom labels | 3 keys (§2d) | Simple — server component, drop-in `getSiteContent()` calls |
-| P2 | Category card subtitles | 5 keys (§2c) | `shop/page.tsx` needs to call `getSiteContent()` for each subtitle and pass down to `MascotCategoryCard` |
-| P2 | Futon frames featured-row copy | 3 keys (§2e) | `categories.ts` featured config needs to become a loader or accept runtime-resolved strings |
-| P3 | Social URLs | 4 keys (§2f) | Low priority; consolidate `FOOTER_SOCIALS` + `SOCIALS` duplication first |
+| P1 | Category descriptions | 7 keys (§2a) | **PR #896 open** — pending merge |
+| P1 | Sale empty-state | 2 keys (§2b) | ✅ **DONE** — cfw-66o.6 PR #899 |
+| P2 | Shop index subhead + ShopTheRoom labels | 3 keys (§2d) | ✅ **DONE** — cfw-66o.4 PR #902 |
+| P2 | Category card subtitles | 5 keys (§2c) | ✅ **DONE** — cfw-66o.4 PR #902 |
+| P2 | Futon frames featured-row copy | 3 keys (§2e) | ✅ **DONE** — cfw-66o.5 PR #900 |
+| P3 | Social URLs | 4 keys (§2f) | ✅ **DONE** — cfw-66o.7 PR #904 (keys renamed to `social.url.*`) |
 
 ---
 
