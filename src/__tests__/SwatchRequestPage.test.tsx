@@ -122,6 +122,7 @@ describe("SwatchRequestPage — owner-editable copy (cfw-z6n)", () => {
   it("queries the 3 expected swatch.* SiteContent keys", async () => {
     await renderPage();
     const keys = mockGetSiteContent.mock.calls.map(([key]) => key);
+    expect(keys).toHaveLength(3);
     expect(keys).toEqual(
       expect.arrayContaining([
         "swatch.eyebrow",
