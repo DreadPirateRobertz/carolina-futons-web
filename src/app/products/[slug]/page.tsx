@@ -22,6 +22,7 @@ import { ShowroomCta } from "@/components/product/ShowroomCta";
 import { PdpReviews } from "@/components/product/PdpReviews";
 import { CustomerVideoReviewGrid } from "@/components/product/CustomerVideoReviewGrid";
 import { getCustomerVideoReviewsByProductSlug } from "@/lib/discovery/customer-video-reviews";
+import { CustomerQa } from "@/components/product/CustomerQa";
 import { PdpShareButtons } from "@/components/product/PdpShareButtons";
 import { PdpViewItemTracker } from "@/components/product/PdpViewItemTracker";
 import { loadReviews } from "@/lib/discovery/google-reviews";
@@ -369,6 +370,8 @@ export default async function PdpPage(props: {
       <CustomerVideoReviewGrid
         videos={getCustomerVideoReviewsByProductSlug(slug)}
       />
+
+      <CustomerQa productSlug={slug} />
 
       <PdpShareButtons
         productUrl={canonicalUrl}
