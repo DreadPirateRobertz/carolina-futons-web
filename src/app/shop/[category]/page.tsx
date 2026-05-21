@@ -60,14 +60,18 @@ export async function generateMetadata(props: {
     // we ship the base canonical for v1; revisit if Search Console reports
     // wasted crawl on paginated PLPs.
     const siteUrl = resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+    const description = await getSiteContent(
+      `shop.${category.slug}.description`,
+      category.description,
+    );
     const openGraph = {
       title: `${category.name} — Carolina Futons`,
-      description: category.description,
+      description,
       images: [ogImage],
     };
     return {
       title: `${category.name} — Carolina Futons`,
-      description: category.description,
+      description,
       alternates: { canonical: `${siteUrl}/shop/${categorySlug}` },
       openGraph,
       twitter: twitterFromOpenGraph(openGraph),
@@ -196,8 +200,9 @@ export default async function PlpPage(props: {
           },
         };
 
-  const [badgeMap, featuredCopy] = await Promise.all([
+  const [badgeMap, categoryDescription, featuredCopy] = await Promise.all([
     listAllProductBadges(),
+    getSiteContent(`shop.${category.slug}.description`, category.description),
     shouldShowFeaturedRow && category.featured
       ? Promise.all([
           getSiteContent(`shop.${category.slug}.featured.eyebrow`, category.featured.eyebrow),
@@ -287,7 +292,7 @@ export default async function PlpPage(props: {
         <h1 className="text-3xl font-semibold tracking-tight dark:text-zinc-100">
           {category.name}
         </h1>
-        <p className="mt-2 text-zinc-600 dark:text-zinc-400">{category.description}</p>
+        <p className="mt-2 text-zinc-600 dark:text-zinc-400">{categoryDescription}</p>
       </header>
 
       {/* cfw-75v: curated editorial strip — 3 hand-picked products with
