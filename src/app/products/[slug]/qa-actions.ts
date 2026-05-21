@@ -1,0 +1,60 @@
+"use server";
+
+import { revalidateTag } from "next/cache";
+
+import { logError } from "@/lib/observability/log";
+import {
+  coerceQaInput,
+  hasQaErrors,
+  maskName,
+  validateQaInput,
+} from "@/lib/qa/qa-schema";
+import { insertProductQuestion } from "@/lib/wix/product-qa";
+import type { QaActionState } from "@/components/product/qa-state";
+
+const TRANSPORT_ERROR = "We couldn't save that — please try again.";
+
+export async function submitQuestion(
+  productSlug: string,
+  _prev: QaActionState,
+  formData: FormData,
+): Promise<QaActionState> {
+  const raw = Object.fromEntries(formData.entries());
+  const input = coerceQaInput(raw, productSlug);
+  const errors = validateQaInput(input);
+
+  if (hasQaErrors(errors)) {
+    return {
+      status: "error",
+      errors,
+      values: {
+        question: input.question,
+        name: input.name,
+        email: input.email,
+      },
+    };
+  }
+
+  try {
+    await insertProductQuestion({
+      productSlug,
+      question: input.question,
+      askedBy: maskName(input.name),
+      askedAt: new Date().toISOString(),
+    });
+    revalidateTag(`product-qa:${productSlug}`);
+    return { status: "success" };
+  } catch (err) {
+    logError("qa-actions", "insertProductQuestion failed", err);
+    return {
+      status: "error",
+      errors: {},
+      values: {
+        question: input.question,
+        name: input.name,
+        email: input.email,
+      },
+      transportError: TRANSPORT_ERROR,
+    };
+  }
+}
