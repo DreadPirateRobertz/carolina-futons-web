@@ -9,6 +9,20 @@ import { describe, it, expect } from "vitest";
 import { mergeVariantMedia } from "@/lib/wix/products";
 import type { WixProduct } from "@/lib/wix/products";
 
+// Wix Variant type has no `media` field — mergeVariantMedia attaches it at
+// runtime. Cast result variants through this shape for assertion-only access.
+type MergedVariant = {
+  media?: {
+    mainMedia?: { image?: { url?: string | null } | null } | null;
+  } | null;
+};
+
+function variantAt(product: WixProduct, idx: number): MergedVariant {
+  return product.variants?.[idx] as unknown as MergedVariant;
+}
+
+type RawVariant = NonNullable<WixProduct["variants"]>[number];
+
 function makeProduct(variants: WixProduct["variants"]): WixProduct {
   return {
     _id: "prod-1",
@@ -39,10 +53,10 @@ describe("mergeVariantMedia", () => {
       { choices: { Color: "Walnut", Size: "Full" } },
     ]);
     const result = mergeVariantMedia(product, storeVariants);
-    expect(result.variants?.[0]?.media?.mainMedia?.image?.url).toBe(
+    expect(variantAt(result, 0)?.media?.mainMedia?.image?.url).toBe(
       "https://img.wix.com/cherry-full.jpg",
     );
-    expect(result.variants?.[1]?.media?.mainMedia?.image?.url).toBe(
+    expect(variantAt(result, 1)?.media?.mainMedia?.image?.url).toBe(
       "https://img.wix.com/walnut-full.jpg",
     );
   });
@@ -54,7 +68,7 @@ describe("mergeVariantMedia", () => {
     ]);
     const sv = [{ choices: { Size: "Full", Color: "Cherry" }, media: { image: { url: "https://img.wix.com/cherry-full.jpg" } } }];
     const result = mergeVariantMedia(product, sv);
-    expect(result.variants?.[0]?.media?.mainMedia?.image?.url).toBe(
+    expect(variantAt(result, 0)?.media?.mainMedia?.image?.url).toBe(
       "https://img.wix.com/cherry-full.jpg",
     );
   });
@@ -65,10 +79,10 @@ describe("mergeVariantMedia", () => {
       { choices: { Color: "Black", Size: "Twin" } }, // no match
     ]);
     const result = mergeVariantMedia(product, storeVariants);
-    expect(result.variants?.[0]?.media?.mainMedia?.image?.url).toBe(
+    expect(variantAt(result, 0)?.media?.mainMedia?.image?.url).toBe(
       "https://img.wix.com/cherry-full.jpg",
     );
-    expect(result.variants?.[1]?.media).toBeUndefined();
+    expect(variantAt(result, 1)?.media).toBeUndefined();
   });
 
   it("returns product unchanged when storeVariants is null", () => {
@@ -92,16 +106,22 @@ describe("mergeVariantMedia", () => {
       { choices: { Color: "Cherry", Size: "Full" }, media: { image: { url: null } } },
     ];
     const result = mergeVariantMedia(product, sv);
-    expect(result.variants?.[0]?.media).toBeUndefined();
+    expect(variantAt(result, 0)?.media).toBeUndefined();
   });
 
-  it("does not overwrite existing variant media if StoreVariant has no URL", () => {
+  it("replaces existing variant media when StoreVariant has a URL", () => {
     const existingMedia = { mainMedia: { image: { url: "https://img.wix.com/existing.jpg" } } };
-    const product = makeProduct([{ choices: { Color: "Cherry", Size: "Full" }, media: existingMedia }]);
+    const product = makeProduct([
+      { choices: { Color: "Cherry", Size: "Full" } } as unknown as RawVariant,
+    ]);
+    // Attach existing media via cast since Wix Variant type omits the field
+    (product.variants as unknown as MergedVariant[])[0] = {
+      ...product.variants![0],
+      media: existingMedia,
+    } as unknown as MergedVariant;
     const sv = [{ choices: { Color: "Cherry", Size: "Full" }, media: { image: { url: "https://img.wix.com/new.jpg" } } }];
     const result = mergeVariantMedia(product, sv);
-    // When StoreVariant has a URL, it replaces the existing media
-    expect(result.variants?.[0]?.media?.mainMedia?.image?.url).toBe(
+    expect(variantAt(result, 0)?.media?.mainMedia?.image?.url).toBe(
       "https://img.wix.com/new.jpg",
     );
   });
