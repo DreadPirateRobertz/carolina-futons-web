@@ -16,11 +16,10 @@ const isFixtureMode = process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1";
 const PLP_TIMEOUT = 15_000;
 
 async function waitForPlpControls(page: Page) {
-  await expect(page.locator("select#plp-sort")).toBeVisible({
-    timeout: PLP_TIMEOUT,
-    message:
-      "PLP sort control (#plp-sort) not visible — PLPControls may not have hydrated; CategoryPills will not be mounted",
-  });
+  await expect(
+    page.locator("select#plp-sort"),
+    "PLP sort control (#plp-sort) not visible — PLPControls may not have hydrated; CategoryPills will not be mounted",
+  ).toBeVisible({ timeout: PLP_TIMEOUT });
 }
 
 test.describe("/shop/futon-frames — CategoryPills sub-filter", () => {
@@ -75,5 +74,23 @@ test.describe("/shop/futon-frames — CategoryPills sub-filter", () => {
 
     // All 2 fixture frames should be visible (no sub-filter applied)
     await expect(page.locator('[data-slot="product-card"]')).toHaveCount(2);
+  });
+
+  test("clicking Wall Huggers pill navigates to ?sub=wall-huggers and marks it active", async ({
+    page,
+  }) => {
+    await page.goto("/shop/futon-frames");
+    await waitForPlpControls(page);
+
+    const nav = page.getByRole("navigation", { name: /sub-category filter/i });
+    const wallHuggersPill = nav.getByRole("link", { name: "Wall Huggers" });
+    await wallHuggersPill.click();
+
+    await page.waitForURL(/[?&]sub=wall-huggers/, { timeout: PLP_TIMEOUT });
+    await waitForPlpControls(page);
+
+    await expect(wallHuggersPill).toHaveAttribute("aria-current", "page");
+    const allPill = nav.getByRole("link", { name: "All" });
+    await expect(allPill).not.toHaveAttribute("aria-current", "page");
   });
 });
