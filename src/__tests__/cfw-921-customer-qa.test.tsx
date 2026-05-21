@@ -7,7 +7,10 @@ import type { ReactElement } from "react";
 
 vi.mock("server-only", () => ({}));
 const mockRevalidateTag = vi.fn();
-vi.mock("next/cache", () => ({ revalidateTag: (...args: unknown[]) => mockRevalidateTag(...args) }));
+vi.mock("next/cache", () => ({
+  unstable_cache: (fn: (...args: unknown[]) => unknown) => fn,
+  revalidateTag: (...args: unknown[]) => mockRevalidateTag(...args),
+}));
 
 vi.mock("@/lib/observability/log", () => ({
   logError: vi.fn(),
@@ -76,16 +79,37 @@ describe("submitQuestion (cfw-921)", () => {
     expect(result.values.name).toBe("Jane");
   });
 
-  it("calls revalidateTag with 'default' type on success", async () => {
+  it("calls revalidateTag with slug-specific tag on success", async () => {
     await submitQuestion(
       "futon-frames",
       initialQaState,
       makeFormData({ question: "Q?" }),
     );
-    expect(mockRevalidateTag).toHaveBeenCalledWith(
-      "product-qa:futon-frames",
-      "default",
+    expect(mockRevalidateTag).toHaveBeenCalledWith("product-qa:futon-frames");
+  });
+
+  it("calls revalidateTag with PRODUCT_QA_CACHE_TAG on success", async () => {
+    await submitQuestion(
+      "futon-frames",
+      initialQaState,
+      makeFormData({ question: "Q?" }),
     );
+    expect(mockRevalidateTag).toHaveBeenCalledWith("product-qa");
+  });
+
+  it("dedup contract — slug tag and generic tag are distinct, no duplicate calls", async () => {
+    await submitQuestion(
+      "futon-frames",
+      initialQaState,
+      makeFormData({ question: "Q?" }),
+    );
+    const calls = mockRevalidateTag.mock.calls.map((c) => c[0] as string);
+    // Both tags must be present
+    expect(calls).toContain("product-qa:futon-frames");
+    expect(calls).toContain("product-qa");
+    // No duplicate calls — each tag appears exactly once
+    const unique = new Set(calls);
+    expect(unique.size).toBe(calls.length);
   });
 
   it("masks name to initials before storing", async () => {
@@ -181,12 +205,14 @@ describe("POST /api/product-qa (cfw-921)", () => {
     expect(res.status).toBe(500);
   });
 
-  it("calls revalidateTag after successful insert", async () => {
+  it("calls revalidateTag with slug-specific tag after successful insert", async () => {
     await callPost({ productSlug: "futon-frames", question: "Q?" });
-    expect(mockRevalidateTag).toHaveBeenCalledWith(
-      "product-qa:futon-frames",
-      "default",
-    );
+    expect(mockRevalidateTag).toHaveBeenCalledWith("product-qa:futon-frames");
+  });
+
+  it("calls revalidateTag with PRODUCT_QA_CACHE_TAG after successful insert", async () => {
+    await callPost({ productSlug: "futon-frames", question: "Q?" });
+    expect(mockRevalidateTag).toHaveBeenCalledWith("product-qa");
   });
 
   it("does not call revalidateTag when insert fails", async () => {

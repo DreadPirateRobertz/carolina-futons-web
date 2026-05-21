@@ -3,13 +3,14 @@
 import { revalidateTag } from "next/cache";
 
 import { logError } from "@/lib/observability/log";
+import { QA_REVALIDATE_FAILED } from "@/lib/observability/errorIds";
 import {
   coerceQaInput,
   hasQaErrors,
   maskName,
   validateQaInput,
 } from "@/lib/qa/qa-schema";
-import { insertProductQuestion } from "@/lib/wix/product-qa";
+import { insertProductQuestion, PRODUCT_QA_CACHE_TAG } from "@/lib/wix/product-qa";
 import type { QaActionState } from "@/components/product/qa-state";
 
 const TRANSPORT_ERROR = "We couldn't save that — please try again.";
@@ -38,8 +39,8 @@ export async function submitQuestion(
       askedBy: maskName(input.name),
       askedAt: new Date().toISOString(),
     });
-  } catch (err) {
-    logError("qa-actions", "insertProductQuestion failed", err);
+  } catch {
+    // insertProductQuestion already logged via QA_INSERT_FAILED in product-qa.ts.
     return {
       status: "error",
       errors: {},
@@ -49,9 +50,12 @@ export async function submitQuestion(
   }
 
   try {
-    revalidateTag(`product-qa:${productSlug}`, "default");
+    // Invalidate slug-specific cache first, then the generic tag so bulk
+    // admin invalidation via PRODUCT_QA_CACHE_TAG is also exercised.
+    revalidateTag(`product-qa:${productSlug}`);
+    revalidateTag(PRODUCT_QA_CACHE_TAG);
   } catch (err) {
-    logError("qa-actions", "revalidateTag failed", err);
+    logError("product-qa", QA_REVALIDATE_FAILED, err);
   }
   return { status: "success" };
 }

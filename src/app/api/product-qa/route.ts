@@ -2,13 +2,14 @@ import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 
 import { logError } from "@/lib/observability/log";
+import { QA_REVALIDATE_FAILED } from "@/lib/observability/errorIds";
 import {
   coerceQaInput,
   hasQaErrors,
   maskName,
   validateQaInput,
 } from "@/lib/qa/qa-schema";
-import { insertProductQuestion } from "@/lib/wix/product-qa";
+import { insertProductQuestion, PRODUCT_QA_CACHE_TAG } from "@/lib/wix/product-qa";
 
 export async function POST(request: Request): Promise<NextResponse> {
   let body: unknown;
@@ -41,8 +42,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       askedBy: maskName(input.name),
       askedAt: new Date().toISOString(),
     });
-  } catch (err) {
-    logError("api/product-qa", "insertProductQuestion failed", err);
+  } catch {
+    // insertProductQuestion already logged via QA_INSERT_FAILED in product-qa.ts.
     return NextResponse.json(
       { error: "Failed to save question" },
       { status: 500 },
@@ -50,9 +51,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   try {
-    revalidateTag(`product-qa:${productSlug}`, "default");
+    revalidateTag(`product-qa:${productSlug}`);
+    revalidateTag(PRODUCT_QA_CACHE_TAG);
   } catch (err) {
-    logError("api/product-qa", "revalidateTag failed", err);
+    logError("product-qa", QA_REVALIDATE_FAILED, err);
   }
   return NextResponse.json({ ok: true }, { status: 201 });
 }
