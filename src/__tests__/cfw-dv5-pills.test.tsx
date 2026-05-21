@@ -25,6 +25,9 @@ vi.mock("@/lib/shop/categories", () => ({
 }));
 vi.mock("@/lib/shop/plp-observability", () => ({ logOverPaginatedRender: vi.fn() }));
 vi.mock("next/navigation", () => ({ notFound: vi.fn() }));
+vi.mock("@/lib/cms/site-content", () => ({
+  getSiteContent: (_key: string, fallback = "") => Promise.resolve(fallback),
+}));
 vi.mock("@/components/site/ShopTheRoom", () => ({
   ShopTheRoom: () => null,
   PLP_SHOP_THE_ROOM_CONFIGS: {},
