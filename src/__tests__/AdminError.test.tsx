@@ -67,7 +67,7 @@ describe("/admin/error", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     render(<AdminError error={new Error("boom")} reset={vi.fn()} />);
     expect(spy).toHaveBeenCalledWith(
-      "[admin error boundary]",
+      "[error-boundary] admin render error",
       expect.any(Error),
     );
     spy.mockRestore();

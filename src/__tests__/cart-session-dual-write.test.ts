@@ -140,14 +140,11 @@ describe("syncCartSession (cf-cart-session-dual-write)", () => {
   });
 
   it("does not throw when the Velo POST rejects", async () => {
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     fetchSpy.mockRejectedValueOnce(new Error("velo-down"));
     expect(() => syncCartSession(fakeCart())).not.toThrow();
     // Let the microtask queue run so the .catch handler fires.
     await new Promise((r) => setTimeout(r, 0));
-    expect(errSpy).toHaveBeenCalledOnce();
-    expect(errSpy.mock.calls[0]![0]).toContain("[cart-session-dual-write]");
-    errSpy.mockRestore();
+    expect(logWixFailure).toHaveBeenCalledWith("cart", "syncCartSession", expect.any(Error));
   });
 
   // cf-puqx: `.catch()` only fires on NETWORK failures — a 5xx from the
