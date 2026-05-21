@@ -4,26 +4,34 @@
  * Companion to e2e/checkout-real-shipping-payments.spec.ts which requires
  * CF_E2E_REAL_SHIPPING=1 + live Vercel preview + real UPS/Stripe creds.
  *
- * THIS FILE: uses Playwright request interception to mock all external APIs
- * (UPS, Stripe, Wix checkout). Runs in CI unconditionally. Verifies the
- * checkout flow wiring (correct API calls made, rates rendered, form
- * submittable) without depending on live credentials.
+ * THIS FILE: Stage 1 (PDP + add-to-cart) and the viewport console-error sweep
+ * run in CI unconditionally. Stages 2–5 are marked test.fixme() and SKIP.
  *
- * When Stilgar provides cf-oi01 creds, plug them into Vercel env and run the
- * real-network spec instead. This file stays in CI as regression guard.
+ * ## Architectural constraints (stages 2–5)
+ *  - UPS rate calls originate from the Next.js API route (server-side), NOT
+ *    the browser. page.route() cannot intercept them. MSW or env-level API
+ *    overrides are required before stages 2–5 can assert on rate rendering.
+ *  - Stripe Elements runs cross-origin (stripe.com). page.route() does not
+ *    intercept cross-origin iframe requests.
+ *  - page.request.post() is NOT intercepted by page.route(). Stage 5 needs
+ *    to call the real webhook endpoint (or use MSW at the server layer).
+ *
+ * ## What runs today
+ *  - Stage 1: PDP loads, first available variant selected, add-to-cart works,
+ *    cart line price visible, no unexpected console errors.
+ *  - Viewport sweep: no console errors on PDP at 375/768/1280px.
+ *
+ * ## Activation (cf-oi01)
+ *  When Stilgar provides UPS_CLIENT_ID/SECRET/ACCOUNT + Stripe test keys:
+ *  1. Plug creds into Vercel env
+ *  2. Wire MSW handlers for UPS + Stripe at server level
+ *  3. Remove test.fixme() from stages 2–5 and run against preview
  *
  * ## Test matrix (mirrors the real-network spec)
- *  - Parcel   — small accessory, NC ZIP 28792
- *  - LTL      — frame 70–499 lb, Atlanta ZIP 30309
- *  - Freight  — heavy, white-glove zone (NC 28792) + far zone (CA 90210)
- *
- * ## Acceptance (mocked)
- *  - UPS rate endpoint intercepted and fixture response returned
- *  - Rate rows render in the Wix-hosted checkout UI (mocked iframe)
- *  - Stripe Elements iframe mounts (frame locator resolves)
- *  - Stripe test card fills into the card frame without error
- *  - Order confirmation element visible after mocked payment submit
- *  - No unhandled console errors at each stage
+ *  - Parcel          — small accessory, NC ZIP 28792
+ *  - LTL             — frame 70–499 lb, Atlanta ZIP 30309
+ *  - Freight WG      — heavy, white-glove zone (NC 28792)
+ *  - Freight far     — heavy, far zone (CA 90210)
  */
 
 import { test, expect, type Page, type Route } from "@playwright/test";
@@ -198,9 +206,9 @@ async function mockWebhook(page: Page): Promise<void> {
   });
 }
 
-/** Intercept Wix order-created API. */
+/** Intercept Wix order-created API (POST to ecom orders endpoint only). */
 async function mockWixOrderCreate(page: Page): Promise<void> {
-  await page.route(/wix\.com\/.*(orders|ecom)/i, async (route: Route) => {
+  await page.route(/wixapis\.com\/ecom\/v\d+\/orders\b/, async (route: Route) => {
     if (route.request().method() === "POST") {
       await route.fulfill({
         status: 200,
@@ -267,34 +275,24 @@ for (const band of MATRIX) {
     });
 
     test(`stage 2 — shipping rate renders from mocked UPS response (${band.band})`, async ({ page }) => {
-      await mockUpsRates(page, band.upsFixture);
+      // page.route() intercepts browser requests only — UPS calls originate
+      // from the Next.js server route, so this fixture never fires in CI.
+      // Un-stub after MSW server-side mocking is wired (cf-oi01 activation).
+      test.fixme(
+        true,
+        `stage 2 pending — UPS fixture must be forwarded through cfw server route, not page.route(). Wire in cf-oi01 once Vercel env + MSW are set.`,
+      );
 
+      await mockUpsRates(page, band.upsFixture);
       await page.goto(`/products/${band.slug}`);
       await selectFirstAvailableVariant(page);
       await page.getByRole("button", { name: /add to cart/i }).first().click();
       await expect(page.getByTestId("cart-line-price").first()).toBeVisible();
-
       await page.goto("/checkout");
 
-      // If the checkout redirects to Wix-hosted: follow and assert on the
-      // redirected page. In the mocked path the Wix redirect may not fire
-      // (no real session), so we assert the rate label appears EITHER on the
-      // cfw checkout page OR on the redirected Wix host.
-      // TODO(cf-oi01): tighten once checkout redirect is confirmed in staging.
-      const rateRow = page
-        .getByText(band.expectedRateLabel)
-        .first();
-
-      // Stub: the assertion is marked fixme until we can run against a live
-      // preview — the mocked UPS fixture must be hooked into the checkout's
-      // server-side fetch, which needs the Vercel env wired.
-      test.fixme(
-        true,
-        `stage 2 mocked assertion pending — UPS fixture must be forwarded through cfw server route, not just page.route(). Wire in cf-oi01 once Vercel env is set.`,
-      );
+      const rateRow = page.getByText(band.expectedRateLabel).first();
       await expect(rateRow).toBeVisible({ timeout: 20_000 });
 
-      // G7: rate dollar-amount sanity on fixture value.
       const rateText = (await rateRow.textContent()) ?? "";
       const m = rateText.match(/\$([\d,]+(?:\.\d{2})?)/);
       expect(m, `no dollar amount in rate row: ${rateText}`).not.toBeNull();
@@ -308,6 +306,13 @@ for (const band of MATRIX) {
     });
 
     test(`stage 3 — Wix checkout redirect + Stripe Elements iframe (${band.band})`, async ({ page }) => {
+      // Requires real Wix session to fire createRedirectSession and a live
+      // Vercel preview. Un-stub after first live preview run (melania).
+      test.fixme(
+        true,
+        "stage 3 redirect assertion requires real Wix session — un-stub after first live preview run",
+      );
+
       await mockUpsRates(page, band.upsFixture);
       await mockStripePaymentIntent(page);
 
@@ -316,14 +321,6 @@ for (const band of MATRIX) {
       await page.getByRole("button", { name: /add to cart/i }).first().click();
       await expect(page.getByTestId("cart-line-price").first()).toBeVisible();
       await page.goto("/checkout");
-
-      // Stub: in a real preview this redirect fires; in the mocked path
-      // createRedirectSession is never called (no Wix session).
-      // Mark fixme so CI passes; melania un-stubs after first live run.
-      test.fixme(
-        true,
-        "stage 3 redirect assertion requires real Wix session — un-stub after first live preview run",
-      );
 
       await page.waitForURL(WIX_CHECKOUT_HOST_RE, { timeout: 30_000 });
       expect(page.url()).toMatch(WIX_CHECKOUT_HOST_RE);
@@ -354,8 +351,9 @@ for (const band of MATRIX) {
 
       // Enter test card into the Stripe Elements iframe.
       const stripeFrame = page
-        .frameLocator('iframe[src*="stripe.com"], iframe[name^="__privateStripe"]')
-        .first();
+        .locator('iframe[src*="stripe.com"], iframe[name^="__privateStripe"]')
+        .first()
+        .contentFrame();
 
       await stripeFrame
         .locator('[placeholder*="Card number"], [name="cardnumber"]')
@@ -379,16 +377,17 @@ for (const band of MATRIX) {
     });
 
     test(`stage 5 — webhook mock receives payment.succeeded event (${band.band})`, async ({ page }) => {
-      await mockWebhook(page);
-      await mockWixOrderCreate(page);
-
-      // Stub: real webhook test fires stripe-cli → cfw endpoint → Wix.
-      // The mock here just verifies the /api route returns 200 on a simulated
-      // payload without network calls.
+      // page.request.post() is NOT intercepted by page.route() — it bypasses
+      // the browser context and hits the real endpoint. This stage needs a
+      // live Vercel preview with the webhook endpoint deployed.
+      // Un-stub in cf-oi01.1 after stage 4 is green on Vercel preview.
       test.fixme(
         true,
-        "stage 5 webhook verification — wired in cf-oi01.1 after stage 4 is green",
+        "stage 5 webhook verification — wired in cf-oi01.1 after stage 4 is green on Vercel preview",
       );
+
+      await mockWebhook(page);
+      await mockWixOrderCreate(page);
 
       const response = await page.request.post("/api/checkout/webhook", {
         headers: {
@@ -404,8 +403,6 @@ for (const band of MATRIX) {
       expect(response.status()).toBe(200);
       const body = await response.json() as { received?: boolean };
       expect(body.received).toBe(true);
-
-      void band;
     });
   });
 }
@@ -419,6 +416,7 @@ for (const viewport of [
 ]) {
   test(`no console errors on PDP at ${viewport.label}`, async ({ page }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await mockUpsRates(page, UPS_RATE_PARCEL);
     const errors: string[] = [];
     page.on("console", (msg) => {
       if (msg.type() === "error" && !/favicon|sourcemap/i.test(msg.text())) {
