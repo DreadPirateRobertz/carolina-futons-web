@@ -12,6 +12,17 @@ vi.mock("@/lib/wix/errors", () => ({
   logWixFailure: (...args: unknown[]) => logWixFailure(...args),
 }));
 
+// cfw-herv: malformed-swatch warning now routes through logWarn →
+// Sentry. Mock @sentry/nextjs so tests don't ship events AND the
+// new logWarn-integration describe below can assert (scope, op)
+// tags + the malformed data shape in extra.
+const sentryCaptureException = vi.fn();
+const sentryFlush = vi.fn().mockResolvedValue(true);
+vi.mock("@sentry/nextjs", () => ({
+  captureException: (...args: unknown[]) => sentryCaptureException(...args),
+  flush: (timeoutMs?: number) => sentryFlush(timeoutMs),
+}));
+
 import {
   getProductSwatches,
   listAllProductSwatches,
@@ -21,6 +32,8 @@ beforeEach(() => {
   listCollectionItems.mockReset();
   queryCollectionWhere.mockReset();
   logWixFailure.mockReset();
+  sentryCaptureException.mockReset();
+  sentryFlush.mockReset().mockResolvedValue(true);
 });
 
 describe("getProductSwatches", () => {
@@ -229,5 +242,93 @@ describe("listAllProductSwatches", () => {
       "listAllProductSwatches",
       expect.any(Error),
     );
+  });
+});
+
+// cfw-herv: pin logWarn integration on parseSwatch's malformed-row
+// branch. Content-editor errors (wrong hex format, missing name)
+// previously surfaced as console.warn only — Sentry now sees the
+// trend so ops can ping Brenda before the swatch grid renders empty.
+describe("parseSwatch — logWarn integration on malformed swatch row", () => {
+  it("malformed hex (not 7-char) → captures scope='product-swatches' + op='dropping malformed swatch row' at level='warning' with raw {name, hex} in extra", async () => {
+    queryCollectionWhere.mockResolvedValue([
+      {
+        productSlug: "rio-futon",
+        swatches: [{ name: "Slate", hex: "blue" }],
+      },
+    ]);
+
+    const result = await getProductSwatches("rio-futon");
+
+    // Malformed row was dropped (returns empty array).
+    expect(result).toEqual([]);
+
+    expect(sentryCaptureException).toHaveBeenCalledTimes(1);
+    const [, opts] = sentryCaptureException.mock.calls[0]!;
+    expect((opts as { level: string }).level).toBe("warning");
+    expect((opts as { tags: Record<string, string> }).tags).toEqual({
+      scope: "product-swatches",
+      op: "dropping malformed swatch row",
+    });
+    expect((opts as { extra: Record<string, unknown> }).extra).toEqual({
+      name: "Slate",
+      hex: "blue",
+    });
+    expect(sentryFlush).toHaveBeenCalledWith(2000);
+  });
+
+  it("missing name → captures with the malformed shape (empty name + valid hex)", async () => {
+    queryCollectionWhere.mockResolvedValue([
+      {
+        productSlug: "rio-futon",
+        swatches: [{ name: "", hex: "#5A5F66" }],
+      },
+    ]);
+
+    await getProductSwatches("rio-futon");
+
+    expect(sentryCaptureException).toHaveBeenCalledTimes(1);
+    const [, opts] = sentryCaptureException.mock.calls[0]!;
+    expect((opts as { tags: { op: string } }).tags.op).toBe(
+      "dropping malformed swatch row",
+    );
+  });
+
+  it("valid rows do NOT call Sentry — keeps signal-to-noise high", async () => {
+    queryCollectionWhere.mockResolvedValue([
+      {
+        productSlug: "rio-futon",
+        swatches: [
+          { name: "Slate", hex: "#5A5F66" },
+          { name: "Cream", hex: "#F5E9D5" },
+        ],
+      },
+    ]);
+
+    const result = await getProductSwatches("rio-futon");
+
+    expect(result).toHaveLength(2);
+    expect(sentryCaptureException).not.toHaveBeenCalled();
+    expect(sentryFlush).not.toHaveBeenCalled();
+  });
+
+  it("mixed valid + malformed: only the malformed row fires Sentry", async () => {
+    queryCollectionWhere.mockResolvedValue([
+      {
+        productSlug: "rio-futon",
+        swatches: [
+          { name: "Slate", hex: "#5A5F66" }, // valid
+          { name: "Bad", hex: "not-a-hex" }, // malformed
+          { name: "Cream", hex: "#F5E9D5" }, // valid
+        ],
+      },
+    ]);
+
+    const result = await getProductSwatches("rio-futon");
+
+    expect(result).toHaveLength(2);
+    expect(sentryCaptureException).toHaveBeenCalledTimes(1);
+    const [, opts] = sentryCaptureException.mock.calls[0]!;
+    expect((opts as { extra: { hex: string } }).extra.hex).toBe("not-a-hex");
   });
 });
