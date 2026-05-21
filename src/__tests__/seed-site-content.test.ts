@@ -15,8 +15,8 @@ describe("seed-site-content SEED_ROWS", () => {
     expect(SEED_ROWS.length).toBeGreaterThan(0);
   });
 
-  it("contains exactly 66 rows (29 §1 live + 24 §2 proposed + 13 cfw-p3j sustainability)", () => {
-    expect(SEED_ROWS).toHaveLength(66);
+  it("contains exactly 69 rows (29 §1 live + 24 §2 proposed + 3 cfw-dag registry.* + 13 cfw-p3j sustainability)", () => {
+    expect(SEED_ROWS).toHaveLength(69);
   });
 
   it("every row has a non-empty string key and value", () => {

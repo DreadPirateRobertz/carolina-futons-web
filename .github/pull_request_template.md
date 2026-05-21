@@ -50,6 +50,7 @@ Closes `cf-XXXX` <!-- or: Related to cf-XXXX -->
 - [ ] Happy-path test included
 - [ ] Error / edge-case test included
 - [ ] No new feature code without tests
+- [ ] Key-contract tests (array exports, constant lists) include `toHaveLength(N)` to catch silent additions/removals
 - [ ] Server-only modules stay behind `import "server-only"` and are not imported from client code
 
 **Security**
