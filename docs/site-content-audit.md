@@ -117,6 +117,18 @@ These are **complete** and require no further work. Included for reference and t
 | `guides.index.eyebrow` | `"Buying guides"` | `src/app/guides/page.tsx:54` | cfw-mr7 |
 | `guides.index.heading` | `"Figure out what you actually need"` | `src/app/guides/page.tsx:57` | |
 | `guides.index.subhead` | `"35 years of answering the same questions at the showroom…"` | `src/app/guides/page.tsx:60` | |
+| `design-a-room.intro.eyebrow` | `"Free consultation"` | `src/app/design-a-room/page.tsx:44` | cfw-gpa; 12 keys total |
+| `design-a-room.intro.heading` | `"Design a room around a futon"` | `src/app/design-a-room/page.tsx:47` | |
+| `design-a-room.intro.body` | `"Family-owned in Hendersonville since 1991…"` | `src/app/design-a-room/page.tsx:50` | |
+| `design-a-room.scene.heading` | `"See it in a room"` | `src/app/design-a-room/page.tsx:65` | |
+| `design-a-room.scene.body` | `"Explore how a futon frame, murphy bed…"` | `src/app/design-a-room/page.tsx:68` | |
+| `design-a-room.planner.heading` | `"Check if it fits"` | `src/app/design-a-room/page.tsx:81` | |
+| `design-a-room.planner.body` | `"Enter your room dimensions…"` | `src/app/design-a-room/page.tsx:84` | |
+| `design-a-room.steps.heading` | `"How it works"` | `src/app/design-a-room/page.tsx:97` | |
+| `design-a-room.book.heading` | `"Book a showroom visit"` | `src/app/design-a-room/page.tsx:128` | |
+| `design-a-room.book.body` | `"Ready to bring your measurements…"` | `src/app/design-a-room/page.tsx:133` | |
+| `design-a-room.book.cta-label` | `"Request an appointment"` | `src/app/design-a-room/page.tsx:143` | |
+| `design-a-room.other-ways.heading` | `"Other ways to start"` | `src/app/design-a-room/page.tsx:163` | |
 
 ---
 

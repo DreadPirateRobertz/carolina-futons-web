@@ -43,9 +43,9 @@ describe("provision-site-content seed-data.json", () => {
     expect(seed.rows.length).toBeGreaterThan(0);
   });
 
-  it("contains exactly 74 seed rows (cfw-roi + cfw-34q value-props + cfw-66o.4 shop copy + cfw-66o.11 about copy + cfw-66o.5 featured-row + cfw-66o.3 descriptions + cfw-mr7 guides index + cfw-udr videos + cfw-dag registry + cfw-p3j sustainability)", () => {
+  it("contains exactly 86 seed rows (cfw-roi + cfw-34q value-props + cfw-66o.4 shop copy + cfw-66o.11 about copy + cfw-66o.5 featured-row + cfw-66o.3 descriptions + cfw-mr7 guides index + cfw-dag registry + cfw-gpa design-a-room + cfw-p3j sustainability)", () => {
     const seed = loadSeed();
-    expect(seed.rows).toHaveLength(74);
+    expect(seed.rows).toHaveLength(86);
   });
 
   it("every row has a non-empty string key and value", () => {
@@ -144,6 +144,19 @@ describe("provision-site-content seed-data.json", () => {
       "registry.heading",
       "registry.unauthenticated.body",
       "registry.intro.subhead",
+      // cfw-gpa: design-a-room page copy (12 keys)
+      "design-a-room.intro.eyebrow",
+      "design-a-room.intro.heading",
+      "design-a-room.intro.body",
+      "design-a-room.scene.heading",
+      "design-a-room.scene.body",
+      "design-a-room.planner.heading",
+      "design-a-room.planner.body",
+      "design-a-room.steps.heading",
+      "design-a-room.book.heading",
+      "design-a-room.book.body",
+      "design-a-room.book.cta-label",
+      "design-a-room.other-ways.heading",
     ];
     const seed = loadSeed();
     const keys = new Set(seed.rows.map((r) => r.key));

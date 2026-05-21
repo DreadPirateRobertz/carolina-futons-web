@@ -7,7 +7,9 @@
  *   §1 — 29 already-live keys (26 from provision-site-content/seed-data.json
  *          + 3 home.filter-first.* keys wired separately)
  *   §2 — 24 proposed keys from docs/site-content-audit.md §2a-§2f
- *   Total: 53 rows
+ *        + 13 cfw-p3j sustainability + 3 cfw-dag registry.*
+ *   §3 — 12 cfw-gpa design-a-room.* keys
+ *   Total: 81 rows
  *
  * Semantics: UPSERT. Unlike provision-site-content (which inserts-only and
  * preserves Brenda's edits), this script overwrites existing values with the
@@ -143,6 +145,20 @@ export const SEED_ROWS: SeedRow[] = [
   { key: "sustainability.trade-in.heading", value: "Trade-in program" },
   { key: "sustainability.trade-in.subhead", value: "Give your old futon a second life. Trade in your used furniture for store credit toward a new piece — we'll handle the pickup and responsible recycling." },
   { key: "sustainability.trade-in.cta-label", value: "Ask about trade-in" },
+
+  // ── §3: Design a Room page (cfw-gpa) ──────────────────────────────
+  { key: "design-a-room.intro.eyebrow",      value: "Free consultation" },
+  { key: "design-a-room.intro.heading",      value: "Design a room around a futon" },
+  { key: "design-a-room.intro.body",         value: "Family-owned in Hendersonville since 1991. Stop by the showroom or give us a call — we'll help you plan a room that sleeps guests, holds up to daily use, and still looks like a room, not a folded-out mattress." },
+  { key: "design-a-room.scene.heading",      value: "See it in a room" },
+  { key: "design-a-room.scene.body",         value: "Explore how a futon frame, murphy bed, or platform bed looks inside a styled room. Switch styles to find a look that fits your space." },
+  { key: "design-a-room.planner.heading",    value: "Check if it fits" },
+  { key: "design-a-room.planner.body",       value: "Enter your room dimensions and pick a futon or Murphy bed to see a rough top-down layout." },
+  { key: "design-a-room.steps.heading",      value: "How it works" },
+  { key: "design-a-room.book.heading",       value: "Book a showroom visit" },
+  { key: "design-a-room.book.body",          value: "Ready to bring your measurements and see frames in person? Request a slot and we'll confirm by email within one business day." },
+  { key: "design-a-room.book.cta-label",     value: "Request an appointment" },
+  { key: "design-a-room.other-ways.heading", value: "Other ways to start" },
 ];
 
 // ── Config ────────────────────────────────────────────────────────────
