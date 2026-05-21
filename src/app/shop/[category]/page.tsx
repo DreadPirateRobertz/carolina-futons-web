@@ -33,7 +33,6 @@ import {
   ShopTheRoom,
   PLP_SHOP_THE_ROOM_CONFIGS,
 } from "@/components/site/ShopTheRoom";
-import { getSiteContent } from "@/lib/cms/site-content";
 export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
