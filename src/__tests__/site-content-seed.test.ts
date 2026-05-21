@@ -43,9 +43,9 @@ describe("provision-site-content seed-data.json", () => {
     expect(seed.rows.length).toBeGreaterThan(0);
   });
 
-  it("contains exactly 70 seed rows (cfw-roi + cfw-34q value-props + cfw-66o.4 shop copy + cfw-66o.11 about copy + cfw-66o.5 featured-row + cfw-66o.3 descriptions + cfw-mr7 guides index + cfw-gpa design-a-room copy)", () => {
+  it("contains exactly 86 seed rows (cfw-roi + cfw-34q value-props + cfw-66o.4 shop copy + cfw-66o.11 about copy + cfw-66o.5 featured-row + cfw-66o.3 descriptions + cfw-mr7 guides index + cfw-dag registry + cfw-gpa design-a-room + cfw-p3j sustainability)", () => {
     const seed = loadSeed();
-    expect(seed.rows).toHaveLength(70);
+    expect(seed.rows).toHaveLength(86);
   });
 
   it("every row has a non-empty string key and value", () => {
@@ -140,6 +140,10 @@ describe("provision-site-content seed-data.json", () => {
       "guides.index.eyebrow",
       "guides.index.heading",
       "guides.index.subhead",
+      // cfw-dag: registry page copy
+      "registry.heading",
+      "registry.unauthenticated.body",
+      "registry.intro.subhead",
       // cfw-gpa: design-a-room page copy (12 keys)
       "design-a-room.intro.eyebrow",
       "design-a-room.intro.heading",

@@ -1,6 +1,6 @@
 {
   "$schema": "./seed-schema.json",
-  "_about": "cfw-roi (cf-atze) — initial seed for the SiteContent Wix CMS collection. Row count: 20 (initial) → 26 (cfw-34q home value-props) → 34 (cfw-66o.4 shop copy) → 45 (cfw-66o.11 about page copy) → 48 (cfw-66o.5 featured-row copy) → 55 (cfw-66o.3 shop.*.description) → 58 (cfw-mr7 guides index copy) → 70 (cfw-gpa design-a-room copy). Provisioning script lives in ./index.mjs. Production reader: src/lib/cms/site-content.ts.",
+  "_about": "cfw-roi (cf-atze) — initial seed for the SiteContent Wix CMS collection. Row count: 20 (initial) → 26 (cfw-34q home value-props) → 34 (cfw-66o.4 shop copy) → 45 (cfw-66o.11 about page copy) → 48 (cfw-66o.5 featured-row copy) → 55 (cfw-66o.3 shop.*.description) → 58 (cfw-mr7 guides index copy) → 61 (cfw-dag registry copy) → 74 (cfw-p3j sustainability) → 86 (cfw-gpa design-a-room copy). Provisioning script lives in ./index.mjs. Production reader: src/lib/cms/site-content.ts.",
   "_naming": "lowercase, dotted-path, hyphenated segments. e.g. 'footer.tagline', 'announcement.rotation.0.message'. See docs/design/cfw-66o-footer-announce-specs.md §2.",
   "rows": [
     {
@@ -294,6 +294,21 @@
       "_source": "src/app/guides/page.tsx GUIDES_COPY_FALLBACKS.subhead (cfw-mr7)"
     },
     {
+      "key": "registry.heading",
+      "value": "Gift Registry",
+      "_source": "src/app/registry/page.tsx REGISTRY_COPY_FALLBACKS.heading (cfw-dag)"
+    },
+    {
+      "key": "registry.unauthenticated.body",
+      "value": "Sign in to create and manage your gift registries.",
+      "_source": "src/app/registry/page.tsx REGISTRY_COPY_FALLBACKS.unauthenticatedBody (cfw-dag)"
+    },
+    {
+      "key": "registry.intro.subhead",
+      "value": "Create a shareable wish list for any occasion — weddings, housewarmings, and more.",
+      "_source": "src/app/registry/page.tsx REGISTRY_COPY_FALLBACKS.introSubhead (cfw-dag)"
+    },
+    {
       "key": "design-a-room.intro.eyebrow",
       "value": "Free consultation",
       "_source": "src/app/design-a-room/page.tsx DAR_FALLBACKS.introEyebrow (cfw-gpa)"
@@ -352,6 +367,71 @@
       "key": "design-a-room.other-ways.heading",
       "value": "Other ways to start",
       "_source": "src/app/design-a-room/page.tsx DAR_FALLBACKS.otherWaysHeading (cfw-gpa)"
+    },
+    {
+      "key": "sustainability.eyebrow",
+      "value": "Our promise",
+      "_source": "src/app/sustainability/page.tsx SUSTAINABILITY_COPY_FALLBACKS.eyebrow (cfw-p3j)"
+    },
+    {
+      "key": "sustainability.intro.heading",
+      "value": "Furniture that cares for the planet",
+      "_source": "src/app/sustainability/page.tsx SUSTAINABILITY_COPY_FALLBACKS.introHeading (cfw-p3j)"
+    },
+    {
+      "key": "sustainability.intro.body",
+      "value": "At Carolina Futons, sustainability isn't a buzzword — it's how we build. From responsibly sourced wood to low-VOC finishes, every piece is crafted to last decades, not seasons.",
+      "_source": "src/app/sustainability/page.tsx SUSTAINABILITY_COPY_FALLBACKS.introBody (cfw-p3j)"
+    },
+    {
+      "key": "sustainability.stories.heading",
+      "value": "How we build it",
+      "_source": "src/app/sustainability/page.tsx SUSTAINABILITY_COPY_FALLBACKS.storiesHeading (cfw-p3j)"
+    },
+    {
+      "key": "sustainability.materials.heading",
+      "value": "What we use",
+      "_source": "src/app/sustainability/page.tsx SUSTAINABILITY_COPY_FALLBACKS.materialsHeading (cfw-p3j)"
+    },
+    {
+      "key": "sustainability.materials.subhead",
+      "value": "Every material is chosen for durability, low environmental impact, and how it performs in daily life.",
+      "_source": "src/app/sustainability/page.tsx SUSTAINABILITY_COPY_FALLBACKS.materialsSubhead (cfw-p3j)"
+    },
+    {
+      "key": "sustainability.carbon.heading",
+      "value": "Carbon offset program",
+      "_source": "src/app/sustainability/page.tsx SUSTAINABILITY_COPY_FALLBACKS.carbonHeading (cfw-p3j)"
+    },
+    {
+      "key": "sustainability.carbon.body",
+      "value": "Manufacturing and shipping any physical product has a carbon footprint. We don't pretend otherwise. For every order shipped, we contribute to reforestation projects in the Southern Appalachians — the same mountains where our showroom sits.",
+      "_source": "src/app/sustainability/page.tsx SUSTAINABILITY_COPY_FALLBACKS.carbonBody (cfw-p3j)"
+    },
+    {
+      "key": "sustainability.certs.heading",
+      "value": "Certifications & standards",
+      "_source": "src/app/sustainability/page.tsx SUSTAINABILITY_COPY_FALLBACKS.certsHeading (cfw-p3j)"
+    },
+    {
+      "key": "sustainability.certs.subhead",
+      "value": "Our products meet rigorous third-party environmental and safety standards.",
+      "_source": "src/app/sustainability/page.tsx SUSTAINABILITY_COPY_FALLBACKS.certsSubhead (cfw-p3j)"
+    },
+    {
+      "key": "sustainability.trade-in.heading",
+      "value": "Trade-in program",
+      "_source": "src/app/sustainability/page.tsx SUSTAINABILITY_COPY_FALLBACKS.tradeinHeading (cfw-p3j)"
+    },
+    {
+      "key": "sustainability.trade-in.subhead",
+      "value": "Give your old futon a second life. Trade in your used furniture for store credit toward a new piece — we'll handle the pickup and responsible recycling.",
+      "_source": "src/app/sustainability/page.tsx SUSTAINABILITY_COPY_FALLBACKS.tradeinSubhead (cfw-p3j)"
+    },
+    {
+      "key": "sustainability.trade-in.cta-label",
+      "value": "Ask about trade-in",
+      "_source": "src/app/sustainability/page.tsx SUSTAINABILITY_COPY_FALLBACKS.tradeinCtaLabel (cfw-p3j)"
     }
   ]
 }
