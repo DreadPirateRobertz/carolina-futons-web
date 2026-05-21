@@ -10,6 +10,7 @@ import {
   NewsletterRateLimitError,
 } from "@/lib/newsletter/newsletter-store";
 import { hashEmail } from "@/lib/log/hash-pii";
+import { logError } from "@/lib/logging/log-error";
 import type { NewsletterActionState } from "@/app/newsletter/newsletter-state";
 
 // Endpoint-only — no /newsletter page route exists or is planned (cf-7ue0).
@@ -48,7 +49,14 @@ export async function subscribeToNewsletter(
         storeError: "Too many attempts — please try again in a few minutes.",
       };
     }
-    console.error("[newsletter] upsertSubscriber failed:", err);
+    // cfw-p9rf: ship to Sentry via the shared logger. hashEmail()
+    // tags the failure with a stable subscriber identifier so a
+    // recurring per-address issue (e.g. malformed row from a
+    // specific signup source) is groupable without leaking the
+    // email itself into log storage (cfw-coc PII policy).
+    await logError("newsletter", "upsertSubscriber", err, {
+      hashedEmail: hashEmail(req.email),
+    });
     return {
       status: "error",
       errors: {},

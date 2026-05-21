@@ -16,6 +16,13 @@ vi.mock("@/lib/newsletter/newsletter-store", async () => {
   };
 });
 
+// cfw-1hw7: timeout + store-fail paths route through logError. Hoisted
+// so the route's import resolves to the stub before the test imports.
+const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 import {
   upsertSubscriber,
   NewsletterRateLimitError,
@@ -36,6 +43,7 @@ const ORIGINAL_VELO = process.env.WIX_VELO_SITE_URL;
 
 beforeEach(() => {
   mockUpsert.mockReset();
+  mockLogError.mockReset();
   process.env.WIX_VELO_SITE_URL = "https://www.carolinafutons.com";
 });
 
@@ -100,7 +108,9 @@ describe("POST /api/newsletter — backend errors", () => {
     expect(await res.json()).toEqual({ ok: false, error: "rate-limited" });
   });
 
-  it("returns 502 velo-unreachable on a TimeoutError from the store", async () => {
+  it("returns 502 velo-unreachable + ships logError op=veloTimeout on TimeoutError (cfw-1hw7)", async () => {
+    // cfw-coc PII guard: use a deterministic hash by stubbing the salt
+    process.env.LOG_PII_SALT = "test-salt-cfw-1hw7";
     const timeoutErr = new Error("timed out");
     timeoutErr.name = "TimeoutError";
     mockUpsert.mockRejectedValue(timeoutErr);
@@ -109,15 +119,37 @@ describe("POST /api/newsletter — backend errors", () => {
 
     expect(res.status).toBe(502);
     expect(await res.json()).toEqual({ ok: false, error: "velo-unreachable" });
+    expect(mockLogError).toHaveBeenCalledWith(
+      "api/newsletter",
+      "veloTimeout",
+      expect.any(Error),
+      expect.objectContaining({
+        hashedEmail: expect.stringMatching(/^[0-9a-f]{12}$/),
+      }),
+    );
   });
 
-  it("returns 502 velo-error on any other store failure", async () => {
+  it("returns 502 velo-error + ships logError op=upsertSubscriber on other store failures (cfw-1hw7)", async () => {
+    process.env.LOG_PII_SALT = "test-salt-cfw-1hw7";
     mockUpsert.mockRejectedValue(new Error("boom"));
 
     const res = await POST(makePost({ email: "ada@example.com" }));
 
     expect(res.status).toBe(502);
     expect(await res.json()).toEqual({ ok: false, error: "velo-error" });
+    expect(mockLogError).toHaveBeenCalledWith(
+      "api/newsletter",
+      "upsertSubscriber",
+      expect.any(Error),
+      expect.objectContaining({
+        hashedEmail: expect.stringMatching(/^[0-9a-f]{12}$/),
+      }),
+    );
+    // PII guard: raw email never reaches the extras object
+    const extras = mockLogError.mock.calls[0]?.[3] as
+      | Record<string, unknown>
+      | undefined;
+    expect(JSON.stringify(extras ?? {})).not.toContain("ada@example.com");
   });
 });
 

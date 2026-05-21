@@ -1,5 +1,13 @@
 import { describe, it, expect, vi } from "vitest";
 
+// cfw-rlqo: loadReviews now routes its failure path through the shared
+// logError helper instead of bare console.error. Mock here so tests assert
+// against the call shape rather than parsing console output.
+const mockLogError = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 import {
   fetchGoogleReviews,
   loadReviews,
@@ -222,9 +230,7 @@ describe("loadReviews", () => {
   });
 
   it("returns ok=false + empty list when the fetch errors (friendly degradation)", async () => {
-    // Suppress the expected console.error so the test output stays clean —
-    // ok=false is the assertion that proves we routed through the catch.
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockLogError.mockClear();
     const fetchImpl = vi.fn(async () => {
       throw new Error("network down");
     }) as unknown as typeof fetch;
@@ -241,6 +247,12 @@ describe("loadReviews", () => {
     expect(result.ok).toBe(false);
     expect(result.source).toBe("empty");
     expect(result.reviews).toEqual([]);
-    errorSpy.mockRestore();
+    // cfw-rlqo: failure routes through logError("google-reviews", "load", err, { accountId, locationId })
+    expect(mockLogError).toHaveBeenCalledWith(
+      "google-reviews",
+      "load",
+      expect.any(Error),
+      expect.objectContaining({ accountId: "acct", locationId: "loc" }),
+    );
   });
 });

@@ -11,6 +11,7 @@ import { redirect } from "next/navigation";
 import type { Tokens } from "@wix/sdk";
 import { SESSION_COOKIE_NAME, parseSessionCookie } from "./session";
 import { getWixClientWithTokens } from "@/lib/wix-client";
+import { logError } from "@/lib/logging/log-error";
 
 export type MemberSession = {
   tokens: Tokens;
@@ -47,7 +48,11 @@ export async function getMemberSession(): Promise<MemberSession | null> {
     const memberId = await resolveMemberId(tokens);
     return { tokens, accessToken: tokens.accessToken.value, memberId };
   } catch (err) {
-    console.error("[auth] getMemberSession: resolveMemberId failed:", err);
+    // cfw-cqq0: ship to Sentry via the shared logger so an outage in
+    // members.getCurrentMember surfaces with awaited flush. Return null
+    // unchanged so the route layer keeps treating this as "no session"
+    // and redirects/gates as before.
+    await logError("auth-member", "resolveMemberId", err);
     return null;
   }
 }

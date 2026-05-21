@@ -25,6 +25,14 @@ vi.mock("@/lib/wix-client", () => ({
   getWixClientWithTokens: () => ({ members: { getCurrentMember } }),
 }));
 
+// cfw-21uf: owner-session routes its failure path through logError.
+// Mock here so the outage test asserts call shape rather than parsing
+// console output.
+const mockLogError = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 const memberTokens: Tokens = {
   accessToken: { value: "access-m", expiresAt: 1_780_000_000 },
   refreshToken: { value: "refresh-m", role: "member" as Tokens["refreshToken"]["role"] },
@@ -153,11 +161,15 @@ describe("getOwnerSession", () => {
     getCurrentMember
       .mockResolvedValueOnce({ member: { _id: "member-owner" } })
       .mockRejectedValueOnce(new Error("Wix down"));
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockLogError.mockClear();
     const { getOwnerSession } = await import("@/lib/auth/owner");
     expect(await getOwnerSession()).toBeNull();
-    expect(consoleSpy).toHaveBeenCalled();
-    consoleSpy.mockRestore();
+    // cfw-21uf: failure routes through logError("auth-owner", "getCurrentMember", err)
+    expect(mockLogError).toHaveBeenCalledWith(
+      "auth-owner",
+      "getCurrentMember",
+      expect.any(Error),
+    );
   });
 
   it("returns OwnerSession when allowlisted owner is signed in", async () => {

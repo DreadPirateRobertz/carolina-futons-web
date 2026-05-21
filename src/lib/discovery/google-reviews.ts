@@ -1,3 +1,5 @@
+import { logError } from "@/lib/logging/log-error";
+
 import {
   REVIEWS,
   type Review,
@@ -177,7 +179,10 @@ export async function loadReviews(
     });
     return { ...result, source: "google", ok: true };
   } catch (err) {
-    console.error("[google-reviews] load failed:", err);
+    // cfw-rlqo: routes through the shared logError helper so GBP fetch
+    // failures ship to Sentry (level=error, tags { source: "google-reviews",
+    // op: "load" }) with awaited flush — drop-event-safe on Vercel.
+    await logError("google-reviews", "load", err, { accountId, locationId });
     return {
       reviews: [],
       averageRating: null,
