@@ -113,7 +113,7 @@ export function PdpWarrantyInfo(props: PdpWarrantyInfoProps) {
     <section
       data-slot="pdp-warranty-info"
       aria-labelledby="pdp-warranty-heading"
-      className="mt-12 rounded-md border border-cf-divider bg-cf-cream p-6 text-cf-ink"
+      className="mt-16 rounded-md border border-cf-divider bg-cf-cream p-6 text-cf-ink"
     >
       <h2
         id="pdp-warranty-heading"
