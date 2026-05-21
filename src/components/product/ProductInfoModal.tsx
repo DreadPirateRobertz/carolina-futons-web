@@ -30,44 +30,46 @@ const GENERIC_CARE: Array<{ title: string; body: string }> = [
 
 function GenericCareGuide() {
   return (
-    <div className="space-y-4" data-slot="generic-care-guide">
-      <p className="text-sm text-cf-espresso/70">
+    <div data-slot="generic-care-guide">
+      <p className="mb-4 text-sm text-cf-espresso/70">
         No product-specific care guide is available yet. General furniture care guidelines:
       </p>
-      {GENERIC_CARE.map((tip) => (
-        <div key={tip.title}>
-          <p className="text-xs font-semibold text-cf-espresso/70 uppercase tracking-wide mb-1">
-            {tip.title}
-          </p>
-          <p className="text-sm text-cf-espresso/80">{tip.body}</p>
-        </div>
-      ))}
+      <div className="divide-y divide-cf-divider">
+        {GENERIC_CARE.map((tip) => (
+          <div key={tip.title} className="py-4">
+            <p className="text-xs font-semibold text-cf-espresso/70 uppercase tracking-wide mb-1">
+              {tip.title}
+            </p>
+            <p className="text-sm text-cf-espresso/80">{tip.body}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
 function CareGuideContent({ guide }: { guide: CareGuide }) {
   return (
-    <div className="space-y-4" data-slot="care-guide-content">
+    <div className="divide-y divide-cf-divider" data-slot="care-guide-content">
       {guide.material !== "unknown" && (
-        <p className="text-xs font-semibold uppercase tracking-wide text-cf-espresso/60 capitalize">
+        <p className="py-4 text-xs font-semibold uppercase tracking-wide text-cf-espresso/60 capitalize">
           {guide.material} Care
         </p>
       )}
       {guide.cleaningMethod && (
-        <div>
+        <div className="py-4">
           <p className="text-xs font-medium text-cf-espresso/70 uppercase tracking-wide mb-1">Cleaning</p>
           <p className="text-sm text-cf-espresso/80 whitespace-pre-line">{guide.cleaningMethod}</p>
         </div>
       )}
       {guide.maintenanceTips && (
-        <div>
+        <div className="py-4">
           <p className="text-xs font-medium text-cf-espresso/70 uppercase tracking-wide mb-1">Maintenance</p>
           <p className="text-sm text-cf-espresso/80 whitespace-pre-line">{guide.maintenanceTips}</p>
         </div>
       )}
       {guide.warningNotes && (
-        <div>
+        <div className="py-4">
           <p className="text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wide mb-1">⚠ Warnings</p>
           <p className="text-sm text-cf-espresso/80 whitespace-pre-line">{guide.warningNotes}</p>
         </div>
