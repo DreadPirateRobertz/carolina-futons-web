@@ -81,9 +81,11 @@ import { getProductBySlug } from "@/lib/wix/products";
 import { getReferralByCodeAction } from "@/app/actions/referral";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
 import { logError } from "@/lib/observability/log";
+import { getSiteContent } from "@/lib/cms/site-content";
 
 const mockFindCategory = vi.mocked(findCategory);
 const mockGetProductBySlug = vi.mocked(getProductBySlug);
+const mockGetSiteContent = vi.mocked(getSiteContent);
 
 // Helper: extract URL strings from a Next.js OGImage[] field.
 // Handles both string-shorthand and object form; ignores URL-object variant
@@ -867,5 +869,53 @@ describe("/blog metadata (cf-e9o)", () => {
     expect(
       (blogIndexMetadata.twitter as { card?: string } | undefined)?.card,
     ).toBe("summary_large_image");
+  });
+});
+
+// ── generateMetadata — category description via getSiteContent (cfw-66o.3) ──
+
+describe("generateMetadata — category description via getSiteContent (cfw-66o.3)", () => {
+  const category = {
+    slug: "futon-frames",
+    name: "Futon Frames",
+    description: "Hardwood futon frames made in North Carolina.",
+    collectionSlug: "futon-frames",
+    image: "https://static.wixstatic.com/media/category-futon-frames.jpg",
+  };
+
+  beforeEach(() => {
+    mockFindCategory.mockReturnValue(category as never);
+    mockGetSiteContent.mockReset();
+  });
+
+  it("uses the CMS override when getSiteContent returns a non-fallback value", async () => {
+    const cmsOverride = "Browse our handcrafted hardwood futon frames — CMS copy.";
+    mockGetSiteContent.mockImplementation(async (_key: string, _fallback = "") =>
+      cmsOverride,
+    );
+    const meta = await categoryGenerateMeta({
+      params: Promise.resolve({ category: "futon-frames" }),
+    });
+    expect(meta.description).toBe(cmsOverride);
+    expect(meta.openGraph?.description).toBe(cmsOverride);
+    expect(mockGetSiteContent).toHaveBeenCalledWith(
+      "shop.futon-frames.description",
+      category.description,
+    );
+  });
+
+  it("falls back to category.description when getSiteContent returns the fallback", async () => {
+    mockGetSiteContent.mockImplementation(async (_key: string, fallback = "") =>
+      fallback,
+    );
+    const meta = await categoryGenerateMeta({
+      params: Promise.resolve({ category: "futon-frames" }),
+    });
+    expect(meta.description).toBe(category.description);
+    expect(meta.openGraph?.description).toBe(category.description);
+    expect(mockGetSiteContent).toHaveBeenCalledWith(
+      "shop.futon-frames.description",
+      category.description,
+    );
   });
 });
