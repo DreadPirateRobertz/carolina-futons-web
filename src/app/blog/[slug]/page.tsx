@@ -55,6 +55,10 @@ export async function generateMetadata(props: {
   return {
     title: `${post.title} — Carolina Futons`,
     description,
+    // cfw-pb1j: explicit canonical so ?utm_source=… share links don't split
+    // link equity — without it Google self-canonicalizes each query-string
+    // variant of the post.
+    alternates: { canonical: canonicalUrl },
     openGraph,
     twitter: twitterFromOpenGraph(
       openGraph,

@@ -4,7 +4,7 @@ import { CfLink } from "@/components/ui/cf-link";
 import { FaqBrowser } from "@/components/faq/FaqBrowser";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { groupFaqsByCategory, listFaqs } from "@/lib/cms/faq";
-import { buildFaqPageSchema } from "@/lib/seo/json-ld";
+import { buildFaqPageSchema, resolveSiteUrl } from "@/lib/seo/json-ld";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
 import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 
@@ -36,6 +36,9 @@ const OG = {
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
+  // cfw-pb1j: explicit canonical so ?utm_source=… ingress links don't split
+  // link equity across query-string variants of this static page.
+  alternates: { canonical: `${resolveSiteUrl(process.env.NEXT_PUBLIC_SITE_URL)}/faq` },
   openGraph: OG,
   // cf-2qxr: per-page twitter card mirror.
   twitter: twitterFromOpenGraph(OG),
