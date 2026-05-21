@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { BUSINESS } from "@/lib/business/contact-info";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
 import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
+import { getSiteContent } from "@/lib/cms/site-content";
 
 const TITLE = "Returns — Carolina Futons";
 const DESCRIPTION =
@@ -20,6 +21,24 @@ export const metadata: Metadata = {
   openGraph: OPEN_GRAPH,
   twitter: twitterFromOpenGraph(OPEN_GRAPH),
 };
+
+const RETURNS_COPY_FALLBACKS = {
+  eyebrow: "Policies",
+  introHeading: "Returns",
+  introBody: "We stand behind what we sell. If something isn't right, here's how to make it right.",
+  windowHeading: "The return window",
+  windowBody:
+    'Most items are returnable within 30 days of delivery in like-new condition. “Like-new” means unused, undamaged, and in the original packaging. Before you ship anything back, contact us — we’ll confirm the return is eligible and issue a return authorization. Unauthorized returns may be refused at our discretion.',
+  restockingHeading: "Restocking and return shipping",
+  restockingBody1:
+    "Frames and accessories incur a 15% restocking fee. Mattresses incur a 25% restocking fee because we cannot resell them as new once they’ve left our facility.",
+  restockingBody2:
+    "You are responsible for return shipping costs unless the return is due to our error (wrong item sent, manufacturing defect) or a confirmed shipping-damage claim. Return freight for a full-size futon frame typically runs $80–$180 depending on your location.",
+  customHeading: "Custom and made-to-order items",
+  damagedHeading: "Damaged on arrival",
+  faqHeading: "Common returns questions",
+  startHeading: "Start a return",
+} as const;
 
 const RETURNS_FAQS = [
   {
@@ -52,21 +71,46 @@ const RETURNS_FAQS = [
   },
 ];
 
-export default function ReturnsPage() {
+export default async function ReturnsPage() {
+  const [
+    eyebrow,
+    introHeading,
+    introBody,
+    windowHeading,
+    windowBody,
+    restockingHeading,
+    restockingBody1,
+    restockingBody2,
+    customHeading,
+    damagedHeading,
+    faqHeading,
+    startHeading,
+  ] = await Promise.all([
+    getSiteContent("returns.eyebrow", RETURNS_COPY_FALLBACKS.eyebrow),
+    getSiteContent("returns.intro.heading", RETURNS_COPY_FALLBACKS.introHeading),
+    getSiteContent("returns.intro.body", RETURNS_COPY_FALLBACKS.introBody),
+    getSiteContent("returns.window.heading", RETURNS_COPY_FALLBACKS.windowHeading),
+    getSiteContent("returns.window.body", RETURNS_COPY_FALLBACKS.windowBody),
+    getSiteContent("returns.restocking.heading", RETURNS_COPY_FALLBACKS.restockingHeading),
+    getSiteContent("returns.restocking.body-1", RETURNS_COPY_FALLBACKS.restockingBody1),
+    getSiteContent("returns.restocking.body-2", RETURNS_COPY_FALLBACKS.restockingBody2),
+    getSiteContent("returns.custom.heading", RETURNS_COPY_FALLBACKS.customHeading),
+    getSiteContent("returns.damaged.heading", RETURNS_COPY_FALLBACKS.damagedHeading),
+    getSiteContent("returns.faq.heading", RETURNS_COPY_FALLBACKS.faqHeading),
+    getSiteContent("returns.start.heading", RETURNS_COPY_FALLBACKS.startHeading),
+  ]);
+
   return (
     <main className="mx-auto w-full px-4 py-12 sm:px-6 sm:py-16">
       <article className="mx-auto max-w-[65ch] space-y-8 font-source-sans text-cf-ink">
         <header className="space-y-3">
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
-            Policies
+            {eyebrow}
           </p>
           <h1 className="font-playfair text-4xl font-semibold tracking-tight sm:text-5xl">
-            Returns
+            {introHeading}
           </h1>
-          <p className="text-lg leading-relaxed text-cf-muted">
-            We stand behind what we sell. If something isn&apos;t right, here&apos;s how
-            to make it right.
-          </p>
+          <p className="text-lg leading-relaxed text-cf-muted">{introBody}</p>
         </header>
 
         <section aria-labelledby="returns-window" className="space-y-4">
@@ -74,15 +118,9 @@ export default function ReturnsPage() {
             id="returns-window"
             className="font-playfair text-2xl font-semibold tracking-tight"
           >
-            The return window
+            {windowHeading}
           </h2>
-          <p className="leading-relaxed">
-            Most items are returnable within 30 days of delivery in like-new
-            condition. &ldquo;Like-new&rdquo; means unused, undamaged, and in the original
-            packaging. Before you ship anything back, contact us — we&apos;ll
-            confirm the return is eligible and issue a return authorization.
-            Unauthorized returns may be refused at our discretion.
-          </p>
+          <p className="leading-relaxed">{windowBody}</p>
         </section>
 
         <section aria-labelledby="returns-restocking" className="space-y-4">
@@ -90,19 +128,10 @@ export default function ReturnsPage() {
             id="returns-restocking"
             className="font-playfair text-2xl font-semibold tracking-tight"
           >
-            Restocking and return shipping
+            {restockingHeading}
           </h2>
-          <p className="leading-relaxed">
-            Frames and accessories incur a 15% restocking fee. Mattresses
-            incur a 25% restocking fee because we cannot resell them as new
-            once they&apos;ve left our facility.
-          </p>
-          <p className="leading-relaxed">
-            You are responsible for return shipping costs unless the return is
-            due to our error (wrong item sent, manufacturing defect) or a
-            confirmed shipping-damage claim. Return freight for a full-size
-            futon frame typically runs $80–$180 depending on your location.
-          </p>
+          <p className="leading-relaxed">{restockingBody1}</p>
+          <p className="leading-relaxed">{restockingBody2}</p>
         </section>
 
         <section aria-labelledby="returns-custom" className="space-y-4">
@@ -110,7 +139,7 @@ export default function ReturnsPage() {
             id="returns-custom"
             className="font-playfair text-2xl font-semibold tracking-tight"
           >
-            Custom and made-to-order items
+            {customHeading}
           </h2>
           <p className="leading-relaxed">
             Custom covers, custom stain finishes, and made-to-order Murphy bed
@@ -133,7 +162,7 @@ export default function ReturnsPage() {
             id="returns-damaged"
             className="font-playfair text-2xl font-semibold tracking-tight"
           >
-            Damaged on arrival
+            {damagedHeading}
           </h2>
           <p className="leading-relaxed">
             Please inspect every carton before the carrier leaves. If you see
@@ -161,7 +190,7 @@ export default function ReturnsPage() {
             id="returns-faq"
             className="font-playfair text-2xl font-semibold tracking-tight"
           >
-            Common returns questions
+            {faqHeading}
           </h2>
           <dl className="space-y-5">
             {RETURNS_FAQS.map(({ q, a }) => (
@@ -178,7 +207,7 @@ export default function ReturnsPage() {
             id="returns-start"
             className="font-playfair text-2xl font-semibold tracking-tight"
           >
-            Start a return
+            {startHeading}
           </h2>
           <p className="leading-relaxed">
             Call{" "}

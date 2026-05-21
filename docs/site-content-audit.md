@@ -74,6 +74,18 @@ These are **complete** and require no further work. Included for reference and t
 | `contact.appointment.heading` | `"Schedule a showroom visit"` | `src/app/contact/page.tsx:79–82` | |
 | `contact.appointment.body-suffix` | `" Request a slot and we'll confirm by email within one business day."` | `src/app/contact/page.tsx:83–86` | |
 | `contact.form.heading` | `"Send a message"` | `src/app/contact/page.tsx:87` | |
+| `returns.eyebrow` | `"Policies"` | `src/app/returns/page.tsx` | All 12 returns keys loaded in one `Promise.all` (cfw-5yg) |
+| `returns.intro.heading` | `"Returns"` | `src/app/returns/page.tsx` | |
+| `returns.intro.body` | `"We stand behind what we sell…"` | `src/app/returns/page.tsx` | |
+| `returns.window.heading` | `"The return window"` | `src/app/returns/page.tsx` | |
+| `returns.window.body` | `"Most items are returnable within 30 days…"` | `src/app/returns/page.tsx` | |
+| `returns.restocking.heading` | `"Restocking and return shipping"` | `src/app/returns/page.tsx` | |
+| `returns.restocking.body-1` | `"Frames and accessories incur a 15% restocking fee…"` | `src/app/returns/page.tsx` | |
+| `returns.restocking.body-2` | `"You are responsible for return shipping costs…"` | `src/app/returns/page.tsx` | |
+| `returns.custom.heading` | `"Custom and made-to-order items"` | `src/app/returns/page.tsx` | Body has embedded JSX links — heading only |
+| `returns.damaged.heading` | `"Damaged on arrival"` | `src/app/returns/page.tsx` | Body has embedded JSX links — heading only |
+| `returns.faq.heading` | `"Common returns questions"` | `src/app/returns/page.tsx` | FAQ Q&A pairs are structured data — heading only |
+| `returns.start.heading` | `"Start a return"` | `src/app/returns/page.tsx` | Body has embedded JSX links — heading only |
 | `social.url.facebook` | `"https://www.facebook.com/carolinafutons"` | `src/app/layout.tsx:136` | Key is `social.url.*` — NOT `footer.social.*-href` as proposed in §2f; cfw-66o.7 used the shorter namespace |
 | `social.url.instagram` | `"https://www.instagram.com/carolinafutons"` | `src/app/layout.tsx:137` | |
 | `social.url.tiktok` | `"https://www.tiktok.com/@carolinafutons"` | `src/app/layout.tsx:138` | |
