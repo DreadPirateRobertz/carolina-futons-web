@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 
-// cf-mobile-hamburger-portal (Stilgar P0, third flag): the drawer
+// cf-mobile-hamburger-portal: the drawer
 // render originally lived inline next to the trigger button, which
 // meant the Header's stacking context (sticky + transform on scroll-
 // shrink + the gradient backdrop) was clipping or under-layering the
