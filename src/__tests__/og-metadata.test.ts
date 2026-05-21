@@ -54,6 +54,11 @@ vi.mock("@/lib/product/cross-sell", () => ({ getCrossSellProducts: vi.fn() }));
 vi.mock("next/navigation", () => ({ notFound: vi.fn(), redirect: vi.fn() }));
 vi.mock("next/headers", () => ({ cookies: vi.fn() }));
 vi.mock("@/lib/observability/log", () => ({ logError: vi.fn(), logWarn: vi.fn() }));
+// cfw-66o.3: generateMetadata now calls getSiteContent for category descriptions.
+// Stub it to return the fallback so OG assertions still see the static string.
+vi.mock("@/lib/cms/site-content", () => ({
+  getSiteContent: vi.fn((_key: string, fallback = "") => Promise.resolve(fallback)),
+}));
 
 import { metadata as layoutMetadata } from "@/app/layout";
 import { metadata as shopMetadata } from "@/app/shop/page";
