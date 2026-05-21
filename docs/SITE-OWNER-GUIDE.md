@@ -41,15 +41,18 @@ The image-edit affordance — pencil over a hero image or product photo → file
 
 | Surface | Owner mode | Wix Dashboard |
 |---|---|---|
-| Footer tagline | ✓ pencil | – |
-| Footer showroom hours | ✓ pencil | – |
-| Other SiteContent strings as we wire them in | ✓ pencil | – |
+| Footer (tagline, hours, copyright) | ✓ pencil | – |
+| Announcement bar (5 rotating messages + CTA) | ✓ pencil | – |
+| Homepage (hero headline, value-prop cards) | ✓ pencil | – |
+| Shop index (subhead, category card subtitles) | ✓ pencil | – |
+| Visit page (all copy, hours, address, CTAs) | ✓ pencil | – |
+| About page (intro, beliefs, team, location) | ✓ pencil | – |
 | Product name / description / price / photos | – | ✓ Store Products |
 | Product variants, inventory, collections | – | ✓ Store Products |
 | Blog posts | – | ✓ Blog → Posts |
 | Hero / brand imagery | – | dev change |
 
-The "Owner mode" column will fill in over time as more strings are migrated to `SiteContent` and the EditableImage component lands. Until then, the table tells you which channel to use.
+For the full list of editable keys with descriptions, see **§10 — SiteContent key reference** at the bottom of this guide.
 
 ### Audit / undo
 
@@ -330,3 +333,112 @@ Before assuming it's a bug, check in this order:
 2. **Wix dashboard state** — is the product visible? assigned to a collection? does it have at least one photo?
 3. **Slug** — does the URL slug on the storefront match what you'd expect from the product/collection name? Wix sometimes appends `-1` if there's a duplicate.
 4. If 1-3 are clean and it's still wrong → mail rennala with the URL, what you expected, and what you saw.
+
+---
+
+## 10. SiteContent key reference
+
+All 45 strings you can update from the Wix Dashboard without a code change. Every key lives in **CMS → Content Manager → SiteContent**.
+
+**How to find a key:** open SiteContent, type the prefix (e.g. `footer.`) into the search box at the top of the collection — the list filters down to just that surface's rows. Click a row, edit the **value** field, save. Live within 30 seconds.
+
+---
+
+### Footer (3 keys)
+
+| Key | What it controls | Default |
+|---|---|---|
+| `footer.tagline` | One-line tagline below the logo in the footer | "Quality futons since 1991" |
+| `footer.showroom-hours.label` | Showroom hours line in the footer | "Showroom hours: Sun–Tue, 10am–5pm" |
+| `footer.copyright-line` | Full copyright line at the bottom of the footer. Use `{year}` as a placeholder — it's replaced with the current year at render | "© {year} Carolina Futons. Hendersonville, NC." |
+
+---
+
+### Announcement bar (7 keys)
+
+The bar at the very top of every page rotates through up to 5 messages. Only message 4 currently has a button link.
+
+| Key | What it controls | Default |
+|---|---|---|
+| `announcement.rotation.0.message` | First rotating message | "Free white-glove delivery on orders over $1,500" |
+| `announcement.rotation.1.message` | Second rotating message | "10-year warranty on all hardwood futon frames" |
+| `announcement.rotation.2.message` | Third rotating message | "Family-owned since 1991 · Hendersonville, NC" |
+| `announcement.rotation.3.message` | Fourth rotating message (shown with the button below) | "Free fabric swatches — find your perfect match" |
+| `announcement.rotation.3.cta-label` | Button text on message 4 | "Order free swatches" |
+| `announcement.rotation.3.cta-href` | Button destination URL on message 4 | "/swatch-request" |
+| `announcement.rotation.4.message` | Fifth rotating message | "Assembly included with every delivery" |
+
+> To remove the button on message 4: clear both `cta-label` and `cta-href`. When either is blank, no button renders.
+
+---
+
+### Homepage (6 keys)
+
+Three value-proposition cards at the bottom of the homepage ("Hardwood, not plywood" etc.).
+
+| Key | What it controls | Default |
+|---|---|---|
+| `home.value-props.0.title` | Heading on the first value-prop card | "Hardwood, not plywood" |
+| `home.value-props.0.body` | Body text on the first value-prop card | "Frames milled from solid oak, maple, and cherry. Built to outlive the apartment they ship to." |
+| `home.value-props.1.title` | Heading on the second value-prop card | "Sleep on it first" |
+| `home.value-props.1.body` | Body text on the second value-prop card | "Visit the Hendersonville showroom and try every mattress we sell. No commission pressure." |
+| `home.value-props.2.title` | Heading on the third value-prop card | "White-glove delivery" |
+| `home.value-props.2.body` | Body text on the third value-prop card | "Regional delivery teams set it up where you want it. Not on a curb in a box." |
+
+---
+
+### Shop (8 keys)
+
+Text on the `/shop` landing page and the category card grid.
+
+| Key | What it controls | Default |
+|---|---|---|
+| `shop.index.subhead` | Subtitle below the "Shop" page heading | "Pick a category to browse." |
+| `shop.futon-frames.subtitle` | Short line on the Futon Frames category card | "Solid hardwood" |
+| `shop.murphy-cabinet-beds.subtitle` | Short line on the Murphy Cabinet Beds category card | "Space-saving" |
+| `shop.platform-beds.subtitle` | Short line on the Platform Beds category card | "Low & modern" |
+| `shop.mattresses.subtitle` | Short line on the Mattresses category card | "Made in USA" |
+| `shop.mattresses-sale.subtitle` | Short line on the Mattresses on Sale category card | "On sale now" |
+| `shop.shop-the-room.eyebrow` | Small label above the "Shop the room" section heading | "Shop the room" |
+| `shop.shop-the-room.heading` | Heading of the "Shop the room" section | "Or jump straight in" |
+
+---
+
+### Visit page (10 keys)
+
+All editable text on `/visit` — hours, address intro, directions button, and the call-to-action at the bottom.
+
+| Key | What it controls | Default |
+|---|---|---|
+| `visit.intro.heading` | Main heading on the Visit page | "Visit Us" |
+| `visit.intro.body` | Introductory paragraph under the heading | "Come try it in person. Our Hendersonville showroom…" |
+| `visit.location.heading` | Heading above the address block | "Location" |
+| `visit.hours.heading` | Heading above the hours table | "Store Hours" |
+| `visit.hours.sun-tue` | Hours shown for Sunday–Tuesday | "10 am – 5 pm" |
+| `visit.hours.wed-sat` | Hours shown for Wednesday–Saturday | "Closed" |
+| `visit.directions-button.label` | Label on the Get Directions button | "Get directions" |
+| `visit.cta.heading` | Heading of the call-to-action block at the bottom | "Ready to shop?" |
+| `visit.cta.body` | Body copy in the call-to-action block | "Browse online first, then come in and try everything." |
+| `visit.cta.button-label` | Button label in the call-to-action block | "Browse all products" |
+
+> **Hours tip:** update `visit.hours.sun-tue` and `visit.hours.wed-sat` whenever you change your seasonal schedule. The footer showroom hours line (`footer.showroom-hours.label`) is separate — update that one too so they stay in sync.
+
+---
+
+### About page (11 keys)
+
+Editable sections of `/about` — intro copy, beliefs statements, team description, and location paragraph.
+
+| Key | What it controls | Default |
+|---|---|---|
+| `about.intro.eyebrow` | Small label above the intro heading (all-caps, short) | "Our story" |
+| `about.intro.heading` | Main heading on the About page | "About Carolina Futons" |
+| `about.intro.subheading` | Subheading below the main heading | "Family-owned and independently operated in Hendersonville, North Carolina since 1991." |
+| `about.intro.lede` | Opening paragraph (the "lede") of the About page | "Carolina Futons opened its doors in 1991 with a simple idea…" |
+| `about.beliefs.heading` | Heading above the beliefs / values section | "What we believe" |
+| `about.beliefs.body-1` | First paragraph in the beliefs section | "We believe furniture should be made to last…" |
+| `about.beliefs.body-2` | Second paragraph in the beliefs section | "We stock what we stand behind…" |
+| `about.location.heading` | Heading above the location section | "Where to find us" |
+| `about.location.body-1` | Paragraph describing the showroom location | "Our showroom is in Hendersonville, NC…" |
+| `about.team.heading` | Heading above the team section | "The team" |
+| `about.team.body` | Paragraph introducing the team | "A small crew of people who know the product…" |
