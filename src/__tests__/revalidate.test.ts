@@ -261,3 +261,157 @@ describe("POST /api/revalidate — logError migration", () => {
     infoSpy.mockRestore();
   });
 });
+
+// ── cfw-ujp: coverage gaps filled by formal review ────────────────────────
+
+describe("POST /api/revalidate — revalidateTag error handling (cfw-ujp)", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.stubEnv("WIX_WEBHOOK_SECRET", SECRET);
+  });
+
+  it("returns 500 with failed list when revalidateTag throws", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { revalidateTag } = await import("next/cache");
+    vi.mocked(revalidateTag).mockImplementation(() => {
+      throw new Error("Next.js cache invariant violated");
+    });
+    const body = JSON.stringify({ collectionId: "SiteContent" });
+    const res = await post(body, { "x-wix-signature": sign(body) });
+    expect(res.status).toBe(500);
+    const json = (await res.json()) as { ok: boolean; errorId: string; failed: string[] };
+    expect(json.ok).toBe(false);
+    expect(typeof json.errorId).toBe("string");
+    expect(Array.isArray(json.failed)).toBe(true);
+    expect(json.failed.length).toBeGreaterThan(0);
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[revalidate]"),
+      expect.anything(),
+    );
+    errorSpy.mockRestore();
+  });
+
+  it("continues processing remaining tags if one throws (partial coverage)", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { revalidateTag } = await import("next/cache");
+    let callCount = 0;
+    vi.mocked(revalidateTag).mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) throw new Error("first tag fails");
+    });
+    // SiteContent expands to 2 tags: wix:collection:SiteContent + site-content
+    const body = JSON.stringify({ collectionId: "SiteContent" });
+    const res = await post(body, { "x-wix-signature": sign(body) });
+    expect(res.status).toBe(500);
+    // Both tags were attempted despite the first one throwing
+    expect(revalidateTag).toHaveBeenCalledWith("wix:collection:SiteContent", "default");
+    expect(revalidateTag).toHaveBeenCalledWith("site-content", "default");
+    vi.spyOn(console, "error").mockRestore();
+  });
+});
+
+describe("POST /api/revalidate — body size guard (cfw-ujp)", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.stubEnv("WIX_WEBHOOK_SECRET", SECRET);
+  });
+
+  it("returns 413 when Content-Length exceeds the 64 KiB limit", async () => {
+    const body = JSON.stringify({ collectionId: "products" });
+    const { POST } = await import("@/app/api/revalidate/route");
+    const req = new Request("http://localhost/api/revalidate", {
+      method: "POST",
+      body,
+      headers: {
+        "content-type": "application/json",
+        "x-wix-signature": sign(body),
+        "content-length": String(64 * 1024 + 1),
+      },
+    });
+    const res = await POST(req as never);
+    expect(res.status).toBe(413);
+  });
+});
+
+describe("POST /api/revalidate — signature and body edge cases (cfw-ujp)", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.stubEnv("WIX_WEBHOOK_SECRET", SECRET);
+  });
+
+  it("accepts a raw hex signature without the sha256= prefix", async () => {
+    const { createHmac: hmac } = await import("node:crypto");
+    const body = JSON.stringify({ collectionId: "products" });
+    const rawHex = hmac("sha256", SECRET).update(body).digest("hex");
+    const res = await post(body, { "x-wix-signature": rawHex });
+    expect(res.status).toBe(200);
+  });
+
+  it("accepts empty body with valid HMAC (Wix registration handshake)", async () => {
+    // sign("") works because our sign() helper signs any string
+    const emptyBody = "";
+    const { POST } = await import("@/app/api/revalidate/route");
+    const req = new Request("http://localhost/api/revalidate", {
+      method: "POST",
+      body: emptyBody,
+      headers: { "content-type": "application/json", "x-wix-signature": sign(emptyBody) },
+    });
+    const res = await POST(req as never);
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as { ok: boolean; revalidated: string[] };
+    expect(json.ok).toBe(true);
+    expect(json.revalidated).toEqual([]);
+  });
+
+  it("accepts non-object JSON body as empty (no collectionId extracted)", async () => {
+    const body = JSON.stringify([1, 2, 3]);
+    const res = await post(body, { "x-wix-signature": sign(body) });
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as { ok: boolean; revalidated: string[] };
+    expect(json.ok).toBe(true);
+    expect(json.revalidated).toEqual([]);
+  });
+
+  it("revalidates caller-supplied tags array when no collectionId/itemId", async () => {
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+    const body = JSON.stringify({ tags: ["my-tag", "other-tag"] });
+    const res = await post(body, { "x-wix-signature": sign(body) });
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as { ok: boolean; revalidated: string[] };
+    expect(json.ok).toBe(true);
+    expect(json.revalidated).toEqual(expect.arrayContaining(["my-tag", "other-tag"]));
+    const { revalidateTag } = await import("next/cache");
+    expect(revalidateTag).toHaveBeenCalledWith("my-tag", "default");
+    expect(revalidateTag).toHaveBeenCalledWith("other-tag", "default");
+    infoSpy.mockRestore();
+  });
+});
+
+describe("POST /api/revalidate — ts replay boundary (cfw-ujp)", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.stubEnv("WIX_WEBHOOK_SECRET", SECRET);
+  });
+
+  it("rejects ts=0 (epoch 1970 — age far exceeds window)", async () => {
+    const body = JSON.stringify({ collectionId: "products", ts: 0 });
+    const res = await post(body, { "x-wix-signature": sign(body) });
+    expect(res.status).toBe(401);
+    const json = (await res.json()) as { error: string };
+    expect(json.error).toMatch(/timestamp/i);
+  });
+
+  it("accepts ts at the inner boundary (500ms before cutoff)", async () => {
+    const ts = Date.now() - (5 * 60 * 1000 - 500);
+    const body = JSON.stringify({ collectionId: "products", ts });
+    const res = await post(body, { "x-wix-signature": sign(body) });
+    expect(res.status).toBe(200);
+  });
+
+  it("rejects ts at the outer boundary (500ms after cutoff)", async () => {
+    const ts = Date.now() - (5 * 60 * 1000 + 500);
+    const body = JSON.stringify({ collectionId: "products", ts });
+    const res = await post(body, { "x-wix-signature": sign(body) });
+    expect(res.status).toBe(401);
+  });
+});
