@@ -6,6 +6,7 @@ import { getMyRegistriesAction } from "@/app/actions/registry";
 import { RegistryDashboard } from "@/components/registry/RegistryDashboard";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
 import { getSiteContent } from "@/lib/cms/site-content";
+import { logError } from "@/lib/observability/log";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ const REGISTRY_COPY_FALLBACKS = {
 
 export default async function RegistryPage() {
   const [session, heading, unauthenticatedBody, introSubhead] = await Promise.all([
-    getMemberSession(),
+    getMemberSession().catch((err: unknown) => { logError("registry/page", "getMemberSession failed", err); return null; }),
     getSiteContent("registry.heading", REGISTRY_COPY_FALLBACKS.heading),
     getSiteContent("registry.unauthenticated.body", REGISTRY_COPY_FALLBACKS.unauthenticatedBody),
     getSiteContent("registry.intro.subhead", REGISTRY_COPY_FALLBACKS.introSubhead),

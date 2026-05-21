@@ -71,8 +71,15 @@ describe("RegistryPage — unauthenticated view", () => {
   });
 
   it("does not render the registry dashboard", async () => {
+    const { container } = await renderPage();
+    expect(container.querySelector("[data-slot='registry-dashboard']")).toBeNull();
+  });
+
+  it("does not render the intro subhead", async () => {
     await renderPage();
-    expect(screen.queryByTestId("registry-dashboard")).toBeNull();
+    expect(
+      screen.queryByText(/Create a shareable wish list for any occasion/i),
+    ).toBeNull();
   });
 });
 
@@ -160,9 +167,10 @@ describe("RegistryPage — owner-editable copy (cfw-dag)", () => {
     ).toBeInTheDocument();
   });
 
-  it("queries the 3 expected registry.* SiteContent keys", async () => {
+  it("queries exactly 3 registry.* SiteContent keys", async () => {
     await renderPage();
     const keys = mockGetSiteContent.mock.calls.map(([key]) => key);
+    expect(keys).toHaveLength(3);
     expect(keys).toEqual(
       expect.arrayContaining([
         "registry.heading",

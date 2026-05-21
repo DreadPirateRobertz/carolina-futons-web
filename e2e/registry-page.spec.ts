@@ -1,5 +1,5 @@
 /**
- * /registry page smoke tests — cfw-03p
+ * /registry page smoke tests — cfw-dag
  *
  * The registry page is force-dynamic and session-gated. An unauthenticated
  * visitor (no Wix member cookie) sees the auth gate: h1 heading, a sign-in
