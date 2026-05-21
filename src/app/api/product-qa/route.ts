@@ -51,8 +51,8 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   try {
-    revalidateTag(`product-qa:${productSlug}`);
-    revalidateTag(PRODUCT_QA_CACHE_TAG);
+    revalidateTag(`product-qa:${productSlug}`, "default");
+    revalidateTag(PRODUCT_QA_CACHE_TAG, "default");
   } catch (err) {
     logError("product-qa", QA_REVALIDATE_FAILED, err);
   }

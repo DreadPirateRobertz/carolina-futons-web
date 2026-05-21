@@ -85,7 +85,7 @@ describe("submitQuestion (cfw-921)", () => {
       initialQaState,
       makeFormData({ question: "Q?" }),
     );
-    expect(mockRevalidateTag).toHaveBeenCalledWith("product-qa:futon-frames");
+    expect(mockRevalidateTag).toHaveBeenCalledWith("product-qa:futon-frames", "default");
   });
 
   it("calls revalidateTag with PRODUCT_QA_CACHE_TAG on success", async () => {
@@ -94,7 +94,7 @@ describe("submitQuestion (cfw-921)", () => {
       initialQaState,
       makeFormData({ question: "Q?" }),
     );
-    expect(mockRevalidateTag).toHaveBeenCalledWith("product-qa");
+    expect(mockRevalidateTag).toHaveBeenCalledWith("product-qa", "default");
   });
 
   it("dedup contract — slug tag and generic tag are distinct, no duplicate calls", async () => {
@@ -207,12 +207,12 @@ describe("POST /api/product-qa (cfw-921)", () => {
 
   it("calls revalidateTag with slug-specific tag after successful insert", async () => {
     await callPost({ productSlug: "futon-frames", question: "Q?" });
-    expect(mockRevalidateTag).toHaveBeenCalledWith("product-qa:futon-frames");
+    expect(mockRevalidateTag).toHaveBeenCalledWith("product-qa:futon-frames", "default");
   });
 
   it("calls revalidateTag with PRODUCT_QA_CACHE_TAG after successful insert", async () => {
     await callPost({ productSlug: "futon-frames", question: "Q?" });
-    expect(mockRevalidateTag).toHaveBeenCalledWith("product-qa");
+    expect(mockRevalidateTag).toHaveBeenCalledWith("product-qa", "default");
   });
 
   it("does not call revalidateTag when insert fails", async () => {

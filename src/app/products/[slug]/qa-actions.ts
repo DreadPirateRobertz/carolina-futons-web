@@ -52,8 +52,8 @@ export async function submitQuestion(
   try {
     // Invalidate slug-specific cache first, then the generic tag so bulk
     // admin invalidation via PRODUCT_QA_CACHE_TAG is also exercised.
-    revalidateTag(`product-qa:${productSlug}`);
-    revalidateTag(PRODUCT_QA_CACHE_TAG);
+    revalidateTag(`product-qa:${productSlug}`, "default");
+    revalidateTag(PRODUCT_QA_CACHE_TAG, "default");
   } catch (err) {
     logError("product-qa", QA_REVALIDATE_FAILED, err);
   }
