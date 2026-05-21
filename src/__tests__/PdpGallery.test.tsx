@@ -3,6 +3,11 @@ import { fireEvent, render, screen } from "@testing-library/react";
 
 import { PdpGallery } from "@/components/product/PdpGallery";
 
+vi.mock("@sentry/nextjs", () => ({
+  captureMessage: vi.fn(),
+  captureException: vi.fn(),
+}));
+
 type FakeViewTransition = {
   finished: Promise<undefined>;
   skipTransition: ReturnType<typeof vi.fn>;
@@ -460,6 +465,28 @@ describe("PdpGallery — onError / broken image fallback", () => {
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining("thumb 0"),
       "https://img/a.jpg",
+    );
+    warnSpy.mockRestore();
+  });
+
+  // cf-qnn5 Track B: Sentry tagging on main image load failure.
+  it("main image onError captures Sentry message with image_load_error tag", async () => {
+    const { captureMessage } = await import("@sentry/nextjs");
+    const captureSpy = vi.mocked(captureMessage);
+    captureSpy.mockClear();
+
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(<PdpGallery images={multiImages} productName="Kingston Futon" />);
+    const main = screen.getByTestId("pdp-main-image") as HTMLImageElement;
+    fireEvent.error(main);
+
+    // Direct wixstatic URL (not /_next/image) → image_load_error tag.
+    expect(captureSpy).toHaveBeenCalledWith(
+      expect.stringContaining("image_load_error"),
+      expect.objectContaining({
+        level: "warning",
+        tags: { "image.failure": "image_load_error" },
+      }),
     );
     warnSpy.mockRestore();
   });
