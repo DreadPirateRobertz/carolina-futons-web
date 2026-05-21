@@ -38,8 +38,6 @@ export async function submitQuestion(
       askedBy: maskName(input.name),
       askedAt: new Date().toISOString(),
     });
-    revalidateTag(`product-qa:${productSlug}`, "default");
-    return { status: "success" };
   } catch (err) {
     logError("qa-actions", "insertProductQuestion failed", err);
     return {
@@ -49,4 +47,11 @@ export async function submitQuestion(
       transportError: TRANSPORT_ERROR,
     };
   }
+
+  try {
+    revalidateTag(`product-qa:${productSlug}`, "default");
+  } catch (err) {
+    logError("qa-actions", "revalidateTag failed", err);
+  }
+  return { status: "success" };
 }

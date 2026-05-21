@@ -6,6 +6,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
+// unstable_cache requires Next.js server infrastructure not present in vitest.
+// Mock it as a transparent pass-through: the cached closure still closes over
+// productSlug, so the data layer logic is fully exercised.
+vi.mock("next/cache", () => ({
+  unstable_cache: (fn: (...args: unknown[]) => unknown) => fn,
+  revalidateTag: vi.fn(),
+}));
+
 // ── Mocks: Wix client primitives ─────────────────────────────────────────────
 
 const mockQueryCollectionWhere = vi.fn();

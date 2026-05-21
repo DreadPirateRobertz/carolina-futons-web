@@ -1,8 +1,12 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
+
 import { getWixClient } from "@/lib/wix-client";
 import { queryCollectionWhere, type WixDataItem } from "@/lib/wix/data";
 import type { QaItem } from "@/lib/qa/qa-schema";
+
+export const PRODUCT_QA_CACHE_TAG = "product-qa";
 
 const COLLECTION = "ProductQandA";
 
@@ -34,13 +38,20 @@ function toQaItem(raw: RawQaItem): QaItem {
 }
 
 export async function listProductQa(productSlug: string): Promise<QaItem[]> {
-  const rows = await queryCollectionWhere<RawQaItem>(
-    COLLECTION,
-    "productSlug",
-    productSlug,
-    50,
+  const cached = unstable_cache(
+    async () => {
+      const rows = await queryCollectionWhere<RawQaItem>(
+        COLLECTION,
+        "productSlug",
+        productSlug,
+        50,
+      );
+      return rows.map(toQaItem).sort((a, b) => b.helpfulCount - a.helpfulCount);
+    },
+    [`product-qa:${productSlug}-v1`],
+    { revalidate: 300, tags: [`product-qa:${productSlug}`, PRODUCT_QA_CACHE_TAG] },
   );
-  return rows.map(toQaItem).sort((a, b) => b.helpfulCount - a.helpfulCount);
+  return cached();
 }
 
 export async function insertProductQuestion(args: {

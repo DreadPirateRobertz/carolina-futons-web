@@ -38,10 +38,12 @@ type Props = { productSlug: string };
 
 export async function CustomerQa({ productSlug }: Props) {
   let items: QaItem[] = [];
+  let loadFailed = false;
   try {
     items = await listProductQa(productSlug);
   } catch (err) {
-    logWarn("customer-qa", "listProductQa failed — showing empty state", err);
+    logWarn("customer-qa", "listProductQa failed — showing error state", err);
+    loadFailed = true;
   }
 
   return (
@@ -54,7 +56,14 @@ export async function CustomerQa({ productSlug }: Props) {
         Customer Questions &amp; Answers
       </h2>
 
-      {items.length === 0 ? (
+      {loadFailed ? (
+        <p
+          className="mt-4 text-sm text-cf-muted"
+          data-testid="qa-load-error"
+        >
+          Questions are temporarily unavailable. Please try again later.
+        </p>
+      ) : items.length === 0 ? (
         <p
           className="mt-4 text-sm text-cf-muted"
           data-testid="qa-empty-state"

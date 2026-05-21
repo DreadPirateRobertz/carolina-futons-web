@@ -21,6 +21,7 @@ const mockInsertProductQuestion = vi.fn();
 vi.mock("@/lib/wix/product-qa", () => ({
   listProductQa: (...args: unknown[]) => mockListProductQa(...args),
   insertProductQuestion: (...args: unknown[]) => mockInsertProductQuestion(...args),
+  PRODUCT_QA_CACHE_TAG: "product-qa",
 }));
 
 vi.mock("@/components/product/CustomerQaForm", () => ({
@@ -169,6 +170,20 @@ describe("POST /api/product-qa (cfw-921)", () => {
     const res = await callPost({ productSlug: "futon-frames", question: "Q?" });
     expect(res.status).toBe(500);
   });
+
+  it("calls revalidateTag after successful insert", async () => {
+    await callPost({ productSlug: "futon-frames", question: "Q?" });
+    expect(mockRevalidateTag).toHaveBeenCalledWith(
+      "product-qa:futon-frames",
+      "default",
+    );
+  });
+
+  it("does not call revalidateTag when insert fails", async () => {
+    mockInsertProductQuestion.mockRejectedValue(new Error("Wix down"));
+    await callPost({ productSlug: "futon-frames", question: "Q?" });
+    expect(mockRevalidateTag).not.toHaveBeenCalled();
+  });
 });
 
 // ── CustomerQa server component render ───────────────────────────────────────
@@ -221,12 +236,14 @@ describe("CustomerQa component (cfw-921)", () => {
     expect(html).toContain("Waiting for an answer");
   });
 
-  it("renders empty-state when listProductQa rejects", async () => {
+  it("renders load-error state when listProductQa rejects", async () => {
     mockListProductQa.mockRejectedValue(new Error("Wix error"));
     const html = renderToStaticMarkup(
       (await CustomerQa({ productSlug: "futon-frames" })) as ReactElement,
     );
-    expect(html).toContain('data-testid="qa-empty-state"');
+    expect(html).toContain('data-testid="qa-load-error"');
+    expect(html).toContain("temporarily unavailable");
+    expect(html).not.toContain('data-testid="qa-empty-state"');
   });
 
   it("renders section with data-slot='customer-qa'", async () => {
