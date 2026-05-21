@@ -124,7 +124,8 @@ describe("DesignARoomPage — CMS override (cfw-gpa)", () => {
 describe("DesignARoomPage — SiteContent key contract (cfw-gpa)", () => {
   it("queries all 12 design-a-room.* keys", async () => {
     await renderPage();
-    const keys = mockGetSiteContent.mock.calls.map(([key]: [string]) => key);
+    const keys = mockGetSiteContent.mock.calls.map(([key]: string[]) => key);
+    expect(keys).toHaveLength(12);
     expect(keys).toEqual(
       expect.arrayContaining([
         "design-a-room.intro.eyebrow",
