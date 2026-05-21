@@ -1,5 +1,7 @@
 "use server";
 
+import { logError } from "@/lib/observability/log";
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const FETCH_TIMEOUT_MS = 8_000;
 const GENERIC_ERROR = "Could not save — please try again shortly.";
@@ -24,7 +26,7 @@ export async function submitNotifyMe(
 
   const base = process.env.WIX_VELO_SITE_URL;
   if (!base) {
-    console.error("[notify-me] WIX_VELO_SITE_URL not set");
+    logError("notify-me", "WIX_VELO_SITE_URL not set");
     return { status: "error", error: GENERIC_ERROR };
   }
 
@@ -40,12 +42,12 @@ export async function submitNotifyMe(
       },
     );
     if (!res.ok) {
-      console.error("[notify-me] Velo responded", res.status);
+      logError("notify-me", "Velo responded with non-ok status", undefined, { status: res.status });
       return { status: "error", error: GENERIC_ERROR };
     }
     return { status: "success" };
   } catch (err) {
-    console.error("[notify-me] fetch failed:", err);
+    logError("notify-me", "fetch failed", err);
     return { status: "error", error: GENERIC_ERROR };
   }
 }
