@@ -43,6 +43,14 @@ const nextConfig: NextConfig = {
         hostname: "static.wixstatic.com",
         pathname: "/media/**",
       },
+      // Fixture product images (NEXT_PUBLIC_USE_FIXTURE_PRODUCTS=1) use
+      // Unsplash placeholders. Without this, next/image throws on PLP/PDP
+      // pages in CI/preview, crashing the page and causing e2e timeouts.
+      // Only active when fixture mode is enabled — production Wix images
+      // are served from static.wixstatic.com above.
+      ...(process.env.NEXT_PUBLIC_USE_FIXTURE_PRODUCTS === "1"
+        ? ([{ protocol: "https", hostname: "images.unsplash.com" }] as const)
+        : []),
     ],
   },
   async redirects() {
