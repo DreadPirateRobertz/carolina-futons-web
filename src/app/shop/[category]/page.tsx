@@ -7,6 +7,7 @@ import { getCollectionBySlug, getProductBySlug } from "@/lib/wix/products";
 import type { WixProduct } from "@/lib/wix/products";
 import { getCollectionPlp, type PlpSort } from "@/lib/wix/plp";
 import { SHOP_CATEGORIES, findCategory } from "@/lib/shop/categories";
+import { getSiteContent } from "@/lib/cms/site-content";
 import { PLPFeaturedRow } from "@/components/plp/PLPFeaturedRow";
 import {
   resolveDerivedProducts,
@@ -32,7 +33,6 @@ import {
   ShopTheRoom,
   PLP_SHOP_THE_ROOM_CONFIGS,
 } from "@/components/site/ShopTheRoom";
-import { getSiteContent } from "@/lib/cms/site-content";
 export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
@@ -196,7 +196,16 @@ export default async function PlpPage(props: {
           },
         };
 
-  const badgeMap = await listAllProductBadges();
+  const [badgeMap, featuredCopy] = await Promise.all([
+    listAllProductBadges(),
+    category.featured
+      ? Promise.all([
+          getSiteContent(`shop.${category.slug}.featured.eyebrow`, category.featured.eyebrow),
+          getSiteContent(`shop.${category.slug}.featured.heading`, category.featured.heading),
+          getSiteContent(`shop.${category.slug}.featured.body`, category.featured.body),
+        ]).then(([eyebrow, heading, body]) => ({ ...category.featured!, eyebrow, heading, body }))
+      : Promise.resolve(undefined),
+  ]);
 
   // cfw-66o.6: owner-editable empty-state copy for derived sale categories.
   // Only fetches for categories that declare emptyStateCopy; others stay undefined
@@ -286,9 +295,9 @@ export default async function PlpPage(props: {
           controls so it anchors the landing without competing with the
           grid below. Hidden on page>1, with filters, with non-default sort,
           and when fewer than 3 slugs resolve (component-level fallback). */}
-      {shouldShowFeaturedRow && category.featured ? (
+      {shouldShowFeaturedRow && featuredCopy ? (
         <PLPFeaturedRow
-          config={category.featured}
+          config={featuredCopy}
           products={featuredProducts}
           badges={badgeMap}
         />

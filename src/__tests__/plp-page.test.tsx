@@ -15,6 +15,10 @@ vi.mock("@/lib/wix/products", () => ({
   getCollectionBySlug: vi.fn(),
   listProductsByCollectionId: vi.fn(),
   listProductsOnSale: vi.fn().mockResolvedValue([]),
+  getProductBySlug: vi.fn().mockResolvedValue(null),
+}));
+vi.mock("@/lib/wix/product-badges", () => ({
+  listAllProductBadges: vi.fn().mockResolvedValue(new Map()),
 }));
 vi.mock("@/lib/wix/plp", () => ({
   getCollectionPlp: vi.fn(),
@@ -39,8 +43,11 @@ vi.mock("@/components/site/ShopTheRoom", () => ({
   ShopTheRoom: () => null,
   PLP_SHOP_THE_ROOM_CONFIGS: {},
 }));
+const mockGetSiteContent = vi.fn((_key: string, fallback = "") =>
+  Promise.resolve(fallback),
+);
 vi.mock("@/lib/cms/site-content", () => ({
-  getSiteContent: vi.fn(async (_k: string, fallback: string = "") => fallback),
+  getSiteContent: (...args: [string, string?]) => mockGetSiteContent(...args),
 }));
 import { buildPageUrl } from "@/components/plp/PLPPagination";
 
@@ -155,7 +162,7 @@ describe("parseSearchParams", () => {
 
 // ── PlpPage: virtual category (mattresses-sale) ────────────────────────────
 
-import { getCollectionBySlug, listProductsOnSale } from "@/lib/wix/products";
+import { getCollectionBySlug, listProductsOnSale, getProductBySlug } from "@/lib/wix/products";
 import { getCollectionPlp } from "@/lib/wix/plp";
 import { findCategory } from "@/lib/shop/categories";
 
@@ -843,5 +850,129 @@ describe("PlpPage — cf-delight ShopTheRoom gating", () => {
     const { html, spyCalls } = await renderForCategory("futon-frames", {});
     expect(html).not.toContain('data-slot="cf-delight-shop-the-room"');
     expect(spyCalls).toHaveLength(0);
+  });
+});
+
+// ── PlpPage: cfw-66o.5 featured-row getSiteContent wiring ─────────────────
+
+describe("PlpPage — featured-row getSiteContent (cfw-66o.5)", () => {
+  const STUB_PRODUCTS = [
+    { _id: "p1", name: "Oak Loft", slug: "oak-loft", priceData: { formatted: { price: "$499" } } },
+    { _id: "p2", name: "Maple Frame", slug: "maple-frame", priceData: { formatted: { price: "$699" } } },
+    { _id: "p3", name: "Cherry Sofa", slug: "cherry-sofa", priceData: { formatted: { price: "$899" } } },
+  ];
+
+  const FEATURED_CATEGORY = {
+    slug: "futon-frames",
+    name: "Futon Frames",
+    description: "Our frames.",
+    collectionSlug: "futon-frames",
+    featured: {
+      eyebrow: "Editor picks",
+      heading: "Where most people start",
+      body: "Three frames for daily use.",
+      productSlugs: ["oak-loft", "maple-frame", "cherry-sofa"] as const,
+    },
+  };
+
+  beforeEach(() => {
+    mockGetSiteContent.mockImplementation((_key: string, fallback = "") =>
+      Promise.resolve(fallback),
+    );
+    vi.mocked(findCategory).mockReturnValue(FEATURED_CATEGORY as never);
+    vi.mocked(getCollectionBySlug).mockResolvedValue({ _id: "futons-col-id" } as never);
+    vi.mocked(listProductsOnSale).mockResolvedValue([]);
+    vi.mocked(getProductBySlug).mockImplementation(async (slug) => {
+      const found = STUB_PRODUCTS.find((p) => p.slug === slug) ?? null;
+      return found as never;
+    });
+    vi.mocked(getCollectionPlp).mockResolvedValue(EMPTY_PLP);
+  });
+
+  it("uses CMS override for featured-row copy when getSiteContent returns non-fallback", async () => {
+    mockGetSiteContent.mockImplementation((key: string, fallback = "") => {
+      const overrides: Record<string, string> = {
+        "shop.futon-frames.featured.eyebrow": "CMS Eyebrow",
+        "shop.futon-frames.featured.heading": "CMS Heading",
+        "shop.futon-frames.featured.body": "CMS body text",
+      };
+      return Promise.resolve(overrides[key] ?? fallback);
+    });
+
+    const tree = (await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({}),
+    })) as ReactElement;
+    const html = renderToStaticMarkup(tree);
+
+    expect(html).toContain("CMS Eyebrow");
+    expect(html).toContain("CMS Heading");
+    expect(html).toContain("CMS body text");
+    expect(html).not.toContain("Where most people start");
+    expect(html).not.toContain("Three frames for daily use.");
+  });
+
+  it("renders fallback featured-row copy when getSiteContent returns the fallback", async () => {
+    const tree = (await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({}),
+    })) as ReactElement;
+    const html = renderToStaticMarkup(tree);
+
+    expect(html).toContain('data-slot="plp-featured-row"');
+    expect(html).toContain("Where most people start");
+    expect(html).toContain("Three frames for daily use.");
+  });
+
+  it("calls getSiteContent with correct dotted-path keys for shop.futon-frames.featured.*", async () => {
+    mockGetSiteContent.mockClear();
+
+    await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({}),
+    });
+
+    expect(mockGetSiteContent).toHaveBeenCalledWith(
+      "shop.futon-frames.featured.eyebrow",
+      "Editor picks",
+    );
+    expect(mockGetSiteContent).toHaveBeenCalledWith(
+      "shop.futon-frames.featured.heading",
+      "Where most people start",
+    );
+    expect(mockGetSiteContent).toHaveBeenCalledWith(
+      "shop.futon-frames.featured.body",
+      "Three frames for daily use.",
+    );
+  });
+
+  it("does NOT render the featured row when sort is non-default (shouldShowFeaturedRow gate)", async () => {
+    const tree = (await PlpPage({
+      params: Promise.resolve({ category: "futon-frames" }),
+      searchParams: Promise.resolve({ sort: "price-asc" }),
+    })) as ReactElement;
+    const html = renderToStaticMarkup(tree);
+
+    expect(html).not.toContain('data-slot="plp-featured-row"');
+  });
+
+  it("does NOT call getSiteContent with featured keys when category has no featured config", async () => {
+    vi.mocked(findCategory).mockReturnValue({
+      slug: "mattresses",
+      name: "Mattresses",
+      description: "Our mattresses.",
+      collectionSlug: "mattresses",
+    } as never);
+    mockGetSiteContent.mockClear();
+
+    await PlpPage({
+      params: Promise.resolve({ category: "mattresses" }),
+      searchParams: Promise.resolve({}),
+    });
+
+    const featuredCalls = mockGetSiteContent.mock.calls.filter(([key]) =>
+      (key as string).includes("featured"),
+    );
+    expect(featuredCalls).toHaveLength(0);
   });
 });
