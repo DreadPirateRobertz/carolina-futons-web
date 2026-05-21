@@ -43,9 +43,9 @@ describe("provision-site-content seed-data.json", () => {
     expect(seed.rows.length).toBeGreaterThan(0);
   });
 
-  it("contains exactly 61 seed rows (cfw-roi + cfw-34q value-props + cfw-66o.4 shop copy + cfw-66o.11 about copy + cfw-66o.5 featured-row + cfw-66o.3 descriptions + cfw-mr7 guides index + cfw-dag registry.* keys)", () => {
+  it("contains exactly 74 seed rows (cfw-roi + cfw-34q value-props + cfw-66o.4 shop copy + cfw-66o.11 about copy + cfw-66o.5 featured-row + cfw-66o.3 descriptions + cfw-mr7 guides index + cfw-udr videos + cfw-dag registry + cfw-p3j sustainability)", () => {
     const seed = loadSeed();
-    expect(seed.rows).toHaveLength(61);
+    expect(seed.rows).toHaveLength(74);
   });
 
   it("every row has a non-empty string key and value", () => {
@@ -140,6 +140,10 @@ describe("provision-site-content seed-data.json", () => {
       "guides.index.eyebrow",
       "guides.index.heading",
       "guides.index.subhead",
+      // cfw-udr: videos page copy
+      "videos.eyebrow",
+      "videos.heading",
+      "videos.intro",
       // cfw-dag: registry page copy
       "registry.heading",
       "registry.unauthenticated.body",
