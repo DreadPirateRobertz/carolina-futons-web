@@ -198,7 +198,7 @@ export default async function PlpPage(props: {
 
   const [badgeMap, featuredCopy] = await Promise.all([
     listAllProductBadges(),
-    category.featured
+    shouldShowFeaturedRow && category.featured
       ? Promise.all([
           getSiteContent(`shop.${category.slug}.featured.eyebrow`, category.featured.eyebrow),
           getSiteContent(`shop.${category.slug}.featured.heading`, category.featured.heading),
