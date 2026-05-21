@@ -123,6 +123,21 @@ export const SEED_ROWS: SeedRow[] = [
   { key: "footer.social.instagram-href", value: "https://www.instagram.com/carolinafutons" },
   { key: "footer.social.tiktok-href",    value: "https://www.tiktok.com/@carolinafutons" },
   { key: "footer.social.pinterest-href", value: "https://www.pinterest.com/carolinafutons" },
+
+  // ── cfw-p3j: Sustainability page copy ─────────────────────────────
+  { key: "sustainability.eyebrow",        value: "Our promise" },
+  { key: "sustainability.intro.heading",  value: "Furniture that cares for the planet" },
+  { key: "sustainability.intro.body",     value: "At Carolina Futons, sustainability isn't a buzzword — it's how we build. From responsibly sourced wood to low-VOC finishes, every piece is crafted to last decades, not seasons." },
+  { key: "sustainability.stories.heading", value: "How we build it" },
+  { key: "sustainability.materials.heading", value: "What we use" },
+  { key: "sustainability.materials.subhead", value: "Every material is chosen for durability, low environmental impact, and how it performs in daily life." },
+  { key: "sustainability.carbon.heading", value: "Carbon offset program" },
+  { key: "sustainability.carbon.body",    value: "Manufacturing and shipping any physical product has a carbon footprint. We don't pretend otherwise. For every order shipped, we contribute to reforestation projects in the Southern Appalachians — the same mountains where our showroom sits." },
+  { key: "sustainability.certs.heading",  value: "Certifications & standards" },
+  { key: "sustainability.certs.subhead",  value: "Our products meet rigorous third-party environmental and safety standards." },
+  { key: "sustainability.tradein.heading", value: "Trade-in program" },
+  { key: "sustainability.tradein.subhead", value: "Give your old futon a second life. Trade in your used furniture for store credit toward a new piece — we'll handle the pickup and responsible recycling." },
+  { key: "sustainability.tradein.cta-label", value: "Ask about trade-in" },
 ];
 
 // ── Config ────────────────────────────────────────────────────────────

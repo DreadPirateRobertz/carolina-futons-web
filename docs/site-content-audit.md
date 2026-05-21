@@ -74,6 +74,19 @@ These are **complete** and require no further work. Included for reference and t
 | `contact.appointment.heading` | `"Schedule a showroom visit"` | `src/app/contact/page.tsx:79–82` | |
 | `contact.appointment.body-suffix` | `" Request a slot and we'll confirm by email within one business day."` | `src/app/contact/page.tsx:83–86` | |
 | `contact.form.heading` | `"Send a message"` | `src/app/contact/page.tsx:87` | |
+| `sustainability.eyebrow` | `"Our promise"` | `src/app/sustainability/page.tsx` | All 13 sustainability keys loaded in one `Promise.all` (cfw-p3j) |
+| `sustainability.intro.heading` | `"Furniture that cares for the planet"` | `src/app/sustainability/page.tsx` | |
+| `sustainability.intro.body` | `"At Carolina Futons, sustainability isn't a buzzword…"` | `src/app/sustainability/page.tsx` | |
+| `sustainability.stories.heading` | `"How we build it"` | `src/app/sustainability/page.tsx` | Story row content comes from Wix CMS collection — excluded per §3 |
+| `sustainability.materials.heading` | `"What we use"` | `src/app/sustainability/page.tsx` | Material items from Wix CMS collection — excluded per §3 |
+| `sustainability.materials.subhead` | `"Every material is chosen for durability…"` | `src/app/sustainability/page.tsx` | |
+| `sustainability.carbon.heading` | `"Carbon offset program"` | `src/app/sustainability/page.tsx` | |
+| `sustainability.carbon.body` | `"Manufacturing and shipping any physical product…"` | `src/app/sustainability/page.tsx` | Carbon bullet list is structural — excluded per §3 |
+| `sustainability.certs.heading` | `"Certifications & standards"` | `src/app/sustainability/page.tsx` | Cert items from Wix CMS collection — excluded per §3 |
+| `sustainability.certs.subhead` | `"Our products meet rigorous third-party…"` | `src/app/sustainability/page.tsx` | |
+| `sustainability.tradein.heading` | `"Trade-in program"` | `src/app/sustainability/page.tsx` | TRADE_IN_STEPS step content is structural repeater — excluded per §3 |
+| `sustainability.tradein.subhead` | `"Give your old futon a second life…"` | `src/app/sustainability/page.tsx` | |
+| `sustainability.tradein.cta-label` | `"Ask about trade-in"` | `src/app/sustainability/page.tsx` | |
 | `social.url.facebook` | `"https://www.facebook.com/carolinafutons"` | `src/app/layout.tsx:136` | Key is `social.url.*` — NOT `footer.social.*-href` as proposed in §2f; cfw-66o.7 used the shorter namespace |
 | `social.url.instagram` | `"https://www.instagram.com/carolinafutons"` | `src/app/layout.tsx:137` | |
 | `social.url.tiktok` | `"https://www.tiktok.com/@carolinafutons"` | `src/app/layout.tsx:138` | |

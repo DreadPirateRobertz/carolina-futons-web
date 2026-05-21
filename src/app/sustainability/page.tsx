@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { listCollectionItems, type WixDataItem } from "@/lib/wix/data";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { getSiteContent } from "@/lib/cms/site-content";
 
 export const metadata: Metadata = {
   title: "Sustainability — Carolina Futons",
@@ -134,11 +135,28 @@ const TRADE_IN_STEPS = [
   },
 ] as const;
 
-const HERO = {
+// cfw-p3j: owner-editable marketing copy. Wix-CMS-backed repeaters
+// (story rows, materials, certifications) and structural step content
+// (TRADE_IN_STEPS) are excluded per §3 — structural/dynamic content.
+const SUSTAINABILITY_COPY_FALLBACKS = {
   eyebrow: "Our promise",
-  heading: "Furniture that cares for the planet",
-  intro:
+  introHeading: "Furniture that cares for the planet",
+  introBody:
     "At Carolina Futons, sustainability isn't a buzzword — it's how we build. From responsibly sourced wood to low-VOC finishes, every piece is crafted to last decades, not seasons.",
+  storiesHeading: "How we build it",
+  materialsHeading: "What we use",
+  materialsSubhead:
+    "Every material is chosen for durability, low environmental impact, and how it performs in daily life.",
+  carbonHeading: "Carbon offset program",
+  carbonBody:
+    "Manufacturing and shipping any physical product has a carbon footprint. We don't pretend otherwise. For every order shipped, we contribute to reforestation projects in the Southern Appalachians — the same mountains where our showroom sits.",
+  certsHeading: "Certifications & standards",
+  certsSubhead:
+    "Our products meet rigorous third-party environmental and safety standards.",
+  tradeinHeading: "Trade-in program",
+  tradeinSubhead:
+    "Give your old futon a second life. Trade in your used furniture for store credit toward a new piece — we'll handle the pickup and responsible recycling.",
+  tradeinCtaLabel: "Ask about trade-in",
 } as const;
 
 // ── CMS fetchers with static fallbacks ─────────────────────────────
@@ -206,17 +224,47 @@ async function getMaterials(): Promise<Material[]> {
 // ── Page ────────────────────────────────────────────────────────────
 
 export default async function SustainabilityPage() {
-  const [storyRows, certifications, materials] = await Promise.all([
+  const [
+    storyRows,
+    certifications,
+    materials,
+    eyebrow,
+    introHeading,
+    introBody,
+    storiesHeading,
+    materialsHeading,
+    materialsSubhead,
+    carbonHeading,
+    carbonBody,
+    certsHeading,
+    certsSubhead,
+    tradeinHeading,
+    tradeinSubhead,
+    tradeinCtaLabel,
+  ] = await Promise.all([
     getStoryRows(),
     getCertifications(),
     getMaterials(),
+    getSiteContent("sustainability.eyebrow", SUSTAINABILITY_COPY_FALLBACKS.eyebrow),
+    getSiteContent("sustainability.intro.heading", SUSTAINABILITY_COPY_FALLBACKS.introHeading),
+    getSiteContent("sustainability.intro.body", SUSTAINABILITY_COPY_FALLBACKS.introBody),
+    getSiteContent("sustainability.stories.heading", SUSTAINABILITY_COPY_FALLBACKS.storiesHeading),
+    getSiteContent("sustainability.materials.heading", SUSTAINABILITY_COPY_FALLBACKS.materialsHeading),
+    getSiteContent("sustainability.materials.subhead", SUSTAINABILITY_COPY_FALLBACKS.materialsSubhead),
+    getSiteContent("sustainability.carbon.heading", SUSTAINABILITY_COPY_FALLBACKS.carbonHeading),
+    getSiteContent("sustainability.carbon.body", SUSTAINABILITY_COPY_FALLBACKS.carbonBody),
+    getSiteContent("sustainability.certs.heading", SUSTAINABILITY_COPY_FALLBACKS.certsHeading),
+    getSiteContent("sustainability.certs.subhead", SUSTAINABILITY_COPY_FALLBACKS.certsSubhead),
+    getSiteContent("sustainability.tradein.heading", SUSTAINABILITY_COPY_FALLBACKS.tradeinHeading),
+    getSiteContent("sustainability.tradein.subhead", SUSTAINABILITY_COPY_FALLBACKS.tradeinSubhead),
+    getSiteContent("sustainability.tradein.cta-label", SUSTAINABILITY_COPY_FALLBACKS.tradeinCtaLabel),
   ]);
 
   const schema = {
     "@context": "https://schema.org",
     "@type": "AboutPage",
     name: "Sustainability — Carolina Futons",
-    description: HERO.intro,
+    description: introBody,
     url: "https://carolinafutons.com/sustainability",
     mainEntity: {
       "@type": "Organization",
@@ -236,12 +284,12 @@ export default async function SustainabilityPage() {
 
       <header className="max-w-[65ch] space-y-3 font-source-sans">
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
-          {HERO.eyebrow}
+          {eyebrow}
         </p>
         <h1 className="font-playfair text-4xl font-semibold tracking-tight text-cf-ink sm:text-5xl">
-          {HERO.heading}
+          {introHeading}
         </h1>
-        <p className="text-lg leading-relaxed text-cf-muted">{HERO.intro}</p>
+        <p className="text-lg leading-relaxed text-cf-muted">{introBody}</p>
       </header>
 
       {/* Story rows */}
@@ -254,7 +302,7 @@ export default async function SustainabilityPage() {
           id="story-rows-heading"
           className="font-playfair text-2xl font-semibold tracking-tight text-cf-ink"
         >
-          How we build it
+          {storiesHeading}
         </h2>
         <ul className="space-y-10">
           {storyRows.map((row) => (
@@ -288,18 +336,14 @@ export default async function SustainabilityPage() {
           id="materials-heading"
           className="font-playfair text-2xl font-semibold tracking-tight text-cf-ink"
         >
-          What we use
+          {materialsHeading}
         </h2>
-        <p className="max-w-[65ch] text-cf-muted">
-          Every material is chosen for durability, low environmental impact, and
-          how it performs in daily life.
-        </p>
+        <p className="max-w-[65ch] text-cf-muted">{materialsSubhead}</p>
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {materials.map((mat) => (
             <li
               key={mat.title}
               className="overflow-hidden rounded-md border border-cf-divider bg-white/60 dark:bg-cf-cream dark:border-cf-ink/30"
-
             >
               {mat.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -336,14 +380,9 @@ export default async function SustainabilityPage() {
           id="carbon-offset-heading"
           className="font-playfair text-2xl font-semibold tracking-tight text-cf-ink"
         >
-          Carbon offset program
+          {carbonHeading}
         </h2>
-        <p className="mt-3 max-w-[65ch] text-cf-muted">
-          Manufacturing and shipping any physical product has a carbon footprint.
-          We don&apos;t pretend otherwise. For every order shipped, we contribute
-          to reforestation projects in the Southern Appalachians — the same
-          mountains where our showroom sits.
-        </p>
+        <p className="mt-3 max-w-[65ch] text-cf-muted">{carbonBody}</p>
         <ul className="mt-6 space-y-3 text-sm text-cf-muted">
           <li className="flex gap-3">
             <span className="mt-0.5 text-cf-cta" aria-hidden="true">&#x2713;</span>
@@ -373,18 +412,14 @@ export default async function SustainabilityPage() {
           id="certifications-heading"
           className="font-playfair text-2xl font-semibold tracking-tight text-cf-ink"
         >
-          Certifications &amp; standards
+          {certsHeading}
         </h2>
-        <p className="max-w-[65ch] text-cf-muted">
-          Our products meet rigorous third-party environmental and safety
-          standards.
-        </p>
+        <p className="max-w-[65ch] text-cf-muted">{certsSubhead}</p>
         <ul className="grid gap-4 sm:grid-cols-3">
           {certifications.map((cert) => (
             <li
               key={cert.name}
               className="rounded-md border border-cf-divider bg-white/60 dark:bg-cf-cream dark:border-cf-ink/30 p-4"
-
             >
               <p className="font-medium text-cf-ink">{cert.name}</p>
               <p className="mt-2 text-sm text-cf-muted">{cert.body}</p>
@@ -403,19 +438,14 @@ export default async function SustainabilityPage() {
           id="trade-in-heading"
           className="font-playfair text-2xl font-semibold tracking-tight text-cf-ink"
         >
-          Trade-in program
+          {tradeinHeading}
         </h2>
-        <p className="max-w-[65ch] text-cf-muted">
-          Give your old futon a second life. Trade in your used furniture for
-          store credit toward a new piece — we&apos;ll handle the pickup and
-          responsible recycling.
-        </p>
+        <p className="max-w-[65ch] text-cf-muted">{tradeinSubhead}</p>
         <ol className="grid gap-6 sm:grid-cols-3">
           {TRADE_IN_STEPS.map((s) => (
             <li
               key={s.step}
               className="rounded-md border border-cf-divider bg-white/60 dark:bg-cf-cream dark:border-cf-ink/30 p-6"
-
             >
               <span
                 className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-cf-cta/10 text-sm font-semibold text-cf-cta"
@@ -435,7 +465,7 @@ export default async function SustainabilityPage() {
             href="/contact"
             className="inline-flex h-11 items-center justify-center rounded-md bg-cf-cta px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-cf-cta/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
-            Ask about trade-in
+            {tradeinCtaLabel}
           </Link>
         </p>
       </section>
