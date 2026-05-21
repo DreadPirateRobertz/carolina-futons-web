@@ -32,6 +32,7 @@ import {
   ShopTheRoom,
   PLP_SHOP_THE_ROOM_CONFIGS,
 } from "@/components/site/ShopTheRoom";
+import { getSiteContent } from "@/lib/cms/site-content";
 export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
@@ -197,6 +198,16 @@ export default async function PlpPage(props: {
 
   const badgeMap = await listAllProductBadges();
 
+  // cfw-66o.6: owner-editable empty-state copy for derived sale categories.
+  // Only fetches for categories that declare emptyStateCopy; others stay undefined
+  // and the static fallback at the render site fires as before.
+  const resolvedEmptyStateCopy = category.emptyStateCopy
+    ? await getSiteContent(
+        `shop.${categorySlug}.empty-state`,
+        category.emptyStateCopy,
+      )
+    : undefined;
+
   // cfw-dv5: sub-category pill filter. When a known sub slug is in searchParams,
   // narrow the product list by case-insensitive name substring. Unknown slugs
   // fall through (matchingSub=undefined → displayItems=page.items) so a stale
@@ -341,7 +352,7 @@ export default async function PlpPage(props: {
       ) : displayItems.length === 0 ? (
         <p className="mt-10 rounded-md border border-zinc-100 bg-zinc-50 p-6 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
           {facets.total === 0
-            ? (category.emptyStateCopy ??
+            ? (resolvedEmptyStateCopy ??
               "No products found in this collection yet.")
             : "No products match these filters. Try adjusting the price range or removing the in-stock filter."}
         </p>

@@ -39,6 +39,9 @@ vi.mock("@/components/site/ShopTheRoom", () => ({
   ShopTheRoom: () => null,
   PLP_SHOP_THE_ROOM_CONFIGS: {},
 }));
+vi.mock("@/lib/cms/site-content", () => ({
+  getSiteContent: vi.fn(async (_k: string, fallback: string = "") => fallback),
+}));
 import { buildPageUrl } from "@/components/plp/PLPPagination";
 
 // ── PLPPagination.buildPageUrl ──────────────────────────────────────────────
