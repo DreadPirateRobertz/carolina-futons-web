@@ -50,36 +50,86 @@ These are **complete** and require no further work. Included for reference and t
 | `visit.cta.heading` | `"Ready to shop?"` | `visit/page.tsx:63` | |
 | `visit.cta.body` | `"Browse online first, then come in and try everything."` | `visit/page.tsx:64` | |
 | `visit.cta.button-label` | `"Browse all products"` | `visit/page.tsx:65` | |
-| `shop.sale.empty-state` | `"No items are on sale right now. Check back soon."` | `shop/[category]/page.tsx:215` | cfw-66o.6 (#899) — resolved at render; `categories.ts` value is fallback |
-| `shop.mattresses-sale.empty-state` | `"No mattresses are on sale right now. Check back soon."` | `shop/[category]/page.tsx:215` | cfw-66o.6 (#899) |
-| `shop.index.subhead` | `"Pick a category to browse."` | `shop/page.tsx:55` | cfw-66o.4 (#902) |
-| `shop.shop-the-room.eyebrow` | `"Shop the room"` | `shop/page.tsx:56` | cfw-66o.4 (#902) |
-| `shop.shop-the-room.heading` | `"Or jump straight in"` | `shop/page.tsx:57` | cfw-66o.4 (#902) |
-| `shop.futon-frames.subtitle` | `"Solid hardwood"` | `shop/page.tsx:58` | cfw-66o.4 (#902) |
-| `shop.murphy-cabinet-beds.subtitle` | `"Space-saving"` | `shop/page.tsx:59` | cfw-66o.4 (#902) |
-| `shop.platform-beds.subtitle` | `"Low & modern"` | `shop/page.tsx:60` | cfw-66o.4 (#902) |
-| `shop.mattresses.subtitle` | `"Made in USA"` | `shop/page.tsx:61` | cfw-66o.4 (#902) |
-| `shop.mattresses-sale.subtitle` | `"On sale now"` | `shop/page.tsx:62` | cfw-66o.4 (#902) |
-| `shop.futon-frames.featured.eyebrow` | `"Editor's picks"` | `shop/[category]/page.tsx:203` | cfw-66o.5 (#900) — template key `shop.${slug}.featured.*` |
-| `shop.futon-frames.featured.heading` | `"Where most people start"` | `shop/[category]/page.tsx:204` | cfw-66o.5 (#900) |
-| `shop.futon-frames.featured.body` | `"Three frames that cover the common questions…"` | `shop/[category]/page.tsx:205` | cfw-66o.5 (#900) |
-| `social.url.facebook` | `"https://www.facebook.com/carolinafutons"` | `layout.tsx:136` | cfw-66o.7 (#904) — key renamed from audit's `footer.social.facebook-href` |
-| `social.url.instagram` | `"https://www.instagram.com/carolinafutons"` | `layout.tsx:137` | cfw-66o.7 (#904) |
-| `social.url.tiktok` | `"https://www.tiktok.com/@carolinafutons"` | `layout.tsx:138` | cfw-66o.7 (#904) |
-| `social.url.pinterest` | `"https://www.pinterest.com/carolinafutons"` | `layout.tsx:139` | cfw-66o.7 (#904) |
-| `shop.futon-frames.description` | `"Choose from twin, full, or queen hardwood frames…"` | `shop/[category]/page.tsx` | cfw-66o.3 (#896) — template key `shop.${slug}.description`; `categories.ts` value is fallback |
-| `shop.murphy-cabinet-beds.description` | `"Cabinet beds that fold away without hardware in the wall."` | `shop/[category]/page.tsx` | cfw-66o.3 (#896) |
-| `shop.platform-beds.description` | `"Low-profile solid-wood platform beds."` | `shop/[category]/page.tsx` | cfw-66o.3 (#896) |
-| `shop.mattresses.description` | `"Futon mattresses and bed mattresses."` | `shop/[category]/page.tsx` | cfw-66o.3 (#896) |
-| `shop.sofa-beds.description` | `"Convertible sofa beds — seat by day, guest bed by night."` | `shop/[category]/page.tsx` | cfw-66o.3 (#896) |
-| `shop.sale.description` | `"Discounted futons, beds, and mattresses — while supplies last."` | `shop/[category]/page.tsx` | cfw-66o.3 (#896) |
-| `shop.mattresses-sale.description` | `"Current mattress promotions."` | `shop/[category]/page.tsx` | cfw-66o.3 (#896) |
+| `home.value-props.0.title` | `"Hardwood, not plywood"` | `src/app/page.tsx:224` | All 6 value-prop keys loaded dynamically via `VALUE_PROP_DEFAULTS.map` (cfw-66o.10) |
+| `home.value-props.0.body` | `"Frames milled from solid oak, maple, and cherry…"` | `src/app/page.tsx:225` | |
+| `home.value-props.1.title` | `"Sleep on it first"` | `src/app/page.tsx:228` | |
+| `home.value-props.1.body` | `"Visit the Hendersonville showroom and try every mattress we sell…"` | `src/app/page.tsx:229` | |
+| `home.value-props.2.title` | `"White-glove delivery"` | `src/app/page.tsx:232` | |
+| `home.value-props.2.body` | `"Regional delivery teams set it up where you want it…"` | `src/app/page.tsx:233` | |
+| `about.intro.eyebrow` | `"Our story"` | `src/app/about/page.tsx:83` | All 11 about keys loaded in one `Promise.all` (cf-7pk0 F1, cfw-66o.11) |
+| `about.intro.heading` | `"About Carolina Futons"` | `src/app/about/page.tsx:84` | |
+| `about.intro.subheading` | `"Family-owned and independently operated in Hendersonville, North Carolina since 1991."` | `src/app/about/page.tsx:85` | |
+| `about.intro.lede` | `"Carolina Futons opened its doors in 1991…"` | `src/app/about/page.tsx:86` | |
+| `about.beliefs.heading` | `"What we believe"` | `src/app/about/page.tsx:87` | |
+| `about.beliefs.body-1` | `"Furniture should be durable, repairable, and honest about what it is…"` | `src/app/about/page.tsx:88` | |
+| `about.beliefs.body-2` | `"A futon is a bed that also earns its keep as a sofa…"` | `src/app/about/page.tsx:89` | |
+| `about.location.heading` | `"Where to find us"` | `src/app/about/page.tsx:90` | |
+| `about.location.body-1` | `"Our showroom is at 824 Locust Street, Suite 200…"` | `src/app/about/page.tsx:91` | |
+| `about.team.heading` | `"The team"` | `src/app/about/page.tsx:92` | |
+| `about.team.body` | `"A short roster of the people who build, deliver, and stand behind every order…"` | `src/app/about/page.tsx:93` | |
+| `contact.eyebrow` | `"Contact"` | `src/app/contact/page.tsx:69` | All 7 contact keys loaded in one `Promise.all` (cf-bbu5) |
+| `contact.intro.heading` | `"We'd love to hear from you."` | `src/app/contact/page.tsx:70–73` | |
+| `contact.intro.body` | `"Questions about a frame, a mattress, delivery, or a past order?…"` | `src/app/contact/page.tsx:74` | |
+| `contact.direct.heading` | `"Reach us directly"` | `src/app/contact/page.tsx:75–78` | |
+| `contact.appointment.heading` | `"Schedule a showroom visit"` | `src/app/contact/page.tsx:79–82` | |
+| `contact.appointment.body-suffix` | `" Request a slot and we'll confirm by email within one business day."` | `src/app/contact/page.tsx:83–86` | |
+| `contact.form.heading` | `"Send a message"` | `src/app/contact/page.tsx:87` | |
+| `social.url.facebook` | `"https://www.facebook.com/carolinafutons"` | `src/app/layout.tsx:136` | Key is `social.url.*` — NOT `footer.social.*-href` as proposed in §2f; cfw-66o.7 used the shorter namespace |
+| `social.url.instagram` | `"https://www.instagram.com/carolinafutons"` | `src/app/layout.tsx:137` | |
+| `social.url.tiktok` | `"https://www.tiktok.com/@carolinafutons"` | `src/app/layout.tsx:138` | |
+| `social.url.pinterest` | `"https://www.pinterest.com/carolinafutons"` | `src/app/layout.tsx:139` | |
+| `shop.futon-frames.description` | `"Choose from twin, full, or queen hardwood frames…"` | `src/lib/shop/categories.ts:81–85` | cfw-66o.3; template key `shop.${slug}.description` covers all 7 categories |
+| `shop.murphy-cabinet-beds.description` | `"Cabinet beds that fold away without hardware in the wall."` | `src/lib/shop/categories.ts:109` | |
+| `shop.platform-beds.description` | `"Low-profile solid-wood platform beds."` | `src/lib/shop/categories.ts:116` | |
+| `shop.mattresses.description` | `"Futon mattresses and bed mattresses."` | `src/lib/shop/categories.ts:123` | |
+| `shop.sofa-beds.description` | `"Convertible sofa beds — seat by day, guest bed by night."` | `src/lib/shop/categories.ts:136` | |
+| `shop.sale.description` | `"Discounted futons, beds, and mattresses — while supplies last."` | `src/lib/shop/categories.ts:143` | |
+| `shop.mattresses-sale.description` | `"Current mattress promotions."` | `src/lib/shop/categories.ts:153` | |
+| `shop.sale.empty-state` | `"No items are on sale right now. Check back soon."` | `src/app/shop/[category]/page.tsx:222` | cfw-66o.6; template key `shop.${slug}.empty-state` |
+| `shop.mattresses-sale.empty-state` | `"No mattresses are on sale right now. Check back soon."` | `src/app/shop/[category]/page.tsx:222` | |
+| `shop.futon-frames.subtitle` | `"Solid hardwood"` | `src/app/shop/page.tsx:58` | cfw-66o.4 |
+| `shop.murphy-cabinet-beds.subtitle` | `"Space-saving"` | `src/app/shop/page.tsx:59` | |
+| `shop.platform-beds.subtitle` | `"Low & modern"` | `src/app/shop/page.tsx:60` | |
+| `shop.mattresses.subtitle` | `"Made in USA"` | `src/app/shop/page.tsx:61` | |
+| `shop.mattresses-sale.subtitle` | `"On sale now"` | `src/app/shop/page.tsx:62` | |
+| `shop.index.subhead` | `"Pick a category to browse."` | `src/app/shop/page.tsx:55` | cfw-66o.4 |
+| `shop.shop-the-room.eyebrow` | `"Shop the room"` | `src/app/shop/page.tsx:56` | |
+| `shop.shop-the-room.heading` | `"Or jump straight in"` | `src/app/shop/page.tsx:57` | |
+| `shop.futon-frames.featured.eyebrow` | `"Editor's picks"` | `src/lib/shop/categories.ts:96` | cfw-66o.5; template key `shop.${slug}.featured.*` |
+| `shop.futon-frames.featured.heading` | `"Where most people start"` | `src/lib/shop/categories.ts:97` | |
+| `shop.futon-frames.featured.body` | `"Three frames that cover the common questions…"` | `src/lib/shop/categories.ts:98–101` | |
 
 ---
 
-## 2. Hardcoded copy — remaining (not yet wired)
+## 2. Previously hardcoded — now wired (historical reference)
 
-All identified P1/P2/P3 groups have been wired to `getSiteContent()` as of cfw-66o.3 (#896). No remaining HARDCODED rows.
+All items in §2 have been wired to `getSiteContent()` and are now in §1 above. This section is preserved for implementation notes and context.
+
+### 2a. Category descriptions — **LIVE** (cfw-66o.3)
+
+Wired in `[category]/page.tsx` via template key `shop.${categorySlug}.description`. The `categories.ts` `as const` values serve as fallbacks.
+
+---
+
+### 2b. Category empty-state copy — **LIVE** (cfw-66o.6)
+
+Wired in `[category]/page.tsx` via template key `shop.${categorySlug}.empty-state`.
+
+### 2c. Category card subtitles — **LIVE** (cfw-66o.4)
+
+Wired in `src/app/shop/page.tsx` via explicit keys per slug.
+
+### 2d. Shop index page copy — **LIVE** (cfw-66o.4)
+
+Wired in `src/app/shop/page.tsx`.
+
+### 2e. Futon frames featured-row copy — **LIVE** (cfw-66o.5)
+
+Wired in `[category]/page.tsx` via template key `shop.${categorySlug}.featured.*`.
+
+### 2f. Social media URLs — **LIVE** (cfw-66o.7)
+
+**Note:** Implemented as `social.url.*` (not `footer.social.*-href` as originally proposed). The live keys are `social.url.facebook`, `social.url.instagram`, `social.url.tiktok`, `social.url.pinterest` — see §1 above.
 
 ---
 
