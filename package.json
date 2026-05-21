@@ -17,7 +17,8 @@
     "typecheck": "tsc --noEmit",
     "provision:site-content": "node scripts/provision-site-content/index.mjs",
     "provision:owner-audit-log": "node scripts/provision-owner-audit-log/index.mjs",
-    "provision:site-content-history": "node scripts/provision-site-content-history/index.mjs"
+    "provision:site-content-history": "node scripts/provision-site-content-history/index.mjs",
+    "seed:site-content": "npx tsx scripts/seed-site-content.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
