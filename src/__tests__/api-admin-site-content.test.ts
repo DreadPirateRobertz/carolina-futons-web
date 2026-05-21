@@ -41,15 +41,12 @@ vi.mock("@/lib/wix/errors", () => ({
   logWixFailure: (...args: unknown[]) => mockLogWixFailure(...args),
 }));
 
-const mockRevalidateTag = vi.fn();
-vi.mock("next/cache", () => ({
-  revalidateTag: (...args: unknown[]) => mockRevalidateTag(...args),
-}));
-
-// site-content reader exports SITE_CONTENT_CACHE_TAG. Mock it so we don't
-// pull the real reader (which imports server-only Wix data plumbing).
-vi.mock("@/lib/cms/site-content", () => ({
-  SITE_CONTENT_CACHE_TAG: "site-content",
+// cfw-sej: route now delegates cache invalidation to @/lib/admin/revalidate.
+// Mock the module here so (a) debounce state doesn't bleed across tests,
+// and (b) we can assert that the route calls the right helper.
+const mockInvalidateSiteContent = vi.fn();
+vi.mock("@/lib/admin/revalidate", () => ({
+  invalidateSiteContent: (...args: unknown[]) => mockInvalidateSiteContent(...args),
 }));
 
 const OWNER_SESSION = {
@@ -92,7 +89,7 @@ describe("POST /api/admin/site-content (cfw-6qd.3)", () => {
     const data = (await res.json()) as { error: string };
     expect(data.error).toMatch(/owner/i);
     expect(mockUpsert).not.toHaveBeenCalled();
-    expect(mockRevalidateTag).not.toHaveBeenCalled();
+    expect(mockInvalidateSiteContent).not.toHaveBeenCalled();
   });
 
   it("returns 200 + upserts + revalidates tag on owner success", async () => {
@@ -122,7 +119,7 @@ describe("POST /api/admin/site-content (cfw-6qd.3)", () => {
       fields: { value: "New tagline" },
       tokens: OWNER_SESSION.tokens,
     });
-    expect(mockRevalidateTag).toHaveBeenCalledWith("site-content", "default");
+    expect(mockInvalidateSiteContent).toHaveBeenCalledTimes(1);
   });
 
   it("trims whitespace around the key before persisting", async () => {
@@ -234,7 +231,7 @@ describe("POST /api/admin/site-content (cfw-6qd.3)", () => {
     const data = (await res.json()) as { error: string };
     expect(data.error).toMatch(/lowercase|dotted|key/i);
     expect(mockUpsert).not.toHaveBeenCalled();
-    expect(mockRevalidateTag).not.toHaveBeenCalled();
+    expect(mockInvalidateSiteContent).not.toHaveBeenCalled();
   });
 
   it("accepts the seed-convention key shapes (cfw-6qd.12)", async () => {
@@ -294,7 +291,7 @@ describe("POST /api/admin/site-content (cfw-6qd.3)", () => {
     const data = (await res.json()) as { error: string };
     expect(data.error).toMatch(/javascript|vbscript|data/i);
     expect(mockUpsert).not.toHaveBeenCalled();
-    expect(mockRevalidateTag).not.toHaveBeenCalled();
+    expect(mockInvalidateSiteContent).not.toHaveBeenCalled();
   });
 
   it("strips ASCII control bytes from value before persisting (cfw-6qd.12)", async () => {
@@ -326,7 +323,7 @@ describe("POST /api/admin/site-content (cfw-6qd.3)", () => {
 
     expect(res.status).toBe(422);
     expect(mockLogWixFailure).not.toHaveBeenCalled();
-    expect(mockRevalidateTag).not.toHaveBeenCalled();
+    expect(mockInvalidateSiteContent).not.toHaveBeenCalled();
   });
 
   it("returns 422 + Sentry skip when Wix throws response.status=400", async () => {
@@ -351,7 +348,7 @@ describe("POST /api/admin/site-content (cfw-6qd.3)", () => {
       "items.save",
       expect.anything(),
     );
-    expect(mockRevalidateTag).not.toHaveBeenCalled();
+    expect(mockInvalidateSiteContent).not.toHaveBeenCalled();
   });
 
   it("returns 502 + logs to Sentry when Wix throws plain network error", async () => {
@@ -498,7 +495,7 @@ describe("POST /api/admin/site-content — cfw-6qd.11 audit log", () => {
     const res = await callPost({ key: "footer.tagline", value: "new" });
 
     expect(res.status).toBe(200);
-    expect(mockRevalidateTag).toHaveBeenCalledWith("site-content", "default");
+    expect(mockInvalidateSiteContent).toHaveBeenCalledTimes(1);
   });
 
   it("survives a lookup failure with before='' (audit still records the after-value)", async () => {
@@ -577,7 +574,7 @@ describe("POST /api/admin/site-content — cfw-jgl history wire-up", () => {
     const res = await callPost({ key: "footer.tagline", value: "new" });
 
     expect(res.status).toBe(200);
-    expect(mockRevalidateTag).toHaveBeenCalledWith("site-content", "default");
+    expect(mockInvalidateSiteContent).toHaveBeenCalledTimes(1);
     // The route logs failed history writes for diagnostics — collection
     // unprovisioned (404) is the most common production case.
     expect(consoleSpy).toHaveBeenCalledWith(

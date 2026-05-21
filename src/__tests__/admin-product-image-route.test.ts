@@ -1,6 +1,6 @@
 // cfw-6qd.7: POST /api/admin/product-image — owner-gated swap of a
 // product's main image. Tests cover the auth ladder, body validation
-// (productId, imageUrl shape + length), happy path with revalidatePath,
+// (productId, imageUrl shape + length), happy path with invalidateImage,
 // and Wix-failure surfacing as 502.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -22,9 +22,10 @@ vi.mock("@/lib/wix/errors", () => ({
   logWixFailure: (...args: unknown[]) => mockLogWixFailure(...args),
 }));
 
-const mockRevalidatePath = vi.fn();
-vi.mock("next/cache", () => ({
-  revalidatePath: (...args: unknown[]) => mockRevalidatePath(...args),
+// cfw-sej: route delegates cache invalidation to @/lib/admin/revalidate.
+const mockInvalidateImage = vi.fn();
+vi.mock("@/lib/admin/revalidate", () => ({
+  invalidateImage: (...args: unknown[]) => mockInvalidateImage(...args),
 }));
 
 const OWNER_SESSION = {
@@ -60,7 +61,7 @@ describe("POST /api/admin/product-image (cfw-6qd.7)", () => {
     expect(mockUpdateProductMainImage).not.toHaveBeenCalled();
   });
 
-  it("returns 200 + revalidates /products on owner success", async () => {
+  it("returns 200 + invalidates product image cache on owner success", async () => {
     mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
     mockUpdateProductMainImage.mockResolvedValueOnce({
       ok: true,
@@ -82,7 +83,7 @@ describe("POST /api/admin/product-image (cfw-6qd.7)", () => {
       "prod-1",
       "https://static.wixstatic.com/media/abc.jpg",
     );
-    expect(mockRevalidatePath).toHaveBeenCalledWith("/products", "page");
+    expect(mockInvalidateImage).toHaveBeenCalledWith("prod-1");
   });
 
   it("trims surrounding whitespace on productId and imageUrl", async () => {
@@ -165,7 +166,7 @@ describe("POST /api/admin/product-image (cfw-6qd.7)", () => {
     expect(res.status).toBe(400);
   });
 
-  it("returns 502 + Sentry when Wix update fails (no revalidate)", async () => {
+  it("returns 502 + Sentry when Wix update fails (no invalidate)", async () => {
     mockGetOwnerSession.mockResolvedValueOnce(OWNER_SESSION);
     mockUpdateProductMainImage.mockResolvedValueOnce({
       ok: false,
@@ -182,6 +183,6 @@ describe("POST /api/admin/product-image (cfw-6qd.7)", () => {
       "products.updateProduct",
       expect.anything(),
     );
-    expect(mockRevalidatePath).not.toHaveBeenCalled();
+    expect(mockInvalidateImage).not.toHaveBeenCalled();
   });
 });

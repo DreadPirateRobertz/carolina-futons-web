@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { revalidateTag } from "next/cache";
 
 import { getOwnerSession } from "@/lib/auth/owner";
 import {
@@ -12,7 +11,6 @@ import {
   AUTH_INPUT_ERROR_MESSAGES,
   classifyAuthInputError,
 } from "@/lib/auth/sdk-error";
-import { SITE_CONTENT_CACHE_TAG } from "@/lib/cms/site-content";
 import {
   sanitizeOwnerEditValue,
   validateOwnerEditKey,
@@ -20,6 +18,7 @@ import {
 import { sanitizeOwnerHtml } from "@/lib/cms/owner-edit-sanitize";
 import { recordOwnerEdit } from "@/lib/admin/audit-log";
 import { writeSiteContentHistory } from "@/lib/cms/site-content-history";
+import { invalidateSiteContent } from "@/lib/admin/revalidate";
 
 export const dynamic = "force-dynamic";
 
@@ -190,7 +189,7 @@ export async function POST(req: NextRequest) {
   // on the next read. The reader's per-request React.cache layer is
   // session-scoped and rebuilds on the next request, so we only need the
   // tag-level invalidation.
-  revalidateTag(SITE_CONTENT_CACHE_TAG, "default");
+  invalidateSiteContent();
 
   return NextResponse.json({ ok: true, key, value });
 }
