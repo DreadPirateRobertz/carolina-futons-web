@@ -121,6 +121,16 @@ describe("submitQuestion (cfw-921)", () => {
     if (result.status !== "error") throw new Error("expected error");
     expect(result.transportError).toBeTruthy();
   });
+
+  it("still returns success when revalidateTag throws — fail-soft contract", async () => {
+    mockRevalidateTag.mockRejectedValue(new Error("cache unavailable"));
+    const result = await submitQuestion(
+      "futon-frames",
+      initialQaState,
+      makeFormData({ question: "Q?" }),
+    );
+    expect(result.status).toBe("success");
+  });
 });
 
 // ── POST /api/product-qa route ────────────────────────────────────────────────

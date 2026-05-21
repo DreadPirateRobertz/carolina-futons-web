@@ -8,7 +8,7 @@ import {
   maskName,
   validateQaInput,
 } from "@/lib/qa/qa-schema";
-import { insertProductQuestion, PRODUCT_QA_CACHE_TAG } from "@/lib/wix/product-qa";
+import { insertProductQuestion } from "@/lib/wix/product-qa";
 
 export async function POST(request: Request): Promise<NextResponse> {
   let body: unknown;

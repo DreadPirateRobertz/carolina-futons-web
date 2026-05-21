@@ -1,6 +1,6 @@
 import { listProductQa } from "@/lib/wix/product-qa";
 import type { QaItem } from "@/lib/qa/qa-schema";
-import { logWarn } from "@/lib/observability/log";
+import { logError } from "@/lib/observability/log";
 import { CustomerQaForm } from "@/components/product/CustomerQaForm";
 
 function QaEntry({ item }: { item: QaItem }) {
@@ -42,7 +42,7 @@ export async function CustomerQa({ productSlug }: Props) {
   try {
     items = await listProductQa(productSlug);
   } catch (err) {
-    logWarn("customer-qa", "listProductQa failed — showing error state", err);
+    logError("customer-qa", "listProductQa failed — showing error state", err);
     loadFailed = true;
   }
 
