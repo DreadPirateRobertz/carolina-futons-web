@@ -1,7 +1,6 @@
 "use server";
 
 import nodemailer from "nodemailer";
-import * as Sentry from "@sentry/nextjs";
 import { optionalEnv } from "@/lib/env";
 import { logError } from "@/lib/observability/log";
 import { BUSINESS } from "@/lib/business/contact-info";
@@ -31,12 +30,6 @@ const TURNSTILE_VERIFY_URL =
 
 type VeloResponse = { success: boolean; error?: string };
 
-function captureWithId(err: unknown, context: string): string {
-  const errorId = crypto.randomUUID();
-  Sentry.captureException(err, { extra: { context, errorId } });
-  return errorId;
-}
-
 function transportFailure(
   values: ContactRequest,
   transportError: string,
@@ -59,8 +52,7 @@ async function verifyTurnstile(
     const data = (await res.json()) as { success: boolean };
     return { ok: data.success === true };
   } catch (err) {
-    const errorId = captureWithId(err, "verifyTurnstile");
-    console.error("[contact-form] Turnstile verify failed:", errorId, err);
+    logError("contact-form", "Turnstile verify failed", err);
     return { ok: false, networkError: true };
   }
 }
@@ -90,14 +82,7 @@ export async function sendContactForm(
   const turnstileToken = formData.get("cf-turnstile-response");
   const hasSecret = !!process.env.TURNSTILE_SECRET_KEY;
   if (!hasSecret && process.env.NODE_ENV === "production") {
-    const errorId = captureWithId(
-      new Error("TURNSTILE_SECRET_KEY not set in production"),
-      "sendContactForm:captchaConfig",
-    );
-    console.error(
-      "[contact-form] TURNSTILE_SECRET_KEY not set in production — blocking submission:",
-      errorId,
-    );
+    logError("contact-form", "TURNSTILE_SECRET_KEY not set in production — blocking submission");
     return transportFailure(req, TRANSPORT_ERROR_GENERIC);
   }
   if (hasSecret) {
