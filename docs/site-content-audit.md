@@ -117,6 +117,9 @@ These are **complete** and require no further work. Included for reference and t
 | `guides.index.eyebrow` | `"Buying guides"` | `src/app/guides/page.tsx:54` | cfw-mr7 |
 | `guides.index.heading` | `"Figure out what you actually need"` | `src/app/guides/page.tsx:57` | |
 | `guides.index.subhead` | `"35 years of answering the same questions at the showroom…"` | `src/app/guides/page.tsx:60` | |
+| `videos.eyebrow` | `"Watch"` | `src/app/videos/page.tsx:25` | cfw-udr (cfw-66o.13) |
+| `videos.heading` | `"Product Videos"` | `src/app/videos/page.tsx:28` | |
+| `videos.intro` | `"Watch our futon frames, Murphy beds, and conversion mechanisms in action…"` | `src/app/videos/page.tsx:31–35` | |
 
 ---
 
