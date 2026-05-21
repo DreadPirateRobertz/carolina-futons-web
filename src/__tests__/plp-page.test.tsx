@@ -868,9 +868,9 @@ describe("PlpPage — featured-row getSiteContent (cfw-66o.5)", () => {
     description: "Our frames.",
     collectionSlug: "futon-frames",
     featured: {
-      eyebrow: "Editor picks",
+      eyebrow: "Editor's picks",
       heading: "Where most people start",
-      body: "Three frames for daily use.",
+      body: "Three frames that cover the common questions — daily-use durability, conversion mechanism, and finish. Sit on them in the showroom or order with our 100-night guarantee.",
       productSlugs: ["oak-loft", "maple-frame", "cherry-sofa"] as const,
     },
   };
@@ -909,7 +909,7 @@ describe("PlpPage — featured-row getSiteContent (cfw-66o.5)", () => {
     expect(html).toContain("CMS Heading");
     expect(html).toContain("CMS body text");
     expect(html).not.toContain("Where most people start");
-    expect(html).not.toContain("Three frames for daily use.");
+    expect(html).not.toContain("Three frames that cover the common questions");
   });
 
   it("renders fallback featured-row copy when getSiteContent returns the fallback", async () => {
@@ -921,7 +921,7 @@ describe("PlpPage — featured-row getSiteContent (cfw-66o.5)", () => {
 
     expect(html).toContain('data-slot="plp-featured-row"');
     expect(html).toContain("Where most people start");
-    expect(html).toContain("Three frames for daily use.");
+    expect(html).toContain("Three frames that cover the common questions");
   });
 
   it("calls getSiteContent with correct dotted-path keys for shop.futon-frames.featured.*", async () => {
@@ -934,7 +934,7 @@ describe("PlpPage — featured-row getSiteContent (cfw-66o.5)", () => {
 
     expect(mockGetSiteContent).toHaveBeenCalledWith(
       "shop.futon-frames.featured.eyebrow",
-      "Editor picks",
+      "Editor's picks",
     );
     expect(mockGetSiteContent).toHaveBeenCalledWith(
       "shop.futon-frames.featured.heading",
@@ -942,7 +942,7 @@ describe("PlpPage — featured-row getSiteContent (cfw-66o.5)", () => {
     );
     expect(mockGetSiteContent).toHaveBeenCalledWith(
       "shop.futon-frames.featured.body",
-      "Three frames for daily use.",
+      "Three frames that cover the common questions — daily-use durability, conversion mechanism, and finish. Sit on them in the showroom or order with our 100-night guarantee.",
     );
   });
 
