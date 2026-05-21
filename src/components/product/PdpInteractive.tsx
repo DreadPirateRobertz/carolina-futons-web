@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 
 import {
@@ -54,6 +55,7 @@ import {
   getSelectedImageUrl,
   getSelectedPrice,
   getSelectedPriceCents,
+  hydrateFromSearch,
   initialSelection,
   isSelectionComplete,
   isVariantInStock,
@@ -128,12 +130,20 @@ export function PdpInteractive({
   weightLbs,
   palletized,
 }: PdpInteractiveProps) {
-  // Intentional duplication: VariantPicker also seeds from initialSelection() and holds its own
-  // selection state for price/stock display. The two stay in sync via onSelectionChange. If
-  // URL-param hydration ever seeds them differently, lift selection here and make VariantPicker
-  // controlled (accept selection as a prop).
+  const searchParams = useSearchParams();
+  // cf-rrhj: hydrate from URL params so the hero image matches VariantPicker's
+  // initial selection on first paint. Without this, PdpInteractive starts at the
+  // catalog default while VariantPicker seeds from ?finish=walnut — the hero
+  // showed the wrong variant image until the first swatch click.
+  //
+  // Intentional duplication: VariantPicker holds its own selection for
+  // price/stock display and URL sync. The two stay in sync via onSelectionChange.
   const [selection, setSelection] = useState<ChoiceSelection>(() =>
-    initialSelection(productOptions, variants),
+    hydrateFromSearch(
+      initialSelection(productOptions, variants),
+      productOptions,
+      new URLSearchParams(searchParams?.toString() ?? ""),
+    ),
   );
   // cf-pdp-g1 (cf-lc1c G-1): per-PDP quantity. Wix Velo PDP had +/− buttons
   // with clampQuantity(MIN_QUANTITY=1, MAX_QUANTITY=99); cfw was passing

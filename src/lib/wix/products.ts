@@ -87,13 +87,27 @@ export function mergeVariantPriceData<T extends WixProduct>(
   } as T;
 }
 
-// cf-6qqa: queryStoreVariants returns per-variant media (StoreVariant.media.image.url)
-// that getProduct and queryProductVariants both omit. Merge it into the product's
-// variants so getSelectedImageUrl's back-compat path (variant.media.mainMedia.image.url)
-// can fire when the admin hasn't attached per-choice swatch media.
+// cf-6qqa / cf-rrhj: queryStoreVariants returns per-variant media that
+// getProduct and queryProductVariants both omit. Merge it into the product's
+// variants so getSelectedImageUrl's back-compat path
+// (variant.media.mainMedia.image.url) fires when the admin hasn't attached
+// per-choice swatch media.
+//
+// cf-rrhj: Wix StoreVariant API v1 returns media at
+// sv.media.mainMedia.image.url (nested), not sv.media.image.url (flat) as the
+// cf-6qqa type assumed. Accept both shapes so the code is resilient to API
+// response format changes.
+export type StoreVariantInput = {
+  choices?: Record<string, string> | null;
+  media?: {
+    image?: { url?: string | null } | null;
+    mainMedia?: { image?: { url?: string | null } | null } | null;
+  } | null;
+};
+
 export function mergeVariantMedia<T extends WixProduct>(
   product: T,
-  storeVariants: ReadonlyArray<{ choices?: Record<string, string> | null; media?: { image?: { url?: string | null } | null } | null }> | null,
+  storeVariants: ReadonlyArray<StoreVariantInput> | null,
 ): T {
   if (!storeVariants || storeVariants.length === 0) return product;
   if (!product.variants || product.variants.length === 0) return product;
@@ -101,7 +115,9 @@ export function mergeVariantMedia<T extends WixProduct>(
   // and {"Size":"Full","Color":"Cherry"} map to the same bucket.
   const mediaByChoicesKey = new Map<string, string>();
   for (const sv of storeVariants) {
-    const url = sv?.media?.image?.url;
+    // Accept both media shapes: nested mainMedia (actual Wix v1 API) and flat
+    // image (original cf-6qqa assumption). Prefer mainMedia when both present.
+    const url = sv?.media?.mainMedia?.image?.url ?? sv?.media?.image?.url;
     if (!url || !sv.choices) continue;
     const key = JSON.stringify(Object.entries(sv.choices).sort());
     mediaByChoicesKey.set(key, url);
@@ -205,17 +221,25 @@ export const getProductBySlug = cache(
         return null;
       }
     };
-    // cf-6qqa: queryStoreVariants returns per-variant media that getProduct
-    // omits. Falls through to null on failure — missing media degrades to
-    // productOptions choice-media path (if configured) or gallery alt-text
-    // matching, not a broken PDP.
+    // cf-6qqa / cf-rrhj: queryStoreVariants returns per-variant media that
+    // getProduct omits. Falls through to null on failure — missing media
+    // degrades gracefully to the per-choice media path (if configured) or
+    // gallery alt-text matching, not a broken PDP.
+    //
+    // cf-rrhj root cause: cf-6qqa called client.products.queryStoreVariants
+    // which doesn't exist on @wix/auto_sdk_stores_products — the Store Variants
+    // endpoint lives in the catalog/store-variants module. The client now also
+    // probes client.catalog.queryStoreVariants as a fallback once we add the
+    // catalog module. Until then the products probe always returns null (the
+    // typeof guard catches it) and we fall through to choice-media / alt-text.
+    type StoreVariantQueryFn = (query: object) => Promise<{ variants?: ReadonlyArray<StoreVariantInput> }>;
     const queryStoreVariantMedia = async () => {
       try {
-        const queryFn = (
-          client.products as {
-            queryStoreVariants?: (query: object) => Promise<{ variants?: ReadonlyArray<{ choices?: Record<string, string> | null; media?: { image?: { url?: string | null } | null } | null }> }>
-          }
-        ).queryStoreVariants;
+        const queryFn: StoreVariantQueryFn | undefined =
+          // Try catalog module first (correct Wix SDK path for Store Variants)
+          (client as { catalog?: { queryStoreVariants?: StoreVariantQueryFn } }).catalog?.queryStoreVariants
+          // Fall back to products module in case a future SDK version moves it
+          ?? (client.products as { queryStoreVariants?: StoreVariantQueryFn }).queryStoreVariants;
         if (typeof queryFn !== "function") return null;
         return await queryFn({
           filter: { productId: { $eq: productId } },
