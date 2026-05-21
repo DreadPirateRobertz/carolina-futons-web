@@ -112,7 +112,7 @@ describe("MascotFooterDivider — animation active (reduced motion off)", () => 
   it("bear breathes (scaleY array)", () => {
     mocks.prefersReducedMotion = false;
     render(<MascotFooterDivider />);
-    expect(mocks.bearAnimate).toEqual({ scaleY: [1, 1.045, 1] });
+    expect(mocks.bearAnimate).toEqual({ scaleY: [1, 1.06, 1] });
   });
 
   it("bear waves (paw rotate is an array)", () => {
@@ -187,7 +187,7 @@ describe("MascotFooterDivider — null reduced-motion (SSR/unknown)", () => {
   it("defaults to animating (matches Footer.tsx behavior)", () => {
     mocks.prefersReducedMotion = null;
     render(<MascotFooterDivider />);
-    expect(mocks.bearAnimate).toEqual({ scaleY: [1, 1.045, 1] });
+    expect(mocks.bearAnimate).toEqual({ scaleY: [1, 1.06, 1] });
   });
 });
 

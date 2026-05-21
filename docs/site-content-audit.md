@@ -167,7 +167,7 @@ All proposed keys follow `SITE_CONTENT_KEY_PATTERN` enforced by `cfw-6qd.12`:
 Examples:
 - `shop.futon-frames.description` ✅
 - `shop.sale.empty-state` ✅
-- `footer.social.facebook-href` ✅
+- `social.url.facebook` ✅
 
 ---
 
