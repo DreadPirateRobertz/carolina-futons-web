@@ -8,10 +8,8 @@ vi.mock("@/components/site/NewsletterSignup", () => ({
 
 const mockWriteText = vi.fn().mockResolvedValue(undefined);
 
-// A fixed point in time before SALE_END_DATE (2026-05-12) so tests that
-// advance fake timers do not hit the `if (expired) return` guard in the
-// component and end up rendering nothing.
-const BEFORE_SALE_END = new Date("2026-05-01T12:00:00");
+// Fixed point before SALE_END_DATE so tests don't hit the `if (expired) return` guard.
+const BEFORE_SALE_END = new Date("2026-12-01T12:00:00");
 
 beforeEach(() => {
   localStorage.clear();
@@ -81,8 +79,7 @@ describe("SaleLightbox", () => {
     });
 
     it("stays hidden when the sale has ended", () => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date("2026-05-13T12:00:00")); // one day after SALE_END_DATE
+      vi.useFakeTimers({ now: new Date("2027-01-15T12:00:00") }); // after SALE_END_DATE
       render(<SaleLightbox />);
       act(() => vi.advanceTimersByTime(3500));
       expect(screen.queryByRole("dialog")).toBeNull();
