@@ -1,6 +1,6 @@
 {
   "$schema": "./seed-schema.json",
-  "_about": "cfw-roi (cf-atze) — initial seed for the SiteContent Wix CMS collection. Row count: 20 (initial) → 26 (cfw-34q home value-props) → 34 (cfw-66o.4 shop copy) → 45 (cfw-66o.11 about page copy). Provisioning script lives in ./index.mjs. Production reader: src/lib/cms/site-content.ts.",
+  "_about": "cfw-roi (cf-atze) — initial seed for the SiteContent Wix CMS collection. Row count: 20 (initial) → 26 (cfw-34q home value-props) → 34 (cfw-66o.4 shop copy) → 45 (cfw-66o.11 about page copy) → 48 (cfw-66o.5 featured-row copy). Provisioning script lives in ./index.mjs. Production reader: src/lib/cms/site-content.ts.",
   "_naming": "lowercase, dotted-path, hyphenated segments. e.g. 'footer.tagline', 'announcement.rotation.0.message'. See docs/design/cfw-66o-footer-announce-specs.md §2.",
   "rows": [
     {
@@ -227,6 +227,21 @@
       "key": "shop.mattresses-sale.subtitle",
       "value": "On sale now",
       "_source": "src/app/shop/page.tsx CATEGORY_META mattresses-sale subtitle (cfw-66o.4)"
+    },
+    {
+      "key": "shop.futon-frames.featured.eyebrow",
+      "value": "Editor's picks",
+      "_source": "src/lib/shop/categories.ts SHOP_CATEGORIES[futon-frames].featured.eyebrow (cfw-66o.5)"
+    },
+    {
+      "key": "shop.futon-frames.featured.heading",
+      "value": "Where most people start",
+      "_source": "src/lib/shop/categories.ts SHOP_CATEGORIES[futon-frames].featured.heading (cfw-66o.5)"
+    },
+    {
+      "key": "shop.futon-frames.featured.body",
+      "value": "Three frames that cover the common questions — daily-use durability, conversion mechanism, and finish. Sit on them in the showroom or order with our 100-night guarantee.",
+      "_source": "src/lib/shop/categories.ts SHOP_CATEGORIES[futon-frames].featured.body (cfw-66o.5)"
     }
   ]
 }
