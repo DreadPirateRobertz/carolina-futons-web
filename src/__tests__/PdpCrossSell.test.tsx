@@ -98,4 +98,26 @@ describe("PdpCrossSell", () => {
     const region = screen.getByRole("region", { name: /you might also like/i });
     expect(region).toBeTruthy();
   });
+
+  it("renders no more than 4 items even when more are supplied (cfw-mv2 cap)", () => {
+    // PdpCrossSell must enforce the <=4 limit defensively in the component so
+    // a caller bug or a misconfigured limit in the reader can never ship >4
+    // cross-sell tiles to the PDP.
+    const products = [
+      p("a", "Alpha"),
+      p("b", "Bravo"),
+      p("c", "Charlie"),
+      p("d", "Delta"),
+      p("e", "Echo"),
+      p("f", "Foxtrot"),
+    ];
+    render(<PdpCrossSell products={products} />);
+    const links = screen.getAllByRole("link");
+    expect(links.length).toBeLessThanOrEqual(4);
+    // First 4 (highest-priority) are rendered; overflow is silently dropped.
+    expect(screen.getByRole("link", { name: /alpha/i })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /delta/i })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /echo/i })).toBeNull();
+    expect(screen.queryByRole("link", { name: /foxtrot/i })).toBeNull();
+  });
 });
