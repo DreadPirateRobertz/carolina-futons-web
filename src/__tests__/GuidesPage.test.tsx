@@ -69,7 +69,7 @@ describe("GuidesIndexPage — CMS override (cfw-mr7)", () => {
 describe("GuidesIndexPage — SiteContent key contract (cfw-mr7)", () => {
   it("queries the 3 expected guides.index.* keys", async () => {
     await renderPage();
-    const keys = mockGetSiteContent.mock.calls.map(([key]: [string]) => key);
+    const keys = mockGetSiteContent.mock.calls.map(([key]: string[]) => key);
     expect(keys).toEqual(
       expect.arrayContaining([
         "guides.index.eyebrow",
