@@ -94,7 +94,7 @@ export function MascotFooterDivider({ className }: { className?: string }) {
                 : { opacity: [s.base, 1, s.base * 0.55, s.base] }
             }
             transition={{
-              duration: 3 + (i % 3),
+              duration: 1.5 + (i % 3) * 0.6,
               repeat: reduce ? 0 : Infinity,
               ease: "easeInOut",
               delay: i * 0.4,
@@ -139,7 +139,7 @@ export function MascotFooterDivider({ className }: { className?: string }) {
         data-slot="footer-bear"
         transform="translate(960 110)"
         style={{ transformOrigin: "0px 50px", transformBox: "fill-box" }}
-        animate={reduce ? undefined : { scaleY: [1, 1.045, 1] }}
+        animate={reduce ? undefined : { scaleY: [1, 1.06, 1] }}
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
       >
         <WatchfulBear reduce={reduce} />
@@ -157,13 +157,13 @@ export function MascotFooterDivider({ className }: { className?: string }) {
               reduce
                 ? { cx: f.x, cy: f.y, opacity: 0.7 }
                 : {
-                    cx: [f.x, f.x + 30, f.x - 18, f.x + 8, f.x],
-                    cy: [f.y, f.y - 14, f.y + 6, f.y - 8, f.y],
+                    cx: [f.x, f.x + 48, f.x - 28, f.x + 14, f.x],
+                    cy: [f.y, f.y - 18, f.y + 8, f.y - 10, f.y],
                     opacity: [0.3, 1, 0.4, 0.95, 0.3],
                   }
             }
             transition={{
-              duration: 7 + i * 2,
+              duration: 5 + i * 1.5,
               repeat: reduce ? 0 : Infinity,
               ease: "easeInOut",
             }}
