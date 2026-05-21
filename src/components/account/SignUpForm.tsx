@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 
+import { logError } from "@/lib/observability/log";
+
 export function SignUpForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -72,7 +74,7 @@ export function SignUpForm() {
       }
       throw new Error("unexpected_response");
     } catch (err) {
-      console.error("[SignUpForm] register failed", err);
+      logError("SignUpForm", "register failed", err);
       setError("Sign-up failed. Please try again.");
       setLoading(false);
     }

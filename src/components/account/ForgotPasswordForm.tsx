@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 
+import { logError } from "@/lib/observability/log";
+
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,7 +30,7 @@ export function ForgotPasswordForm() {
       setSent(true);
       setLoading(false);
     } catch (err) {
-      console.error("[ForgotPasswordForm] submit failed", err);
+      logError("ForgotPasswordForm", "submit failed", err);
       setError("Something went wrong. Please try again.");
       setLoading(false);
     }

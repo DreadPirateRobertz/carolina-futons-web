@@ -119,13 +119,10 @@ export function syncCartSession(cart: WixCart | null | undefined): void {
       return undefined;
     })
     .catch((err: unknown) => {
-      console.error("[cart-session-dual-write] velo POST failed", {
-        cartId: payload.cartId,
-        error: err instanceof Error ? err.message : String(err),
-      });
       // Same `return` rationale as the HTTP-error branch above — re-attach
       // the flush promise to the chain so Sentry can hold the function
       // open instead of racing the Vercel freeze.
+      // logWixFailure handles console.error + Sentry; no duplicate log needed.
       return logWixFailure("cart", "syncCartSession", err);
     });
 }

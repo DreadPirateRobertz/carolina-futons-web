@@ -31,6 +31,7 @@ import {
   listAllProducts,
 } from "@/lib/wix/products";
 import { loadPdpCatalogSafely } from "@/lib/product/pdp-catalog-load";
+import { logError } from "@/lib/observability/log";
 import { logWixFailure } from "@/lib/wix/errors";
 import { listFabricSwatches } from "@/lib/wix/fabrics";
 import { getVideoByProductSlug } from "@/lib/videos/catalog";
@@ -112,7 +113,7 @@ export async function generateMetadata(props: {
     // social crawlers silently discard them. Fall back to the default hero image.
     const isUsableUrl = (url: string) => url.startsWith("https://");
     if (mainImageUrl && !isUsableUrl(mainImageUrl)) {
-      console.error(`[PDP] non-HTTPS product image URL for slug "${slug}":`, mainImageUrl);
+      logError("PDP", `non-HTTPS product image URL for slug "${slug}"`, undefined, { url: mainImageUrl });
     }
     const ogImage =
       mainImageUrl && isUsableUrl(mainImageUrl)
