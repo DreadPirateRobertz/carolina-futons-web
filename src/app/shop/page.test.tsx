@@ -47,6 +47,10 @@ vi.mock("@/components/site/ShopTheRoom", () => ({
   SHOP_HOTSPOT_CONFIGS: stubs.SHOP_HOTSPOT_CONFIGS,
 }));
 
+vi.mock("@/lib/cms/site-content", () => ({
+  getSiteContent: vi.fn(async (_key: string, fallback = "") => fallback),
+}));
+
 import ShopIndex, { metadata } from "./page";
 
 async function renderShop() {
