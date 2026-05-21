@@ -1,5 +1,5 @@
 import { callVelo, VeloRpcError } from "@/lib/wix/velo-client";
-import { logError } from "@/lib/log";
+import { logError } from "@/lib/logging/log-error";
 
 export type QuizOption = {
   value: string;

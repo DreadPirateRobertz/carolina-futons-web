@@ -13,7 +13,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { getMemberSession } from "@/lib/auth/member";
 import { registerWarrantyForMember } from "@/lib/warranty/warranty-registration";
-import { logError } from "@/lib/log";
+import { logError } from "@/lib/logging/log-error";
 
 export const dynamic = "force-dynamic";
 

@@ -3,7 +3,7 @@
 import { getMemberSession, withMember } from "@/lib/auth/member";
 import { signMemberId, verifyShareToken } from "@/lib/wishlist/share-token";
 import type { WishlistResponse } from "@/lib/wishlist/wishlist-types";
-import { logError } from "@/lib/log";
+import { logError } from "@/lib/logging/log-error";
 import {
   addWishlistItem,
   fetchWishlist,

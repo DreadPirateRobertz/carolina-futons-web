@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 
-import { logError } from "@/lib/log";
+import { logError } from "@/lib/logging/log-error";
 
 // cfw-1rb: error boundary scoped to the /admin route group. Without
 // this, a thrown error during /admin/* page render falls through to

@@ -5,7 +5,7 @@ import { getWishlist } from "@/app/actions/wishlist";
 import { getMemberSession } from "@/lib/auth/member";
 import { getWixClientWithTokens } from "@/lib/wix-client";
 import type { WishlistResponse } from "@/lib/wishlist/wishlist-types";
-import { logError } from "@/lib/log";
+import { logError } from "@/lib/logging/log-error";
 
 export const dynamic = "force-dynamic";
 

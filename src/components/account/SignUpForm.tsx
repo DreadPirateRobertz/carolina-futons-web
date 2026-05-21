@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 
-import { logError } from "@/lib/log";
+import { logError } from "@/lib/logging/log-error";
 
 export function SignUpForm() {
   const [email, setEmail] = useState("");

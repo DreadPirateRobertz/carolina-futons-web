@@ -55,7 +55,7 @@ vi.mock("next/navigation", () => ({ notFound: vi.fn(), redirect: vi.fn() }));
 vi.mock("next/headers", () => ({ cookies: vi.fn() }));
 
 const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
-vi.mock("@/lib/log", () => ({
+vi.mock("@/lib/logging/log-error", () => ({
   logError: (...args: unknown[]) => mockLogError(...args),
 }));
 

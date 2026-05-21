@@ -6,7 +6,7 @@ import {
   type SpinActionState,
   type SpinPrize,
 } from "@/app/spin/spin-state";
-import { logError } from "@/lib/log";
+import { logError } from "@/lib/logging/log-error";
 
 const COOLDOWN_HOURS = 24;
 const COOLDOWN_MS = COOLDOWN_HOURS * 60 * 60 * 1000;

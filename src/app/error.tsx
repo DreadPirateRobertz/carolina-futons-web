@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 
-import { logError } from "@/lib/log";
+import { logError } from "@/lib/logging/log-error";
 
 /**
  * Root error boundary for the Next.js App Router.

@@ -2,7 +2,7 @@
 
 import { withMember } from "@/lib/auth/member";
 import { callVelo } from "@/lib/wix/velo-client";
-import { logError } from "@/lib/log";
+import { logError } from "@/lib/logging/log-error";
 import {
   DEFAULT_PREFERENCES,
   PREFERENCE_CATEGORIES,

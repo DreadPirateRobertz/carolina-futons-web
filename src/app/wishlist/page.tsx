@@ -19,7 +19,7 @@ import { getWishlist } from "@/app/actions/wishlist";
 import { WishlistView } from "@/components/wishlist/WishlistView";
 import { getMemberSession } from "@/lib/auth/member";
 import type { WishlistResponse } from "@/lib/wishlist/wishlist-types";
-import { logError } from "@/lib/log";
+import { logError } from "@/lib/logging/log-error";
 
 export const dynamic = "force-dynamic";
 

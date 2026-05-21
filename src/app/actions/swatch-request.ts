@@ -2,7 +2,7 @@
 
 import { optionalEnv } from "@/lib/env";
 import { listCollectionItems } from "@/lib/wix/data";
-import { logError } from "@/lib/log";
+import { logError } from "@/lib/logging/log-error";
 import {
   coerceSwatchContactInfo,
   hasSwatchContactErrors,

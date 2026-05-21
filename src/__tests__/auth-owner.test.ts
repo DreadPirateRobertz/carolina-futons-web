@@ -26,7 +26,7 @@ vi.mock("@/lib/wix-client", () => ({
 }));
 
 const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
-vi.mock("@/lib/log", () => ({
+vi.mock("@/lib/logging/log-error", () => ({
   logError: (...args: unknown[]) => mockLogError(...args),
 }));
 

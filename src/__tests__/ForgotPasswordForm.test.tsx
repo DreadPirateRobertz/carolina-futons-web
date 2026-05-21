@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
-vi.mock("@/lib/log", () => ({
+vi.mock("@/lib/logging/log-error", () => ({
   logError: (...args: unknown[]) => mockLogError(...args),
 }));
 

@@ -13,7 +13,7 @@ import { formatCents } from "@/lib/cart/cart-state";
 import { trackBeginCheckout } from "@/lib/analytics/ga4-events";
 import { cn } from "@/lib/utils";
 import { focusRingCta } from "@/lib/ui/focus-ring";
-import { logError } from "@/lib/log";
+import { logError } from "@/lib/logging/log-error";
 
 // Right-hand slide-in cart drawer. `Dialog.Root` is explicitly `modal` so
 // focus is trapped, the body is scroll-locked, and outside pointer events are

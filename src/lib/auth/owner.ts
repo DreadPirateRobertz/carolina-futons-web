@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 import { getMemberSession, type MemberSession } from "@/lib/auth/member";
 import { getWixClientWithTokens } from "@/lib/wix-client";
-import { logError } from "@/lib/log";
+import { logError } from "@/lib/logging/log-error";
 
 // cfw-wef (cfw-6qd.1): owner-mode auth gate for Brenda's inline-edit Path B.
 //

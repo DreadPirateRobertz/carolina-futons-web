@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
-import { logError } from "@/lib/log";
+import { logError } from "@/lib/logging/log-error";
 
 import { Breadcrumbs } from "@/components/site/Breadcrumbs";
 import { PdpInteractive } from "@/components/product/PdpInteractive";

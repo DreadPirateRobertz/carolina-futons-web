@@ -2,7 +2,7 @@
 
 import { getMemberSession, withMember } from "@/lib/auth/member";
 import { callVelo } from "@/lib/wix/velo-client";
-import { logError } from "@/lib/log";
+import { logError } from "@/lib/logging/log-error";
 
 const r = (method: string) => `referralService/${method}`;
 

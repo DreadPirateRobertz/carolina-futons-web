@@ -8,7 +8,7 @@ vi.mock("@/lib/analytics/ga4-events", () => ({
 }));
 
 const mockLogError = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
-vi.mock("@/lib/log", () => ({
+vi.mock("@/lib/logging/log-error", () => ({
   logError: (...args: unknown[]) => mockLogError(...args),
 }));
 // Sentinel: renders Next.js Links as <a data-nextlink="true"> so tests can
