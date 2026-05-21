@@ -32,6 +32,11 @@ vi.mock("@/components/site/ShopTheRoom", () => ({
 vi.mock("@/lib/wix/product-badges", () => ({
   listAllProductBadges: vi.fn().mockResolvedValue(new Map()),
 }));
+vi.mock("@/lib/cms/site-content", () => ({
+  getSiteContent: vi.fn().mockImplementation((_key: string, fallback: string) =>
+    Promise.resolve(fallback),
+  ),
+}));
 // Stub CategoryPills for PlpPage integration tests — unit tests use vi.importActual.
 vi.mock("@/components/shop/CategoryPills", () => ({
   CategoryPills: ({
