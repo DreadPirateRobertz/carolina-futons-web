@@ -1,6 +1,6 @@
 {
   "$schema": "./seed-schema.json",
-  "_about": "cfw-roi (cf-atze) — initial seed for the SiteContent Wix CMS collection. Row count: 20 (initial) → 26 (cfw-34q home value-props) → 34 (cfw-66o.4 shop copy) → 45 (cfw-66o.11 about page copy) → 48 (cfw-66o.5 featured-row copy) → 55 (cfw-66o.3 shop.*.description) → 58 (cfw-mr7 guides index copy). Provisioning script lives in ./index.mjs. Production reader: src/lib/cms/site-content.ts.",
+  "_about": "cfw-roi (cf-atze) — initial seed for the SiteContent Wix CMS collection. Row count: 20 (initial) → 26 (cfw-34q home value-props) → 34 (cfw-66o.4 shop copy) → 45 (cfw-66o.11 about page copy) → 48 (cfw-66o.5 featured-row copy) → 55 (cfw-66o.3 shop.*.description) → 58 (cfw-mr7 guides index copy) → 70 (cfw-gpa design-a-room copy). Provisioning script lives in ./index.mjs. Production reader: src/lib/cms/site-content.ts.",
   "_naming": "lowercase, dotted-path, hyphenated segments. e.g. 'footer.tagline', 'announcement.rotation.0.message'. See docs/design/cfw-66o-footer-announce-specs.md §2.",
   "rows": [
     {
@@ -292,6 +292,66 @@
       "key": "guides.index.subhead",
       "value": "35 years of answering the same questions at the showroom, written down so you can read them in your own time.",
       "_source": "src/app/guides/page.tsx GUIDES_COPY_FALLBACKS.subhead (cfw-mr7)"
+    },
+    {
+      "key": "design-a-room.intro.eyebrow",
+      "value": "Free consultation",
+      "_source": "src/app/design-a-room/page.tsx DAR_FALLBACKS.introEyebrow (cfw-gpa)"
+    },
+    {
+      "key": "design-a-room.intro.heading",
+      "value": "Design a room around a futon",
+      "_source": "src/app/design-a-room/page.tsx DAR_FALLBACKS.introHeading (cfw-gpa)"
+    },
+    {
+      "key": "design-a-room.intro.body",
+      "value": "Family-owned in Hendersonville since 1991. Stop by the showroom or give us a call — we'll help you plan a room that sleeps guests, holds up to daily use, and still looks like a room, not a folded-out mattress.",
+      "_source": "src/app/design-a-room/page.tsx DAR_FALLBACKS.introBody (cfw-gpa)"
+    },
+    {
+      "key": "design-a-room.scene.heading",
+      "value": "See it in a room",
+      "_source": "src/app/design-a-room/page.tsx DAR_FALLBACKS.sceneHeading (cfw-gpa)"
+    },
+    {
+      "key": "design-a-room.scene.body",
+      "value": "Explore how a futon frame, murphy bed, or platform bed looks inside a styled room. Switch styles to find a look that fits your space.",
+      "_source": "src/app/design-a-room/page.tsx DAR_FALLBACKS.sceneBody (cfw-gpa)"
+    },
+    {
+      "key": "design-a-room.planner.heading",
+      "value": "Check if it fits",
+      "_source": "src/app/design-a-room/page.tsx DAR_FALLBACKS.plannerHeading (cfw-gpa)"
+    },
+    {
+      "key": "design-a-room.planner.body",
+      "value": "Enter your room dimensions and pick a futon or Murphy bed to see a rough top-down layout.",
+      "_source": "src/app/design-a-room/page.tsx DAR_FALLBACKS.plannerBody (cfw-gpa)"
+    },
+    {
+      "key": "design-a-room.steps.heading",
+      "value": "How it works",
+      "_source": "src/app/design-a-room/page.tsx DAR_FALLBACKS.stepsHeading (cfw-gpa)"
+    },
+    {
+      "key": "design-a-room.book.heading",
+      "value": "Book a showroom visit",
+      "_source": "src/app/design-a-room/page.tsx DAR_FALLBACKS.bookHeading (cfw-gpa)"
+    },
+    {
+      "key": "design-a-room.book.body",
+      "value": "Ready to bring your measurements and see frames in person? Request a slot and we'll confirm by email within one business day.",
+      "_source": "src/app/design-a-room/page.tsx DAR_FALLBACKS.bookBody (cfw-gpa)"
+    },
+    {
+      "key": "design-a-room.book.cta-label",
+      "value": "Request an appointment",
+      "_source": "src/app/design-a-room/page.tsx DAR_FALLBACKS.bookCtaLabel (cfw-gpa)"
+    },
+    {
+      "key": "design-a-room.other-ways.heading",
+      "value": "Other ways to start",
+      "_source": "src/app/design-a-room/page.tsx DAR_FALLBACKS.otherWaysHeading (cfw-gpa)"
     }
   ]
 }

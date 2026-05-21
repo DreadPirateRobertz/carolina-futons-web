@@ -9,6 +9,7 @@ import { BUSINESS } from "@/lib/business/contact-info";
 import { DESIGN_STEPS } from "@/lib/design-a-room/steps";
 import { DEFAULT_OG_IMAGE } from "@/lib/og";
 import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
+import { getSiteContent } from "@/lib/cms/site-content";
 
 const DESIGN_A_ROOM_TITLE = "Design a Room — Carolina Futons";
 const DESIGN_A_ROOM_DESCRIPTION =
@@ -32,7 +33,57 @@ export const metadata: Metadata = {
 
 const SHOWROOM_HOURS = "Wed–Sat, 10am–5pm";
 
-export default function DesignARoomPage() {
+// cfw-gpa: owner-editable Design-a-Room copy via SiteContent.
+// DESIGN_STEPS (from @/lib/design-a-room/steps), BUSINESS contact details,
+// and SHOWROOM_HOURS are excluded per §3 (structural / already-centralized).
+const DAR_FALLBACKS = {
+  introEyebrow: "Free consultation",
+  introHeading: "Design a room around a futon",
+  introBody:
+    "Family-owned in Hendersonville since 1991. Stop by the showroom or give us a call — we’ll help you plan a room that sleeps guests, holds up to daily use, and still looks like a room, not a folded-out mattress.",
+  sceneHeading: "See it in a room",
+  sceneBody:
+    "Explore how a futon frame, murphy bed, or platform bed looks inside a styled room. Switch styles to find a look that fits your space.",
+  plannerHeading: "Check if it fits",
+  plannerBody:
+    "Enter your room dimensions and pick a futon or Murphy bed to see a rough top-down layout.",
+  stepsHeading: "How it works",
+  bookHeading: "Book a showroom visit",
+  bookBody:
+    "Ready to bring your measurements and see frames in person? Request a slot and we’ll confirm by email within one business day.",
+  bookCtaLabel: "Request an appointment",
+  otherWaysHeading: "Other ways to start",
+} as const;
+
+export default async function DesignARoomPage() {
+  const [
+    introEyebrow,
+    introHeading,
+    introBody,
+    sceneHeading,
+    sceneBody,
+    plannerHeading,
+    plannerBody,
+    stepsHeading,
+    bookHeading,
+    bookBody,
+    bookCtaLabel,
+    otherWaysHeading,
+  ] = await Promise.all([
+    getSiteContent("design-a-room.intro.eyebrow", DAR_FALLBACKS.introEyebrow),
+    getSiteContent("design-a-room.intro.heading", DAR_FALLBACKS.introHeading),
+    getSiteContent("design-a-room.intro.body", DAR_FALLBACKS.introBody),
+    getSiteContent("design-a-room.scene.heading", DAR_FALLBACKS.sceneHeading),
+    getSiteContent("design-a-room.scene.body", DAR_FALLBACKS.sceneBody),
+    getSiteContent("design-a-room.planner.heading", DAR_FALLBACKS.plannerHeading),
+    getSiteContent("design-a-room.planner.body", DAR_FALLBACKS.plannerBody),
+    getSiteContent("design-a-room.steps.heading", DAR_FALLBACKS.stepsHeading),
+    getSiteContent("design-a-room.book.heading", DAR_FALLBACKS.bookHeading),
+    getSiteContent("design-a-room.book.body", DAR_FALLBACKS.bookBody),
+    getSiteContent("design-a-room.book.cta-label", DAR_FALLBACKS.bookCtaLabel),
+    getSiteContent("design-a-room.other-ways.heading", DAR_FALLBACKS.otherWaysHeading),
+  ]);
+
   return (
     <main className="w-full">
       <div className="max-h-72 w-full overflow-hidden">
@@ -42,16 +93,13 @@ export default function DesignARoomPage() {
         <HeroReveal>
           <header className="space-y-3">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
-              Free consultation
+              {introEyebrow}
             </p>
             <h1 className="font-playfair text-4xl font-semibold tracking-tight sm:text-5xl">
-              Design a room around a futon
+              {introHeading}
             </h1>
             <p className="text-lg leading-relaxed text-cf-muted">
-              Family-owned in Hendersonville since 1991. Stop by the showroom or
-              give us a call — we&rsquo;ll help you plan a room that sleeps
-              guests, holds up to daily use, and still looks like a room, not a
-              folded-out mattress.
+              {introBody}
             </p>
           </header>
         </HeroReveal>
@@ -62,12 +110,10 @@ export default function DesignARoomPage() {
               id="room-scene-heading"
               className="font-playfair text-2xl font-semibold tracking-tight"
             >
-              See it in a room
+              {sceneHeading}
             </h2>
             <p className="text-sm leading-relaxed text-cf-muted">
-              Explore how a futon frame, murphy bed, or platform bed looks
-              inside a styled room. Switch styles to find a look that fits your
-              space.
+              {sceneBody}
             </p>
             <RoomSceneViewer />
           </section>
@@ -79,11 +125,10 @@ export default function DesignARoomPage() {
               id="planner-heading"
               className="font-playfair text-2xl font-semibold tracking-tight"
             >
-              Check if it fits
+              {plannerHeading}
             </h2>
             <p className="text-sm leading-relaxed text-cf-muted">
-              Enter your room dimensions and pick a futon or Murphy bed to see a
-              rough top-down layout.
+              {plannerBody}
             </p>
             <RoomPlannerCanvas />
           </section>
@@ -95,7 +140,7 @@ export default function DesignARoomPage() {
               id="how-it-works"
               className="font-playfair text-2xl font-semibold tracking-tight"
             >
-              How it works
+              {stepsHeading}
             </h2>
             <ol className="space-y-6">
               {DESIGN_STEPS.map((step, index) => (
@@ -128,19 +173,17 @@ export default function DesignARoomPage() {
                 id="book-visit"
                 className="font-playfair text-2xl font-semibold tracking-tight"
               >
-                Book a showroom visit
+                {bookHeading}
               </h2>
               <p className="leading-relaxed text-cf-muted">
-                Ready to bring your measurements and see frames in person?
-                Request a slot and we&apos;ll confirm by email within one
-                business day.
+                {bookBody}
               </p>
             </div>
             <Link
               href="/contact#appointment-form"
               className="inline-flex h-11 items-center justify-center rounded-md bg-cf-cta px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-cf-cta/90"
             >
-              Request an appointment
+              {bookCtaLabel}
             </Link>
             <p className="text-xs text-cf-muted">
               Open {SHOWROOM_HOURS}. Or call{" "}
@@ -161,7 +204,7 @@ export default function DesignARoomPage() {
               id="three-ways"
               className="font-playfair text-2xl font-semibold tracking-tight"
             >
-              Other ways to start
+              {otherWaysHeading}
             </h2>
             <ul className="grid gap-4 sm:grid-cols-3">
               <li className="flex flex-col gap-2 rounded-md border border-cf-ink/10 bg-white dark:bg-cf-cream dark:border-cf-ink/30 p-4">
