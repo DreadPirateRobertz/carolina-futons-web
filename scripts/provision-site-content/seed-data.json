@@ -1,6 +1,6 @@
 {
   "$schema": "./seed-schema.json",
-  "_about": "cfw-roi (cf-atze) — initial seed for the SiteContent Wix CMS collection. Row count: 20 (initial) → 26 (cfw-34q home value-props) → 34 (cfw-66o.4 shop copy) → 45 (cfw-66o.11 about page copy) → 48 (cfw-66o.5 featured-row copy) → 55 (cfw-66o.3 shop.*.description) → 58 (cfw-mr7 guides index copy). Provisioning script lives in ./index.mjs. Production reader: src/lib/cms/site-content.ts.",
+  "_about": "cfw-roi (cf-atze) — initial seed for the SiteContent Wix CMS collection. Row count: 20 (initial) → 26 (cfw-34q home value-props) → 34 (cfw-66o.4 shop copy) → 45 (cfw-66o.11 about page copy) → 48 (cfw-66o.5 featured-row copy) → 55 (cfw-66o.3 shop.*.description) → 58 (cfw-mr7 guides index copy) → 61 (cfw-dag registry copy). Provisioning script lives in ./index.mjs. Production reader: src/lib/cms/site-content.ts.",
   "_naming": "lowercase, dotted-path, hyphenated segments. e.g. 'footer.tagline', 'announcement.rotation.0.message'. See docs/design/cfw-66o-footer-announce-specs.md §2.",
   "rows": [
     {
@@ -352,6 +352,21 @@
       "key": "guides.index.subhead",
       "value": "35 years of answering the same questions at the showroom, written down so you can read them in your own time.",
       "_source": "src/app/guides/page.tsx GUIDES_COPY_FALLBACKS.subhead (cfw-mr7)"
+    },
+    {
+      "key": "registry.heading",
+      "value": "Gift Registry",
+      "_source": "src/app/registry/page.tsx REGISTRY_COPY_FALLBACKS.heading (cfw-dag)"
+    },
+    {
+      "key": "registry.unauthenticated.body",
+      "value": "Sign in to create and manage your gift registries.",
+      "_source": "src/app/registry/page.tsx REGISTRY_COPY_FALLBACKS.unauthenticatedBody (cfw-dag)"
+    },
+    {
+      "key": "registry.intro.subhead",
+      "value": "Create a shareable wish list for any occasion — weddings, housewarmings, and more.",
+      "_source": "src/app/registry/page.tsx REGISTRY_COPY_FALLBACKS.introSubhead (cfw-dag)"
     },
     {
       "key": "sustainability.eyebrow",

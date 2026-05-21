@@ -124,6 +124,11 @@ export const SEED_ROWS: SeedRow[] = [
   { key: "footer.social.tiktok-href",    value: "https://www.tiktok.com/@carolinafutons" },
   { key: "footer.social.pinterest-href", value: "https://www.pinterest.com/carolinafutons" },
 
+  // ── cfw-dag: Registry page copy (P2) ─────────────────────────────
+  { key: "registry.heading",              value: "Gift Registry" },
+  { key: "registry.unauthenticated.body", value: "Sign in to create and manage your gift registries." },
+  { key: "registry.intro.subhead",        value: "Create a shareable wish list for any occasion — weddings, housewarmings, and more." },
+
   // ── cfw-5yg: Returns page copy (P2) ──────────────────────────────
   { key: "returns.eyebrow",           value: "Policies" },
   { key: "returns.intro.heading",     value: "Returns" },

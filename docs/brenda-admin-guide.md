@@ -242,6 +242,160 @@ Chris monitors the issue tracker and will reply with a timeline.
 
 ---
 
+## 10 · Edit the Swatch Request page copy
+
+The intro copy on the fabric-swatch request page (`/swatch-request`) is CMS-editable.
+
+1. Left sidebar → **CMS** → **Content Manager**.
+2. Click **SiteContent**.
+3. In the search/filter bar, type **`swatch.`** — this shows just the swatch page rows.
+4. Find the row you want to change and click it.
+5. Edit the **value** field, then click **Save**.
+
+**Changes appear within 5 minutes.** With Wix webhook configured, updates may appear within 30 seconds.
+
+> **If the CMS is unreachable:** the site automatically shows the original built-in text — nothing goes blank.
+
+**Rows in this section:**
+
+| Key | What it controls |
+|---|---|
+| `swatch.eyebrow` | Small label above the heading (e.g. "Free samples") |
+| `swatch.heading` | Main heading on the swatch request page |
+| `swatch.intro.body` | Intro paragraph explaining the free swatch offer |
+
+---
+
+## 11 · Edit the Returns page copy
+
+The headings and policy descriptions on the Returns page (`/returns`) are CMS-editable.
+
+1. Left sidebar → **CMS** → **Content Manager**.
+2. Click **SiteContent**.
+3. In the search/filter bar, type **`returns.`** — this shows just the returns page rows.
+4. Find the row you want to change and click it.
+5. Edit the **value** field, then click **Save**.
+
+**Changes appear within 5 minutes.** With Wix webhook configured, updates may appear within 30 seconds.
+
+> **If the CMS is unreachable:** the site automatically shows the original built-in text — nothing goes blank.
+
+> **Note:** Dollar amounts and percentages in the policy text (restocking fees, return window days) are part of these CMS values — editing them here updates the policy page immediately without a code deploy.
+
+**Rows in this section:**
+
+| Key | What it controls |
+|---|---|
+| `returns.eyebrow` | Small label above the heading (e.g. "Policies") |
+| `returns.intro.heading` | Main heading on the Returns page |
+| `returns.intro.body` | Opening paragraph below the main heading |
+| `returns.window.heading` | Heading for the return-window section |
+| `returns.window.body` | Body text describing the 30-day return window and conditions |
+| `returns.restocking.heading` | Heading for the restocking / shipping fee section |
+| `returns.restocking.body-1` | First paragraph (restocking fee rates) |
+| `returns.restocking.body-2` | Second paragraph (who pays return shipping) |
+| `returns.custom.heading` | Heading for the custom / made-to-order section |
+| `returns.damaged.heading` | Heading for the damaged-on-arrival section |
+| `returns.faq.heading` | Heading above the common questions section |
+| `returns.start.heading` | Heading above the "Start a return" form |
+
+---
+
+## 12 · Edit the Buying Guides index copy
+
+The intro copy on the Guides index page (`/guides`) is CMS-editable.
+
+1. Left sidebar → **CMS** → **Content Manager**.
+2. Click **SiteContent**.
+3. In the search/filter bar, type **`guides.index.`** — this shows just the guides index rows.
+4. Find the row you want to change and click it.
+5. Edit the **value** field, then click **Save**.
+
+**Changes appear within 5 minutes.** With Wix webhook configured, updates may appear within 30 seconds.
+
+> **If the CMS is unreachable:** the site automatically shows the original built-in text — nothing goes blank.
+
+> **Note:** Individual guide titles and content are edited separately through the **Guides** CMS collection (see §3).
+
+**Rows in this section:**
+
+| Key | What it controls |
+|---|---|
+| `guides.index.eyebrow` | Small label above the heading (e.g. "Buying guides") |
+| `guides.index.heading` | Main heading on the guides index page |
+| `guides.index.subhead` | Intro paragraph below the heading |
+
+---
+
+## 13 · Edit the Sustainability page copy
+
+The headings and body text on the Sustainability page (`/sustainability`) are CMS-editable.
+
+1. Left sidebar → **CMS** → **Content Manager**.
+2. Click **SiteContent**.
+3. In the search/filter bar, type **`sustainability.`** — this shows just the sustainability page rows.
+4. Find the row you want to change and click it.
+5. Edit the **value** field, then click **Save**.
+
+**Changes appear within 5 minutes.** With Wix webhook configured, updates may appear within 30 seconds.
+
+> **If the CMS is unreachable:** the site automatically shows the original built-in text — nothing goes blank.
+
+**Rows in this section:**
+
+| Key | What it controls |
+|---|---|
+| `sustainability.eyebrow` | Small label above the heading (e.g. "Our promise") |
+| `sustainability.intro.heading` | Main heading on the Sustainability page |
+| `sustainability.intro.body` | Opening paragraph |
+| `sustainability.stories.heading` | Heading for the "How we build it" section |
+| `sustainability.materials.heading` | Heading for the materials section |
+| `sustainability.materials.subhead` | Intro sentence for the materials section |
+| `sustainability.carbon.heading` | Heading for the carbon offset section |
+| `sustainability.carbon.body` | Body text for the carbon offset section |
+| `sustainability.certs.heading` | Heading for the certifications section |
+| `sustainability.certs.subhead` | Subheading for the certifications section |
+| `sustainability.tradein.heading` | Heading for the trade-in program section |
+| `sustainability.tradein.subhead` | Description of the trade-in program |
+| `sustainability.tradein.cta-label` | Text on the trade-in call-to-action link |
+
+---
+
+## 14 · Edit the Design a Room page copy
+
+The headings, intro, and section copy on the Design a Room page (`/design-a-room`) are CMS-editable.
+
+1. Left sidebar → **CMS** → **Content Manager**.
+2. Click **SiteContent**.
+3. In the search/filter bar, type **`design-a-room.`** — this shows just the Design a Room page rows.
+4. Find the row you want to change and click it.
+5. Edit the **value** field, then click **Save**.
+
+**Changes appear within 5 minutes.** With Wix webhook configured, updates may appear within 30 seconds.
+
+> **If the CMS is unreachable:** the site automatically shows the original built-in text — nothing goes blank.
+
+> **Note:** The numbered steps in the "How it works" section are set in code, not the CMS. Email Chris to change those.
+
+**Rows in this section:**
+
+| Key | What it controls |
+|---|---|
+| `design-a-room.intro.eyebrow` | Small label above the heading (e.g. "Free consultation") |
+| `design-a-room.intro.heading` | Main heading on the Design a Room page |
+| `design-a-room.intro.body` | Intro paragraph below the main heading |
+| `design-a-room.scene.heading` | Heading for the "See it in a room" section |
+| `design-a-room.scene.body` | Body text for the room scene section |
+| `design-a-room.planner.heading` | Heading for the "Check if it fits" section |
+| `design-a-room.planner.body` | Body text for the room planner section |
+| `design-a-room.steps.heading` | Heading above the "How it works" steps |
+| `design-a-room.book.heading` | Heading for the appointment booking section |
+| `design-a-room.book.body` | Body text for the appointment booking section |
+| `design-a-room.book.cta-label` | Text on the appointment booking button |
+| `design-a-room.other-ways.heading` | Heading for the "Other ways to start" section |
+
+---
+
 ## Quick reference
 
 | What you want to do | Where |
@@ -254,6 +408,11 @@ Chris monitors the issue tracker and will reply with a timeline.
 | Edit Contact page headings | Wix Dashboard → CMS → Content Manager → SiteContent → filter `contact.` |
 | Add a community photo | Wix Dashboard → CMS → Content Manager → CommunityPhotos |
 | Change the announcement bar | Wix Dashboard → CMS → Content Manager → SiteContent → filter `announcement.` |
+| Edit swatch request page copy | Wix Dashboard → CMS → Content Manager → SiteContent → filter `swatch.` |
+| Edit returns page copy / policy text | Wix Dashboard → CMS → Content Manager → SiteContent → filter `returns.` |
+| Edit buying guides index copy | Wix Dashboard → CMS → Content Manager → SiteContent → filter `guides.index.` |
+| Edit sustainability page copy | Wix Dashboard → CMS → Content Manager → SiteContent → filter `sustainability.` |
+| Edit design-a-room page copy | Wix Dashboard → CMS → Content Manager → SiteContent → filter `design-a-room.` |
 | Report a bug or request a feature | GitHub Issues (see Section 9) |
 | Edit homepage text or photos | Owner mode on carolinafutons.com — add `?cf-edit=1` to the URL |
 

@@ -27,6 +27,11 @@ vi.mock("@/lib/wix/data", () => ({
   listCollectionItems: (...args: unknown[]) => mockListCollectionItems(...args),
 }));
 
+const mockLogError = vi.fn();
+vi.mock("@/lib/logging/log-error", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 // React.cache memoizes per render — in tests we want fresh state per case.
 // Re-importing the module after vi.resetModules() gives us a clean cache.
 async function freshGetSiteContent() {
@@ -37,6 +42,8 @@ async function freshGetSiteContent() {
 
 beforeEach(() => {
   mockListCollectionItems.mockReset();
+  mockLogError.mockReset();
+  mockLogError.mockResolvedValue(undefined);
 });
 
 describe("getSiteContent", () => {
@@ -188,6 +195,47 @@ describe("getSiteContent", () => {
     const getSiteContent = await freshGetSiteContent();
 
     expect(await getSiteContent("real.key", "fb")).toBe("kept");
+  });
+
+  it("calls logError when the Wix fetch throws a Wix SDK error (cf-pc5t)", async () => {
+    const wixError = Object.assign(new Error("wix down"), { code: "WIX_OUTAGE" });
+    mockListCollectionItems.mockRejectedValue(wixError);
+    const getSiteContent = await freshGetSiteContent();
+
+    await getSiteContent("hero.headline", "fallback");
+
+    expect(mockLogError).toHaveBeenCalledOnce();
+    expect(mockLogError).toHaveBeenCalledWith(
+      "site-content",
+      "loadSerializedSiteContent",
+      wixError,
+      expect.objectContaining({ tag: "wix_sdk" }),
+    );
+  });
+
+  it("calls logError when the Wix fetch throws an unexpected error (cf-pc5t)", async () => {
+    const unexpectedError = new Error("something broke");
+    mockListCollectionItems.mockRejectedValue(unexpectedError);
+    const getSiteContent = await freshGetSiteContent();
+
+    await getSiteContent("hero.headline", "fallback");
+
+    expect(mockLogError).toHaveBeenCalledOnce();
+    expect(mockLogError).toHaveBeenCalledWith(
+      "site-content",
+      "loadSerializedSiteContent",
+      unexpectedError,
+      expect.objectContaining({ tag: "unexpected" }),
+    );
+  });
+
+  it("does NOT call logError on a successful fetch (cf-pc5t)", async () => {
+    mockListCollectionItems.mockResolvedValue([{ key: "a", value: "b" }]);
+    const getSiteContent = await freshGetSiteContent();
+
+    await getSiteContent("a", "fallback");
+
+    expect(mockLogError).not.toHaveBeenCalled();
   });
 
   it("registers unstable_cache with tags: ['site-content'] (cfw-sej prereq)", async () => {
