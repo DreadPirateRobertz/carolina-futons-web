@@ -164,7 +164,7 @@ describe("HeaderMobileMenu", () => {
     renderMenu();
     const expected = [
       ["Futon Frames", "/shop/futon-frames"],
-      ["Murphy Beds", "/shop/murphy-cabinet-beds"],
+      ["Murphy Cabinet Beds", "/shop/murphy-cabinet-beds"],
       ["Platform Beds", "/shop/platform-beds"],
       ["Mattresses", "/shop/mattresses"],
       ["Sale", "/shop/mattresses-sale"],

@@ -17,7 +17,7 @@ import { Menu, X } from "lucide-react";
 
 const PRIMARY_NAV = [
   { label: "Futon Frames", href: "/shop/futon-frames" },
-  { label: "Murphy Beds", href: "/shop/murphy-cabinet-beds" },
+  { label: "Murphy Cabinet Beds", href: "/shop/murphy-cabinet-beds" },
   { label: "Platform Beds", href: "/shop/platform-beds" },
   { label: "Mattresses", href: "/shop/mattresses" },
   { label: "Sale", href: "/shop/mattresses-sale" },

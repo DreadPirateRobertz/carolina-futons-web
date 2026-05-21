@@ -1,8 +1,7 @@
 /**
  * Brenda admin guide — screenshot capture scaffold
  *
- * Companion to docs/brenda-admin-guide.md (carolina-futons monorepo,
- * cf-ubxu / PR #1155). This spec navigates the seven Wix Studio
+ * Companion to docs/brenda-admin-guide.md. This spec navigates the seven Wix Studio
  * dashboard flows the guide covers and snapshots each step.
  *
  * Why a Playwright spec instead of an automated capture in CI:
@@ -10,10 +9,9 @@
  *   can't log in for us without credentials we shouldn't store.
  * - Screenshots will contain real customer PII (orders, inbox threads,
  *   inquiries) that does NOT belong in a public repo. Treat the captures
- *   as locally-scrubbed artefacts to be moved into the carolina-futons
- *   monorepo's docs/brenda-admin-guide/ directory after manual review.
+ *   as locally-scrubbed artefacts to be manually reviewed before use.
  *
- * How to run (Stilgar):
+ * How to run:
  *
  *   1. Sign in to https://www.wix.com/my-account once with the CF owner
  *      account, then save storage state:
@@ -23,9 +21,8 @@
  *   3. Run headed so you can review each capture before it lands:
  *      `BRENDA_GUIDE_AUTH=e2e/.wix-auth.json pnpm exec playwright test e2e/brenda-admin-screenshots.spec.ts --headed --project=chromium`
  *   4. Captures land in `e2e/brenda-admin-guide-out/` (gitignored). Manually
- *      review for PII, scrub, then move the keepers into the cfutons
- *      monorepo's `docs/brenda-admin-guide/` per the naming checklist at
- *      the bottom of brenda-admin-guide.md.
+ *      review for PII, scrub, then use per the naming checklist at the
+ *      bottom of brenda-admin-guide.md.
  *
  * Skip if env vars are missing — keeps CI green for everyone else.
  */
@@ -65,9 +62,8 @@ test.describe("Brenda admin guide screenshot capture", () => {
       path: path.join(OUT_DIR, "02-products-nav.png"),
     });
 
-    // Click into the first product row to capture an edit page. This will
-    // grab whichever product is alphabetically first — Stilgar should
-    // re-shoot 03 on a Brenda-friendly product (e.g. Kingston) by hand.
+    // Click into the first product row to capture an edit page. Re-shoot
+    // 03 on a Brenda-friendly product (e.g. Kingston) for the final guide.
     const firstRow = page.locator('[data-hook="product-row"], a[href*="/store/products/"]').first();
     await firstRow.click();
     await page.waitForLoadState("networkidle");
