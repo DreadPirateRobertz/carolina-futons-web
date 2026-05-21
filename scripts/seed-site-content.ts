@@ -135,9 +135,9 @@ export const SEED_ROWS: SeedRow[] = [
   { key: "sustainability.carbon.body",    value: "Manufacturing and shipping any physical product has a carbon footprint. We don't pretend otherwise. For every order shipped, we contribute to reforestation projects in the Southern Appalachians — the same mountains where our showroom sits." },
   { key: "sustainability.certs.heading",  value: "Certifications & standards" },
   { key: "sustainability.certs.subhead",  value: "Our products meet rigorous third-party environmental and safety standards." },
-  { key: "sustainability.tradein.heading", value: "Trade-in program" },
-  { key: "sustainability.tradein.subhead", value: "Give your old futon a second life. Trade in your used furniture for store credit toward a new piece — we'll handle the pickup and responsible recycling." },
-  { key: "sustainability.tradein.cta-label", value: "Ask about trade-in" },
+  { key: "sustainability.trade-in.heading", value: "Trade-in program" },
+  { key: "sustainability.trade-in.subhead", value: "Give your old futon a second life. Trade in your used furniture for store credit toward a new piece — we'll handle the pickup and responsible recycling." },
+  { key: "sustainability.trade-in.cta-label", value: "Ask about trade-in" },
 ];
 
 // ── Config ────────────────────────────────────────────────────────────

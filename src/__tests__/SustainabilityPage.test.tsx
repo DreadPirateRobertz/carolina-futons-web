@@ -140,7 +140,7 @@ describe("SustainabilityPage — owner-editable copy (cfw-p3j)", () => {
       if (key === "sustainability.eyebrow") return "Built to last";
       if (key === "sustainability.intro.heading") return "Green by design";
       if (key === "sustainability.stories.heading") return "Our materials story";
-      if (key === "sustainability.tradein.heading") return "Give it a second life";
+      if (key === "sustainability.trade-in.heading") return "Give it a second life";
       return fallback;
     });
     await renderPage();
@@ -170,9 +170,9 @@ describe("SustainabilityPage — owner-editable copy (cfw-p3j)", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders sustainability.tradein.cta-label CMS override when getSiteContent returns a non-fallback value", async () => {
+  it("renders sustainability.trade-in.cta-label CMS override when getSiteContent returns a non-fallback value", async () => {
     mockGetSiteContent.mockImplementation(async (key: unknown, fallback: unknown) => {
-      if (key === "sustainability.tradein.cta-label") return "Start your trade-in";
+      if (key === "sustainability.trade-in.cta-label") return "Start your trade-in";
       return fallback;
     });
     await renderPage();
@@ -181,9 +181,34 @@ describe("SustainabilityPage — owner-editable copy (cfw-p3j)", () => {
     ).toBeInTheDocument();
   });
 
-  it("queries the 13 expected sustainability.* SiteContent keys", async () => {
+  it("renders sustainability.materials.subhead CMS override when getSiteContent returns a non-fallback value", async () => {
+    mockGetSiteContent.mockImplementation(async (key: unknown, fallback: unknown) => {
+      if (key === "sustainability.materials.subhead")
+        return "Chosen for planet and performance.";
+      return fallback;
+    });
+    await renderPage();
+    expect(
+      screen.getByText("Chosen for planet and performance."),
+    ).toBeInTheDocument();
+  });
+
+  it("renders sustainability.certs.subhead CMS override when getSiteContent returns a non-fallback value", async () => {
+    mockGetSiteContent.mockImplementation(async (key: unknown, fallback: unknown) => {
+      if (key === "sustainability.certs.subhead")
+        return "Independently verified to the highest standards.";
+      return fallback;
+    });
+    await renderPage();
+    expect(
+      screen.getByText("Independently verified to the highest standards."),
+    ).toBeInTheDocument();
+  });
+
+  it("queries exactly 13 sustainability.* SiteContent keys", async () => {
     await renderPage();
     const keys = mockGetSiteContent.mock.calls.map(([key]) => key);
+    expect(keys).toHaveLength(13);
     expect(keys).toEqual(
       expect.arrayContaining([
         "sustainability.eyebrow",
@@ -196,9 +221,9 @@ describe("SustainabilityPage — owner-editable copy (cfw-p3j)", () => {
         "sustainability.carbon.body",
         "sustainability.certs.heading",
         "sustainability.certs.subhead",
-        "sustainability.tradein.heading",
-        "sustainability.tradein.subhead",
-        "sustainability.tradein.cta-label",
+        "sustainability.trade-in.heading",
+        "sustainability.trade-in.subhead",
+        "sustainability.trade-in.cta-label",
       ]),
     );
   });

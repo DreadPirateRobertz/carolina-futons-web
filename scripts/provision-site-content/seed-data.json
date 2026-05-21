@@ -344,17 +344,17 @@
       "_source": "src/app/sustainability/page.tsx SUSTAINABILITY_COPY_FALLBACKS.certsSubhead (cfw-p3j)"
     },
     {
-      "key": "sustainability.tradein.heading",
+      "key": "sustainability.trade-in.heading",
       "value": "Trade-in program",
       "_source": "src/app/sustainability/page.tsx SUSTAINABILITY_COPY_FALLBACKS.tradeinHeading (cfw-p3j)"
     },
     {
-      "key": "sustainability.tradein.subhead",
+      "key": "sustainability.trade-in.subhead",
       "value": "Give your old futon a second life. Trade in your used furniture for store credit toward a new piece — we'll handle the pickup and responsible recycling.",
       "_source": "src/app/sustainability/page.tsx SUSTAINABILITY_COPY_FALLBACKS.tradeinSubhead (cfw-p3j)"
     },
     {
-      "key": "sustainability.tradein.cta-label",
+      "key": "sustainability.trade-in.cta-label",
       "value": "Ask about trade-in",
       "_source": "src/app/sustainability/page.tsx SUSTAINABILITY_COPY_FALLBACKS.tradeinCtaLabel (cfw-p3j)"
     }

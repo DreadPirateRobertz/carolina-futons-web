@@ -255,9 +255,9 @@ export default async function SustainabilityPage() {
     getSiteContent("sustainability.carbon.body", SUSTAINABILITY_COPY_FALLBACKS.carbonBody),
     getSiteContent("sustainability.certs.heading", SUSTAINABILITY_COPY_FALLBACKS.certsHeading),
     getSiteContent("sustainability.certs.subhead", SUSTAINABILITY_COPY_FALLBACKS.certsSubhead),
-    getSiteContent("sustainability.tradein.heading", SUSTAINABILITY_COPY_FALLBACKS.tradeinHeading),
-    getSiteContent("sustainability.tradein.subhead", SUSTAINABILITY_COPY_FALLBACKS.tradeinSubhead),
-    getSiteContent("sustainability.tradein.cta-label", SUSTAINABILITY_COPY_FALLBACKS.tradeinCtaLabel),
+    getSiteContent("sustainability.trade-in.heading", SUSTAINABILITY_COPY_FALLBACKS.tradeinHeading),
+    getSiteContent("sustainability.trade-in.subhead", SUSTAINABILITY_COPY_FALLBACKS.tradeinSubhead),
+    getSiteContent("sustainability.trade-in.cta-label", SUSTAINABILITY_COPY_FALLBACKS.tradeinCtaLabel),
   ]);
 
   const schema = {

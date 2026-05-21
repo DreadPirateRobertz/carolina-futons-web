@@ -81,12 +81,12 @@ These are **complete** and require no further work. Included for reference and t
 | `sustainability.materials.heading` | `"What we use"` | `src/app/sustainability/page.tsx` | Material items from Wix CMS collection — excluded per §3 |
 | `sustainability.materials.subhead` | `"Every material is chosen for durability…"` | `src/app/sustainability/page.tsx` | |
 | `sustainability.carbon.heading` | `"Carbon offset program"` | `src/app/sustainability/page.tsx` | |
-| `sustainability.carbon.body` | `"Manufacturing and shipping any physical product…"` | `src/app/sustainability/page.tsx` | Carbon bullet list is structural — excluded per §3 |
+| `sustainability.carbon.body` | `"Manufacturing and shipping any physical product…"` | `src/app/sustainability/page.tsx` | Carbon bullet list items are structural — excluded per §3; this prose body is wired |
 | `sustainability.certs.heading` | `"Certifications & standards"` | `src/app/sustainability/page.tsx` | Cert items from Wix CMS collection — excluded per §3 |
 | `sustainability.certs.subhead` | `"Our products meet rigorous third-party…"` | `src/app/sustainability/page.tsx` | |
-| `sustainability.tradein.heading` | `"Trade-in program"` | `src/app/sustainability/page.tsx` | TRADE_IN_STEPS step content is structural repeater — excluded per §3 |
-| `sustainability.tradein.subhead` | `"Give your old futon a second life…"` | `src/app/sustainability/page.tsx` | |
-| `sustainability.tradein.cta-label` | `"Ask about trade-in"` | `src/app/sustainability/page.tsx` | |
+| `sustainability.trade-in.heading` | `"Trade-in program"` | `src/app/sustainability/page.tsx` | TRADE_IN_STEPS step content is structural repeater — excluded per §3 |
+| `sustainability.trade-in.subhead` | `"Give your old futon a second life…"` | `src/app/sustainability/page.tsx` | |
+| `sustainability.trade-in.cta-label` | `"Ask about trade-in"` | `src/app/sustainability/page.tsx` | |
 | `social.url.facebook` | `"https://www.facebook.com/carolinafutons"` | `src/app/layout.tsx:136` | Key is `social.url.*` — NOT `footer.social.*-href` as proposed in §2f; cfw-66o.7 used the shorter namespace |
 | `social.url.instagram` | `"https://www.instagram.com/carolinafutons"` | `src/app/layout.tsx:137` | |
 | `social.url.tiktok` | `"https://www.tiktok.com/@carolinafutons"` | `src/app/layout.tsx:138` | |
