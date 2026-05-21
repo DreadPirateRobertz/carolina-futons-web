@@ -12,9 +12,18 @@ vi.mock("@/lib/cms/faq", async () => {
   return { ...actual, listFaqs: listFaqsMock };
 });
 
-vi.mock("@/lib/seo/json-ld", () => ({
-  buildFaqPageSchema: () => ({ "@type": "FAQPage", mainEntity: [] }),
-}));
+vi.mock("@/lib/seo/json-ld", async () => {
+  // Keep the real resolveSiteUrl (used by metadata.alternates.canonical);
+  // only buildFaqPageSchema is stubbed to keep the schema test focused.
+  const actual =
+    await vi.importActual<typeof import("@/lib/seo/json-ld")>(
+      "@/lib/seo/json-ld",
+    );
+  return {
+    ...actual,
+    buildFaqPageSchema: () => ({ "@type": "FAQPage", mainEntity: [] }),
+  };
+});
 
 vi.mock("@/components/seo/JsonLd", () => ({
   JsonLd: () => null,
@@ -36,6 +45,10 @@ describe("FaqPage — metadata", () => {
   it("exports a non-empty metadata description", () => {
     expect(typeof metadata.description).toBe("string");
     expect((metadata.description ?? "").length).toBeGreaterThan(0);
+  });
+
+  it("sets alternates.canonical to the /faq URL (cfw-pb1j)", () => {
+    expect(String(metadata.alternates?.canonical)).toMatch(/\/faq$/);
   });
 });
 

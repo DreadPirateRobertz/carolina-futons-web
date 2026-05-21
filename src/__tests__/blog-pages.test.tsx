@@ -169,6 +169,23 @@ describe("/blog/[slug] dynamic page", () => {
     expect(meta.openGraph?.description).toContain("Keep it fresh");
   });
 
+  it("generateMetadata sets alternates.canonical to the post URL (cfw-pb1j)", async () => {
+    getPostBySlug.mockResolvedValueOnce({
+      _id: "p9",
+      slug: "wool-care",
+      title: "Wool mattress care",
+      excerpt: "Keep it fresh.",
+      heroImageUrl: null,
+      firstPublishedDate: null,
+      minutesToRead: null,
+      contentText: "",
+    });
+    const meta = await generateMetadata({
+      params: Promise.resolve({ slug: "wool-care" }),
+    });
+    expect(String(meta.alternates?.canonical)).toMatch(/\/blog\/wool-care$/);
+  });
+
   it("generateMetadata sets publishedTime from firstPublishedDate", async () => {
     const date = new Date("2025-03-01T12:00:00Z");
     getPostBySlug.mockResolvedValueOnce({
