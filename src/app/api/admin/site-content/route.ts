@@ -29,10 +29,9 @@ export const dynamic = "force-dynamic";
 //
 // Body shape: { key: string, value: string }. The key is the dotted-path
 // SiteContent identifier (e.g. "footer.tagline") and the value is the new
-// string. We upsert via Wix Data items.save() keyed by `key`, then
-// revalidateTag("site-content") so getSiteContent() sees the new value on
-// the next read instead of waiting out the 5-minute revalidate window
-// (cfw-vxb cache).
+// string. We upsert via Wix Data items.save() keyed by `key`, then call
+// invalidateSiteContent() so getSiteContent() sees the new value on the next
+// read instead of waiting out the 5-minute revalidate window (cfw-vxb cache).
 //
 // cfw-6qd.11: every successful save also appends an audit row to the
 // OwnerAuditLog collection ({ actorEmail, action: "edit", target: key,

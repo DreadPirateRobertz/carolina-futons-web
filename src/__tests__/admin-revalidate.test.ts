@@ -1,8 +1,8 @@
 // cfw-sej: unit tests for src/lib/admin/revalidate.ts.
 // Tests use vi.resetModules() + dynamic import() per test so each test
-// starts with a fresh module instance (zeroed debounce timestamp).
+// starts with a fresh module instance.
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
@@ -17,14 +17,16 @@ vi.mock("@/lib/cms/site-content", () => ({
   SITE_CONTENT_CACHE_TAG: "site-content",
 }));
 
+const mockLogError = vi.fn();
+vi.mock("@/lib/observability/log", () => ({
+  logError: (...args: unknown[]) => mockLogError(...args),
+}));
+
 beforeEach(() => {
   vi.resetModules();
   mockRevalidateTag.mockReset();
   mockRevalidatePath.mockReset();
-});
-
-afterEach(() => {
-  vi.useRealTimers();
+  mockLogError.mockReset();
 });
 
 describe("invalidateSiteContent", () => {
@@ -35,30 +37,24 @@ describe("invalidateSiteContent", () => {
     expect(mockRevalidateTag).toHaveBeenCalledTimes(1);
   });
 
-  it("debounces: second call within 1s skips revalidateTag", async () => {
+  it("calls revalidateTag on every invocation (no debounce)", async () => {
     const { invalidateSiteContent } = await import("@/lib/admin/revalidate");
     invalidateSiteContent();
-    invalidateSiteContent();
-    expect(mockRevalidateTag).toHaveBeenCalledTimes(1);
-  });
-
-  it("fires again after 1s has elapsed", async () => {
-    vi.useFakeTimers();
-    const { invalidateSiteContent } = await import("@/lib/admin/revalidate");
-    invalidateSiteContent();
-    expect(mockRevalidateTag).toHaveBeenCalledTimes(1);
-    vi.advanceTimersByTime(1001);
     invalidateSiteContent();
     expect(mockRevalidateTag).toHaveBeenCalledTimes(2);
   });
 
-  it("still debounces at 999ms (boundary: not yet elapsed)", async () => {
-    vi.useFakeTimers();
+  it("swallows a revalidateTag throw and logs the error", async () => {
+    mockRevalidateTag.mockImplementation(() => {
+      throw new Error("Next.js cache invariant violated");
+    });
     const { invalidateSiteContent } = await import("@/lib/admin/revalidate");
-    invalidateSiteContent();
-    vi.advanceTimersByTime(999);
-    invalidateSiteContent();
-    expect(mockRevalidateTag).toHaveBeenCalledTimes(1);
+    expect(() => invalidateSiteContent()).not.toThrow();
+    expect(mockLogError).toHaveBeenCalledWith(
+      "admin/revalidate",
+      "invalidateSiteContent failed",
+      expect.any(Error),
+    );
   });
 });
 
@@ -75,12 +71,25 @@ describe("invalidateImage", () => {
     expect(mockRevalidatePath).toHaveBeenCalledWith("/products", "page");
   });
 
-  it("is not debounced — each productId fires independently", async () => {
+  it("calls both tag and path on each invocation (no debounce)", async () => {
     const { invalidateImage } = await import("@/lib/admin/revalidate");
     invalidateImage("p1");
     invalidateImage("p1");
-    // revalidateTag called twice (no debounce for images)
     expect(mockRevalidateTag).toHaveBeenCalledTimes(2);
+    expect(mockRevalidatePath).toHaveBeenCalledTimes(2);
+  });
+
+  it("swallows a throw and logs the error", async () => {
+    mockRevalidateTag.mockImplementation(() => {
+      throw new Error("cache error");
+    });
+    const { invalidateImage } = await import("@/lib/admin/revalidate");
+    expect(() => invalidateImage("prod-1")).not.toThrow();
+    expect(mockLogError).toHaveBeenCalledWith(
+      "admin/revalidate",
+      "invalidateImage failed",
+      expect.any(Error),
+    );
   });
 });
 
@@ -97,6 +106,25 @@ describe("invalidateGuide", () => {
     expect(mockRevalidateTag).toHaveBeenCalledWith(
       "guide-how-to-choose-a-futon-frame",
       "default",
+    );
+  });
+
+  it("does not call revalidatePath (tag-only invalidation)", async () => {
+    const { invalidateGuide } = await import("@/lib/admin/revalidate");
+    invalidateGuide("some-guide");
+    expect(mockRevalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("swallows a throw and logs the error", async () => {
+    mockRevalidateTag.mockImplementation(() => {
+      throw new Error("cache error");
+    });
+    const { invalidateGuide } = await import("@/lib/admin/revalidate");
+    expect(() => invalidateGuide("my-guide")).not.toThrow();
+    expect(mockLogError).toHaveBeenCalledWith(
+      "admin/revalidate",
+      "invalidateGuide failed",
+      expect.any(Error),
     );
   });
 });
