@@ -110,6 +110,9 @@ These are **complete** and require no further work. Included for reference and t
 | `shop.futon-frames.featured.eyebrow` | `"Editor's picks"` | `src/lib/shop/categories.ts:96` | cfw-66o.5; template key `shop.${slug}.featured.*` |
 | `shop.futon-frames.featured.heading` | `"Where most people start"` | `src/lib/shop/categories.ts:97` | |
 | `shop.futon-frames.featured.body` | `"Three frames that cover the common questions…"` | `src/lib/shop/categories.ts:98–101` | |
+| `guides.index.eyebrow` | `"Buying guides"` | `src/app/guides/page.tsx:54` | cfw-mr7 |
+| `guides.index.heading` | `"Figure out what you actually need"` | `src/app/guides/page.tsx:57` | |
+| `guides.index.subhead` | `"35 years of answering the same questions at the showroom…"` | `src/app/guides/page.tsx:60` | |
 
 ---
 
@@ -176,7 +179,7 @@ All proposed keys follow `SITE_CONTENT_KEY_PATTERN` enforced by `cfw-6qd.12`:
 Examples:
 - `shop.futon-frames.description` ✅
 - `shop.sale.empty-state` ✅
-- `footer.social.facebook-href` ✅
+- `social.url.facebook` ✅
 
 ---
 

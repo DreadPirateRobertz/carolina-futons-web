@@ -43,9 +43,9 @@ describe("provision-site-content seed-data.json", () => {
     expect(seed.rows.length).toBeGreaterThan(0);
   });
 
-  it("contains exactly 67 seed rows (cfw-roi + cfw-34q value-props + cfw-66o.4 shop copy + cfw-66o.11 about copy + cfw-66o.5 featured-row + cfw-66o.3 descriptions + cfw-5yg returns.* keys)", () => {
+  it("contains exactly 70 seed rows (cfw-roi + cfw-34q value-props + cfw-66o.4 shop copy + cfw-66o.11 about copy + cfw-66o.5 featured-row + cfw-66o.3 descriptions + cfw-5yg returns.* keys + cfw-mr7 guides index)", () => {
     const seed = loadSeed();
-    expect(seed.rows).toHaveLength(67);
+    expect(seed.rows).toHaveLength(70);
   });
 
   it("every row has a non-empty string key and value", () => {
@@ -136,6 +136,10 @@ describe("provision-site-content seed-data.json", () => {
       "shop.sofa-beds.description",
       "shop.sale.description",
       "shop.mattresses-sale.description",
+      // cfw-mr7: guides index page copy (eyebrow, heading, subhead)
+      "guides.index.eyebrow",
+      "guides.index.heading",
+      "guides.index.subhead",
     ];
     const seed = loadSeed();
     const keys = new Set(seed.rows.map((r) => r.key));

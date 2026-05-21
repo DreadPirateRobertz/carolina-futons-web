@@ -9,12 +9,23 @@ import { DEFAULT_OG_IMAGE } from "@/lib/og";
 import { twitterFromOpenGraph } from "@/lib/seo/twitter-from-og";
 import { buildBreadcrumbSchema, resolveSiteUrl } from "@/lib/seo/json-ld";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { getSiteContent } from "@/lib/cms/site-content";
 
 const CARD_STAGGER_SECONDS = 0.08;
 
 const GUIDES_TITLE = "Buying Guides — Carolina Futons";
 const GUIDES_DESCRIPTION =
   "Plain-English guides to picking a futon mattress, comparing platform beds, sizing a Murphy bed, and getting the most out of a small room.";
+
+// cfw-mr7: owner-editable Guides index copy via SiteContent.
+// Three keys cover the full visible copy on the page. Fallbacks match
+// the previously hardcoded strings exactly so no visual change on deploy.
+const GUIDES_COPY_FALLBACKS = {
+  eyebrow: "Buying guides",
+  heading: "Figure out what you actually need",
+  subhead:
+    "35 years of answering the same questions at the showroom, written down so you can read them in your own time.",
+} as const;
 
 const GUIDES_OPEN_GRAPH = {
   title: GUIDES_TITLE,
@@ -33,7 +44,12 @@ export const metadata: Metadata = {
 };
 
 export default async function GuidesIndexPage() {
-  const guides = await listGuides();
+  const [guides, eyebrow, heading, subhead] = await Promise.all([
+    listGuides(),
+    getSiteContent("guides.index.eyebrow", GUIDES_COPY_FALLBACKS.eyebrow),
+    getSiteContent("guides.index.heading", GUIDES_COPY_FALLBACKS.heading),
+    getSiteContent("guides.index.subhead", GUIDES_COPY_FALLBACKS.subhead),
+  ]);
 
   // cf-nm6p: BreadcrumbList JSON-LD so Google can render the "Home >
   // Guides" trail in SERP results. Absolute URLs are required by the
@@ -52,14 +68,13 @@ export default async function GuidesIndexPage() {
         <HeroReveal>
           <header className="mx-auto max-w-[65ch] space-y-3">
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-cf-cta">
-              Buying guides
+              {eyebrow}
             </p>
             <h1 className="font-playfair text-4xl font-semibold tracking-tight sm:text-5xl">
-              Figure out what you actually need
+              {heading}
             </h1>
             <p className="text-lg leading-relaxed text-cf-muted">
-              35 years of answering the same questions at the showroom, written
-              down so you can read them in your own time.
+              {subhead}
             </p>
           </header>
         </HeroReveal>

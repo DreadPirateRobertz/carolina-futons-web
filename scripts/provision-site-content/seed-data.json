@@ -1,6 +1,6 @@
 {
   "$schema": "./seed-schema.json",
-  "_about": "cfw-roi (cf-atze) — initial seed for the SiteContent Wix CMS collection. Row count: 20 (initial) → 26 (cfw-34q home value-props) → 34 (cfw-66o.4 shop copy) → 45 (cfw-66o.11 about page copy) → 48 (cfw-66o.5 featured-row copy) → 55 (cfw-66o.3 shop.*.description). Provisioning script lives in ./index.mjs. Production reader: src/lib/cms/site-content.ts.",
+  "_about": "cfw-roi (cf-atze) — initial seed for the SiteContent Wix CMS collection. Row count: 20 (initial) → 26 (cfw-34q home value-props) → 34 (cfw-66o.4 shop copy) → 45 (cfw-66o.11 about page copy) → 48 (cfw-66o.5 featured-row copy) → 55 (cfw-66o.3 shop.*.description) → 58 (cfw-mr7 guides index copy). Provisioning script lives in ./index.mjs. Production reader: src/lib/cms/site-content.ts.",
   "_naming": "lowercase, dotted-path, hyphenated segments. e.g. 'footer.tagline', 'announcement.rotation.0.message'. See docs/design/cfw-66o-footer-announce-specs.md §2.",
   "rows": [
     {
@@ -337,6 +337,21 @@
       "key": "returns.start.heading",
       "value": "Start a return",
       "_source": "src/app/returns/page.tsx RETURNS_COPY_FALLBACKS.startHeading (cfw-5yg)"
+    },
+    {
+      "key": "guides.index.eyebrow",
+      "value": "Buying guides",
+      "_source": "src/app/guides/page.tsx GUIDES_COPY_FALLBACKS.eyebrow (cfw-mr7)"
+    },
+    {
+      "key": "guides.index.heading",
+      "value": "Figure out what you actually need",
+      "_source": "src/app/guides/page.tsx GUIDES_COPY_FALLBACKS.heading (cfw-mr7)"
+    },
+    {
+      "key": "guides.index.subhead",
+      "value": "35 years of answering the same questions at the showroom, written down so you can read them in your own time.",
+      "_source": "src/app/guides/page.tsx GUIDES_COPY_FALLBACKS.subhead (cfw-mr7)"
     }
   ]
 }

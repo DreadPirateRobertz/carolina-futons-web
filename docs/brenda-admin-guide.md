@@ -73,7 +73,98 @@ Guide articles (FAQ answers, the "Getting It Home" delivery guide, etc.) live in
 
 ---
 
-## 4 · Add a customer photo to the community gallery
+## 4 · Edit the homepage value props (the three "why us" cards)
+
+The three cards below the main hero ("Hardwood, not plywood", "Sleep on it first", "White-glove delivery") are CMS-editable — you can update the heading and the body text on each one.
+
+1. Left sidebar → **CMS** → **Content Manager**.
+2. Click **SiteContent** in the collection list.
+3. In the search/filter bar, type **`home.value-props.`** — this shows just the six value-prop rows.
+4. Find the row you want to change and click it to open it.
+5. Edit the **value** field with your new wording, then click **Save**.
+
+**Changes appear within 5 minutes.** With Wix webhook configured, updates may appear within 30 seconds.
+
+> **If the CMS is unreachable:** the site automatically shows the original built-in text — nothing goes blank.
+
+**Rows in this section:**
+
+| Key | What it controls |
+|---|---|
+| `home.value-props.0.title` | Heading on the first card (currently "Hardwood, not plywood") |
+| `home.value-props.0.body` | Body text on the first card |
+| `home.value-props.1.title` | Heading on the second card (currently "Sleep on it first") |
+| `home.value-props.1.body` | Body text on the second card |
+| `home.value-props.2.title` | Heading on the third card (currently "White-glove delivery") |
+| `home.value-props.2.body` | Body text on the third card |
+
+> **Tip:** Each card heading should be 3–5 words — short enough to scan at a glance. The body can be 1–2 sentences.
+
+---
+
+## 5 · Edit the About page copy
+
+The entire About page — the intro, the beliefs section, the location blurb, and the team paragraph — is CMS-editable.
+
+1. Left sidebar → **CMS** → **Content Manager**.
+2. Click **SiteContent**.
+3. In the search/filter bar, type **`about.`** — this shows just the About page rows.
+4. Find the row you want to change and click it.
+5. Edit the **value** field, then click **Save**.
+
+**Changes appear within 5 minutes.** With Wix webhook configured, updates may appear within 30 seconds.
+
+> **If the CMS is unreachable:** the site automatically shows the original built-in text — nothing goes blank.
+
+**Rows in this section:**
+
+| Key | What it controls |
+|---|---|
+| `about.intro.eyebrow` | Small label above the main heading (e.g. "Our story") |
+| `about.intro.heading` | Main page heading (e.g. "About Carolina Futons") |
+| `about.intro.subheading` | One-sentence subheading below the main heading |
+| `about.intro.lede` | Opening paragraph of the About page |
+| `about.beliefs.heading` | Heading for the beliefs / values section |
+| `about.beliefs.body-1` | First paragraph in the beliefs section |
+| `about.beliefs.body-2` | Second paragraph in the beliefs section |
+| `about.location.heading` | Heading for the location section |
+| `about.location.body-1` | Paragraph describing the showroom location |
+| `about.team.heading` | Heading for the team section |
+| `about.team.body` | Paragraph introducing the team |
+
+---
+
+## 6 · Edit the Contact page headings
+
+The section headings on the Contact page are CMS-editable. Use this when you want to update the intro, change the "Reach us directly" heading, or tweak the appointment-booking blurb.
+
+1. Left sidebar → **CMS** → **Content Manager**.
+2. Click **SiteContent**.
+3. In the search/filter bar, type **`contact.`** — this shows just the Contact page rows.
+4. Find the row you want to change and click it.
+5. Edit the **value** field, then click **Save**.
+
+**Changes appear within 5 minutes.** With Wix webhook configured, updates may appear within 30 seconds.
+
+> **If the CMS is unreachable:** the site automatically shows the original built-in text — nothing goes blank.
+
+**Rows in this section:**
+
+| Key | What it controls |
+|---|---|
+| `contact.eyebrow` | Small label above the main heading (e.g. "Contact") |
+| `contact.intro.heading` | Main heading on the Contact page |
+| `contact.intro.body` | Intro paragraph below the heading |
+| `contact.direct.heading` | Heading above the phone / email block |
+| `contact.appointment.heading` | Heading above the showroom appointment section |
+| `contact.appointment.body-suffix` | Sentence appended after the appointment booking link |
+| `contact.form.heading` | Heading above the contact form |
+
+> **Note:** Phone number, email address, and physical address are set in code. To change those, email Chris (chrisdealglass@gmail.com).
+
+---
+
+## 7 · Add a customer photo to the community gallery
 
 Customer photos appear in the gallery section on the site. They live in a collection called **CommunityPhotos**.
 
@@ -95,7 +186,7 @@ The photo appears in the gallery on the site within a few minutes.
 
 ---
 
-## 5 · Change the announcement bar message
+## 8 · Change the announcement bar message
 
 The announcement bar at the top of every page rotates through up to 5 messages. You can edit any of them from the Wix Dashboard — no code deploy needed.
 
@@ -126,7 +217,7 @@ The announcement bar at the top of every page rotates through up to 5 messages. 
 
 ---
 
-## 6 · When you need engineering help — how to reach Chris
+## 9 · When you need engineering help — how to reach Chris
 
 Some things are outside the dashboard (new page layouts, new features, site outages). Here's how to escalate:
 
@@ -158,9 +249,12 @@ Chris monitors the issue tracker and will reply with a timeline.
 | Edit a product name, price, or description | Wix Dashboard → Store → Products |
 | Hide or show a product | Wix Dashboard → Store → Products → product → Visibility |
 | Edit a Guide article | Wix Dashboard → CMS → Content Manager → Guides |
+| Edit homepage value props ("Hardwood, not plywood" etc.) | Wix Dashboard → CMS → Content Manager → SiteContent → filter `home.value-props.` |
+| Edit About page copy | Wix Dashboard → CMS → Content Manager → SiteContent → filter `about.` |
+| Edit Contact page headings | Wix Dashboard → CMS → Content Manager → SiteContent → filter `contact.` |
 | Add a community photo | Wix Dashboard → CMS → Content Manager → CommunityPhotos |
 | Change the announcement bar | Wix Dashboard → CMS → Content Manager → SiteContent → filter `announcement.` |
-| Report a bug or request a feature | GitHub Issues (see Section 6) |
+| Report a bug or request a feature | GitHub Issues (see Section 9) |
 | Edit homepage text or photos | Owner mode on carolinafutons.com — add `?cf-edit=1` to the URL |
 
 ---
