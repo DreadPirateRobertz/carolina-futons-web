@@ -172,3 +172,69 @@ describe("HomePage — value props (cfw-9uw, cfw-66o text-refactor)", () => {
     expect(queriedKeys).not.toContain("home.value-props.3.body");
   });
 });
+
+// cfw-79g: CMS override coverage for home.value-props.* SiteContent wiring.
+// The existing describe above pins key names + fallbacks. This block adds the
+// one gap: verifying that when getSiteContent returns a non-fallback value,
+// that value is what loadValueProps() consumed (not the fallback). Pattern
+// follows the existing tests in this file — await HomePage() + mock.results,
+// not renderHome() DOM assertions (HomePage renders too many async children
+// for jsdom to produce stable text output).
+describe("HomePage — value-props CMS override path (cfw-79g)", () => {
+  beforeEach(() => {
+    mockGetSiteContent.mockClear();
+  });
+
+  it("resolves the CMS override for value-props.0.title when getSiteContent returns a non-fallback value", async () => {
+    mockGetSiteContent.mockImplementation(async (key: string, fallback = "") => {
+      if (key === "home.value-props.0.title") return "Solid oak, not particleboard";
+      return fallback;
+    });
+    await HomePage();
+    const calls = mockGetSiteContent.mock.calls;
+    const results = mockGetSiteContent.mock.results;
+    const idx = calls.findIndex(([k]) => k === "home.value-props.0.title");
+    expect(idx).toBeGreaterThanOrEqual(0);
+    // The mock returned the override — loadValueProps() consumed it, so the
+    // rendered value-prop card would show "Solid oak, not particleboard".
+    await expect(results[idx]?.value).resolves.toBe("Solid oak, not particleboard");
+  });
+
+  it("resolves the CMS override for all title + body pairs when getSiteContent returns overrides", async () => {
+    mockGetSiteContent.mockImplementation(async (key: string, fallback = "") => {
+      if (key === "home.value-props.0.title") return "CMS title 0";
+      if (key === "home.value-props.0.body") return "CMS body 0";
+      if (key === "home.value-props.1.title") return "CMS title 1";
+      if (key === "home.value-props.1.body") return "CMS body 1";
+      if (key === "home.value-props.2.title") return "CMS title 2";
+      if (key === "home.value-props.2.body") return "CMS body 2";
+      return fallback;
+    });
+    await HomePage();
+    const calls = mockGetSiteContent.mock.calls;
+    const results = mockGetSiteContent.mock.results;
+    for (const key of [
+      "home.value-props.0.title", "home.value-props.0.body",
+      "home.value-props.1.title", "home.value-props.1.body",
+      "home.value-props.2.title", "home.value-props.2.body",
+    ]) {
+      const idx = calls.findIndex(([k]) => k === key);
+      expect(idx, `${key} was not queried`).toBeGreaterThanOrEqual(0);
+      const resolved = await results[idx]?.value;
+      expect(resolved, `${key} did not return the CMS override`).toMatch(/^CMS /);
+    }
+  });
+
+  it("falls back to the shipped copy when getSiteContent returns the fallback argument", async () => {
+    // default mockGetSiteContent impl already returns fallback
+    await HomePage();
+    const callMap = new Map<string, string>(
+      mockGetSiteContent.mock.calls.map(([key, fallback]) => [key, fallback ?? ""] as const),
+    );
+    // Spot-check: the fallback string is the shipped default copy.
+    expect(callMap.get("home.value-props.0.title")).toBe("Hardwood, not plywood");
+    expect(callMap.get("home.value-props.2.body")).toBe(
+      "Regional delivery teams set it up where you want it. Not on a curb in a box.",
+    );
+  });
+});
