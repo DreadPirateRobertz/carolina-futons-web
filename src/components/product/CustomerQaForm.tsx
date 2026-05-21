@@ -47,7 +47,7 @@ export function CustomerQaForm({ productSlug }: CustomerQaFormProps) {
       >
         <p className="font-medium">Thanks — your question has been submitted.</p>
         <p className="mt-1 text-sm text-cf-muted">
-          We'll post an answer here once the team responds.
+          We&apos;ll post an answer here once the team responds.
         </p>
       </div>
     );
