@@ -103,7 +103,7 @@ The photo appears in the gallery on the site within a few minutes.
 
 ---
 
-## 6 · When you need engineering help — how to reach Chris/Stilgar
+## 6 · When you need engineering help — how to reach Chris
 
 Some things are outside the dashboard (new page layouts, new features, site outages). Here's how to escalate:
 
@@ -124,7 +124,7 @@ Some things are outside the dashboard (new page layouts, new features, site outa
 4. Body: describe it in plain language — what it should do, where it should appear, any examples.
 5. Click **Submit new issue**.
 
-Chris (Stilgar) monitors the issue tracker and will reply with a timeline.
+Chris monitors the issue tracker and will reply with a timeline.
 
 ---
 
