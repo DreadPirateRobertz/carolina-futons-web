@@ -161,3 +161,66 @@ describe("ContactPage — showroom schedule (cf-7pk0 F2)", () => {
     );
   });
 });
+
+// cfw-4ul: pin the 7 contact.* SiteContent keys wired by cf-bbu5.
+// Pattern mirrors AboutPage — cf-7pk0 F1 (about/page.test.tsx).
+describe("ContactPage — owner-editable copy (cf-bbu5)", () => {
+  it("falls back to baked-in headings when SiteContent is empty", async () => {
+    await renderPage();
+    expect(
+      screen.getByRole("heading", { level: 1, name: /love to hear from you/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: /Reach us directly/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: /Schedule a showroom visit/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: /Send a message/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("uses CMS values for headings when present", async () => {
+    mockGetSiteContent.mockImplementation(async (key, fallback) => {
+      if (key === "contact.eyebrow") return "Get in touch";
+      if (key === "contact.intro.heading") return "How can we help?";
+      if (key === "contact.intro.body") return "We reply same business day.";
+      if (key === "contact.direct.heading") return "Call or email us";
+      if (key === "contact.appointment.heading") return "Book a visit";
+      if (key === "contact.form.heading") return "Leave a note";
+      return fallback;
+    });
+    await renderPage();
+    expect(screen.getByText("Get in touch")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "How can we help?" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("We reply same business day.")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Call or email us" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Book a visit" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Leave a note" }),
+    ).toBeInTheDocument();
+  });
+
+  it("queries the 7 expected contact.* SiteContent keys", async () => {
+    await renderPage();
+    const keys = mockGetSiteContent.mock.calls.map(([key]) => key);
+    expect(keys).toEqual(
+      expect.arrayContaining([
+        "contact.eyebrow",
+        "contact.intro.heading",
+        "contact.intro.body",
+        "contact.direct.heading",
+        "contact.appointment.heading",
+        "contact.appointment.body-suffix",
+        "contact.form.heading",
+      ]),
+    );
+  });
+});
