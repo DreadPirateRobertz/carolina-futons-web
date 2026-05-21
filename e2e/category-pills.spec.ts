@@ -75,4 +75,22 @@ test.describe("/shop/futon-frames — CategoryPills sub-filter", () => {
     // All 2 fixture frames should be visible (no sub-filter applied)
     await expect(page.locator('[data-slot="product-card"]')).toHaveCount(2);
   });
+
+  test("clicking Wall Huggers pill navigates to ?sub=wall-huggers and marks it active", async ({
+    page,
+  }) => {
+    await page.goto("/shop/futon-frames");
+    await waitForPlpControls(page);
+
+    const nav = page.getByRole("navigation", { name: /sub-category filter/i });
+    const wallHuggersPill = nav.getByRole("link", { name: "Wall Huggers" });
+    await wallHuggersPill.click();
+
+    await page.waitForURL(/[?&]sub=wall-huggers/, { timeout: PLP_TIMEOUT });
+    await waitForPlpControls(page);
+
+    await expect(wallHuggersPill).toHaveAttribute("aria-current", "page");
+    const allPill = nav.getByRole("link", { name: "All" });
+    await expect(allPill).not.toHaveAttribute("aria-current", "page");
+  });
 });
