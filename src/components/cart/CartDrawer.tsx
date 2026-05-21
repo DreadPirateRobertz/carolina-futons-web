@@ -5,6 +5,7 @@ import { Dialog } from "@base-ui/react/dialog";
 import Link from "next/link";
 import { Minus, Plus, ShoppingBag, X } from "lucide-react";
 
+import { logError } from "@/lib/observability/log";
 import { CartCouponEntry } from "@/components/cart/CartCouponEntry";
 import { useCart } from "@/components/cart/CartProvider";
 import { CartIllustration } from "@/components/illustrations/CartIllustration";
@@ -241,7 +242,7 @@ export function CartDrawer() {
                         subtotalCents / 100,
                       );
                     } catch (e) {
-                      console.error("[cart-drawer] trackBeginCheckout failed", e);
+                      logError("cart-drawer", "trackBeginCheckout failed", e);
                     }
                     setOpen(false);
                   }}

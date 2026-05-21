@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 
+import { logError } from "@/lib/observability/log";
 import { useCart } from "@/components/cart/CartProvider";
 import { formatCents } from "@/lib/cart/cart-state";
 import { trackBeginCheckout } from "@/lib/analytics/ga4-events";
@@ -206,7 +207,7 @@ export default function CartPage() {
                   subtotalCents / 100,
                 );
               } catch (e) {
-                console.error("[cart-page] trackBeginCheckout failed", e);
+                logError("cart-page", "trackBeginCheckout failed", e);
               }
             }}
             className={cn(

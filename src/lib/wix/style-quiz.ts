@@ -1,3 +1,4 @@
+import { logError } from "@/lib/observability/log";
 import { callVelo, VeloRpcError } from "@/lib/wix/velo-client";
 
 export type QuizOption = {
@@ -88,7 +89,7 @@ export async function getQuizRecommendations(
       args: [answers],
     });
   } catch (err) {
-    console.error("[styleQuiz] getQuizRecommendations failed:", err);
+    logError("styleQuiz", "getQuizRecommendations failed", err);
     return [];
   }
 }
@@ -104,11 +105,9 @@ export async function captureQuizLead(
     });
   } catch (err) {
     if (err instanceof VeloRpcError) {
-      console.error(
-        `[styleQuiz] captureQuizLead rpc failed: HTTP ${err.status}`,
-      );
+      logError("styleQuiz", `captureQuizLead rpc failed: HTTP ${err.status}`);
     } else {
-      console.error("[styleQuiz] captureQuizLead failed:", err);
+      logError("styleQuiz", "captureQuizLead failed", err);
     }
     return { success: false };
   }
@@ -123,7 +122,7 @@ export async function getPersonalizedCopy(
       args: [answers],
     });
   } catch (err) {
-    console.error("[styleQuiz] getPersonalizedCopy failed:", err);
+    logError("styleQuiz", "getPersonalizedCopy failed", err);
     return { copy: "", profileType: "style" };
   }
 }
