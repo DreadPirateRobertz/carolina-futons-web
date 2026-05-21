@@ -157,24 +157,26 @@ type WixClient = ReturnType<typeof buildClient>;
 
 // ── Upsert logic ──────────────────────────────────────────────────────
 
-async function findByKey(
-  client: WixClient,
-  key: string,
-): Promise<{ _id: string } | null> {
+async function findIdByKey(client: WixClient, key: string): Promise<string | null> {
   const result = await client.items
     .query(COLLECTION_ID)
     .eq("key", key)
     .limit(1)
     .find();
-  const item = result.items[0];
-  return item?._id ? { _id: item._id } : null;
+  if (!Array.isArray(result?.items)) {
+    throw new Error(
+      `findIdByKey: unexpected response for key=${JSON.stringify(key)} — ` +
+      `result.items is ${typeof result?.items}`,
+    );
+  }
+  return result.items[0]?._id ?? null;
 }
 
 async function upsertRow(client: WixClient, row: SeedRow): Promise<"inserted" | "updated"> {
-  const existing = await findByKey(client, row.key);
-  if (existing) {
+  const existingId = await findIdByKey(client, row.key);
+  if (existingId) {
     await client.items.update(COLLECTION_ID, {
-      _id: existing._id,
+      _id: existingId,
       key: row.key,
       value: row.value,
     });
@@ -191,6 +193,13 @@ async function main(): Promise<void> {
     log("DRY-RUN mode — no Wix API calls will be made.");
   }
 
+  // Guard against duplicate keys in SEED_ROWS (would silently double-upsert).
+  const seen = new Set<string>();
+  for (const row of SEED_ROWS) {
+    if (seen.has(row.key)) throw new Error(`Duplicate key in SEED_ROWS: "${row.key}"`);
+    seen.add(row.key);
+  }
+
   log(`${SEED_ROWS.length} rows declared (§1 live + §2 proposed).`);
 
   if (DRY_RUN) {
@@ -204,19 +213,30 @@ async function main(): Promise<void> {
   const client = buildClient();
   let inserted = 0;
   let updated = 0;
+  const failures: Array<{ key: string; error: unknown }> = [];
 
   for (const row of SEED_ROWS) {
-    const action = await upsertRow(client, row);
-    if (action === "inserted") {
-      log(`Inserted: ${row.key}`);
-      inserted++;
-    } else {
-      log(`Updated:  ${row.key}`);
-      updated++;
+    try {
+      const action = await upsertRow(client, row);
+      if (action === "inserted") {
+        log(`Inserted: ${row.key}`);
+        inserted++;
+      } else {
+        log(`Updated:  ${row.key}`);
+        updated++;
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      logErr(`Failed: ${row.key} — ${msg}`);
+      failures.push({ key: row.key, error: e });
     }
   }
 
-  log(`Done. Inserted=${inserted} Updated=${updated} Total=${inserted + updated}`);
+  log(`Done. Inserted=${inserted} Updated=${updated} Failed=${failures.length} Total=${SEED_ROWS.length}`);
+
+  if (failures.length > 0) {
+    process.exit(1);
+  }
 }
 
 main().catch((e: unknown) => {
